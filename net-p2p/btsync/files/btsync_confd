@@ -1,0 +1,5 @@
+# conf.d file for btsync
+
+# User and group daemon runs as
+BTSYNC_USER="btsync"
+BTSYNC_GROUP="btsync"

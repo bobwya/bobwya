@@ -1,0 +1,32 @@
+#!/sbin/runscript
+# Distributed under the terms of the GNU General Public License v2
+
+description="Syncthing replaces proprietary sync and cloud services with something open, trustworthy and decentralized."
+description_start="Start syncthing-daemon server and web interface"
+description_stop="Stop syncthing-daemon server and web interface"
+
+depend() {
+	need net localmount
+}
+
+start() {
+	ebegin "Starting syncthing daemon"
+	start-stop-daemon \
+	--start \
+	--make-pidfile \
+	--pidfile /var/run/syncthing.pid \
+	--user YOURUSERHERE \
+	--background \
+	--exec /usr/bin/syncthing-linux-386/syncthing \
+	--stdout /var/log/syncthing.log \
+	--stderr /var/log/syncthing.log
+	eend $?
+}
+
+stop() {
+	ebegin "Stopping syncthing daemon"
+	start-stop-daemon \
+	--stop \
+	--pidfile /var/run/syncthing.pid
+	eend $?
+}

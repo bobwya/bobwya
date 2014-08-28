@@ -1,0 +1,45 @@
+--- qupzilla/src/lib/downloads/downloadmanager.cpp	2013-08-04 17:33:52.658294415 +0100
++++ qupzilla-new/src/lib/downloads/downloadmanager.cpp	2013-08-04 17:25:10.663399721 +0100
+@@ -40,6 +40,8 @@
+     , m_isClosing(false)
+ {
+     setWindowFlags(windowFlags() ^ Qt::WindowMaximizeButtonHint);
++    if (m_useExternalManager)
++        return;
+     ui->setupUi(this);
+ #ifdef Q_OS_WIN
+     if (QtWin::isCompositionEnabled()) {
+@@ -87,7 +89,13 @@
+ {
+     m_timer.start(1000 * 2, this);
+ 
+-    QWidget::show();
++    if (m_useExternalManager) {
++        startExternalManager(QUrl(""));
++        return;
++    }
++    else {
++        QWidget::show();
++    }
+     raise();
+     activateWindow();
+ }
+@@ -224,12 +232,12 @@
+         return;
+     }
+ 
+-//    if (fromPageDownload && m_useExternalManager) {
+-//        startExternalManager(reply->url());
+-//        reply->abort();
+-//        reply->deleteLater();
+-//        return;
+-//    }
++    if (m_useExternalManager) {
++        startExternalManager(reply->url());
++        reply->abort();
++        reply->deleteLater();
++        return;
++    }
+ 
+     reply->setProperty("downReply", QVariant(true));
+ 

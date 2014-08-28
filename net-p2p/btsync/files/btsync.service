@@ -1,0 +1,15 @@
+[Unit]
+Description=Bittorrent Sync service
+After=network.target
+ 
+[Service]
+Nice=19
+IOSchedulingClass=idle
+IOSchedulingPriority=7
+User=btsync
+Group=btsync
+ExecStart=/opt/btsync/bin/btsync --config /etc/btsync.conf --nodaemon
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

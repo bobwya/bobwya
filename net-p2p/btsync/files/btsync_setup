@@ -1,0 +1,30 @@
+#!/bin/sh
+#
+# Prestart script which runs before "/opt/btsync/bin/btsync" binary and generates a 
+# suitable default configuration file if it's not present already.
+#
+# For the system btsync user it is pre-installed, at buildtime, at "/etc/btsync.conf" and uses system-wide paths
+# Working folder: "/var/lib/btsync" and PID storage in: "/run/btsync/".
+#
+# For non-system user account a "$HOME/.config/btsync/btsync.conf" file is generated.
+# Working folder "$HOME/.config/btsync" (includes PID storage).
+#
+
+SCRIPT_PATH=$(readlink -f $0)
+SCRIPT_NAME=$( basename "${SCRIPT_PATH}" )
+[[ $EUID -eq 0 ]] && { echo "${SCRIPT_NAME}: please only run script \"${SCRIPT_PATH}\" as non-root user" 1>&2; exit 1; }
+
+PN="btsync"
+STORAGE_PATH="${HOME%/}/.config/${PN}"
+CONF_FILE="${STORAGE_PATH}/${PN}.conf"
+[ -f "${CONF_FILE}" ] && exit 0
+mkdir -p "${STORAGE_PATH}"
+"/opt/${PN}/bin/${PN}" --dump-sample-config > "${CONF_FILE}" || { echo "${SCRIPT_NAME}: unable to generate ${PN} configuration file \"${CONF_FILE}\"" 1>&2; exit 1; }
+sed -i \
+	-e "s|\"password\" : \"password\"|\"password\" : \"\"|"	\
+	-e "s|\"device_name\": \"My Sync Device\"|\"device_name\": \"$(hostname -f 2>/dev/null||hostname)\"|"	\
+	-e "s|\"login\" : \"admin\"|\"login\" : \"$USER\"|"														\
+	-e "s|\"listen\" : \"0.0.0.0:8888\"|\"listen\" : \"127.0.0.1:$(expr 8888 + $EUID)\"|"					\
+	-e "s|\"storage_path\" : \"/home/user/.sync\"|\"storage_path\" : \"${STORAGE_PATH}\"|"					\
+	-e "/\/\/ uncomment next line if you want to set location of pid file/d" 								\
+	-e "s|\/\/ \"pid_file\" : \"/var/run/${PN}/${PN}.pid\"|   \"pid_file\" : \"${STORAGE_PATH}/${PN}.pid\"|" "${CONF_FILE}"
