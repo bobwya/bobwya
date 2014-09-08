@@ -31,12 +31,12 @@ PATCH="${PN}-17.0-patches-0.6"
 MOZ_FTP_URI="ftp://ftp.mozilla.org/pub/${PN}/releases/"
 MOZ_HTTP_URI="http://ftp.mozilla.org/pub/${PN}/releases/"
 
+# Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
 EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 
 inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-3 multilib pax-utils fdo-mime autotools virtualx nsplugins mozlinguas mercurial
 
-# Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integration with the KDE Desktop"
+DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integration with KDE Desktop"
 HOMEPAGE="http://www.mozilla.com/firefox"
 
 KEYWORDS="~alpha amd64 arm -hppa ~ia64 ppc ppc64 x86 ~amd64-linux ~x86-linux"
@@ -71,7 +71,6 @@ RDEPEND="
 	kernel_linux? ( media-libs/alsa-lib )
 	selinux? ( sec-policy/selinux-mozilla )
 	kde? ( kde-misc/kmozillahelper )"
-
 DEPEND="${RDEPEND}
 	virtual/pkgconfig
 	pgo? (
@@ -159,32 +158,18 @@ src_unpack() {
 }
 
 src_prepare() {
-	 if use kde; then
-		rm -f browser/components/shell/src/nsKDEShellService.cpp
-		rm -f browser/components/shell/src/nsKDEShellService.h
-		rm -f browser/components/shell/src/nsUnixShellService.cpp
-		rm -f browser/components/shell/src/nsUnixShellService.h
-		rm -f browser/base/content/browser-kde.xul
-		rm -f toolkit/xre/nsKDEUtils.cpp
-		rm -f toolkit/xre/nsKDEUtils.h
-		rm -f uriloader/exthandler/unix/nsCommonRegistry.cpp
-		rm -f uriloader/exthandler/unix/nsCommonRegistry.h
-		rm -f uriloader/exthandler/unix/nsKDERegistry.cpp
-		rm -f uriloader/exthandler/unix/nsKDERegistry.h
-		rm -f toolkit/content/widgets/dialog-kde.xml
-		rm -f toolkit/content/widgets/preferences-kde.xml
-
+	if use kde; then
 		# Firefox OpenSUSE KDE integration patchset
-        epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
-        epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"
-        epatch "${EHG_CHECKOUT_DIR}/firefox-kde-114.patch"
-        epatch "${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
+		epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
+		epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"
+		epatch "${EHG_CHECKOUT_DIR}/firefox-kde-114.patch"
+		epatch "${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
 		# Gecko/toolkit OpenSUSE KDE integration patchset
-        epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
-        epatch "${EHG_CHECKOUT_DIR}/mozilla-language.patch"
-        epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
-        epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
-        epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"
+		epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
+		epatch "${EHG_CHECKOUT_DIR}/mozilla-language.patch"
+		epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
+		epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
+		epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"
 	fi
 
 	# Apply our patches
@@ -192,7 +177,7 @@ src_prepare() {
 	EPATCH_FORCE="yes" \
 	epatch "${WORKDIR}/firefox"
 
-	# Allow user to apply any additional patches without modifing ebuild
+	# Allow user to apply any additional patches without modifying ebuild
 	epatch_user
 
 	# Enable gnomebreakpad

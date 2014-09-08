@@ -32,12 +32,9 @@ PATCH="${PN}-10.0-patches-0.10"
 # We don't use the http mirror because it deletes old tarballs.
 MOZ_FTP_URI="ftp://ftp.mozilla.org/pub/${PN}/releases/"
 
-# Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
-
 inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-3 multilib pax-utils fdo-mime autotools virtualx nsplugins mozlinguas mercurial
 
-DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integration with the KDE Desktop"
+DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integration with KDE Desktop"
 HOMEPAGE="http://www.mozilla.com/firefox"
 
 KEYWORDS="alpha ~hppa ia64 -sparc"
@@ -68,7 +65,6 @@ RDEPEND="
 		media-libs/alsa-lib )
 	selinux? ( sec-policy/selinux-mozilla )
 	kde? ( kde-misc/kmozillahelper )"
-
 DEPEND="${RDEPEND}
 	virtual/pkgconfig
 	pgo? (
@@ -152,18 +148,18 @@ src_unpack() {
 }
 
 src_prepare() {
-	 if use kde; then
+	if use kde; then
 		# Firefox OpenSUSE KDE integration patchset
-        epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
-        epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"
-        epatch "${EHG_CHECKOUT_DIR}/firefox-kde-114.patch"
-        epatch "${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
+		epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
+		epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"
+		epatch "${EHG_CHECKOUT_DIR}/firefox-kde-114.patch"
+		epatch "${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
 		# Gecko/toolkit OpenSUSE KDE integration patchset
-        epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
-        epatch "${EHG_CHECKOUT_DIR}/mozilla-language.patch"
-        epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
-        epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
-        epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"
+		epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
+		epatch "${EHG_CHECKOUT_DIR}/mozilla-language.patch"
+		epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
+		epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
+		epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"
 	fi
 
 	# Apply our patches
@@ -174,7 +170,7 @@ src_prepare() {
 	EPATCH_FORCE="yes" \
 	epatch "${WORKDIR}/firefox"
 
-	# Allow user to apply any additional patches without modifing ebuild
+	# Allow user to apply any additional patches without modifying ebuild
 	epatch_user
 
 	# Enable gnomebreakpad

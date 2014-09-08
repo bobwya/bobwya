@@ -36,7 +36,7 @@ EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 
 inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-3 multilib pax-utils fdo-mime autotools virtualx mozlinguas mercurial
 
-DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integration with the KDE Desktop"
+DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integration with KDE Desktop"
 HOMEPAGE="http://www.mozilla.com/firefox"
 
 KEYWORDS="~alpha amd64 arm hppa ~ia64 ppc ppc64 x86 ~amd64-linux ~x86-linux"
@@ -158,18 +158,18 @@ src_unpack() {
 }
 
 src_prepare() {
-	 if use kde; then
+	if use kde; then
 		# Firefox OpenSUSE KDE integration patchset
-        epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
-        epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"
-        epatch "${EHG_CHECKOUT_DIR}/firefox-kde-114.patch"
-        epatch "${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
+		epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
+		epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"
+		epatch "${EHG_CHECKOUT_DIR}/firefox-kde-114.patch"
+		epatch "${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
 		# Gecko/toolkit OpenSUSE KDE integration patchset
-        epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
-        epatch "${EHG_CHECKOUT_DIR}/mozilla-language.patch"
-        epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
-        epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
-        epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"
+		epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
+		epatch "${EHG_CHECKOUT_DIR}/mozilla-language.patch"
+		epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
+		epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
+		epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"
 	fi
 
 	# Apply our patches
@@ -177,7 +177,7 @@ src_prepare() {
 	EPATCH_FORCE="yes" \
 	epatch "${WORKDIR}/firefox"
 
-	# Allow user to apply any additional patches without modifing ebuild
+	# Allow user to apply any additional patches without modifying ebuild
 	epatch_user
 
 	# Enable gnomebreakpad

@@ -1,6 +1,6 @@
 # Copyright 1999-2014 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/firefox-29.0.1.ebuild,v 1.2 2014/05/10 02:18:15 anarchy Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/firefox-32.0.ebuild,v 1.2 2014/09/05 16:23:25 axs Exp $
 
 EAPI="5"
 VIRTUALX_REQUIRED="pgo"
@@ -25,7 +25,7 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${PN}-29.0-patches-0.1"
+PATCH="${PN}-31.0-patches-0.2"
 # Upstream ftp release URI that's used by mozlinguas.eclass
 # We don't use the http mirror because it deletes old tarballs.
 MOZ_FTP_URI="ftp://ftp.mozilla.org/pub/${PN}/releases/"
@@ -34,37 +34,39 @@ MOZ_HTTP_URI="http://ftp.mozilla.org/pub/${PN}/releases/"
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
 EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 
-inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-3 multilib pax-utils fdo-mime autotools virtualx mozlinguas mercurial
+MOZCONFIG_OPTIONAL_WIFI=1
+MOZCONFIG_OPTIONAL_JIT="enabled"
 
-DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integration with the KDE Desktop"
+inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-v4.1 multilib pax-utils fdo-mime autotools virtualx mozlinguas mercurial
+
+DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integration with KDE Desktop"
 HOMEPAGE="http://www.mozilla.com/firefox"
 
 KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~x86 ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist gstreamer hardened +jit kde +minimal pgo pulseaudio selinux system-cairo system-icu system-jpeg system-sqlite test"
+IUSE="bindist gstreamer hardened kde +minimal pgo pulseaudio selinux system-cairo system-icu system-jpeg system-sqlite test"
 
 # More URIs appended below...
 SRC_URI="${SRC_URI}
 	http://dev.gentoo.org/~anarchy/mozilla/patchsets/${PATCH}.tar.xz
-	http://dev.gentoo.org/~nirbheek/mozilla/patchsets/${PATCH}.tar.xz"
+	http://dev.gentoo.org/~axs/distfiles/${PATCH}.tar.xz"
 
 ASM_DEPEND=">=dev-lang/yasm-1.1"
 
 # Mesa 7.10 needed for WebGL + bugfixes
 RDEPEND="
-	>=dev-libs/nss-3.16
-	>=dev-libs/nspr-4.10.4
-	>=dev-libs/glib-2.26:2
-	>=media-libs/mesa-7.10
-	>=media-libs/libpng-1.6.7[apng]
+	>=dev-libs/nss-3.16.2
+	>=dev-libs/nspr-4.10.6
+	>=media-libs/mesa-10.2
+	>=media-libs/libpng-1.6.10[apng]
 	virtual/libffi
-	gstreamer? ( media-plugins/gst-plugins-meta:0.10[ffmpeg] )
+	gstreamer? ( media-plugins/gst-plugins-meta:1.0[ffmpeg] )
 	pulseaudio? ( media-sound/pulseaudio )
 	system-cairo? ( >=x11-libs/cairo-1.12[X] )
 	system-icu? ( >=dev-libs/icu-51.1 )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
-	system-sqlite? ( >=dev-db/sqlite-3.8.1.3:3[secure-delete,debug=] )
+	system-sqlite? ( >=dev-db/sqlite-3.8.4.2:3[secure-delete,debug=] )
 	>=media-libs/libvpx-1.3.0
 	kernel_linux? ( media-libs/alsa-lib )
 	selinux? ( sec-policy/selinux-mozilla )
@@ -139,6 +141,13 @@ pkg_pretend() {
 		CHECKREQS_DISK_BUILD="4G"
 	fi
 	check-reqs_pkg_setup
+
+	if use jit && [[ -n ${PROFILE_IS_HARDENED} ]]; then
+		ewarn "You are emerging this package on a hardened profile with USE=jit enabled."
+		ewarn "This is horribly insecure as it disables all PAGEEXEC restrictions."
+		ewarn "Please ensure you know what you are doing.  If you don't, please consider"
+		ewarn "emerging the package with USE=-jit"
+	fi
 }
 
 src_unpack() {
@@ -160,27 +169,27 @@ src_unpack() {
 }
 
 src_prepare() {
-	 if use kde; then
+	if use kde; then
 		# Firefox OpenSUSE KDE integration patchset
-        epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
-        epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"
-        epatch "${EHG_CHECKOUT_DIR}/firefox-kde-114.patch"
-        epatch "${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
+		epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
+		epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"
+		epatch "${EHG_CHECKOUT_DIR}/firefox-kde-114.patch"
+		epatch "${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
 		# Gecko/toolkit OpenSUSE KDE integration patchset
-        epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
-        epatch "${EHG_CHECKOUT_DIR}/mozilla-language.patch"
-        epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
-        epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
-        epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"
+		epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
+		epatch "${EHG_CHECKOUT_DIR}/mozilla-language.patch"
+		epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
+		epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
+		epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"
 	fi
 
 	# Apply our patches
-	EPATCH_EXCLUDE="7007_fix_missing_strings.patch" \
 	EPATCH_SUFFIX="patch" \
 	EPATCH_FORCE="yes" \
+	EPATCH_EXCLUDE="8000_gcc49_mozbug999496_ff31.patch" \
 	epatch "${WORKDIR}/firefox"
 
-	# Allow user to apply any additional patches without modifing ebuild
+	# Allow user to apply any additional patches without modifying ebuild
 	epatch_user
 
 	# Enable gnomebreakpad
@@ -220,6 +229,10 @@ src_prepare() {
 src_configure() {
 	MOZILLA_FIVE_HOME="/usr/$(get_libdir)/${PN}"
 	MEXTENSIONS="default"
+	# Google API keys (see http://www.chromium.org/developers/how-tos/api-keys)
+	# Note: These are for Gentoo Linux use ONLY. For your own distribution, please
+	# get your own set of keys.
+	_google_api_key=AIzaSyDEAOvatFo0eTgsV_ZlEzx0ObmepsMzfAc
 
 	####################################
 	#
@@ -237,7 +250,11 @@ src_configure() {
 	use hardened && append-ldflags "-Wl,-z,relro,-z,now"
 
 	# We must force enable jemalloc 3 threw .mozconfig
-	echo "export MOZ_JEMALLOC=1" >> ${S}/.mozconfig || die
+	echo "export MOZ_JEMALLOC=1" >> "${S}"/.mozconfig || die
+
+	# Setup api key for location services
+	echo -n "${_google_api_key}" > "${S}"/google-api-key
+	mozconfig_annotate '' --with-google-api-keyfile="${S}/google-api-key"
 
 	mozconfig_annotate '' --enable-jemalloc
 	mozconfig_annotate '' --enable-replace-malloc
@@ -255,15 +272,18 @@ src_configure() {
 	mozconfig_annotate '' --target="${CTARGET:-${CHOST}}"
 	mozconfig_annotate '' --build="${CTARGET:-${CHOST}}"
 
-	mozconfig_use_enable gstreamer
+	# gstreamer now needs the version specified
+	if use gstreamer; then
+		mozconfig_annotate '' --enable-gstreamer=1.0
+	else
+		mozconfig_annotate '' --disable-gstreamer
+	fi
 	mozconfig_use_enable pulseaudio
 	mozconfig_use_enable system-cairo
 	mozconfig_use_enable system-sqlite
 	mozconfig_use_with system-jpeg
 	mozconfig_use_with system-icu
 	mozconfig_use_enable system-icu intl-api
-	# Feature is know to cause problems on hardened
-	mozconfig_use_enable jit ion
 
 	# Allow for a proper pgo build
 	if use pgo; then
@@ -337,12 +357,6 @@ src_install() {
 		>> "${S}/${obj_dir}/dist/bin/browser/defaults/preferences/all-gentoo.js" \
 		|| die
 
-	if ! use libnotify; then
-		echo "pref(\"browser.download.manager.showAlertOnComplete\", false);" \
-			>> "${S}/${obj_dir}/dist/bin/browser/defaults/preferences/all-gentoo.js" \
-		|| die
-	fi
-
 	echo "pref(\"extensions.autoDisableScopes\", 3);" >> \
 		"${S}/${obj_dir}/dist/bin/browser/defaults/preferences/all-gentoo.js" \
 		|| die
@@ -391,6 +405,8 @@ src_install() {
 
 	# Required in order to use plugins and even run firefox on hardened.
 	pax-mark m "${ED}"${MOZILLA_FIVE_HOME}/{firefox,firefox-bin,plugin-container}
+	# Required in order for jit to work on hardened, as of firefox-31
+	use jit && pax-mark p "${ED}"${MOZILLA_FIVE_HOME}/{firefox,firefox-bin}
 
 	if use minimal; then
 		rm -r "${ED}"/usr/include "${ED}${MOZILLA_FIVE_HOME}"/{idl,include,lib,sdk} \
@@ -405,7 +421,7 @@ src_install() {
 
 	# revdep-rebuild entry
 	insinto /etc/revdep-rebuild
-	echo "SEARCH_DIRS_MASK=${MOZILLA_FIVE_HOME}" >> ${T}/10${PN}
+	echo "SEARCH_DIRS_MASK=${MOZILLA_FIVE_HOME}" >> ${T}/10firefox
 	doins "${T}"/10${PN} || die
 }
 
