@@ -146,7 +146,7 @@ src_unpack() {
 	mozlinguas_src_unpack
 
 	if use kde; then
-		if [[ ${MOZ_ESR} == 1 ]]; then
+		if [[ ${MOZ_PV} =~ ^(10|17|24)..*esr$ ]]; then
 			EHG_REVISION="esr${MOZ_PV%%.*}"
 		else
 			EHG_REVISION="firefox${MOZ_PV%%.*}"

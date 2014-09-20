@@ -55,7 +55,7 @@ for ebuild_file in *.ebuild; do
 			else if ($0 ~ /mozlinguas\_src\_unpack/) {
 				printf("\n%s%s\n%s%s%s\n%s%s%s%s\n%s%s%s\n%s%s%s%s\n%s%s%s\n%s%s%s\n%s%s%s\n%s%s%s\n%s%s\n",
 					indent, "if use kde; then",
-					indent, indent,	"if [[ ${MOZ_ESR} == 1 ]]; then",
+					indent, indent,	"if [[ ${MOZ_PV} =~ ^\(10|17|24\)\..*esr$ ]]; then",
 					indent, indent,	indent, "EHG_REVISION=\"esr${MOZ_PV%%.*}\"",
 					indent, indent,	"else",
 					indent, indent,	indent, "EHG_REVISION=\"firefox${MOZ_PV%%.*}\"",
