@@ -1,6 +1,6 @@
 # Copyright 1999-2014 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/firefox-31.2.0.ebuild,v 1.2 2014/10/17 11:30:25 jer Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/firefox-31.2.0-r1.ebuild,v 1.1 2014/11/05 23:18:28 axs Exp $
 
 EAPI="5"
 VIRTUALX_REQUIRED="pgo"
@@ -54,19 +54,23 @@ SRC_URI="${SRC_URI}
 
 ASM_DEPEND=">=dev-lang/yasm-1.1"
 
-RDEPEND="
+CDEPEND="
 	>=dev-libs/nss-3.16.2
 	>=dev-libs/nspr-4.10.6
-	selinux? ( sec-policy/selinux-mozilla )
-	kde? ( kde-misc/kmozillahelper )"
+"
 
-DEPEND="${RDEPEND}
+DEPEND="${CDEPEND}
 	pgo? (
 		>=sys-devel/gcc-4.5 )
 	amd64? ( ${ASM_DEPEND}
 		virtual/opengl )
 	x86? ( ${ASM_DEPEND}
 		virtual/opengl )"
+
+RDEPEND="${CDEPEND}
+	selinux? ( sec-policy/selinux-mozilla )
+
+	kde? ( kde-misc/kmozillahelper )"
 
 # No source releases for alpha|beta
 if [[ ${PV} =~ alpha ]]; then
@@ -175,6 +179,7 @@ src_prepare() {
 	epatch "${WORKDIR}/firefox"
 
 	epatch "${FILESDIR}"/${PN}-32.0-hppa-js-configure.patch # bug 524556
+	epatch "${FILESDIR}"/${PN}-31.0-webm-disallow-negative-samples.patch # bug 527010
 
 	# Allow user to apply any additional patches without modifying ebuild
 	epatch_user
