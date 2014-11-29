@@ -8,15 +8,14 @@ inherit eutils pax-utils user flag-o-matic multilib autotools pam systemd versio
 
 DESCRIPTION="Sync files & folders using BitTorrent protocol"
 HOMEPAGE="http://labs.bittorrent.com/experiments/sync.html"
-SRC_URI="amd64? ( http://download-new.utorrent.com/endpoint/${PN}/os/linux-x64/track/stable -> ${PN}.tar.gz )
-	x86? ( http://download-new.utorrent.com/endpoint/${PN}/os/linux-i386/track/stable -> ${PN}.tar.gz )
-	ppc? ( http://download-new.utorrent.com/endpoint/${PN}/os/linux-powerpc/track/stable -> ${PN}.tar.gz )
-	arm? ( http://download-new.utorrent.com/endpoint/${PN}/os/linux-arm/track/stable -> ${PN}.tar.gz )"
-
+SRC_URI="amd64? ( http://syncapp.bittorrent.com/${PV}/${PN}_x64-${PV}.tar.gz )
+	x86? ( http://syncapp.bittorrent.com/${PV}/${PN}_i386-${PV}.tar.gz )
+	ppc? ( http://syncapp.bittorrent.com/${PV}/${PN}_powerpc-${PV}.tar.gz )
+	arm? ( http://syncapp.bittorrent.com/${PV}/${PN}_arm-${PV}.tar.gz )"
 RESTRICT="mirror strip"
 LICENSE="BitTorrent"
 SLOT="0"
-KEYWORDS="**"
+KEYWORDS="~amd64 ~x86 ~arm ~ppc"
 IUSE=""
 
 DEPEND=""
