@@ -35,8 +35,9 @@ DESCRIPTION="Kingsoft/WPS Office is an office productivity suite. This is an ALP
 package. Use it at your own risk."
 HOMEPAGE="http://www.wps.cn"
 
-SRC_URI="http://23.229.123.142/${MY_V/alpha/a}${MY_SP}${MY_PATCHV/patch/p}/${PN}_${MY_VV}_i386.deb
-		http://kdl.cc.ksosoft.com/wps-community/download/${MY_V/alpha/a}${MY_SP}${MY_PATCHV/patch/p}/${PN}_${MY_VV}_i386.deb"
+SRC_URI="http://37.247.55.101/${MY_V/alpha/a}${MY_SP}${MY_PATCHV/patch/p}/${PN}_${MY_VV}_i386.deb
+		http://23.229.123.142/${MY_V/alpha/a}${MY_SP}${MY_PATCHV/patch/p}/${PN}_${MY_VV}_i386.deb
+		http://kdl.cc.ksosoft.com/wps-community/download/${MY_V/alpha/a}${MY_PATCHV/patch/p}/${PN}_${MY_VV}_i386.deb"
 
 SLOT="0"
 RESTRICT="strip mirror"
