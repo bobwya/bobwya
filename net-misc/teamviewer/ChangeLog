@@ -1,0 +1,68 @@
+# ChangeLog for net-misc/teamviewer
+# Copyright 1999-2014 Gentoo Foundation; Distributed under the GPL v2
+# $Header: /var/cvsroot/gentoo-x86/net-misc/teamviewer/ChangeLog,v 1.11 2014/07/16 16:14:55 hasufell Exp $
+
+*teamviewer-9.0.30203 (16 Jul 2014)
+
+  16 Jul 2014; Julian Ospald <hasufell@gentoo.org>
+  -teamviewer-9.0.27891.ebuild, +teamviewer-9.0.30203.ebuild,
+  -files/teamviewer-9.0.27891-gentoo.patch,
+  +files/teamviewer-9.0.30203-gentoo.patch:
+  version bump wrt #517204
+
+  18 Jun 2014; Michał Górny <mgorny@gentoo.org> teamviewer-7.0.9377.ebuild,
+  teamviewer-8.0.20931.ebuild, teamviewer-9.0.27891.ebuild:
+  Update dependencies to require guaranteed EAPI=5 or multilib ebuilds, bug
+  #513718.
+
+  25 May 2014; Julian Ospald <hasufell@gentoo.org> teamviewer-9.0.27891.ebuild:
+  fix file collision with systemd
+
+*teamviewer-9.0.27891 (24 May 2014)
+
+  24 May 2014; Julian Ospald <hasufell@gentoo.org>
+  +teamviewer-9.0.27891.ebuild, +files/teamviewer-9.0.27891-gentoo.patch:
+  version bump wrt #491770
+
+*teamviewer-8.0.20931 (21 Sep 2013)
+
+  21 Sep 2013; Julian Ospald <hasufell@gentoo.org>
+  -teamviewer-8.0.17147-r2.ebuild, -files/teamviewer-8.0.17147-POSIX.patch,
+  -files/teamviewer-8.0.17147-gentoo.patch, +teamviewer-8.0.20931.ebuild,
+  +files/teamviewer-8.0.20931-gentoo.patch, -files/teamviewer.service:
+  version bump, remove old
+
+  21 Apr 2013; Michał Górny <mgorny@gentoo.org> teamviewer-7.0.9377.ebuild,
+  teamviewer-8.0.17147-r2.ebuild:
+  Support multilib libraries alternatively to emul-linux-x86-xlibs.
+
+*teamviewer-8.0.17147-r2 (18 Apr 2013)
+
+  18 Apr 2013; Julian Ospald <hasufell@gentoo.org>
+  -teamviewer-8.0.17147-r1.ebuild, +teamviewer-8.0.17147-r2.ebuild:
+  fix missing symlinks, relocate install dest, allow correct logdir
+
+  23 Mar 2013; Mike Frysinger <vapier@gentoo.org>
+  teamviewer-8.0.17147-r1.ebuild:
+  Convert to unpacker eclass for .deb unpacking.
+
+*teamviewer-8.0.17147-r1 (21 Feb 2013)
+
+  21 Feb 2013; Julian Ospald <hasufell@gentoo.org>
+  -teamviewer-8.0.17147.ebuild, +teamviewer-8.0.17147-r1.ebuild,
+  +files/teamviewer.service:
+  add systemd unit file
+
+  21 Feb 2013; Julian Ospald <hasufell@gentoo.org> teamviewer-7.0.9377.ebuild,
+  teamviewer-8.0.17147.ebuild:
+  improve desktop file name
+
+*teamviewer-8.0.17147 (20 Feb 2013)
+*teamviewer-7.0.9377 (20 Feb 2013)
+
+  20 Feb 2013; Julian Ospald <hasufell@gentoo.org> +teamviewer-7.0.9377.ebuild,
+  +files/teamviewer-7.0.9377-POSIX.patch, +teamviewer-8.0.17147.ebuild,
+  +files/teamviewer-8.0.17147-POSIX.patch,
+  +files/teamviewer-8.0.17147-gentoo.patch, +files/teamviewerd.init,
+  +metadata.xml:
+  initial import wrt #360499
