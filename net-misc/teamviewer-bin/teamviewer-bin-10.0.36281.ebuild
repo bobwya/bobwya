@@ -8,7 +8,7 @@ inherit eutils gnome2-utils systemd unpacker
 
 # Major version
 MV=${PV/\.*}
-MY_PN=${PN}${MV}
+MY_PN=${MY_PN}${MV}
 DESCRIPTION="All-In-One Solution for Remote Access and Support over the Internet"
 HOMEPAGE="http://www.teamviewer.com"
 SRC_URI="http://www.teamviewer.com/download/version_${MV}x/teamviewer_linux.deb -> ${P}.deb"
@@ -55,7 +55,7 @@ RDEPEND="
 
 QA_PREBUILT="opt/teamviewer${MV}/*"
 
-S="${WORKDIR}/opt/${PN}/tv_bin"
+S="${WORKDIR}/opt/${MY_PN}/tv_bin"
 
 make_winewrapper() {
 	cat << EOF > "${T}/${MY_PN}"
@@ -73,10 +73,10 @@ src_prepare() {
 
 	sed \
 		-e "s#@TVV@#${MV}/tv_bin#g" \
-		"${FILESDIR}"/${PN}d.init > "${T}"/${PN}d${MV} || die
-	sed -i "s/\/opt\/${PN}\/tv_bin\//\/opt\/${MY_PN}\/tv_bin\//g"		\
-		"desktop/${PN}-${MY_PN}.desktop"								\
-		"script/${PN}d.service"
+		"${FILESDIR}"/${MY_PN}d.init > "${T}"/${MY_PN}d${MV} || die
+	sed -i "s/\/opt\/${MY_PN}\/tv_bin\//\/opt\/${MY_PN}\/tv_bin\//g"		\
+		"desktop/${MY_PN}-${MY_PN}.desktop"								\
+		"script/${MY_PN}d.service"
 }
 
 src_install () {
@@ -94,7 +94,7 @@ src_install () {
 		exeinto /opt/${MY_PN}/tv_bin/script
 		doexe script/teamviewer script/tvw_{aux,config,exec,extra,main,profile}
 
-		dosym /opt/${MY_PN}/tv_bin/script/${PN} /opt/bin/${MY_PN}
+		dosym /opt/${MY_PN}/tv_bin/script/${MY_PN} /opt/bin/${MY_PN}
 
 		# fix permissions
 		fperms 755 /opt/${MY_PN}/tv_bin/wine/bin/wine{,-preloader,server}
@@ -104,7 +104,7 @@ src_install () {
 
 	# install daemon binary
 	exeinto /opt/${MY_PN}/tv_bin
-	doexe ${PN}d
+	doexe ${MY_PN}d
 
 	# set up logdir
 	keepdir /var/log/${MY_PN}
@@ -114,10 +114,10 @@ src_install () {
 	keepdir /etc/${MY_PN}
 	dosym /etc/${MY_PN} /opt/${MY_PN}/config
 
-	doinitd "${T}"/${PN}d${MV}
-	systemd_newunit script/${PN}d.service ${PN}d${MV}.service
+	doinitd "${T}"/${MY_PN}d${MV}
+	systemd_newunit script/${MY_PN}d.service ${MY_PN}d${MV}.service
 
-	newicon -s 48 desktop/${PN}.png ${MY_PN}.png
+	newicon -s 48 desktop/${MY_PN}.png ${MY_PN}.png
 	make_desktop_entry ${MY_PN} TeamViewer ${MY_PN}
 }
 
@@ -131,7 +131,7 @@ pkg_postinst() {
 	if use system-wine ; then
 		echo
 		eerror "IMPORTANT NOTICE!"
-		elog "Using ${PN} with system wine is not supported and experimental."
+		elog "Using ${MY_PN} with system wine is not supported and experimental."
 		elog "Do not report gentoo bugs while using this version."
 		echo
 	fi
@@ -139,7 +139,7 @@ pkg_postinst() {
 	eerror "STARTUP NOTICE:"
 	elog "You cannot start the daemon via \"teamviewer --daemon start\"."
 	elog "Instead use the provided gentoo initscript:"
-	elog "  /etc/init.d/${PN}d${MV} start"
+	elog "  /etc/init.d/${MY_PN}d${MV} start"
 	elog
 	elog "Logs are written to \"/var/log/teamviewer${MV}\""
 }

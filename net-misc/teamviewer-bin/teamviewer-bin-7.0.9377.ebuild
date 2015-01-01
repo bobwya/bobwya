@@ -8,7 +8,7 @@ inherit eutils gnome2-utils
 
 # Major version
 MV=${PV/\.*}
-MY_PN=${PN}-${MV}
+MY_PN=${MY_PN}-${MV}
 DESCRIPTION="All-In-One Solution for Remote Access and Support over the Internet"
 HOMEPAGE="http://www.teamviewer.com"
 SRC_URI="https://www.teamviewer.com/download/version_${MV}x/teamviewer_linux.tar.gz -> ${P}.tar.gz"
@@ -78,22 +78,22 @@ src_install () {
 	else
 		# install scripts and .reg
 		insinto /opt/${MY_PN}/bin
-		find ".tvscript" -type f \( \! -name "${PN}.desktop*" -a \! -name "${PN}.png" \) \
+		find ".tvscript" -type f \( \! -name "${MY_PN}.desktop*" -a \! -name "${MY_PN}.png" \) \
 			-maxdepth 1 -execdir doins '{}' \;
 
 		# install wine
 		insinto /opt/${MY_PN}/wine
 		doins -r "${S}"/.wine/*
-		dosym /opt/${MY_PN}/bin/${PN} /opt/bin/${MY_PN}
+		dosym /opt/${MY_PN}/bin/${MY_PN} /opt/bin/${MY_PN}
 
 		# fix permissions
-		fperms 755 /opt/${MY_PN}/bin/{${PN},wrapper,killteamviewer}
+		fperms 755 /opt/${MY_PN}/bin/{${MY_PN},wrapper,killteamviewer}
 		fperms 755 /opt/${MY_PN}/wine/bin/wine{,-preloader,server}
 		fperms 755 "/opt/${MY_PN}/wine/drive_c/Program Files/TeamViewer/Version${MV}"/TeamViewer{,_Desktop}.exe
 		find "${D}"/opt/${MY_PN} -type f -name "*.so*" -execdir chmod 755 '{}' \;
 	fi
 
-	newicon -s 48 "${S}"/.tvscript/${PN}.png ${MY_PN}.png
+	newicon -s 48 "${S}"/.tvscript/${MY_PN}.png ${MY_PN}.png
 	dodoc linux_FAQ_{EN,DE}.txt
 	make_desktop_entry ${MY_PN} TeamViewer-${MV} ${MY_PN}
 }
@@ -108,7 +108,7 @@ pkg_postinst() {
 	if use system-wine ; then
 		echo
 		eerror "IMPORTANT NOTICE!"
-		elog "Using ${PN} with system wine is not supported and experimental."
+		elog "Using ${MY_PN} with system wine is not supported and experimental."
 		elog "Do not report gentoo bugs while using this version."
 		echo
 	fi
