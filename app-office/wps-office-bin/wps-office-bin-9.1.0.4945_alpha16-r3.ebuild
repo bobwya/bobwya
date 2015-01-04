@@ -76,7 +76,9 @@ RDEPEND="
 	media-libs/libpng:1.2
 	net-nds/openldap
 	dev-db/sqlite:3
-	!app-office/wps-office:0"
+	!!app-office/kingsoft-office:0
+	!app-office/wps-office:0
+    !app-office/wps-office-bin:0"
 DEPEND="${RDEPEND}
 	sys-devel/binutils"
 S=${WORKDIR}
