@@ -5,6 +5,7 @@ bobwya
 Gentoo Overlay containing various packages I have been unable to find @ Gentoo Portage Overlays website or elsewhere on the Internet/Github. Testing and updating of these ebuild package 
 build scripts is irregular. So YMMV - you have been warned!
 
+    app-backup/fsarchiver : Flexible filesystem archiver for backup and deployment tool.
     app-crypt/chntpw : Offline NT Password & Registry Editor.
     app-emulation/playonlinux : PlayOnLinux - Wine GUI Frontend.
     app-office/wps-office-bin : Kingsoft Office. (binary proprietary)
