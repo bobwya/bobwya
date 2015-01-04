@@ -42,7 +42,7 @@ for old_ebuild_file in *.ebuild; do
 			variables="BUILD_OBJ_DIR DESCRIPTION IUSE MOZ_HTTP_URI MOZ_PV RDEPEND"
 			split(variables, array_variables)
 			for (i in array_variables)
-				array_variables_regexp[array_variables[i]]="^" gensub(/\_/, "\\_", "g", array_variables[i]) "\=\".+\""
+				array_variables_regexp[array_variables[i]]="^" gensub(/\_/, "\\_", "g", array_variables[i]) "\=\".*(\"|$)"
 			ebuild_phases="pkg_setup pkg_pretend src_unpack src_prepare src_configure src_compile src_install pkg_preinst pkg_postinst pkg_postrm"
 			split(ebuild_phases, array_ebuild_phases)
 			for (i in array_ebuild_phases)

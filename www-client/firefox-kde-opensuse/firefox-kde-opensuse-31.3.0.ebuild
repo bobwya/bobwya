@@ -70,7 +70,9 @@ DEPEND="${CDEPEND}
 
 RDEPEND="${CDEPEND}
 	selinux? ( sec-policy/selinux-mozilla )
-"
+
+	kde? ( kde-misc/kmozillahelper )
+	!!www-client/firefox"
 
 # No source releases for alpha|beta
 if [[ ${PV} =~ alpha ]]; then

@@ -68,7 +68,9 @@ RDEPEND="
 	system-sqlite? ( >=dev-db/sqlite-3.7.17:3[secure-delete,debug=] )
 	>=media-libs/libvpx-1.0.0
 	kernel_linux? ( media-libs/alsa-lib )
-	selinux? ( sec-policy/selinux-mozilla )"
+	selinux? ( sec-policy/selinux-mozilla )
+	kde? ( kde-misc/kmozillahelper )
+	!!www-client/firefox"
 
 DEPEND="${RDEPEND}
 	>=sys-devel/binutils-2.16.1

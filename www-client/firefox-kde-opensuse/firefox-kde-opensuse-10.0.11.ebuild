@@ -64,7 +64,9 @@ RDEPEND="
 	) )
 	webm? ( >=media-libs/libvpx-1.0.0
 		media-libs/alsa-lib )
-	selinux? ( sec-policy/selinux-mozilla )"
+	selinux? ( sec-policy/selinux-mozilla )
+	kde? ( kde-misc/kmozillahelper )
+	!!www-client/firefox"
 DEPEND="${RDEPEND}
 	virtual/pkgconfig
 	pgo? (

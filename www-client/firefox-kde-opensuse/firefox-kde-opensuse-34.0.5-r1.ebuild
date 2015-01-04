@@ -59,7 +59,9 @@ ASM_DEPEND=">=dev-lang/yasm-1.1"
 RDEPEND="
 	>=dev-libs/nss-3.17.2
 	>=dev-libs/nspr-4.10.7
-	selinux? ( sec-policy/selinux-mozilla )"
+	selinux? ( sec-policy/selinux-mozilla )
+	kde? ( kde-misc/kmozillahelper )
+	!!www-client/firefox"
 
 DEPEND="${RDEPEND}
 	pgo? (
