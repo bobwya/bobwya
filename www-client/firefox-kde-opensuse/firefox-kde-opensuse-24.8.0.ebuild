@@ -165,6 +165,8 @@ src_unpack() {
 
 src_prepare() {
 	if use kde; then
+		# Unmask to enable static KDE debug flag : requires export PATH="$PATH:/usr/lib/mozilla"
+		#sed -i -e "s:^+//#define DEBUG_KDE:+#define DEBUG_KDE:g" "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
 		# Firefox OpenSUSE KDE integration patchset
 		epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
 		epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"

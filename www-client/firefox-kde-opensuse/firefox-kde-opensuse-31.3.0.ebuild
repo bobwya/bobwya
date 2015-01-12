@@ -1,6 +1,6 @@
-# Copyright 1999-2014 Gentoo Foundation
+# Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/firefox-31.3.0.ebuild,v 1.7 2014/12/24 14:55:37 ago Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/firefox-31.3.0.ebuild,v 1.8 2015/01/09 20:53:11 klausman Exp $
 
 EAPI="5"
 VIRTUALX_REQUIRED="pgo"
@@ -43,7 +43,7 @@ inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-v5
 DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integration with KDE Desktop"
 HOMEPAGE="http://www.mozilla.com/firefox"
 
-KEYWORDS="~alpha amd64 ~arm hppa ~ia64 ppc ppc64 x86 ~amd64-linux ~x86-linux"
+KEYWORDS="alpha amd64 ~arm hppa ~ia64 ppc ppc64 x86 ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist hardened kde +minimal pgo selinux test"
@@ -161,6 +161,8 @@ src_unpack() {
 
 src_prepare() {
 	if use kde; then
+		# Unmask to enable static KDE debug flag : requires export PATH="$PATH:/usr/lib/mozilla"
+		#sed -i -e "s:^+//#define DEBUG_KDE:+#define DEBUG_KDE:g" "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
 		# Firefox OpenSUSE KDE integration patchset
 		epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
 		epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"

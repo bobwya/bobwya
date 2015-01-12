@@ -125,6 +125,8 @@ for old_ebuild_file in *.ebuild; do
 			}
 			else if ($0 ~ array_ebuild_phases_regexp["src_prepare"]) {
 				printf("%s%s\n", 	indent, "if use kde; then")
+				printf("%s%s%s\n",  indent, indent,  "# Unmask to enable static KDE debug flag : requires export PATH=\"$PATH:/usr/lib/mozilla\"")
+				printf("%s%s%s\n",  indent, indent,  "#sed -i -e \"s:^+//#define DEBUG_KDE:+#define DEBUG_KDE:g\" \"${EHG_CHECKOUT_DIR}/mozilla-kde.patch\"")
 				printf("%s%s%s\n",	indent, indent,	 "# Firefox OpenSUSE KDE integration patchset")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch\"")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/firefox-kde.patch\"")
