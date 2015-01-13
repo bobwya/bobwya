@@ -8,7 +8,8 @@ inherit eutils gnome2-utils systemd unpacker
 
 # Major version
 MV=${PV/\.*}
-MY_PN=${MY_PN}${MV}
+MY_PN=${PN%-bin}
+MY_PNV=${MY_PN}${MV}
 DESCRIPTION="All-In-One Solution for Remote Access and Support over the Internet"
 HOMEPAGE="http://www.teamviewer.com"
 SRC_URI="http://www.teamviewer.com/download/version_${MV}x/teamviewer_linux.deb -> ${P}.deb"
@@ -51,21 +52,22 @@ RDEPEND="
 			x11-libs/libXtst
 		)
 	)
-	system-wine? ( app-emulation/wine )"
+	system-wine? ( app-emulation/wine )
+	!net-misc/teamviewer:${MV}"
 
 QA_PREBUILT="opt/teamviewer${MV}/*"
 
 S="${WORKDIR}/opt/${MY_PN}/tv_bin"
 
 make_winewrapper() {
-	cat << EOF > "${T}/${MY_PN}"
+	cat << EOF > "${T}/${MY_PNV}"
 #!/bin/sh
-export WINEDLLPATH=/opt/${MY_PN}
-exec wine "/opt/${MY_PN}/TeamViewer.exe" "\$@"
+export WINEDLLPATH=/opt/${MY_PNV}
+exec wine "/opt/${MY_PNV}/TeamViewer.exe" "\$@"
 EOF
-	chmod go+rx "${T}/${MY_PN}"
+	chmod go+rx "${T}/${MY_PNV}"
 	exeinto /opt/bin
-	doexe "${T}/${MY_PN}"
+	doexe "${T}/${MY_PNV}"
 }
 
 src_prepare() {
@@ -74,51 +76,51 @@ src_prepare() {
 	sed \
 		-e "s#@TVV@#${MV}/tv_bin#g" \
 		"${FILESDIR}"/${MY_PN}d.init > "${T}"/${MY_PN}d${MV} || die
-	sed -i "s/\/opt\/${MY_PN}\/tv_bin\//\/opt\/${MY_PN}\/tv_bin\//g"		\
-		"desktop/${MY_PN}-${MY_PN}.desktop"								\
+	sed -i "s:/opt/${MY_PN}/tv_bin/:/opt/${MY_PNV}/tv_bin/:g"		\
+		"desktop/${MY_PN}-${MY_PN}.desktop"							\
 		"script/${MY_PN}d.service"
 }
 
 src_install () {
 	if use system-wine ; then
 		make_winewrapper
-		exeinto /opt/${MY_PN}
+		exeinto /opt/${MY_PNV}
 		doexe wine/drive_c/TeamViewer/*
 	else
 		# install scripts and .reg
-		insinto /opt/${MY_PN}/tv_bin
+		insinto /opt/${MY_PNV}/tv_bin
 		doins -r *
 
-		exeinto /opt/${MY_PN}/tv_bin
+		exeinto /opt/${MY_PNV}/tv_bin
 		doexe TeamViewer_Desktop
-		exeinto /opt/${MY_PN}/tv_bin/script
+		exeinto /opt/${MY_PNV}/tv_bin/script
 		doexe script/teamviewer script/tvw_{aux,config,exec,extra,main,profile}
 
-		dosym /opt/${MY_PN}/tv_bin/script/${MY_PN} /opt/bin/${MY_PN}
+		dosym /opt/${MY_PNV}/tv_bin/script/${MY_PNV} /opt/bin/${MY_PNV}
 
 		# fix permissions
-		fperms 755 /opt/${MY_PN}/tv_bin/wine/bin/wine{,-preloader,server}
-		fperms 755 /opt/${MY_PN}/tv_bin/wine/drive_c/TeamViewer/TeamViewer.exe
-		find "${D}"/opt/${MY_PN} -type f -name "*.so*" -execdir chmod 755 '{}' \;
+		fperms 755 /opt/${MY_PNV}/tv_bin/wine/bin/wine{,-preloader,server}
+		fperms 755 /opt/${MY_PNV}/tv_bin/wine/drive_c/TeamViewer/TeamViewer.exe
+		find "${D}"/opt/${MY_PNV} -type f -name "*.so*" -execdir chmod 755 '{}' \;
 	fi
 
 	# install daemon binary
-	exeinto /opt/${MY_PN}/tv_bin
+	exeinto /opt/${MY_PNV}/tv_bin
 	doexe ${MY_PN}d
 
 	# set up logdir
-	keepdir /var/log/${MY_PN}
-	dosym /var/log/${MY_PN} /opt/${MY_PN}/logfiles
+	keepdir /var/log/${MY_PNV}
+	dosym /var/log/${MY_PNV} /opt/${MY_PNV}/logfiles
 
 	# set up config dir
-	keepdir /etc/${MY_PN}
-	dosym /etc/${MY_PN} /opt/${MY_PN}/config
+	keepdir /etc/${MY_PNV}
+	dosym /etc/${MY_PNV} /opt/${MY_PNV}/config
 
 	doinitd "${T}"/${MY_PN}d${MV}
 	systemd_newunit script/${MY_PN}d.service ${MY_PN}d${MV}.service
 
 	newicon -s 48 desktop/${MY_PN}.png ${MY_PN}.png
-	make_desktop_entry ${MY_PN} TeamViewer ${MY_PN}
+	make_desktop_entry ${MY_PNV} TeamViewer ${MY_PNV}
 }
 
 pkg_preinst() {

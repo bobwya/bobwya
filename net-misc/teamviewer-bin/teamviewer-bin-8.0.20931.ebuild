@@ -8,7 +8,7 @@ inherit eutils gnome2-utils systemd unpacker
 
 # Major version
 MV=${PV/\.*}
-MY_PN=${MY_PN}${MV}
+MY_PN=${PN%-bin}${MV}
 DESCRIPTION="All-In-One Solution for Remote Access and Support over the Internet"
 HOMEPAGE="http://www.teamviewer.com"
 SRC_URI="http://www.teamviewer.com/download/version_${MV}x/teamviewer_linux.deb -> ${P}.deb"
@@ -51,7 +51,8 @@ RDEPEND="
 			x11-libs/libXtst
 		)
 	)
-	system-wine? ( app-emulation/wine )"
+	system-wine? ( app-emulation/wine )
+	!net-misc/teamviewer:${MV}"
 
 QA_PREBUILT="opt/teamviewer${MV}/*"
 
