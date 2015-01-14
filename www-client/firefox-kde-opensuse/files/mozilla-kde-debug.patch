@@ -1,0 +1,189 @@
+diff -Naur mozilla-release/toolkit/xre/nsKDEUtils.cpp mozilla-release.new/toolkit/xre/nsKDEUtils.cpp
+--- mozilla-release/toolkit/xre/nsKDEUtils.cpp	2015-01-14 09:52:25.179106037 +0000
++++ mozilla-release.new/toolkit/xre/nsKDEUtils.cpp	2015-01-14 11:30:19.939542699 +0000
+@@ -19,9 +19,9 @@
+ #include <unistd.h>
+ #include <X11/Xlib.h>
+ 
+-//#define DEBUG_KDE
++#define DEBUG_KDE
+ #ifdef DEBUG_KDE
+-#define KMOZILLAHELPER "kmozillahelper"
++#define KMOZILLAHELPER "/usr/lib/mozilla/kmozillahelper"
+ #else
+ // not need for lib64, it's a binary
+ #define KMOZILLAHELPER "/usr/lib/mozilla/kmozillahelper"
+@@ -34,8 +34,12 @@
+ static bool getKdeSession()
+     {
+     Display* dpy = XOpenDisplay( NULL );
+-    if( dpy == NULL )
++    if( dpy == NULL ) {
++#ifdef DEBUG_KDE
++		fprintf( stderr, "DEBUG_KDE: getKdeSession() - X Display not found\n");
++#endif		
+         return false;
++	}
+     Atom kde_full_session = XInternAtom( dpy, "KDE_FULL_SESSION", True );
+     bool kde = false;
+     if( kde_full_session != None )
+@@ -50,9 +54,6 @@
+                 if( props[ i ] == kde_full_session )
+                     {
+                     kde = true;
+-#ifdef DEBUG_KDE
+-                    fprintf( stderr, "KDE SESSION %d\n", kde );
+-#endif
+                     break;
+                     }
+                 }
+@@ -60,6 +61,9 @@
+             }
+         }
+     XCloseDisplay( dpy );
++#ifdef DEBUG_KDE
++    fprintf( stderr, "DEBUG_KDE: getKdeSession() - Full KDE Session found=%d\n", kde );
++#endif
+     return kde;
+     }
+ 
+@@ -70,7 +74,7 @@
+     command.AppendElement( NS_LITERAL_CSTRING( MAKE_STR( KMOZILLAHELPER_VERSION )));
+     bool kde = nsKDEUtils::command( command );
+ #ifdef DEBUG_KDE
+-    fprintf( stderr, "KDE RUNNING %d\n", kde );
++    fprintf( stderr, "DEBUG_KDE: getKdeSupport() - KDE support available=%d\n", kde );
+ #endif
+     return kde;
+     }
+@@ -98,12 +102,19 @@
+ bool nsKDEUtils::kdeSession()
+     {
+     static bool session = getKdeSession();
++#ifdef DEBUG_KDE
++    fprintf( stderr, "DEBUG_KDE: kdeSession() - (KDE) session=%d\n", session );
++#endif
+     return session;
+     }
+ 
+ bool nsKDEUtils::kdeSupport()
+     {
+     static bool support = kdeSession() && getKdeSupport();
++#ifdef DEBUG_KDE
++    fprintf( stderr, "DEBUG_KDE: kdeSupport() - (KDE) support=%d\n", support );
++	fprintf( stderr, "DEBUG_KDE: kdeSupport() - kmozillahelper process running=%d\n", helperRunning );
++#endif
+     return support && helperRunning;
+     }
+ 
+@@ -123,9 +134,9 @@
+     bool command_failed = false;
+     while( !command_done && !command_failed && fgets( buf, 8192, p->file ) != NULL )
+         { // TODO what if the kernel splits a line into two chunks?
+-//#ifdef DEBUG_KDE
+-//        fprintf( stderr, "READ: %s %d\n", buf, feof( p->file ));
+-//#endif
++#ifdef DEBUG_KDE
++        fprintf( stderr, "DEBUG_KDE: kdeReadFunc() - read \"%s\" %d\n", buf, feof( p->file ));
++#endif
+         if( char* eol = strchr( buf, '\n' ))
+             *eol = '\0';
+         command_done = ( strcmp( buf, "\\1" ) == 0 );
+@@ -207,8 +218,12 @@
+ bool nsKDEUtils::internalCommand( const nsTArray<nsCString>& command, const GtkWindow* parent, bool blockUi,
+     nsTArray<nsCString>* output )
+     {
+-    if( !startHelper())
++    if( !startHelper()) {
++#ifdef DEBUG_KDE
++		fprintf( stderr, "DEBUG_KDE: commandBlockUi() - kmozillahelper process not running\n" );
++#endif
+         return false;
++	}
+     feedCommand( command );
+     // do not store the data in 'this' but in extra structure, just in case there
+     // is reentrancy (can there be? the event loop is re-entered)
+@@ -244,14 +259,22 @@
+ 
+ bool nsKDEUtils::startHelper()
+     {
+-    if( helperRunning )
++    if( helperRunning ) {
++#ifdef DEBUG_KDE
++		fprintf( stderr, "DEBUG_KDE: startHelper() - kmozillahelper process running already\n" );
++#endif
+         return true;
+-    if( helperFailed )
+-        return false;
++	}
++    if( helperFailed ) {
++#ifdef DEBUG_KDE
++		fprintf( stderr, "DEBUG_KDE: startHelper() - kmozillahelper process failed\n");
++#endif
++		return false;
++	}
+     helperFailed = true;
+     int fdcommand[ 2 ];
+     int fdreply[ 2 ];
+-    if( pipe( fdcommand ) < 0 )
++    if( pipe( fdcommand ) < 0 ) 
+         return false;
+     if( pipe( fdreply ) < 0 )
+         {
+@@ -264,6 +287,9 @@
+         {
+         case -1:
+             {
++#ifdef DEBUG_KDE
++			fprintf( stderr, "DEBUG_KDE: startHelper() - unable to fork kmozillahelper process\n" );
++#endif
+             close( fdcommand[ 0 ] );
+             close( fdcommand[ 1 ] );
+             close( fdreply[ 0 ] );
+@@ -285,7 +311,8 @@
+                  ++i )
+                 close( i );
+ #ifdef DEBUG_KDE
+-            execvp( KMOZILLAHELPER, args );
++			fprintf( stderr, "DEBUG_KDE: startHelper() - execvp() forking child kmozillahelper process\n" );
++			execvp( KMOZILLAHELPER, args );
+ #else
+             execv( KMOZILLAHELPER, args );
+ #endif
+@@ -299,6 +326,9 @@
+             close( fdreply[ 1 ] );
+             if( commandFile == NULL || replyFile == NULL )
+                 {
++#ifdef DEBUG_KDE
++				fprintf( stderr, "DEBUG_KDE: startHelper() - unable to communicate with parent kmozillahelper process\n" );
++#endif
+                 closeHelper();
+                 return false;
+                 }
+@@ -307,11 +337,17 @@
+         }
+     helperFailed = false;
+     helperRunning = true;
++#ifdef DEBUG_KDE
++			fprintf( stderr, "DEBUG_KDE: startHelper() - kmozillahelper process forked=1\n" );
++#endif
+     return true;
+     }
+ 
+ void nsKDEUtils::closeHelper()
+     {
++#ifdef DEBUG_KDE
++			fprintf( stderr, "DEBUG_KDE: closeHelper() - closing kmozillahelper process\n" );
++#endif
+     if( commandFile != NULL )
+         fclose( commandFile ); // this will also make the helper quit
+     if( replyFile != NULL )
+@@ -329,7 +365,7 @@
+         line.ReplaceSubstring( "\\", "\\" "\\" ); // \ -> \\ , i.e. escape
+         line.ReplaceSubstring( "\n", "\\n" );
+ #ifdef DEBUG_KDE
+-        fprintf( stderr, "COMM: %s\n", line.get());
++        fprintf( stderr, "DEBUG_KDE: feedCommand() : command=\"%s\"\n", line.get());
+ #endif
+         fputs( line.get(), commandFile );
+         fputs( "\n", commandFile );
