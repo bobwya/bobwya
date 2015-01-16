@@ -1,19 +1,22 @@
 diff -Naur mozilla-release/toolkit/xre/nsKDEUtils.cpp mozilla-release.new/toolkit/xre/nsKDEUtils.cpp
 --- mozilla-release/toolkit/xre/nsKDEUtils.cpp	2015-01-14 09:52:25.179106037 +0000
-+++ mozilla-release.new/toolkit/xre/nsKDEUtils.cpp	2015-01-14 11:30:19.939542699 +0000
-@@ -19,9 +19,9 @@
++++ mozilla-release.new/toolkit/xre/nsKDEUtils.cpp	2015-01-15 13:22:31.364348602 +0000
+@@ -19,13 +19,9 @@
  #include <unistd.h>
  #include <X11/Xlib.h>
  
 -//#define DEBUG_KDE
-+#define DEBUG_KDE
- #ifdef DEBUG_KDE
+-#ifdef DEBUG_KDE
 -#define KMOZILLAHELPER "kmozillahelper"
-+#define KMOZILLAHELPER "/usr/lib/mozilla/kmozillahelper"
- #else
+-#else
++#define DEBUG_KDE
  // not need for lib64, it's a binary
  #define KMOZILLAHELPER "/usr/lib/mozilla/kmozillahelper"
-@@ -34,8 +34,12 @@
+-#endif
+ 
+ #define KMOZILLAHELPER_VERSION 6
+ #define MAKE_STR2( n ) #n
+@@ -34,10 +30,18 @@
  static bool getKdeSession()
      {
      Display* dpy = XOpenDisplay( NULL );
@@ -26,8 +29,22 @@ diff -Naur mozilla-release/toolkit/xre/nsKDEUtils.cpp mozilla-release.new/toolki
 +	}
      Atom kde_full_session = XInternAtom( dpy, "KDE_FULL_SESSION", True );
      bool kde = false;
++#ifdef DEBUG_KDE
++        char *prop_string;
++#endif
++
      if( kde_full_session != None )
-@@ -50,9 +54,6 @@
+         {
+         int cnt;
+@@ -47,19 +51,32 @@
+                  i < cnt;
+                  ++i )
+                 {
++#ifdef DEBUG_KDE
++                prop_string = XGetAtomName( dpy, props[ i ]);
++                fprintf( stderr, "DEBUG_KDE: getKdeSession() - DefaultRootWindow property[%d/%d]=\"%s\"\n", i+1, cnt, prop_string );
++                XFree( prop_string );
++#endif
                  if( props[ i ] == kde_full_session )
                      {
                      kde = true;
@@ -37,17 +54,25 @@ diff -Naur mozilla-release/toolkit/xre/nsKDEUtils.cpp mozilla-release.new/toolki
                      break;
                      }
                  }
-@@ -60,6 +61,9 @@
+             XFree( props );
              }
          }
++#ifdef DEBUG_KDE
++    if( kde_full_session == None )
++        {
++        fprintf( stderr, "DEBUG_KDE: getKdeSession() - XInternAtom( dpy, \"KDE_FULL_SESSION\", True ) - failed\n" );
++        }
++#endif
      XCloseDisplay( dpy );
 +#ifdef DEBUG_KDE
-+    fprintf( stderr, "DEBUG_KDE: getKdeSession() - Full KDE Session found=%d\n", kde );
++    fprintf( stderr, "DEBUG_KDE: getKdeSession() - full KDE Session found=%d\n", kde );
++	fprintf( stderr, "DEBUG_KDE: getKdeSession() - forcing KDE found=true\n" );
++	kde=true;
 +#endif
      return kde;
      }
  
-@@ -70,7 +74,7 @@
+@@ -70,7 +87,7 @@
      command.AppendElement( NS_LITERAL_CSTRING( MAKE_STR( KMOZILLAHELPER_VERSION )));
      bool kde = nsKDEUtils::command( command );
  #ifdef DEBUG_KDE
@@ -56,7 +81,7 @@ diff -Naur mozilla-release/toolkit/xre/nsKDEUtils.cpp mozilla-release.new/toolki
  #endif
      return kde;
      }
-@@ -98,12 +102,19 @@
+@@ -98,12 +115,19 @@
  bool nsKDEUtils::kdeSession()
      {
      static bool session = getKdeSession();
@@ -76,7 +101,7 @@ diff -Naur mozilla-release/toolkit/xre/nsKDEUtils.cpp mozilla-release.new/toolki
      return support && helperRunning;
      }
  
-@@ -123,9 +134,9 @@
+@@ -123,9 +147,9 @@
      bool command_failed = false;
      while( !command_done && !command_failed && fgets( buf, 8192, p->file ) != NULL )
          { // TODO what if the kernel splits a line into two chunks?
@@ -89,7 +114,7 @@ diff -Naur mozilla-release/toolkit/xre/nsKDEUtils.cpp mozilla-release.new/toolki
          if( char* eol = strchr( buf, '\n' ))
              *eol = '\0';
          command_done = ( strcmp( buf, "\\1" ) == 0 );
-@@ -207,8 +218,12 @@
+@@ -207,8 +231,12 @@
  bool nsKDEUtils::internalCommand( const nsTArray<nsCString>& command, const GtkWindow* parent, bool blockUi,
      nsTArray<nsCString>* output )
      {
@@ -103,7 +128,7 @@ diff -Naur mozilla-release/toolkit/xre/nsKDEUtils.cpp mozilla-release.new/toolki
      feedCommand( command );
      // do not store the data in 'this' but in extra structure, just in case there
      // is reentrancy (can there be? the event loop is re-entered)
-@@ -244,14 +259,22 @@
+@@ -244,14 +272,22 @@
  
  bool nsKDEUtils::startHelper()
      {
@@ -130,7 +155,7 @@ diff -Naur mozilla-release/toolkit/xre/nsKDEUtils.cpp mozilla-release.new/toolki
          return false;
      if( pipe( fdreply ) < 0 )
          {
-@@ -264,6 +287,9 @@
+@@ -264,6 +300,9 @@
          {
          case -1:
              {
@@ -140,7 +165,7 @@ diff -Naur mozilla-release/toolkit/xre/nsKDEUtils.cpp mozilla-release.new/toolki
              close( fdcommand[ 0 ] );
              close( fdcommand[ 1 ] );
              close( fdreply[ 0 ] );
-@@ -285,7 +311,8 @@
+@@ -285,7 +324,8 @@
                   ++i )
                  close( i );
  #ifdef DEBUG_KDE
@@ -150,7 +175,7 @@ diff -Naur mozilla-release/toolkit/xre/nsKDEUtils.cpp mozilla-release.new/toolki
  #else
              execv( KMOZILLAHELPER, args );
  #endif
-@@ -299,6 +326,9 @@
+@@ -299,6 +339,9 @@
              close( fdreply[ 1 ] );
              if( commandFile == NULL || replyFile == NULL )
                  {
@@ -160,7 +185,7 @@ diff -Naur mozilla-release/toolkit/xre/nsKDEUtils.cpp mozilla-release.new/toolki
                  closeHelper();
                  return false;
                  }
-@@ -307,11 +337,17 @@
+@@ -307,11 +350,17 @@
          }
      helperFailed = false;
      helperRunning = true;
@@ -178,7 +203,7 @@ diff -Naur mozilla-release/toolkit/xre/nsKDEUtils.cpp mozilla-release.new/toolki
      if( commandFile != NULL )
          fclose( commandFile ); // this will also make the helper quit
      if( replyFile != NULL )
-@@ -329,7 +365,7 @@
+@@ -329,7 +378,7 @@
          line.ReplaceSubstring( "\\", "\\" "\\" ); // \ -> \\ , i.e. escape
          line.ReplaceSubstring( "\n", "\\n" );
  #ifdef DEBUG_KDE

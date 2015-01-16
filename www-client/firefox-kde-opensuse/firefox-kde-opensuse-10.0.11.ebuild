@@ -161,7 +161,7 @@ src_prepare() {
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
 		epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"
-        # Uncomment next line to enable KDE Support debug console output (or copy it to use a user patch)
+        # Uncomment the next line to enable debugging, for KDE Support, via console output...
         #epatch "${FILESDIR}/mozilla-kde-debug.patch"
 	fi
 	# Apply our patches

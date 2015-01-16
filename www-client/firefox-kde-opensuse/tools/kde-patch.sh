@@ -125,8 +125,6 @@ for old_ebuild_file in *.ebuild; do
 			}
 			else if ($0 ~ array_ebuild_phases_regexp["src_prepare"]) {
 				printf("%s%s\n", 	indent, "if use kde; then")
-				printf("%s%s%s\n",  indent, indent,  "# Unmask to enable static KDE debug flag : requires export PATH=\"$PATH:/usr/lib/mozilla\"")
-				printf("%s%s%s\n",  indent, indent,  "#sed -i -e \"s:^+//#define DEBUG_KDE:+#define DEBUG_KDE:g\" \"${EHG_CHECKOUT_DIR}/mozilla-kde.patch\"")
 				printf("%s%s%s\n",	indent, indent,	 "# Firefox OpenSUSE KDE integration patchset")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch\"")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/firefox-kde.patch\"")
@@ -138,6 +136,8 @@ for old_ebuild_file in *.ebuild; do
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch\"")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch\"")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch\"")
+                printf("%s%s%s\n",  indent, indent,  "# Uncomment the next line to enable debugging, for KDE Support, via console output...")
+				printf("%s%s%s\n",  indent, indent,  "#epatch \"${FILESDIR}/mozilla-kde-debug.patch\"")
 				printf("%s%s\n", 	indent, "fi")
 			}
 			else if ($0 ~ array_variables_regexp["BUILD_OBJ_DIR"]) {
