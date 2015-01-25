@@ -150,19 +150,24 @@ src_unpack() {
 
 src_prepare() {
 	if use kde; then
-		# Firefox OpenSUSE KDE integration patchset
-		epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
-		epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"
-		epatch "${EHG_CHECKOUT_DIR}/firefox-kde-114.patch"
-		epatch "${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
 		# Gecko/toolkit OpenSUSE KDE integration patchset
+		epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-language.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
-		epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"
-        # Uncomment the next line to enable debugging, for KDE Support, via console output...
-        #epatch "${FILESDIR}/mozilla-kde-debug.patch"
+		# Firefox OpenSUSE KDE integration patchset
+		epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
+		epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"
+		if [[ ${MOZ_PV%%.*} -lt 35 ]]; then
+			epatch "${EHG_CHECKOUT_DIR}/firefox-kde-114.patch"
+		fi
+		epatch "${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
+		# Uncomment the next line to enable KDE support debugging (additional console output)...
+		#epatch "${FILESDIR}/firefox-kde-opensuse-kde-debug.patch"
+		# Uncomment the following patch line to force KDE/Qt file dialog for Firefox...
+		#epatch "${FILESDIR}/firefox-kde-opensuse-force-qt-dialog.patch"
+		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox-kde-opensuse/)
 	fi
 	# Apply our patches
 	EPATCH_EXCLUDE="5005_use_resource_urls_appropriately.patch

@@ -1,6 +1,6 @@
-# Copyright 1999-2014 Gentoo Foundation
+# Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/firefox-34.0.5-r1.ebuild,v 1.2 2014/12/05 23:06:43 axs Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/firefox-35.0.ebuild,v 1.2 2015/01/15 01:55:10 anarchy Exp $
 
 EAPI="5"
 VIRTUALX_REQUIRED="pgo"
@@ -8,7 +8,9 @@ WANT_AUTOCONF="2.1"
 MOZ_ESR=""
 
 # This list can be updated with scripts/get_langs.sh from the mozilla overlay
-MOZ_LANGS=( af ar as ast be bg bn-BD bn-IN br bs ca cs csb cy da de el en
+# No official support as of fetch time
+# csb
+MOZ_LANGS=( af ar as ast be bg bn-BD bn-IN br bs ca cs cy da de el en
 en-GB en-US en-ZA eo es-AR es-CL es-ES es-MX et eu fa fi fr fy-NL ga-IE gd
 gl gu-IN he hi-IN hr hu hy-AM id is it ja kk km kn ko lt lv mai mk ml mr
 nb-NO nl nn-NO or pa-IN pl pt-BR pt-PT rm ro ru si sk sl son sq sr sv-SE ta te
@@ -26,7 +28,7 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${MOZ_PN}-34.0-patches-0.1"
+PATCH="${MOZ_PN}-35.0-patches-0.1"
 # Upstream ftp release URI that's used by mozlinguas.eclass
 # We don't use the http mirror because it deletes old tarballs.
 MOZ_FTP_URI="ftp://ftp.mozilla.org/pub/${MOZ_PN}/releases/"
@@ -57,7 +59,7 @@ ASM_DEPEND=">=dev-lang/yasm-1.1"
 
 # Mesa 7.10 needed for WebGL + bugfixes
 RDEPEND="
-	>=dev-libs/nss-3.17.2
+	>=dev-libs/nss-3.17.3
 	>=dev-libs/nspr-4.10.7
 	selinux? ( sec-policy/selinux-mozilla )
 	kde? ( kde-misc/kmozillahelper )
@@ -126,7 +128,7 @@ pkg_setup() {
 }
 
 pkg_pretend() {
-	if [[ "${#BUILD_OBJ_DIR}" -gt "${MAX_OBJ_DIR_LEN}" ]]; then
+	if [[ ${#BUILD_OBJ_DIR} -gt ${MAX_OBJ_DIR_LEN} ]]; then
 		ewarn "Building ${PN} with a build object directory path >${MAX_OBJ_DIR_LEN} characters long may cause the build to fail:"
 		ewarn " ... \"${BUILD_OBJ_DIR}\""
 	fi
@@ -165,24 +167,31 @@ src_unpack() {
 
 src_prepare() {
 	if use kde; then
-		# Firefox OpenSUSE KDE integration patchset
-		epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
-		epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"
-		epatch "${EHG_CHECKOUT_DIR}/firefox-kde-114.patch"
-		epatch "${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
 		# Gecko/toolkit OpenSUSE KDE integration patchset
+		epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-language.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
-		epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"
-		# Uncomment the next line to enable debugging, for KDE Support, via console output...
-		#epatch "${FILESDIR}/mozilla-kde-debug.patch"
+		# Firefox OpenSUSE KDE integration patchset
+		epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
+		epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"
+		if [[ ${MOZ_PV%%.*} -lt 35 ]]; then
+			epatch "${EHG_CHECKOUT_DIR}/firefox-kde-114.patch"
+		fi
+		epatch "${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
+		# Uncomment the next line to enable KDE support debugging (additional console output)...
+		#epatch "${FILESDIR}/firefox-kde-opensuse-kde-debug.patch"
+		# Uncomment the following patch line to force KDE/Qt file dialog for Firefox...
+		#epatch "${FILESDIR}/firefox-kde-opensuse-force-qt-dialog.patch"
+		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox-kde-opensuse/)
 	fi
 	# Apply our patches
 	EPATCH_SUFFIX="patch" \
 	EPATCH_FORCE="yes" \
 	epatch "${WORKDIR}/firefox"
+
+	epatch "${FILESDIR}"/${PN}-35.0-gmp-clearkey-sprintf.patch
 
 	# Allow user to apply any additional patches without modifying ebuild
 	epatch_user
@@ -384,7 +393,11 @@ src_install() {
 	fi
 
 	# Required in order to use plugins and even run firefox on hardened.
-	pax-mark m "${ED}"${MOZILLA_FIVE_HOME}/{firefox,firefox-bin,plugin-container}
+	if use jit; then
+		pax-mark m "${ED}"${MOZILLA_FIVE_HOME}/{firefox,firefox-bin,plugin-container}
+	else
+		pax-mark m "${ED}"${MOZILLA_FIVE_HOME}/plugin-container
+	fi
 
 	if use minimal; then
 		rm -r "${ED}"/usr/include "${ED}${MOZILLA_FIVE_HOME}"/{idl,include,lib,sdk} \
