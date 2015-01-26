@@ -160,6 +160,8 @@ src_unpack() {
 }
 
 src_prepare() {
+	# Patch for https://bugzilla.redhat.com/show_bug.cgi?id=966424
+	epatch "${FILESDIR}"/firefox-kde-opensuse-rhbz-966424.patch
 	if use kde; then
 		# Gecko/toolkit OpenSUSE KDE integration patchset
 		epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"

@@ -125,6 +125,8 @@ for old_ebuild_file in *.ebuild; do
 				printf("%s%s\n", 	indent, "fi")
 			}
 			else if ($0 ~ array_ebuild_phases_regexp["src_prepare"]) {
+				printf("%s%s\n",	indent, "# Patch for https://bugzilla.redhat.com/show_bug.cgi?id=966424")
+				printf("%s%s\n",	indent, "epatch \"${FILESDIR}\"/firefox-kde-opensuse-rhbz-966424.patch")
 				printf("%s%s\n", 	indent, "if use kde; then")
 				printf("%s%s%s\n", 	indent, indent,	 "# Gecko/toolkit OpenSUSE KDE integration patchset")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch\"")
