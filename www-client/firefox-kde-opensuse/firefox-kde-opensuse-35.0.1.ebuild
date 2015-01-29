@@ -193,7 +193,7 @@ src_prepare() {
 	EPATCH_FORCE="yes" \
 	epatch "${WORKDIR}/firefox"
 
-	epatch "${FILESDIR}"/${PN}-35.0-gmp-clearkey-sprintf.patch
+	epatch "${FILESDIR}"/${PN}-35.0.1-gmp-clearkey-sprintf.patch
 
 	# Allow user to apply any additional patches without modifying ebuild
 	epatch_user
