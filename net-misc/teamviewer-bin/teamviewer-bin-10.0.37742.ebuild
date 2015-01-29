@@ -12,7 +12,7 @@ MY_PN=${PN%-bin}
 MY_PNV=${MY_PN}${MV}
 DESCRIPTION="All-In-One Solution for Remote Access and Support over the Internet"
 HOMEPAGE="http://www.teamviewer.com"
-SRC_URI="http://www.teamviewer.com/download/version_${MV}x/teamviewer_linux.deb -> ${P}.deb"
+SRC_URI="http://download.teamviewer.com/download/version_${MV}x/teamviewer_linux.deb -> ${P}.deb"
 
 LICENSE="TeamViewer !system-wine? ( LGPL-2.1 )"
 SLOT=${MV}
