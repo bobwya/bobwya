@@ -8,6 +8,8 @@ build scripts is irregular. So YMMV - you have been warned!
     app-backup/fsarchiver : Flexible filesystem archiver for backup and deployment tool.
     app-crypt/chntpw : Offline NT Password & Registry Editor.
     app-emulation/playonlinux : PlayOnLinux - Wine GUI Frontend.
+    app-office/libreoffice : LibreOffice, a full office productivity suite.
+    app-office/libreoffice-l10n : Language translations for the Libreoffice suite. 
     app-office/wps-office-bin : Kingsoft Office. (binary proprietary)
     games-fps/dhewm3 : Doom 3 GPL source modification.
     kde-misc/kmozillahelper :
@@ -15,10 +17,10 @@ build scripts is irregular. So YMMV - you have been warned!
     media-video/ffmpeg : FFmpeg is a free software project that produces libraries and programs for handling multimedia data.
     media-video/filebot-bin : FileBot tool for organizing and renaming your movies, tv shows or anime, and music. (java jar)
     media-video/handbrake : Handbrake A/V Conversion Tool
-	net-misc/teamviewer-bin : TeamViewer is a proprietary computer software package for remote control, desktop sharing, online meetings, web conferencing and file transfer between computers. 
+	net-misc/teamviewer-bin : TeamViewer is a proprietary computer software package for remote control, desktop sharing, online meetings, web conferencing and file transfer between computers. (binary proprietary / Wine wrapper) 
     net-p2p/btsync-bin : BitTorrent Sync uses advanced peer-to-peer technology to share files between devices. (binary proprietary)
     net-p2p/syncthing : Syncthing replaces proprietary sync and cloud services with something open, trustworthy and decentralized.
     sys-apps/uksmstat : Simple tool to monitor and control UKSM.
     www-client/firefox-kde-opensuse : Firefox with OpenSUSE Patchset for better KDE Desktop integration.
 
-Credit to the Arch AUR firefox-kde-opensuse PKGBUILD script used as the main basis for the Firefox OpenSUSE KDE ebuild.
+Credit to the Arch AUR firefox-kde-opensuse PKGBUILD script used as the main basis for the  www-client/firefox-kde-opensuse (OpenSUSE KDE patchset) ebuild.
