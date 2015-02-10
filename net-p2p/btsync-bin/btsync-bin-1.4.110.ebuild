@@ -4,7 +4,7 @@
 
 EAPI=5
 
-inherit eutils pax-utils user flag-o-matic multilib autotools pam systemd versionator
+inherit eutils pax-utils user flag-o-matic multilib pam systemd versionator
 
 DESCRIPTION="Sync files & folders using BitTorrent protocol"
 HOMEPAGE="http://labs.bittorrent.com/experiments/sync.html"
@@ -31,10 +31,10 @@ src_install() {
 	dodoc "${S}/LICENSE.TXT"
 
 	newconfd "${FILESDIR}/${MY_PN}_confd" "/${MY_PN}"
-	
+
 	# system-v-init support
 	newinitd "${FILESDIR}/${MY_PN}_initd" "/${MY_PN}"
-	
+
 	# systemd support
 	systemd_dounit "${FILESDIR}/${MY_PN}.service"
 	systemd_newunit "${FILESDIR}/${MY_PN}_at.service" "${MY_PN}@.service"
