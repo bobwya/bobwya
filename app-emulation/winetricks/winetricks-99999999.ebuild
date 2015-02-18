@@ -16,8 +16,8 @@ else
 fi
 wtg=winetricks-gentoo-2012.11.24
 SRC_URI="${SRC_URI}
-		gtk? ( http://dev.gentoo.org/~tetromino/distfiles/wine/${wtg}.tar.bz2 )
-		kde? ( http://dev.gentoo.org/~tetromino/distfiles/wine/${wtg}.tar.bz2 )"
+	gtk? ( http://dev.gentoo.org/~tetromino/distfiles/wine/${wtg}.tar.bz2 )
+	kde? ( http://dev.gentoo.org/~tetromino/distfiles/wine/${wtg}.tar.bz2 )"
 
 DESCRIPTION="Easy way to install DLLs needed to work around problems in Wine"
 HOMEPAGE="http://code.google.com/p/winetricks/ http://wiki.winehq.org/winetricks"
@@ -46,7 +46,6 @@ RESTRICT="test"
 S="${WORKDIR}"
 
 src_unpack() {
-	einfo "unpacking wine"
 	if [[ ${PV} == "99999999" ]] ; then
 		git-2_src_unpack
 		if use gtk || use kde; then
@@ -55,7 +54,6 @@ src_unpack() {
 	else
 		default
 	fi
-	einfo "unpacked wine"
 }
 
 src_install() {
