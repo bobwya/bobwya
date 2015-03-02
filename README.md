@@ -8,9 +8,6 @@ build scripts is irregular. So YMMV - you have been warned!
     app-backup/fsarchiver : Flexible filesystem archiver for backup and deployment tool.
     app-crypt/chntpw : Offline NT Password & Registry Editor.
     app-emulation/playonlinux : PlayOnLinux - Wine GUI Frontend.
-    app-office/libreoffice : LibreOffice, a full office productivity suite.
-    app-office/libreoffice-l10n : Language translations for the Libreoffice suite. 
-    app-office/wps-office-bin : Kingsoft Office. (binary proprietary)
     games-fps/dhewm3 : Doom 3 GPL source modification.
     kde-misc/kmozillahelper :
     media-tv/freetuxtv : freetuxtv GTK+ WebTV and Web Radio player for Linux.
