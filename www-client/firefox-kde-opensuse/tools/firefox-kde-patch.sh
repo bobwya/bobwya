@@ -143,7 +143,7 @@ for old_ebuild_file in *.ebuild; do
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch\"")
                 printf("%s%s%s\n",  indent, indent,  "# Uncomment the next line to enable KDE support debugging (additional console output)...")
 				printf("%s%s%s\n",  indent, indent,  "#epatch \"${FILESDIR}/firefox-kde-opensuse-kde-debug.patch\"")
-                printf("%s%s%s\n",  indent, indent,  "# Uncomment the following patch line to force KDE/Qt file dialog for Firefox...")
+                printf("%s%s%s\n",  indent, indent,  "# Uncomment the following patch line to force KDE/Qt4 file dialog for Firefox...")
                 printf("%s%s%s\n",  indent, indent,  "#epatch \"${FILESDIR}/firefox-kde-opensuse-force-qt-dialog.patch\"")
                 printf("%s%s%s\n",  indent, indent,  "# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox-kde-opensuse/)")
 				printf("%s%s\n", 	indent, "fi")

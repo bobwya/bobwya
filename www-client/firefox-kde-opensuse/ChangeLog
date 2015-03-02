@@ -1,6 +1,57 @@
 # ChangeLog for www-client/firefox
 # Copyright 1999-2015 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/ChangeLog,v 1.376 2015/01/09 20:53:11 klausman Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/ChangeLog,v 1.389 2015/02/27 13:25:27 ago Exp $
+
+  27 Feb 2015; Agostino Sarubbo <ago@gentoo.org> firefox-31.5.0.ebuild:
+  Stable for amd64, wrt bug #541316
+
+  27 Feb 2015; Lars Wendler <polynomial-c@gentoo.org> firefox-36.0.ebuild:
+  Rolled out an intermediate patchset tarball until the one from _AxS_ is
+  available.
+
+  27 Feb 2015; Patrick Lauer <patrick@gentoo.org> firefox-36.0.ebuild:
+  De-keyword until missing patches are made available #541478
+
+*firefox-31.5.0 (26 Feb 2015)
+*firefox-36.0 (26 Feb 2015)
+
+  26 Feb 2015; Ian Stakenvicius (_AxS_) <axs@gentoo.org> +firefox-31.5.0.ebuild,
+  +firefox-36.0.ebuild, -firefox-10.0.11.ebuild, -firefox-24.8.0.ebuild,
+  -firefox-35.0.ebuild, firefox-24.3.0.ebuild, firefox-31.3.0.ebuild,
+  firefox-31.4.0.ebuild, metadata.xml:
+  version bump; removed old; fixed bug 541418
+
+  23 Feb 2015; Agostino Sarubbo <ago@gentoo.org> firefox-31.4.0.ebuild:
+  Stable for ia64, wrt bug #536564
+
+  23 Feb 2015; Agostino Sarubbo <ago@gentoo.org> firefox-31.3.0.ebuild:
+  Stable for ia64, wrt bug #531408
+
+  18 Feb 2015; Agostino Sarubbo <ago@gentoo.org> firefox-31.4.0.ebuild:
+  Stable for ppc, wrt bug #536564
+
+  18 Feb 2015; Agostino Sarubbo <ago@gentoo.org> firefox-31.4.0.ebuild:
+  Stable for ppc64, wrt bug #536564
+
+  15 Feb 2015; Agostino Sarubbo <ago@gentoo.org> firefox-31.4.0.ebuild:
+  Stable for x86, wrt bug #536564
+
+  08 Feb 2015; Jeroen Roovers <jer@gentoo.org> firefox-31.4.0.ebuild:
+  Stable for HPPA (bug #536564).
+
+  07 Feb 2015; Mikle Kolyada <zlogene@gentoo.org> firefox-31.4.0.ebuild:
+  amd64 stable wrt bug #536564
+
+  15 Jan 2015;  <anarchy@gentoo.org> firefox-35.0.ebuild:
+  Add back buildobj dir fix, bug #536516
+
+*firefox-35.0 (13 Jan 2015)
+*firefox-31.4.0 (13 Jan 2015)
+
+  13 Jan 2015;  <anarchy@gentoo.org>
+  +files/firefox-35.0-gmp-clearkey-sprintf.patch, +firefox-31.4.0.ebuild,
+  +firefox-35.0.ebuild, -firefox-34.0.5-r1.ebuild, files/icon/firefox.desktop:
+  Update esr/~arch channels, misc fixes
 
   09 Jan 2015; Tobias Klausmann <klausman@gentoo.org> firefox-31.3.0.ebuild:
   Stable on alpha, bug 531408
