@@ -1,4 +1,4 @@
-# Copyright 1999-2012 Gentoo Foundation
+# Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
@@ -14,12 +14,12 @@ EGIT_REPO_URI="https://github.com/dhewm/dhewm3.git"
 LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS=""
-IUSE="cdinstall curl dedicated roe"
+IUSE="cdinstall curl dedicated roe sdl2"
 
-# TODO There declared SDL2 support...
 DEPEND="virtual/jpeg
 	media-libs/libogg
-	>=media-libs/libsdl-1.2
+	!sdl2? ( >=media-libs/libsdl-1.2[opengl,video] )
+	sdl2? ( media-libs/libsdl2[opengl,video] )
 	media-libs/libvorbis
 	media-libs/openal
 	curl? ( net-misc/curl )
@@ -37,9 +37,9 @@ src_prepare() {
 }
 
 src_configure() {
-	# TODO There declared SDL2 support...
 	mycmakeargs=(
 		"-DDEDICATED=ON"
+		$(cmake-utils_use sdl2 SDL2)
 		$(cmake-utils_use_disable dedicated CORE)
 		$(cmake-utils_use_disable dedicated BASE)
 		$(cmake-utils_use_disable dedicated D3XP)

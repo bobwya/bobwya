@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+  <herd>games</herd>
+  <longdescription>
+dhewm 3 is a Doom 3 GPL source modification.
+You will need to supply your own game assets either from Doom 3 or mod(s).
+</longdescription>
+  <use>
+    <flag name='dedicated'>install only as a dedicated game server</flag>
+    <flag name="roe">Adds support for the Resurrection of Evil expansion</flag>
+	<flag name="sdl2">Enable support SDL2</flag>
+  </use>
+</pkgmetadata>
