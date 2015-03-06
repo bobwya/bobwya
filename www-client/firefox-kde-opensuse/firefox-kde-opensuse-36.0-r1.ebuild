@@ -1,6 +1,6 @@
 # Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/firefox-36.0.ebuild,v 1.3 2015/02/27 08:36:41 polynomial-c Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/firefox-36.0-r1.ebuild,v 1.1 2015/03/04 00:02:33 axs Exp $
 
 EAPI="5"
 VIRTUALX_REQUIRED="pgo"
@@ -142,13 +142,6 @@ pkg_pretend() {
 		CHECKREQS_DISK_BUILD="4G"
 	fi
 	check-reqs_pkg_setup
-
-	if use jit && [[ -n ${PROFILE_IS_HARDENED} ]]; then
-		ewarn "You are emerging this package on a hardened profile with USE=jit enabled."
-		ewarn "This is horribly insecure as it disables all PAGEEXEC restrictions."
-		ewarn "Please ensure you know what you are doing.  If you don't, please consider"
-		ewarn "emerging the package with USE=-jit"
-	fi
 }
 
 src_unpack() {
@@ -197,6 +190,8 @@ src_prepare() {
 	epatch "${WORKDIR}/firefox"
 
 	epatch "${FILESDIR}"/${PN}-35.0-gmp-clearkey-sprintf.patch
+	epatch "${FILESDIR}"/${PN}-36.0-disable-ion.patch
+	epatch "${FILESDIR}"/${PN}-36.0-depollute-CONST-from-dtoa.patch
 
 	# Allow user to apply any additional patches without modifying ebuild
 	epatch_user
@@ -271,6 +266,10 @@ src_configure() {
 
 	# Other ff-specific settings
 	mozconfig_annotate '' --with-default-mozilla-five-home=${MOZILLA_FIVE_HOME}
+
+	# Force jit simulators for mips and arm
+	use jit && use arm && mozconfig_annotate '' --enable-arm-simulator
+	use jit && use mips && mozconfig_annotate '' --enable-mips-simulator
 
 	# Allow for a proper pgo build
 	if use pgo; then
