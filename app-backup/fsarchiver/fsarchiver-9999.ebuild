@@ -1,6 +1,6 @@
 # Copyright 1999-2014 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/app-backup/fsarchiver/fsarchiver-0.6.19.ebuild,v 1.1 2014/03/08 18:32:11 hwoarang Exp $
+# $Header: $
 
 EAPI="5"
 
@@ -11,8 +11,8 @@ HOMEPAGE="http://www.fsarchiver.org"
 
 if [[ ${PV} == "9999" ]] ; then
 	EGIT_REPO_URI="git://git.code.sf.net/p/${PN}/code"
-	EGIT_STORE_DIR="${T}"
-	inherit git-2
+	EGIT3_STORE_DIR="${T}"
+	inherit git-r3
 	SRC_URI=""
 	#KEYWORDS=""
 else
