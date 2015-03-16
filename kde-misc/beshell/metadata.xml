@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+<use>
+        <flag name="examples">Install bespin example configuration files.</flag>
+        <flag name="scripts">Install bespin script files.</flag>
+		<flag name="wallpapers">Install stock bespin wallpapers.</flag>
+</use>
+</pkgmetadata>
