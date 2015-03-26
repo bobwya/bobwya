@@ -1,6 +1,6 @@
 # Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/firefox-31.5.0.ebuild,v 1.4 2015/03/07 08:40:02 zlogene Exp $
+# $Header: www-client/firefox-kde-opensuse-31.5.0 $
 
 EAPI="5"
 VIRTUALX_REQUIRED="pgo"
@@ -41,9 +41,10 @@ MOZCONFIG_OPTIONAL_JIT="enabled"
 inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-v5.31 multilib pax-utils fdo-mime autotools virtualx mozlinguas mercurial
 
 DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integration with KDE Desktop"
-HOMEPAGE="http://www.mozilla.com/firefox"
+HOMEPAGE="http://www.mozilla.com/firefox
+	${EHG_REPO_URI}"
 
-KEYWORDS="~alpha amd64 ~arm hppa ~ia64 ~ppc ~ppc64 x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 ~arm hppa ia64 ~ppc ~ppc64 x86 ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist hardened kde +minimal pgo selinux test"

@@ -31,15 +31,19 @@ for old_ebuild_file in *.ebuild; do
 	new_ebuild_file="${ebuild_file}.new"
 	echo "processing ebuild file: \"${old_ebuild_file}\" -> \"${ebuild_file}\""
 	mv "${old_ebuild_file}" "${ebuild_file}"
-	awk -F '[[:blank:]]+' \
+	awk -F '[[:blank:]]+' -vebuild_file="${ebuild_file}" \
 		'BEGIN{
 			kde_use_flag="kde"
+			ebuild_package_version=("www-client/" ebuild_file)
+			gsub("\.ebuild$", "", ebuild_package_version)
+
 			# Setup some regular expression constants - to hopefully make the script more readable!
 			leading_ws_regexp="^[[:blank:]]+"
 			trailing_ws_regexp="^[[:blank:]]+"
 			end_quote_regexp="\"[[:blank:]]*$"
+			ebuild_header_regexp="^\# \\$Header\:"
 			ebuild_inherit_regexp="^inherit "
-			variables="BUILD_OBJ_DIR DESCRIPTION IUSE MOZ_HTTP_URI MOZ_PV RDEPEND"
+			variables="BUILD_OBJ_DIR DESCRIPTION HOMEPAGE IUSE MOZ_HTTP_URI MOZ_PV RDEPEND"
 			split(variables, array_variables)
 			for (i in array_variables)
 				array_variables_regexp[array_variables[i]]="^" gensub(/\_/, "\\_", "g", array_variables[i]) "\=\".*(\"|$)"
@@ -66,20 +70,31 @@ for old_ebuild_file in *.ebuild; do
 				else
 					sub(/^/, (kde_use_flag " "), $ifield)
 			}
+			else if ($0 ~ ebuild_header_regexp) {
+				$0=("# $Header: " ebuild_package_version " $")
+			}
 			else if ($0 ~ ebuild_inherit_regexp) {
 				$0=$0 " mercurial"
 			}
 			else if ($0 ~ array_variables_regexp["DESCRIPTION"]) {
 				sub(/\".+\"/, "\"Firefox Web Browser with OpenSUSE patchset, to provide better integration with KDE Desktop\"")
 			}
-			else if (rdepend_open && ($0 ~ end_quote_regexp)) {
-				gsub(end_quote_regexp, "", $0)
-				rdepend_open=0
-				rdepend_close=1
-			}
 			else if (!moz_pn_defined && ($0 ~ array_variables_regexp["MOZ_PV"])) {
 				print "MOZ_PN=\"firefox\""
 				moz_pn_defined=1
+			}
+			else if ($0 ~ array_variables_regexp["HOMEPAGE"]) {
+				homepage_open=1	
+			}
+			if (rdepend_open && ($0 ~ end_quote_regexp)) {
+				sub(end_quote_regexp, "", $0)
+				rdepend_open=0
+				rdepend_close=1
+			}
+			else if (homepage_open && ($0 ~ end_quote_regexp)) {
+				sub(end_quote_regexp, "", $0)
+				homepage_open=0
+				homepage_close=1
 			}
 			# Convert internal references to "firefox-kde-opensuse" (PN) to "firefox" (MOZ_PN) - but not for user messages or local patches!
 			if (($0 !~ ebuild_message_regexp) && ($0 !~ local_epatch_regexp))
@@ -102,6 +117,10 @@ for old_ebuild_file in *.ebuild; do
 				printf("\n%s\n%s\n",
 						"# Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)",
 						"EHG_REPO_URI=\"http://www.rosenauer.org/hg/mozilla\"")
+			}
+			else if (homepage_close) {
+				printf("%s${EHG_REPO_URI}\"\n", indent)
+				homepage_close=0
 			}
 			else if ($0 ~ array_variables_regexp["RDEPEND"]) {
 				rdepend_open=1
