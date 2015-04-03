@@ -1,6 +1,44 @@
 # ChangeLog for net-misc/teamviewer
-# Copyright 1999-2014 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/net-misc/teamviewer/ChangeLog,v 1.11 2014/07/16 16:14:55 hasufell Exp $
+# Copyright 1999-2015 Gentoo Foundation; Distributed under the GPL v2
+# $Header: /var/cvsroot/gentoo-x86/net-misc/teamviewer/ChangeLog,v 1.17 2015/03/14 18:05:51 mgorny Exp $
+
+  14 Mar 2015; Michał Górny <mgorny@gentoo.org> -teamviewer-9.0.30203.ebuild:
+  Drop old versions that require emul-linux-x86 packages.
+
+*teamviewer-10.0.36281 (09 Mar 2015)
+
+  09 Mar 2015; Ian Delaney <idella4@gentoo.org>
+  +files/teamviewer-10.0.36281-gentoo.patch, +teamviewer-10.0.36281.ebuild,
+  -files/teamviewer-7.0.9377-POSIX.patch,
+  -files/teamviewer-8.0.20931-gentoo.patch, -teamviewer-7.0.9377.ebuild,
+  -teamviewer-8.0.20931.ebuild, metadata.xml:
+  bump; ebuild and new gentoo.patch submitted by newly designated proxy
+  maintainer, herd re-assigned to proxy-maint, all wrt bug #533452.  Being a
+  binary package, runtested for install, bugs and runtime issues addressed in
+  the course of bug #533452.  2 oldest versions and corresponding patches
+  removed to prevent build up
+
+  25 Nov 2014; Julian Ospald <hasufell@gentoo.org> metadata.xml:
+  drop maintainership
+
+  12 Nov 2014; Ian Stakenvicius (_AxS_) <axs@gentoo.org>
+  +files/teamviewer-9.0.32150-gentoo.patch:
+  added missing patch
+
+*teamviewer-9.0.32150 (12 Nov 2014)
+
+  12 Nov 2014; Ian Stakenvicius (_AxS_) <axs@gentoo.org>
+  +teamviewer-9.0.32150.ebuild, -teamviewer-9.0.30203-r1.ebuild,
+  teamviewer-7.0.9377.ebuild:
+  fixed what i botched, plus adjusted SRC_URI for 7.x so it downloads
+
+*teamviewer-9.0.30203-r1 (12 Nov 2014)
+
+  12 Nov 2014; Ian Stakenvicius (_AxS_) <axs@gentoo.org>
+  +teamviewer-9.0.30203-r1.ebuild:
+  conversion to full gx86-multilib dependencies, updated manifest as upstream
+  distfile apparently changed.  Note, distfile for 7.x not found, maybe should
+  be removed?
 
 *teamviewer-9.0.30203 (16 Jul 2014)
 

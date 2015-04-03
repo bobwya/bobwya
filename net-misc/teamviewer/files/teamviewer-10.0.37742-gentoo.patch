@@ -1,7 +1,7 @@
-diff --git a/opt/teamviewer/tv_bin/script/tvw_extra b/opt/teamviewer/tv_bin/script/tvw_extra
+diff --git a/opt/teamviewer9/tv_bin/script/tvw_extra b/opt/teamviewer9/tv_bin/script/tvw_extra
 index 71164aa..848cd25 100644
---- a/opt/teamviewer/tv_bin/script/tvw_extra
-+++ b/opt/teamviewer/tv_bin/script/tvw_extra
+--- a/opt/teamviewer9/tv_bin/script/tvw_extra
++++ b/opt/teamviewer9/tv_bin/script/tvw_extra
 @@ -16,13 +16,6 @@
    isInstalledTV || return
    ABecho "teamviewer --passwd [PASSWD]"	"set a password (useful when installing remote (ssh)"
@@ -97,10 +97,10 @@ index 71164aa..848cd25 100644
  }
  
  function StripPersonalInformation()
-diff --git a/opt/teamviewer/tv_bin/script/tvw_main b/opt/teamviewer/tv_bin/script/tvw_main
+diff --git a/opt/teamviewer9/tv_bin/script/tvw_main b/opt/teamviewer9/tv_bin/script/tvw_main
 index 8984db0..c6dff8d 100644
---- a/opt/teamviewer/tv_bin/script/tvw_main
-+++ b/opt/teamviewer/tv_bin/script/tvw_main
+--- a/opt/teamviewer9/tv_bin/script/tvw_main
++++ b/opt/teamviewer9/tv_bin/script/tvw_main
 @@ -4,7 +4,6 @@
  source "$TV_SCRIPT_DIR/tvw_config"
  source "$TV_SCRIPT_DIR/tvw_exec"
@@ -136,3 +136,15 @@ index 8984db0..c6dff8d 100644
 -    ( * )						echo "unknown option '$opt'"	;;
 -  esac
 -}
+--- /opt/teamviewer10/tv_bin/script/teamviewerd.service	2015-01-15 12:55:57.000000000 -0500
++++ /opt/teamviewer10/tv_bin/script/teamviewerd.service	2015-03-08 19:00:17.297108541 -0400
+@@ -6,7 +6,7 @@
+ [Service]
+ Type = forking
+ PIDFile = /var/run/teamviewerd.pid
+-ExecStart = /opt/teamviewer/tv_bin/teamviewerd -d
++ExecStart = /opt/teamviewer10/tv_bin/teamviewerd -d
+ Restart = on-abort
+ StartLimitInterval = 60
+ StartLimitBurst = 10
+
