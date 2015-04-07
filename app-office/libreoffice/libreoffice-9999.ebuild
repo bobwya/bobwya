@@ -200,7 +200,7 @@ RDEPEND="${COMMON_DEPEND}
 if [[ ${PV} != *9999* ]]; then
 	PDEPEND="=app-office/libreoffice-l10n-$(get_version_component_range 1-2)*"
 else
-	PDEPEND=">app-office/libreoffice-l10n-4.3.9999"
+	PDEPEND="app-office/libreoffice-l10n"
 fi
 
 # FIXME: cppunit should be moved to test conditional
@@ -316,7 +316,7 @@ src_unpack() {
 			[[ ${mypv} != ${PV} ]] && EGIT_BRANCH="${PN}-${mypv/./-}"
 			EGIT_CHECKOUT_DIR="${WORKDIR}/${P}"
 			[[ ${mod} != core ]] && EGIT_CHECKOUT_DIR="${WORKDIR}/${PN}-${mod}-${PV}"
-			EGIT_REPO_URI="git://anongit.freedesktop.org/${PN}/${mod}"
+			EGIT_REPO_URI="git://anongit.freedesktop.org/git/${PN}/${mod}.git"
 			git-r3_src_unpack
 			if [[ ${mod} != core ]]; then
 				mod2=${mod}
