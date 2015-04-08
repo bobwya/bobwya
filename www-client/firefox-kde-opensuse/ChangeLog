@@ -1,6 +1,50 @@
 # ChangeLog for www-client/firefox
 # Copyright 1999-2015 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/ChangeLog,v 1.398 2015/03/25 16:07:03 ago Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/ChangeLog,v 1.410 2015/04/06 22:38:40 axs Exp $
+
+  06 Apr 2015; Ian Stakenvicius (_AxS_) <axs@gentoo.org> firefox-37.0.1.ebuild,
+  +files/firefox-37.0-jemalloc_configure_unbashify.patch:
+  firefox-37 works now that jit is forced-on, removing mask
+
+  06 Apr 2015; Ian Stakenvicius (_AxS_) <axs@gentoo.org> firefox-37.0.1.ebuild:
+  fixed configure option to enable jit, last time i promise
+
+  06 Apr 2015; Ian Stakenvicius (_AxS_) <axs@gentoo.org> firefox-37.0.1.ebuild:
+  added missing configure option to enable jit
+
+  06 Apr 2015; Ian Stakenvicius (_AxS_) <axs@gentoo.org> firefox-37.0.1.ebuild:
+  dropped USE=jit from firefox-37 as jit can not be disabled and provide a
+  functional firefox
+
+  06 Apr 2015; Ian Stakenvicius (_AxS_) <axs@gentoo.org> firefox-37.0.1.ebuild:
+  fixed nss dependency version, bug 545744
+
+*firefox-31.6.0 (05 Apr 2015)
+
+  05 Apr 2015; Lars Wendler <polynomial-c@gentoo.org> -firefox-31.4.0.ebuild,
+  -firefox-31.5.0.ebuild, +firefox-31.6.0.ebuild:
+  Version bump. Removed old.
+
+*firefox-37.0.1 (05 Apr 2015)
+
+  05 Apr 2015; Lars Wendler <polynomial-c@gentoo.org> -firefox-36.0.1.ebuild,
+  +firefox-37.0.1.ebuild:
+  Version bump. Removed old.
+
+  31 Mar 2015; Agostino Sarubbo <ago@gentoo.org> firefox-31.5.0.ebuild:
+  Stable for ppc64, wrt bug #541316
+
+  27 Mar 2015; Agostino Sarubbo <ago@gentoo.org> firefox-31.5.3.ebuild:
+  Stable for ppc/ppc64, wrt bug #544056
+
+  27 Mar 2015; Jeroen Roovers <jer@gentoo.org> firefox-31.5.3.ebuild:
+  Stable for HPPA (bug #544056).
+
+  26 Mar 2015; Agostino Sarubbo <ago@gentoo.org> firefox-31.5.3.ebuild:
+  Stable for x86, wrt bug #544056
+
+  26 Mar 2015; Agostino Sarubbo <ago@gentoo.org> firefox-31.5.3.ebuild:
+  Stable for amd64, wrt bug #544056
 
   25 Mar 2015; Agostino Sarubbo <ago@gentoo.org> firefox-31.5.3.ebuild:
   Stable for ia64, wrt bug #544056

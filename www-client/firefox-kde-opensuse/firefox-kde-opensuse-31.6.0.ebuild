@@ -1,6 +1,6 @@
 # Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: www-client/firefox-kde-opensuse-31.4.0 $
+# $Header: www-client/firefox-kde-opensuse-31.6.0 $
 
 EAPI="5"
 VIRTUALX_REQUIRED="pgo"
@@ -29,8 +29,8 @@ fi
 PATCH="${MOZ_PN}-31.0-patches-0.2"
 # Upstream ftp release URI that's used by mozlinguas.eclass
 # We don't use the http mirror because it deletes old tarballs.
-MOZ_FTP_URI="ftp://ftp.mozilla.org/pub/${MOZ_PN}/releases/"
-MOZ_HTTP_URI="http://ftp.mozilla.org/pub/${MOZ_PN}/releases/"
+MOZ_FTP_URI="ftp://ftp.mozilla.org/pub/${MOZ_PN}/releases"
+MOZ_HTTP_URI="http://ftp.mozilla.org/pub/${MOZ_PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
 EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
@@ -44,7 +44,7 @@ DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integ
 HOMEPAGE="http://www.mozilla.com/firefox
 	${EHG_REPO_URI}"
 
-KEYWORDS="~alpha amd64 ~arm hppa ia64 ppc ppc64 x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~x86 ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist hardened kde +minimal pgo selinux test"
