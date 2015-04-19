@@ -7,7 +7,7 @@ Nice=19
 IOSchedulingClass=idle       
 IOSchedulingPriority=7
 User=%i
-ExecStart=/opt/btsync/bin/btsync --config /home/%i/.btsync/btsync.conf --nodaemon
+ExecStart=/opt/btsync/bin/btsync --config /home/%i/.config/btsync/btsync.conf --nodaemon
 Restart=on-abort
 
 [Install]
