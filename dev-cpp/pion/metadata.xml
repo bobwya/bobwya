@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+<use>
+	<flag name="bzip2">Add support for bzip2 compression using <pkg>app-arch/bzip2</pkg> library.</flag>
+	<flag name="debug">Build <pkg>dev-libs/pion</pkg> with debugging information.</flag>
+	<flag name="doc">Build html documentation and man pages by default.
+		Build monolithic pdf and postscript documentation files (optional: dependent on whether both
+		<pkg>dev-texlive/texlive-latex</pkg> and <pkg>dev-texlive/texlive-latexextra</pkg> are installed).</flag>
+	<flag name="log4cplus">Enable (exclusive) logging support using external <pkg>dev-libs/log4cplus</pkg>
+		library.</flag>
+    <flag name="log4cxx">Enable (exclusive) logging support using external <pkg>dev-libs/log4cxx</pkg>
+        library.</flag>
+    <flag name="log4cpp">Enable (exclusive) logging support using external <pkg>dev-libs/log4cpp</pkg>
+        library.</flag>
+    <flag name="logging">Enable logging globally for <pkg>dev-libs/pion</pkg>.
+        Use <pkg>dev-libs/boost</pkg> std::ostream command line output if none of the
+		preceeding three (mutally exclusive) external logging libraries are enabled.</flag>
+	<flag name="ssl">Enables SSL support using <pkg>dev-libs/openssl</pkg> library.</flag>
+	<flag name="zlib">Add support for gzip compression using <pkg>sys-libs/zlib</pkg> library.</flag>
+</use>
+</pkgmetadata>
