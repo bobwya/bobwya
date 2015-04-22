@@ -21,6 +21,30 @@ done
 
 # Rename and patch all the stock firefox ebuild files
 cd "${script_folder%/tools}"
+
+# Patch metadata.xml file
+metadata_file="metadata.xml"
+mv "${metadata_file}" "${metadata_file}.bak"
+gawk 'BEGIN{
+        flag_regexp="^[[:blank:]]+\<flag name\=\"([\-[:alnum:]]+)\"\>.+$"
+        use_close_regexp="\<\/use\>"
+        kde_use_flag="kde"
+    }
+    {
+        flag_name=($0 ~ flag_regexp) ? gensub(flag_regexp, "\\1", "g") : ""
+        if (flag_name == kde_use_flag)
+            next
+        if (((flag_name > kde_use_flag) || ($0 ~ use_close_regexp)) && ! kde_use) {
+            printf("\t<flag name=\"%s\">%s</flag>\n",
+                    kde_use_flag,
+                    "Use OpenSUSE patchset to build in support for KDE4 file dialog via <pkg>kde-misc/kmozillahelper</pkg>.")
+            kde_use=1
+        }
+        printf("%s\n", $0)
+    }' "${metadata_file}.bak" > "${metadata_file}" 2>/dev/null
+rm "${metadata_file}.bak"
+
+# Rename and patch all ebuild files
 for old_ebuild_file in *.ebuild; do
 	# Don't process the ebuild files twice!
 	if [[ "${old_ebuild_file##*/}" =~ firefox\-kde\-opensuse ]]; then
