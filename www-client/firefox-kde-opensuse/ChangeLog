@@ -1,6 +1,20 @@
 # ChangeLog for www-client/firefox
 # Copyright 1999-2015 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/ChangeLog,v 1.410 2015/04/06 22:38:40 axs Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/ChangeLog,v 1.414 2015/04/24 09:58:20 ago Exp $
+
+  24 Apr 2015; Agostino Sarubbo <ago@gentoo.org> firefox-31.6.0.ebuild:
+  Stable for x86, wrt bug #545232
+
+  24 Apr 2015; Agostino Sarubbo <ago@gentoo.org> firefox-31.6.0.ebuild:
+  Stable for amd64, wrt bug #545232
+
+  24 Apr 2015; Jeroen Roovers <jer@gentoo.org> firefox-31.6.0.ebuild:
+  Stable for HPPA (bug #545232).
+
+*firefox-37.0.2 (23 Apr 2015)
+
+  23 Apr 2015; Lars Wendler <polynomial-c@gentoo.org> +firefox-37.0.2.ebuild:
+  Security bump.
 
   06 Apr 2015; Ian Stakenvicius (_AxS_) <axs@gentoo.org> firefox-37.0.1.ebuild,
   +files/firefox-37.0-jemalloc_configure_unbashify.patch:

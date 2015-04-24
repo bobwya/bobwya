@@ -35,9 +35,10 @@ gawk 'BEGIN{
         if (flag_name == kde_use_flag)
             next
         if (((flag_name > kde_use_flag) || ($0 ~ use_close_regexp)) && ! kde_use) {
-            printf("\t<flag name=\"%s\">%s</flag>\n",
+            printf("\t<flag name=\"%s\">%s\n\t\t%s</flag>\n",
                     kde_use_flag,
-                    "Use OpenSUSE patchset to build in support for KDE4 file dialog via <pkg>kde-misc/kmozillahelper</pkg>.")
+                    "Use OpenSUSE patchset to build in support for KDE4 file dialog",
+					"via <pkg>kde-misc/kmozillahelper</pkg>.")
             kde_use=1
         }
         printf("%s\n", $0)
