@@ -1,0 +1,13 @@
+diff -ur a/ipc/chromium/src/build/build_config.h b/ipc/chromium/src/build/build_config.h
+--- a/ipc/chromium/src/build/build_config.h	2011-12-11 21:15:17.000000000 +0000
++++ b/ipc/chromium/src/build/build_config.h	2011-12-11 21:16:37.000000000 +0000
+@@ -87,6 +87,9 @@
+ #elif defined(__sparc__)
+ #define ARCH_CPU_SPARC 1
+ #define ARCH_CPU_32_BITS 1
++#elif defined(__alpha__)
++#define ARCH_CPU_ALPHA 1
++#define ARCH_CPU_64_BITS 1
+ #elif defined(__mips64) && defined(__LP64__)
+ #define ARCH_CPU_MIPS 1
+ #define ARCH_CPU_64_BITS 1
