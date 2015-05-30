@@ -28,7 +28,7 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${MOZ_PN}-36.0-patches-01"
+PATCH="${MOZ_PN}-38.0-patches-0.1"
 # Upstream ftp release URI that's used by mozlinguas.eclass
 # We don't use the http mirror because it deletes old tarballs.
 MOZ_FTP_URI="ftp://ftp.mozilla.org/pub/${MOZ_PN}/releases"
@@ -38,8 +38,9 @@ MOZ_HTTP_URI="http://ftp.mozilla.org/pub/${MOZ_PN}/releases"
 EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 
 MOZCONFIG_OPTIONAL_WIFI=1
+MOZCONFIG_OPTIONAL_JIT="enabled"
 
-inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-v5.36 multilib pax-utils fdo-mime autotools virtualx mozlinguas mercurial
+inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-v5.38 multilib pax-utils fdo-mime autotools virtualx mozlinguas mercurial
 
 DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integration with KDE Desktop"
 HOMEPAGE="http://www.mozilla.com/firefox
@@ -62,7 +63,7 @@ ASM_DEPEND=">=dev-lang/yasm-1.1"
 
 # Mesa 7.10 needed for WebGL + bugfixes
 RDEPEND="
-	>=dev-libs/nss-3.17.4
+	>=dev-libs/nss-3.19
 	>=dev-libs/nspr-4.10.8
 	selinux? ( sec-policy/selinux-mozilla )
 	kde? ( kde-misc/kmozillahelper )
@@ -83,7 +84,7 @@ if [[ ${PV} =~ alpha ]]; then
 		http://dev.gentoo.org/~nirbheek/mozilla/firefox/firefox-${MOZ_PV}_${CHANGESET}.source.tar.bz2"
 	S="${WORKDIR}/mozilla-aurora-${CHANGESET}"
 elif [[ ${PV} =~ beta ]]; then
-	S="${WORKDIR}/mozilla-beta"
+	S="${WORKDIR}/mozilla-release"
 	SRC_URI="${SRC_URI}
 		${MOZ_FTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.bz2
 		${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.bz2"
@@ -185,14 +186,9 @@ src_prepare() {
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox-kde-opensuse/)
 	fi
 	# Apply our patches
-	EPATCH_EXCLUDE="6001_add_alpha_defines_in_ipc.patch 8002_jemalloc_configure_unbashify.patch" \
 	EPATCH_SUFFIX="patch" \
 	EPATCH_FORCE="yes" \
 	epatch "${WORKDIR}/firefox"
-
-	epatch "${FILESDIR}"/${PN}-35.0-gmp-clearkey-sprintf.patch
-	epatch "${FILESDIR}"/${PN}-37.0-jemalloc_configure_unbashify.patch
-	epatch "${FILESDIR}"/${PN}-38.0-add_alpha_defines_in_ipc.patch
 
 	# Allow user to apply any additional patches without modifying ebuild
 	epatch_user
@@ -268,9 +264,6 @@ src_configure() {
 	# Other ff-specific settings
 	mozconfig_annotate '' --with-default-mozilla-five-home=${MOZILLA_FIVE_HOME}
 
-	# force jit
-	mozconfig_annotate '' --enable-ion
-
 	# Allow for a proper pgo build
 	if use pgo; then
 		echo "mk_add_options PROFILE_GEN_SCRIPT='\$(PYTHON) \$(OBJDIR)/_profile/pgo/profileserver.py'" >> "${S}"/.mozconfig
@@ -283,10 +276,6 @@ src_configure() {
 
 	if [[ $(gcc-major-version) -lt 4 ]]; then
 		append-cxxflags -fno-stack-protector
-	elif [[ $(gcc-major-version) -gt 4 || $(gcc-minor-version) -gt 3 ]]; then
-		if use amd64 || use x86; then
-			append-flags -mno-avx
-		fi
 	fi
 }
 
@@ -397,7 +386,11 @@ src_install() {
 	fi
 
 	# Required in order to use plugins and even run firefox on hardened.
-	pax-mark m "${ED}"${MOZILLA_FIVE_HOME}/{firefox,firefox-bin,plugin-container}
+	if use jit; then
+		pax-mark m "${ED}"${MOZILLA_FIVE_HOME}/{firefox,firefox-bin,plugin-container}
+	else
+		pax-mark m "${ED}"${MOZILLA_FIVE_HOME}/plugin-container
+	fi
 
 	if use minimal; then
 		rm -r "${ED}"/usr/include "${ED}${MOZILLA_FIVE_HOME}"/{idl,include,lib,sdk} \

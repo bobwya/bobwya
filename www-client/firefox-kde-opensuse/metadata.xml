@@ -9,12 +9,10 @@
 		optimizations (-Os, -O0, -O1, -O2, -O3)</flag>
 	<flag name="gmp-autoupdate">Allow Gecko Media Plugins (binary blobs) to be automatically
 		downloaded and kept up-to-date in user profiles</flag>
-	via <pkg>kde-misc/kmozillahelper</pkg>.
-		via <pkg>kde-misc/kmozillahelper</pkg>.
-		via <pkg>kde-misc/kmozillahelper</pkg>.</flag>
+	<flag name="jemalloc3">Enable or disable jemalloc3 (forced-on when supported prior to 38.0)</flag>
 	<flag name="kde">Use OpenSUSE patchset to build in support for KDE4 file dialog
 		via <pkg>kde-misc/kmozillahelper</pkg>.</flag>
-	<flag name="minimal"> Prevent sdk and headers from being installed</flag>
+	<flag name="minimal">Prevent sdk and headers from being installed</flag>
 	<flag name="pgo">Add support for profile-guided optimization using gcc-4.5,
 		for faster binaries. This option will double the compile time.</flag>
 	<flag name="system-cairo">Use the system-wide <pkg>x11-libs/cairo</pkg>
