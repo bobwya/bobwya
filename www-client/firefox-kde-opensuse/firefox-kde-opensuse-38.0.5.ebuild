@@ -28,7 +28,7 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${MOZ_PN}-38.0-patches-0.1"
+PATCH="${MOZ_PN}-38.0-patches-0.3"
 # Upstream ftp release URI that's used by mozlinguas.eclass
 # We don't use the http mirror because it deletes old tarballs.
 MOZ_FTP_URI="ftp://ftp.mozilla.org/pub/${MOZ_PN}/releases"
@@ -50,7 +50,7 @@ KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~x86 ~amd64-linux ~x86-linu
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist hardened kde +minimal pgo selinux +gmp-autoupdate test"
+IUSE="bindist egl hardened kde +minimal neon pgo selinux +gmp-autoupdate test"
 RESTRICT="!bindist? ( bindist )"
 
 # More URIs appended below...
@@ -254,6 +254,24 @@ src_configure() {
 	# Add full relro support for hardened
 	use hardened && append-ldflags "-Wl,-z,relro,-z,now"
 
+	if use neon ; then
+		mozconfig_annotate '' --with-fpu=neon
+		mozconfig_annotate '' --with-thumb=yes
+		mozconfig_annotate '' --with-thumb-interwork=no
+	fi
+
+	if [[ ${CHOST} == armv* ]] ; then
+		mozconfig_annotate '' --with-float-abi=hard
+		mozconfig_annotate '' --enable-skia
+
+		if ! use system-libvpx ; then
+			sed -i -e "s|softfp|hard|" \
+				"${S}"/media/libvpx/moz.build
+		fi
+	fi
+
+	use egl && mozconfig_annotate 'Enable EGL as GL provider' --with-gl-provider=EGL
+
 	# Setup api key for location services
 	echo -n "${_google_api_key}" > "${S}"/google-api-key
 	mozconfig_annotate '' --with-google-api-keyfile="${S}/google-api-key"
@@ -277,6 +295,9 @@ src_configure() {
 	if [[ $(gcc-major-version) -lt 4 ]]; then
 		append-cxxflags -fno-stack-protector
 	fi
+
+	# workaround for funky/broken upstream configure...
+	emake -f client.mk configure
 }
 
 src_compile() {
@@ -307,7 +328,7 @@ src_compile() {
 	else
 		CC="$(tc-getCC)" CXX="$(tc-getCXX)" LD="$(tc-getLD)" \
 		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL}" \
-		emake -f client.mk
+		emake -f client.mk realbuild
 	fi
 
 }
