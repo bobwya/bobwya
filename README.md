@@ -6,6 +6,7 @@ Gentoo Overlay containing various packages I have been unable to find @ Gentoo P
 build scripts is irregular. So YMMV - you have been warned!
 
     app-backup/fsarchiver : Flexible filesystem archiver for backup and deployment tool.
+    app-benchmarks/i7z : A better Intel i7 (and now i3, i5) CPU reporting tool for Linux.
     app-crypt/chntpw : Offline NT Password & Registry Editor.
     dev-cpp/pion : C++ framework for building lightweight HTTP interfaces.
     games-fps/dhewm3 : Doom 3 GPL source modification.
