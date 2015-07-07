@@ -9,8 +9,8 @@
 		optimizations (-Os, -O0, -O1, -O2, -O3)</flag>
 	<flag name="gmp-autoupdate">Allow Gecko Media Plugins (binary blobs) to be automatically
 		downloaded and kept up-to-date in user profiles</flag>
+	<flag name="gstreamer-0">Use gstreamer:0.10 instead of gstreamer:1 for media support</flag>
 	<flag name="jemalloc3">Enable or disable jemalloc3 (forced-on when supported prior to 38.0)</flag>
-		via <pkg>kde-misc/kmozillahelper</pkg>.</flag>
 	<flag name="kde">Use OpenSUSE patchset to build in support for KDE4 file dialog
 		via <pkg>kde-misc/kmozillahelper</pkg>.</flag>
 	<flag name="minimal">Prevent sdk and headers from being installed</flag>
@@ -26,5 +26,6 @@
 		instead of bundled.</flag>
 	<flag name="system-sqlite">Use the system-wide <pkg>dev-db/sqlite</pkg>
 		installation with secure-delete enabled</flag>
+	<flag name="egl">Enable EGL provider</flag>
 </use>
 </pkgmetadata>

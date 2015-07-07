@@ -1,6 +1,6 @@
 # Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: www-client/firefox-kde-opensuse-38.0.5 $
+# $Header: www-client/firefox-kde-opensuse-39.0 $
 
 EAPI="5"
 VIRTUALX_REQUIRED="pgo"
@@ -40,7 +40,7 @@ EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 MOZCONFIG_OPTIONAL_WIFI=1
 MOZCONFIG_OPTIONAL_JIT="enabled"
 
-inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-v5.38 multilib pax-utils fdo-mime autotools virtualx mozlinguas mercurial
+inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-v6.39 multilib pax-utils fdo-mime autotools virtualx mozlinguas mercurial
 
 DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integration with KDE Desktop"
 HOMEPAGE="http://www.mozilla.com/firefox
@@ -63,7 +63,7 @@ ASM_DEPEND=">=dev-lang/yasm-1.1"
 
 # Mesa 7.10 needed for WebGL + bugfixes
 RDEPEND="
-	>=dev-libs/nss-3.19
+	>=dev-libs/nss-3.19.2
 	>=dev-libs/nspr-4.10.8
 	selinux? ( sec-policy/selinux-mozilla )
 	kde? ( kde-misc/kmozillahelper )
@@ -171,7 +171,9 @@ src_prepare() {
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-language.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
-		epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
+		if [[ ${MOZ_PV%%.*} -lt 39 ]]; then
+			epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
+		fi
 		# Firefox OpenSUSE KDE integration patchset
 		epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
 		epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"
@@ -188,6 +190,7 @@ src_prepare() {
 	# Apply our patches
 	EPATCH_SUFFIX="patch" \
 	EPATCH_FORCE="yes" \
+	EPATCH_EXCLUDE="8010_bug114311-freetype26.patch" \
 	epatch "${WORKDIR}/firefox"
 
 	# Allow user to apply any additional patches without modifying ebuild

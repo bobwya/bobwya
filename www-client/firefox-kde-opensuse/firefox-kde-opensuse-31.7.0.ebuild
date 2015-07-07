@@ -44,7 +44,7 @@ DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integ
 HOMEPAGE="http://www.mozilla.com/firefox
 	${EHG_REPO_URI}"
 
-KEYWORDS="~alpha amd64 ~arm hppa ~ia64 ~ppc ppc64 x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 ~arm hppa ~ia64 ppc ppc64 x86 ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist hardened kde +minimal pgo selinux test"
@@ -170,7 +170,9 @@ src_prepare() {
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-language.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
-		epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
+		if [[ ${MOZ_PV%%.*} -lt 39 ]]; then
+			epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
+		fi
 		# Firefox OpenSUSE KDE integration patchset
 		epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
 		epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"

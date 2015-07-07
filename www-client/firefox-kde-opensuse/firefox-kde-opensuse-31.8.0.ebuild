@@ -1,6 +1,6 @@
 # Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: www-client/firefox-kde-opensuse-31.6.0 $
+# $Header: www-client/firefox-kde-opensuse-31.8.0 $
 
 EAPI="5"
 VIRTUALX_REQUIRED="pgo"
@@ -26,7 +26,8 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${MOZ_PN}-31.0-patches-0.2"
+PATCH="${MOZ_PN}-31.0-patches-0.3"
+PATCHFF="${PATCH}"
 # Upstream ftp release URI that's used by mozlinguas.eclass
 # We don't use the http mirror because it deletes old tarballs.
 MOZ_FTP_URI="ftp://ftp.mozilla.org/pub/${MOZ_PN}/releases"
@@ -44,7 +45,7 @@ DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integ
 HOMEPAGE="http://www.mozilla.com/firefox
 	${EHG_REPO_URI}"
 
-KEYWORDS="~alpha amd64 ~arm hppa ~ia64 ppc ppc64 x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~x86 ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist hardened kde +minimal pgo selinux test"
@@ -58,7 +59,7 @@ SRC_URI="${SRC_URI}
 ASM_DEPEND=">=dev-lang/yasm-1.1"
 
 CDEPEND="
-	>=dev-libs/nss-3.17.1
+	>=dev-libs/nss-3.19.2
 	>=dev-libs/nspr-4.10.6
 "
 
@@ -170,7 +171,9 @@ src_prepare() {
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-language.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
-		epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
+		if [[ ${MOZ_PV%%.*} -lt 39 ]]; then
+			epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
+		fi
 		# Firefox OpenSUSE KDE integration patchset
 		epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
 		epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"
