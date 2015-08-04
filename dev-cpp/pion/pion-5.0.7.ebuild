@@ -50,12 +50,14 @@ src_prepare() {
 		# (ps & pdf are only built if the required Latex packages are installed).
 		sed -i -e 's/GENERATE\_MAN\(.*\)=\(.*\)NO/GENERATE_MAN\1=\2YES/g' \
 				"${S}/doc/Doxyfile" \
-				|| die "sed: unable to process /doc/Doxyfile to enable man page support"
-		${generate_latex} && sed -i \
+				|| die "sed: unable to process ${S}/doc/Doxyfile to enable man page support"
+		if [[ ${generate_latex} == true ]]; then
+			sed -i \
 				-e 's/GENERATE\_LATEX\(.*\)=\(.*\)NO/GENERATE_LATEX\1=\2YES/g' \
 				-e 's/USE\_PDFLATEX\(.*\)=\(.*\)NO/USE_PDFLATEX\1=\2YES/g' \
 					"${S}/doc/Doxyfile" \
-				|| die "sed: unable to process /doc/Doxyfile to enable Latex support"
+				|| die "sed: unable to process ${S}/doc/Doxyfile to enable Latex support"
+		fi
 	fi
 	"${S}/autogen.sh"
 	# disable forced enabling of ggdb support
@@ -66,7 +68,9 @@ src_configure() {
 	local my_conf
 	if use doc; then
 		my_conf="--enable-doxygen-man --enable-doxygen-html"
-		${generate_latex} && my_conf="${my_conf} --enable-doxygen-pdf --enable-doxygen-ps"
+		if [[ ${generate_latex} == true ]]; then
+			my_conf="${my_conf} --enable-doxygen-pdf --enable-doxygen-ps"
+		fi
 	fi
 	if use logging; then
 		if use log4cplus; then
@@ -95,8 +99,11 @@ src_compile() {
 	emake all
 	if use doc; then
 		# Force single threaded build for Latex-based documentation
-		${generate_latex} && emake -j1 doxygen-doc
-		${generate_latex} || emake doxygen-doc
+		if [[ ${generate_latex} == true ]]; then
+			emake -j1 doxygen-doc
+		else
+			emake doxygen-doc
+		fi
 	fi
 }
 
@@ -105,7 +112,9 @@ src_install() {
 
 	dodoc AUTHORS ChangeLog doc/README* NEWS README.md TODO
 	if use doc; then
-		${generate_latex} && dodoc doc/${PN}.*
+		if [[ ${generate_latex} == true ]]; then
+			dodoc doc/${PN}.*
+		fi
 		docinto "html"
 		dodoc doc/html/*
 		doman doc/man/man3/*.3
@@ -113,7 +122,7 @@ src_install() {
 }
 
 pkg_postinst() {
-	if [[ ! ${generate_latex} ]]; then
+	if [[ ${generate_latex} == false ]]; then
 		einfo
 		einfo "${CATEGORY}/${PN}[doc] can make use of the following optional buildtime dependencies "
 		einfo "to build postscript and pdf documentation:"
