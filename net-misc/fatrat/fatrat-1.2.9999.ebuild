@@ -44,6 +44,13 @@ src_configure() {
 		$(cmake-utils_use_with jplugins) \
 		$(cmake-utils_use_with nls) \
 		$(cmake-utils_use_with webinterface)"
+	if use jplugins; then
+		if [ "${ARCH}" == "amd64" ]; then
+			mycmakeargs+=( -DJAVA_AWT_LIBRARY="${JAVA_HOME}/jre/lib/${ARCH}/libjawt.so;${JAVA_HOME}/jre/lib/${ARCH}/xawt/libmawt.so" )
+		else
+			mycmakeargs+=( -DJAVA_AWT_LIBRARY="${JAVA_HOME}/jre/lib/i386/libjawt.so;${JAVA_HOME}/jre/lib/i386/xawt/libmawt.so" )
+		fi
+	fi
 	cmake-utils_src_configure
 }
 
