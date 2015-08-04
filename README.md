@@ -18,6 +18,7 @@ build scripts is irregular. So YMMV - you have been warned!
     net-misc/fatrat : Open source download manager for Linux written in C++ and built on top of the Qt 4 library.
 	net-misc/teamviewer : TeamViewer is a proprietary computer software package for remote control, desktop sharing, online meetings, web conferencing and file transfer between computers. (binary proprietary / Wine wrapper) 
     net-p2p/btsync : BitTorrent Sync uses advanced peer-to-peer technology to share files between devices. (binary proprietary)
+    net-p2p/eiskaltdcpp  :  EiskaltDC++ is a cross-platform program that uses the Direct Connect and ADC protocols.
     net-p2p/syncthing : Syncthing replaces proprietary sync and cloud services with something open, trustworthy and decentralized.
     sys-apps/uksmstat : Simple tool to monitor and control UKSM.
     www-client/firefox-kde-opensuse : Firefox with OpenSUSE Patchset for better KDE Desktop integration.
