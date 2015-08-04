@@ -1,6 +1,44 @@
 # ChangeLog for www-client/firefox
 # Copyright 1999-2015 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/ChangeLog,v 1.425 2015/07/07 17:59:46 axs Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/firefox/ChangeLog,v 1.434 2015/07/30 19:48:10 axs Exp $
+
+  30 Jul 2015; Ian Stakenvicius (_AxS_) <axs@gentoo.org> firefox-39.0.ebuild:
+  fixed typo made yesterday when adding the epatch line to fix hppa builds; bug
+  556276
+
+  29 Jul 2015; Ian Stakenvicius (_AxS_) <axs@gentoo.org>
+  +files/firefox-38-hppa-js-syntax-error.patch, firefox-38.1.0.ebuild,
+  firefox-39.0.ebuild:
+  Fix syntax errors causing hppa build failures (bug 556196)
+
+  29 Jul 2015; Mikle Kolyada <zlogene@gentoo.org> firefox-38.1.0.ebuild:
+  amd64 stable wrt bug #555416
+
+  29 Jul 2015; Jeroen Roovers <jer@gentoo.org> firefox-38.1.0.ebuild:
+  Stable for PPC64 (bug #555416).
+
+  21 Jul 2015; Ian Stakenvicius (_AxS_) <axs@gentoo.org>
+  -files/firefox-31.0-webm-disallow-negative-samples.patch,
+  -files/firefox-33.0-jemalloc-configure.patch,
+  -files/firefox-35.0-gmp-clearkey-sprintf.patch,
+  -files/firefox-36.0-depollute-CONST-from-dtoa.patch,
+  -files/firefox-36.0-disable-ion.patch,
+  -files/firefox-37.0-jemalloc_configure_unbashify.patch,
+  -firefox-31.5.3.ebuild, -firefox-31.7.0.ebuild:
+  removed old for security bug 554036, dropped stable ia64 keyword with
+  permission from zlogene
+
+  20 Jul 2015; Agostino Sarubbo <ago@gentoo.org> firefox-31.8.0.ebuild:
+  Stable for ppc, wrt bug #554036
+
+  18 Jul 2015; Agostino Sarubbo <ago@gentoo.org> firefox-31.8.0.ebuild:
+  Stable for x86, wrt bug #554036
+
+  18 Jul 2015; Agostino Sarubbo <ago@gentoo.org> firefox-31.8.0.ebuild:
+  Stable for amd64, wrt bug #554036
+
+  18 Jul 2015; Jeroen Roovers <jer@gentoo.org> firefox-31.8.0.ebuild:
+  Stable for HPPA PPC64 (bug #554036).
 
 *firefox-39.0 (07 Jul 2015)
 *firefox-31.8.0 (07 Jul 2015)

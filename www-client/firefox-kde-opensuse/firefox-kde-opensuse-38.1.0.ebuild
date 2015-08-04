@@ -46,7 +46,7 @@ DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integ
 HOMEPAGE="http://www.mozilla.com/firefox
 	${EHG_REPO_URI}"
 
-KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 ~arm ~hppa ~ia64 ~ppc ppc64 ~x86 ~amd64-linux ~x86-linux"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
@@ -191,6 +191,7 @@ src_prepare() {
 	EPATCH_SUFFIX="patch" \
 	EPATCH_FORCE="yes" \
 	epatch "${WORKDIR}/firefox"
+	epatch "${FILESDIR}"/${PN}-38-hppa-js-syntax-error.patch #556196
 
 	# Allow user to apply any additional patches without modifying ebuild
 	epatch_user
@@ -444,4 +445,5 @@ pkg_postinst() {
 
 pkg_postrm() {
 	gnome2_icon_cache_update
+	ewarn "Version ${PV} has known issues importing user profiles from earlier versions of ${PN}"
 }

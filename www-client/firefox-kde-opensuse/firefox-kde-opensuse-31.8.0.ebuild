@@ -45,7 +45,7 @@ DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integ
 HOMEPAGE="http://www.mozilla.com/firefox
 	${EHG_REPO_URI}"
 
-KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 ~arm hppa ~ia64 ppc ppc64 x86 ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist hardened kde +minimal pgo selinux test"
@@ -59,6 +59,7 @@ SRC_URI="${SRC_URI}
 ASM_DEPEND=">=dev-lang/yasm-1.1"
 
 CDEPEND="
+	<=media-libs/freetype-2.5.9999
 	>=dev-libs/nss-3.19.2
 	>=dev-libs/nspr-4.10.6
 "

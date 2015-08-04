@@ -192,6 +192,7 @@ src_prepare() {
 	EPATCH_FORCE="yes" \
 	EPATCH_EXCLUDE="8010_bug114311-freetype26.patch" \
 	epatch "${WORKDIR}/firefox"
+	epatch "${FILESDIR}"/${PN}-38-hppa-js-syntax-error.patch #556196
 
 	# Allow user to apply any additional patches without modifying ebuild
 	epatch_user
