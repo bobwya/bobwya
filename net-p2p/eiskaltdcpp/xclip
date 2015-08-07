@@ -1,0 +1,112 @@
+Portage 2.2.20 (python 3.4.1-final-0, default/linux/amd64/13.0/desktop/kde/systemd, gcc-4.9.3, glibc-2.21-r1, 4.1.3-gentoo x86_64)
+=================================================================
+System uname: Linux-4.1.3-gentoo-x86_64-Intel-R-_Core-TM-_i7-4710HQ_CPU_@_2.50GHz-with-gentoo-2.2
+KiB Mem:    32850088 total,  25211544 free
+KiB Swap:   33554428 total,  33554428 free
+Timestamp of repository gentoo: Mon, 03 Aug 2015 09:00:01 +0000
+sh bash 4.3_p39
+ld GNU ld (Gentoo git) 2.25.51.20150117
+app-shells/bash:          4.3_p39::gentoo
+dev-java/java-config:     2.2.0::gentoo
+dev-lang/perl:            5.22.0::gentoo
+dev-lang/python:          2.7.9-r1::gentoo, 3.3.5-r1::gentoo, 3.4.1::gentoo
+dev-util/cmake:           3.3.0::gentoo
+dev-util/pkgconfig:       0.28-r3::gentoo
+sys-apps/baselayout:      2.2::gentoo
+sys-apps/openrc:          0.17::gentoo
+sys-apps/sandbox:         2.6-r1::gentoo
+sys-devel/autoconf:       2.13::gentoo, 2.69-r1::gentoo
+sys-devel/automake:       1.10.3-r1::gentoo, 1.11.6-r1::gentoo, 1.12.6::gentoo, 1.13.4::gentoo, 1.14.1::gentoo, 1.15::gentoo
+sys-devel/binutils:       2.25.1::gentoo, 9999::gentoo
+sys-devel/gcc:            4.9.3::gentoo
+sys-devel/gcc-config:     1.8::gentoo
+sys-devel/libtool:        2.4.6-r1::gentoo
+sys-devel/make:           4.1-r1::gentoo
+sys-kernel/linux-headers: 4.1::gentoo (virtual/os-headers)
+sys-libs/glibc:           2.21-r1::gentoo
+Repositories:
+
+gentoo
+    location: /usr/portage
+    sync-type: rsync
+    sync-uri: rsync://rsync.gentoo.org/gentoo-portage
+    priority: -1000
+
+steam-overlay
+    location: /var/lib/layman/steam-overlay
+    masters: gentoo
+    priority: 0
+
+jkolo
+    location: /var/lib/layman/jkolo
+    masters: gentoo
+    priority: 1
+
+stuff
+    location: /var/lib/layman/stuff
+    masters: gentoo
+    priority: 2
+
+games-overlay
+    location: /var/lib/layman/games-overlay
+    masters: gentoo
+    priority: 3
+
+kde
+    location: /var/lib/layman/kde
+    masters: gentoo
+    priority: 4
+
+qt
+    location: /var/lib/layman/qt
+    masters: gentoo
+    priority: 5
+
+gentoo-zh
+    location: /var/lib/layman/gentoo-zh
+    masters: gentoo
+    priority: 6
+
+mrueg
+    location: /var/lib/layman/mrueg
+    masters: gentoo
+    priority: 7
+
+multimedia
+    location: /var/lib/layman/multimedia
+    masters: gentoo
+    priority: 8
+
+bobwya
+    location: /usr/local/portage
+    masters: gentoo
+    priority: 9
+
+Installed sets: @kde-custom
+ACCEPT_KEYWORDS="amd64"
+ACCEPT_LICENSE="*"
+CBUILD="x86_64-pc-linux-gnu"
+CFLAGS="-O2 -fomit-frame-pointer -ftree-vectorize -pipe -march=native -mtune=native"
+CHOST="x86_64-pc-linux-gnu"
+CONFIG_PROTECT="/etc /etc/conf.d /etc/init.d /usr/share/config /usr/share/config/kdm /usr/share/gnupg/qualified.txt /usr/share/themes/oxygen-gtk/gtk-2.0 /usr/share/themes/oxygen-gtk/gtk-3.0"
+CONFIG_PROTECT_MASK="/etc/ca-certificates.conf /etc/dconf /etc/env.d /etc/fonts/fonts.conf /etc/gconf /etc/gentoo-release /etc/revdep-rebuild /etc/sandbox.d /etc/skel /etc/terminfo /etc/texmf/language.dat.d /etc/texmf/language.def.d /etc/texmf/updmap.d /etc/texmf/web2c"
+CXXFLAGS="-O2 -fomit-frame-pointer -ftree-vectorize -pipe -march=native -mtune=native"
+DISTDIR="/usr/portage/distfiles"
+EMERGE_DEFAULT_OPTS="--keep-going --jobs=8 --load-average=8  --quiet-build=y --quiet-fail=y --backtrack=0"
+FCFLAGS="-O2 -pipe"
+FEATURES="assume-digests binpkg-logs compress-build-logs config-protect-if-modified distlocks fixlafiles merge-sync news parallel-fetch parallel-install preserve-libs protect-owned sandbox sfperms splitdebug strict unknown-features-warn unmerge-logs unmerge-orphans userfetch userpriv usersandbox usersync"
+FFLAGS="-O2 -pipe"
+GENTOO_MIRRORS="http://distfiles.gentoo.org"
+LANG="en_GB.UTF-8"
+LC_ALL="en_GB.UTF-8"
+LDFLAGS="-O2 -fomit-frame-pointer -ftree-vectorize -pipe -march=native -mtune=native -Wl,--as-needed -Wl,-O1"
+MAKEOPTS="-j8 -s"
+PKGDIR="/usr/portage/packages"
+PORTAGE_CONFIGROOT="/"
+PORTAGE_RSYNC_EXTRA_OPTS="--delete-excluded --exclude-from=/etc/portage/rsync_excludes"
+PORTAGE_RSYNC_OPTS="--recursive --links --safe-links --perms --times --omit-dir-times --compress --force --whole-file --delete --stats --human-readable --timeout=180 --exclude=/distfiles --exclude=/local --exclude=/packages"
+PORTAGE_TMPDIR="/tmp"
+USE="X a52 aac accessibility acl acpi aes aiglx aim alsa amd64 artswrappersuid audiofile avahi avx avx2 bash-completion bazaar berkdb bluetooth bluray btrfs bzip2 cairo cdda cddb cdio cdr cjk cli cman corefonts cracklib crypt css cups cxx dbus declarative djvu dri dri3 dts dv dvb dvd dvdnav dvdr dvdread dvi emboss encode exif f2fs faad fam fame fat ffmpeg firefox flac fma3 fontconfig freetype gcj gdbm gif git glamor gmp gnutls google-gadgets gphoto2 gpm gsm gtk handbook hfs iconv icq icu imap infinality inotify ipod ipv4 ipv6 irc irda jabber jfs joystick jpeg jpeg2k kde kdeenablefinal kdehiddenvisibility keymap kipi kvm lame lcd lcms libnotify live lm_sensors lua lz4 lzma lzo mad mail matroska mercurial mjpeg mmx mmxext mng modules mozdevelop mp3 mp3rtp mp4 mpeg msn mtp multilib musepack musicbrainz ncurses networkmanager nfs nls nptl nsplugin ntfs nvidia offensive ogg openal opencl openexr opengl openmp osmesa pam pango pcmcia pcre pda pdf phonon plasma png policykit popcnt ppds pulseaudio python qt3support qt4 rar raw rdesjtio readline real reiserfs rss rtmp s3tc samba scanner sdl semantic-desktop session sftp slp smp snmp speex spell sqlite sse sse2 sse3 sse4_1 sse4_2 ssl ssse3 startup-notification stream subversion svg sysfs systemd taglib tcpd theora thumbnail tiff tk truetype type3 udev udisks unicode upcall upower usb v4l2 vaapi vcd vdpau visualization vorbis webkit wifi win32codecs wmf wxwidgets x264 xcb xcomposite xfs xinerama xml xpm xscreensaver xulrunner xv xvid xvmc xz yahoo zeroconf zlib" ABI_X86="32 64" ALSA_CARDS="ali5451 als4000 atiixp atiixp-modem bt87x ca0106 cmipci emu10k1x ens1370 ens1371 es1938 es1968 fm801 hda-intel intel8x0 intel8x0m maestro3 trident usb-audio via82xx via82xx-modem ymfpci" APACHE2_MODULES="authn_core authz_core socache_shmcb unixd actions alias auth_basic authn_alias authn_anon authn_dbm authn_default authn_file authz_dbm authz_default authz_groupfile authz_host authz_owner authz_user autoindex cache cgi cgid dav dav_fs dav_lock deflate dir disk_cache env expires ext_filter file_cache filter headers include info log_config logio mem_cache mime mime_magic negotiation rewrite setenvif speling status unique_id userdir usertrack vhost_alias" APACHE2_MPMS="prefork" CALLIGRA_FEATURES="author braindump flow karbon kexi krita sheets stage words" CAMERAS="ptp2" COLLECTD_PLUGINS="df interface irq load memory rrdtool swap syslog" CPU_FLAGS_X86="aes avx avx2 fma3 mmx mmxext popcnt sse sse2 sse3 sse4_1 sse4_2 ssse3" DRACUT_MODULES="biosdevname systemd" ELIBC="glibc" GPSD_PROTOCOLS="ashtech aivdm earthmate evermore fv18 garmin garmintxt gpsclock itrax mtk3301 nmea ntrip navcom oceanserver oldstyle oncore rtcm104v2 rtcm104v3 sirf superstar2 timing tsip tripmate tnt ublox ubx" GRUB_PLATFORMS="emu multiboot pc emu multiboot pc" INPUT_DEVICES="synaptics evdev" KERNEL="linux" LCD_DEVICES="bayrad cfontz cfontz633 glk hd44780 lb216 lcdm001 mtxorb ncurses text" LIBREOFFICE_EXTENSIONS="pdfimport" LINGUAS="en en_GB en_US" LIRC_DEVICES="audio audio_alsa pctv serial" OFFICE_IMPLEMENTATION="libreoffice" PHP_TARGETS="php5-5" PYTHON_SINGLE_TARGET="python2_7" PYTHON_TARGETS="python2_7 python3_4" QEMU_SOFTMMU_TARGETS="i386 x86_64" QEMU_USER_TARGETS="i386 x86_64" RUBY_TARGETS="ruby19 ruby20 ruby21" SANE_BACKENDS="canon" USERLAND="GNU" VIDEO_CARDS="nouveau nvidia" XTABLES_ADDONS="quota2 psd pknock lscan length2 ipv4options ipset ipp2p iface geoip fuzzy condition tee tarpit sysrq steal rawnat logmark ipmark dhcpmac delude chaos account"
+USE_PYTHON="2.7 3.4"
+Unset:  CPPFLAGS, CTARGET, INSTALL_MASK, PORTAGE_BUNZIP2_COMMAND, PORTAGE_COMPRESS, PORTAGE_COMPRESS_FLAGS
+
