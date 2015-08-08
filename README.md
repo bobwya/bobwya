@@ -11,7 +11,8 @@ build scripts is irregular. So YMMV - you have been warned!
     dev-cpp/pion : C++ framework for building lightweight HTTP interfaces.
     games-fps/dhewm3 : Doom 3 GPL source modification.
     kde-misc/kmozillahelper : helper application that allows Mozilla Firefox to use KDE file dialogs, file associations, protocol handlers and other KDE integration features.
-    media-tv/freetuxtv : freetuxtv GTK+ WebTV and Web Radio player for Linux.
+    mail-client/thunderbird-kde-opensuse : Thunderbird mail client, with OpenSUSE Patchset for better KDE Desktop integration. 
+	media-tv/freetuxtv : freetuxtv GTK+ WebTV and Web Radio player for Linux.
     media-video/filebot-bin : FileBot tool for organizing and renaming your movies, tv shows or anime, and music. (java jar)
     media-video/handbrake : Handbrake A/V Conversion Tool
     media-video/h264enc : h264enc is an advanced and powerful interactive menu-driven shell script written for the GNU/Linux operating system to encode video files
@@ -21,6 +22,6 @@ build scripts is irregular. So YMMV - you have been warned!
     net-p2p/eiskaltdcpp  :  EiskaltDC++ is a cross-platform program that uses the Direct Connect and ADC protocols.
     net-p2p/syncthing : Syncthing replaces proprietary sync and cloud services with something open, trustworthy and decentralized.
     sys-apps/uksmstat : Simple tool to monitor and control UKSM.
-    www-client/firefox-kde-opensuse : Firefox with OpenSUSE Patchset for better KDE Desktop integration.
+    www-client/firefox-kde-opensuse : Firefox web browser, with OpenSUSE Patchset for better KDE Desktop integration.
 
 Credit to the Arch AUR firefox-kde-opensuse PKGBUILD script used as the main basis for the  www-client/firefox-kde-opensuse (OpenSUSE KDE patchset) ebuild.
