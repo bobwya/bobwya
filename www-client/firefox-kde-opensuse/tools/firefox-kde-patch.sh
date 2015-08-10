@@ -50,6 +50,7 @@ rm "${metadata_file}.bak"
 for old_ebuild_file in *.ebuild; do
 	# Don't process the ebuild files twice!
 	if [[ "${old_ebuild_file##*/}" =~ firefox\-kde\-opensuse ]]; then
+		ebuild_file="${old_ebuild_file}"
 		continue
 	fi
 
@@ -67,9 +68,9 @@ for old_ebuild_file in *.ebuild; do
 			blank_line_regexp="^[[:blank:]]*$"
 			leading_ws_regexp="^[[:blank:]]+"
 			trailing_ws_regexp="^[[:blank:]]+"
-			end_quote_regexp="\"[[:blank:]]*$"
+			end_quote_regexp="[^=]\"[[:blank:]]*$"
 			end_curly_bracket_regexp="^[[:blank:]]*\}[[:blank:]]*$"
-			ebuild_header_regexp="^\# \\$Header\:"
+			ebuild_header_start_regexp="^\# \\$"
 			ebuild_inherit_regexp="^inherit "
 			variables="BUILD_OBJ_DIR DESCRIPTION HOMEPAGE IUSE MOZ_HTTP_URI MOZ_PV RDEPEND"
 			split(variables, array_variables)
@@ -86,7 +87,6 @@ for old_ebuild_file in *.ebuild; do
 		}
 		{
 			suppress_current_line=0
-
 			# Alter current ebuild line before it is printed
 			if ($0 ~ array_variables_regexp["IUSE"]) {
 				for (ifield=2; ifield<=NF; ++ifield) {
@@ -99,7 +99,7 @@ for old_ebuild_file in *.ebuild; do
 				else
 					sub(/^/, (kde_use_flag " "), $ifield)
 			}
-			else if ($0 ~ ebuild_header_regexp) {
+			else if ((NR == 3) && ($0 ~ ebuild_header_start_regexp)) {
 				$0=("# $Header: " ebuild_package_version " $")
 			}
 			else if ($0 ~ ebuild_inherit_regexp) {
@@ -143,7 +143,7 @@ for old_ebuild_file in *.ebuild; do
 			else if ($0 ~ array_variables_regexp["RDEPEND"]) {
 				rdepend_open=1
 			}
-			else if (($0 ~ end_quote_regexp) && (rdepend_open || homepage_open)) {
+			if (($0 ~ end_quote_regexp) && (rdepend_open || homepage_open)) {
 				if (rdepend_open) {
 					rdepend_open=0
 					rdepend_close=1
@@ -152,7 +152,7 @@ for old_ebuild_file in *.ebuild; do
 					homepage_open=0
 					homepage_close=1
 				}
-				sub(end_quote_regexp, "", $0)
+				sub("\"[[:blank:]]*$", "", $0)
 				suppress_current_line=($0 ~ blank_line_regexp) ? 1 : 0
 			}
 			# Convert internal references to "firefox-kde-opensuse" (PN) to "firefox" (MOZ_PN) - but not for user messages or local patches!
