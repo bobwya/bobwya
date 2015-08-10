@@ -15,8 +15,10 @@ for patch_file in *.patch; do
 	fi
 
 	new_patch_file="${patch_file/firefox/firefox-kde-opensuse}"
-	echo "moving patch file: \"${patch_file}\" -> \"${new_patch_file}\""
-	mv "${patch_file}" "${new_patch_file}"
+	if 	[[ "${patch_file}" != "${new_patch_file}" ]]; then
+		echo "moving patch file: \"${patch_file}\" -> \"${new_patch_file}\""
+		mv "${patch_file}" "${new_patch_file}"
+	fi
 done
 
 # Rename and patch all the stock firefox ebuild files
@@ -32,8 +34,7 @@ gawk 'BEGIN{
     }
     {
         flag_name=($0 ~ flag_regexp) ? gensub(flag_regexp, "\\1", "g") : ""
-        if (flag_name == kde_use_flag)
-            next
+        kde_use=(flag_name == kde_use_flag) ? 1 : kde_use
         if (((flag_name > kde_use_flag) || ($0 ~ use_close_regexp)) && ! kde_use) {
             printf("\t<flag name=\"%s\">%s\n\t\t%s</flag>\n",
                     kde_use_flag,
@@ -63,9 +64,11 @@ for old_ebuild_file in *.ebuild; do
 			gsub("\.ebuild$", "", ebuild_package_version)
 
 			# Setup some regular expression constants - to hopefully make the script more readable!
+			blank_line_regexp="^[[:blank:]]*$"
 			leading_ws_regexp="^[[:blank:]]+"
 			trailing_ws_regexp="^[[:blank:]]+"
 			end_quote_regexp="\"[[:blank:]]*$"
+			end_curly_bracket_regexp="^[[:blank:]]*\}[[:blank:]]*$"
 			ebuild_header_regexp="^\# \\$Header\:"
 			ebuild_inherit_regexp="^inherit "
 			variables="BUILD_OBJ_DIR DESCRIPTION HOMEPAGE IUSE MOZ_HTTP_URI MOZ_PV RDEPEND"
@@ -74,14 +77,15 @@ for old_ebuild_file in *.ebuild; do
 				array_variables_regexp[array_variables[i]]="^" gensub(/\_/, "\\_", "g", array_variables[i]) "\=\".*(\"|$)"
 			ebuild_phases="pkg_setup pkg_pretend src_unpack src_prepare src_configure src_compile src_install pkg_preinst pkg_postinst pkg_postrm"
 			split(ebuild_phases, array_ebuild_phases)
-			for (i in array_ebuild_phases)
+			for (i in array_ebuild_phases) {
 				array_ebuild_phases_regexp[array_ebuild_phases[i]]="^" gensub(/\_/, "\\_", "g", array_ebuild_phases[i]) "\\(\\)[[:blank:]]+"
+				array_phase_open[array_ebuild_phases[i]]=0
+			}
 			ebuild_message_regexp="^[[:blank:]]+(einfo|elog|ewarn)"
 			local_epatch_regexp="^[[:blank:]]+epatch.+\\\$\{FILESDIR\}.+\.patch.*"
 		}
 		{
-			# spelling fix!
-			gsub(/modifing/, "modifying", $0)
+			suppress_current_line=0
 
 			# Alter current ebuild line before it is printed
 			if ($0 ~ array_variables_regexp["IUSE"]) {
@@ -108,25 +112,56 @@ for old_ebuild_file in *.ebuild; do
 				print "MOZ_PN=\"firefox\""
 				moz_pn_defined=1
 			}
-			else if ($0 ~ array_variables_regexp["HOMEPAGE"]) {
+			
+			# Ebuild phase process opening & closing stanzas for functions
+			new_phase_active=""
+			for (i in array_ebuild_phases) {
+				if ($0 ~ array_ebuild_phases_regexp[array_ebuild_phases[i]]) {
+					new_phase_active=i
+					break
+				}
+			}
+			if (new_phase_active != "") {
+				for (i in array_ebuild_phases)
+					array_phase_open[array_ebuild_phases[i]]=0
+				array_phase_open[array_ebuild_phases[new_phase_active]]=1
+			}
+			else if ($0 ~ end_curly_bracket_regexp) {
+				for (i in array_ebuild_phases)
+					array_phase_open[array_ebuild_phases[i]]=0
+			}
+			
+			# Ebuild phase based pre-checks
+			if (array_phase_open["src_prepare"]) {
+				gsub(/modifing/, "modifying", $0)
+			}
+
+			# Process initial variables
+			if ($0 ~ array_variables_regexp["HOMEPAGE"]) {
 				homepage_open=1	
 			}
-			if (rdepend_open && ($0 ~ end_quote_regexp)) {
-				sub(end_quote_regexp, "", $0)
-				rdepend_open=0
-				rdepend_close=1
+			else if ($0 ~ array_variables_regexp["RDEPEND"]) {
+				rdepend_open=1
 			}
-			else if (homepage_open && ($0 ~ end_quote_regexp)) {
+			else if (($0 ~ end_quote_regexp) && (rdepend_open || homepage_open)) {
+				if (rdepend_open) {
+					rdepend_open=0
+					rdepend_close=1
+				}
+				else {
+					homepage_open=0
+					homepage_close=1
+				}
 				sub(end_quote_regexp, "", $0)
-				homepage_open=0
-				homepage_close=1
+				suppress_current_line=($0 ~ blank_line_regexp) ? 1 : 0
 			}
 			# Convert internal references to "firefox-kde-opensuse" (PN) to "firefox" (MOZ_PN) - but not for user messages or local patches!
 			if (($0 !~ ebuild_message_regexp) && ($0 !~ local_epatch_regexp))
 				gsub(/\$\{PN\}/, "${MOZ_PN}")
 
 			# Print current line in ebuild
-			print $0
+			if (!suppress_current_line)
+				print $0
 
 			# Extract whitespace type and indent level for current line in the ebuild - so we step lightly!
 			if (match($0, leading_ws_regexp))
@@ -147,10 +182,9 @@ for old_ebuild_file in *.ebuild; do
 				printf("%s${EHG_REPO_URI}\"\n", indent)
 				homepage_close=0
 			}
-			else if ($0 ~ array_variables_regexp["RDEPEND"]) {
-				rdepend_open=1
-			}
-			else if ($0 ~ /mozlinguas\_src\_unpack/) {
+			
+			# Ebuild phase based post-checks
+			if (array_phase_open["src_unpack"] && ($0 ~ /mozlinguas\_src\_unpack/)) {
 				printf("%s%s\n",	indent, "if use kde; then")
 				printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^\(10|17|24\)\..*esr$ ]]; then")
 				printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"esr${MOZ_PV%%.*}\"")
@@ -161,14 +195,16 @@ for old_ebuild_file in *.ebuild; do
 				printf("%s%s%s\n",	indent, indent, "EHG_CHECKOUT_DIR=\"${WORKDIR}/${KDE_PATCHSET}\"")
 				printf("%s%s%s\n",	indent, indent, "mercurial_fetch \"${EHG_REPO_URI}\" \"${KDE_PATCHSET}\"")
 				printf("%s%s\n",	indent, "fi")
+				array_phase_open["src_unpack"]=0
 			}
-			else if (shorten_build_object_path && ($0 ~ array_ebuild_phases_regexp["pkg_pretend"])) {
+			else if (array_phase_open["pkg_pretend"] && shorten_build_object_path) {
 			    printf("%s%s\n",	indent, "if [[ ${#BUILD_OBJ_DIR} -gt ${MAX_OBJ_DIR_LEN} ]]; then")
 			    printf("%s%s%s\n",	indent, indent, "ewarn \"Building ${PN} with a build object directory path >${MAX_OBJ_DIR_LEN} characters long may cause the build to fail:\"")
 				printf("%s%s%s\n",	indent, indent, "ewarn \" ... \\\"${BUILD_OBJ_DIR}\\\"\"")
 				printf("%s%s\n", 	indent, "fi")
+				array_phase_open["pkg_pretend"]=0
 			}
-			else if ($0 ~ array_ebuild_phases_regexp["src_prepare"]) {
+			else if (array_phase_open["src_prepare"]) {
 				printf("%s%s\n",	indent, "# Patch for https://bugzilla.redhat.com/show_bug.cgi?id=966424")
 				printf("%s%s\n",	indent, "epatch \"${FILESDIR}\"/firefox-kde-opensuse-rhbz-966424.patch")
 				printf("%s%s\n", 	indent, "if use kde; then")
@@ -193,6 +229,7 @@ for old_ebuild_file in *.ebuild; do
                 printf("%s%s%s\n",  indent, indent,  "#epatch \"${FILESDIR}/firefox-kde-opensuse-force-qt-dialog.patch\"")
                 printf("%s%s%s\n",  indent, indent,  "# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox-kde-opensuse/)")
 				printf("%s%s\n", 	indent, "fi")
+				array_phase_open["src_prepare"]=0
 			}
 			else if ($0 ~ array_variables_regexp["BUILD_OBJ_DIR"]) {
 				printf("MAX_OBJ_DIR_LEN=\"80\"\n")
