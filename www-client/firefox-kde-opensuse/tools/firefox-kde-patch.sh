@@ -184,7 +184,7 @@ for old_ebuild_file in *.ebuild; do
 			}
 			
 			# Ebuild phase based post-checks
-			if (array_phase_open["src_unpack"] && ($0 ~ /mozlinguas\_src\_unpack/)) {
+			if ((array_phase_open["src_unpack"] ==1) && ($0 ~ /mozlinguas\_src\_unpack/)) {
 				printf("%s%s\n",	indent, "if use kde; then")
 				printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^\(10|17|24\)\..*esr$ ]]; then")
 				printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"esr${MOZ_PV%%.*}\"")
@@ -195,16 +195,16 @@ for old_ebuild_file in *.ebuild; do
 				printf("%s%s%s\n",	indent, indent, "EHG_CHECKOUT_DIR=\"${WORKDIR}/${KDE_PATCHSET}\"")
 				printf("%s%s%s\n",	indent, indent, "mercurial_fetch \"${EHG_REPO_URI}\" \"${KDE_PATCHSET}\"")
 				printf("%s%s\n",	indent, "fi")
-				array_phase_open["src_unpack"]=0
+				array_phase_open["src_unpack"]=2
 			}
-			else if (array_phase_open["pkg_pretend"] && shorten_build_object_path) {
+			else if ((array_phase_open["pkg_pretend"] == 1) && shorten_build_object_path) {
 			    printf("%s%s\n",	indent, "if [[ ${#BUILD_OBJ_DIR} -gt ${MAX_OBJ_DIR_LEN} ]]; then")
 			    printf("%s%s%s\n",	indent, indent, "ewarn \"Building ${PN} with a build object directory path >${MAX_OBJ_DIR_LEN} characters long may cause the build to fail:\"")
 				printf("%s%s%s\n",	indent, indent, "ewarn \" ... \\\"${BUILD_OBJ_DIR}\\\"\"")
 				printf("%s%s\n", 	indent, "fi")
-				array_phase_open["pkg_pretend"]=0
+				array_phase_open["pkg_pretend"]=2
 			}
-			else if (array_phase_open["src_prepare"]) {
+			else if (array_phase_open["src_prepare"] == 1) {
 				printf("%s%s\n",	indent, "# Patch for https://bugzilla.redhat.com/show_bug.cgi?id=966424")
 				printf("%s%s\n",	indent, "epatch \"${FILESDIR}\"/firefox-kde-opensuse-rhbz-966424.patch")
 				printf("%s%s\n", 	indent, "if use kde; then")
@@ -229,7 +229,7 @@ for old_ebuild_file in *.ebuild; do
                 printf("%s%s%s\n",  indent, indent,  "#epatch \"${FILESDIR}/firefox-kde-opensuse-force-qt-dialog.patch\"")
                 printf("%s%s%s\n",  indent, indent,  "# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox-kde-opensuse/)")
 				printf("%s%s\n", 	indent, "fi")
-				array_phase_open["src_prepare"]=0
+				array_phase_open["src_prepare"]=2
 			}
 			else if ($0 ~ array_variables_regexp["BUILD_OBJ_DIR"]) {
 				printf("MAX_OBJ_DIR_LEN=\"80\"\n")
