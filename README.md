@@ -8,7 +8,9 @@ build scripts is irregular. So YMMV - you have been warned!
     app-backup/fsarchiver : Flexible filesystem archiver for backup and deployment tool.
     app-benchmarks/i7z : A better Intel i7 (and now i3, i5) CPU reporting tool for Linux.
     app-crypt/chntpw : Offline NT Password & Registry Editor.
-    dev-cpp/pion : C++ framework for building lightweight HTTP interfaces.
+	app-office/libreoffice : LibreOffice, a full office productivity suite.
+	app-office/libreoffice-l10 : Translations for the Libreoffice suite.
+	dev-cpp/pion : C++ framework for building lightweight HTTP interfaces.
     games-fps/dhewm3 : Doom 3 GPL source modification.
     kde-misc/kmozillahelper : helper application that allows Mozilla Firefox to use KDE file dialogs, file associations, protocol handlers and other KDE integration features.
     mail-client/thunderbird-kde-opensuse : Thunderbird mail client, with OpenSUSE Patchset for better KDE Desktop integration. 
