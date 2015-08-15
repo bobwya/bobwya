@@ -1,6 +1,6 @@
 # Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: $
+# $Id$
 
 EAPI=5
 
@@ -58,7 +58,6 @@ unset DEV_URI
 # Really required addons
 # These are bundles that can't be removed for now due to huge patchsets.
 # If you want them gone, patches are welcome.
-ADDONS_SRC+=" ${ADDONS_URI}/17edb780d4054e4205cd956910672b83-mdds_0.12.0.tar.bz2"
 ADDONS_SRC+=" ${ADDONS_URI}/d62650a6f908e85643e557a236ea989c-vigra1.6.0.tar.gz"
 ADDONS_SRC+=" ${ADDONS_URI}/1f24ab1d39f4a51faf22244c94a6203f-xmlsec1-1.2.14.tar.gz" # modifies source code
 ADDONS_SRC+=" collada? ( ${ADDONS_URI}/4b87018f7fff1d054939d19920b751a0-collada2gltf-master-cb1d97788a.tar.bz2 )"
@@ -102,14 +101,14 @@ COMMON_DEPEND="
 	>=app-text/libabw-0.1.0
 	>=app-text/libexttextcat-3.2
 	>=app-text/libebook-0.1.1
-	>=app-text/libetonyek-0.1.1
+	>=app-text/libetonyek-0.1.2
 	app-text/liblangtag
 	>=app-text/libmspub-0.1.0
-	>=app-text/libmwaw-0.3.4
+	>=app-text/libmwaw-0.3.5
 	>=app-text/libodfgen-0.1.0
 	app-text/libwpd:0.10[tools]
 	app-text/libwpg:0.3
-	>=app-text/libwps-0.3.0
+	=app-text/libwps-0.4*
 	>=app-text/poppler-0.16:=[xpdf-headers(+),cxx]
 	>=dev-cpp/clucene-2.3.3.4-r2
 	=dev-cpp/libcmis-0.5*
@@ -118,7 +117,7 @@ COMMON_DEPEND="
 	dev-libs/expat
 	>=dev-libs/hyphen-2.7.1
 	>=dev-libs/icu-4.8.1.1:=
-	>=dev-libs/liborcus-0.7.0
+	=dev-libs/liborcus-0.7*
 	>=dev-libs/librevenge-0.0.1
 	>=dev-libs/nspr-4.8.8
 	>=dev-libs/nss-3.12.9
@@ -193,14 +192,14 @@ RDEPEND="${COMMON_DEPEND}
 	media-fonts/liberation-fonts
 	media-fonts/urw-fonts
 	java? ( >=virtual/jre-1.6 )
-	kde? ( || ( $(add_kdeapps_dep kioclient) $(add_kdebase_dep kioclient) ) )
+	kde? ( $(add_kdeapps_dep kioclient) )
 	vlc? ( media-video/vlc )
 "
 
-if [[ ${PV} != *9999* ]]; then
+if [[ ${PV} != 9999 ]]; then
 	PDEPEND="=app-office/libreoffice-l10n-$(get_version_component_range 1-2)*"
 else
-	PDEPEND="app-office/libreoffice-l10n"
+	PDEPEND="!app-office/libreoffice-l10n"
 fi
 
 # FIXME: cppunit should be moved to test conditional
@@ -214,6 +213,7 @@ DEPEND="${COMMON_DEPEND}
 	dev-util/cppunit
 	>=dev-util/gperf-3
 	dev-util/intltool
+	>=dev-util/mdds-0.12.0:=
 	media-libs/glm
 	net-misc/npapi-sdk
 	>=sys-apps/findutils-4.4.2
@@ -238,10 +238,6 @@ DEPEND="${COMMON_DEPEND}
 	odk? ( >=app-doc/doxygen-1.8.4 )
 	test? ( dev-util/cppunit )
 "
-if [[ ${PV} != *9999* ]]; then
-	DEPEND="${DEPEND}
-			>=dev-util/mdds-0.12.0:="
-fi
 
 PATCHES=(
 	# not upstreamable stuff
@@ -316,7 +312,7 @@ src_unpack() {
 			[[ ${mypv} != ${PV} ]] && EGIT_BRANCH="${PN}-${mypv/./-}"
 			EGIT_CHECKOUT_DIR="${WORKDIR}/${P}"
 			[[ ${mod} != core ]] && EGIT_CHECKOUT_DIR="${WORKDIR}/${PN}-${mod}-${PV}"
-			EGIT_REPO_URI="git://anongit.freedesktop.org/git/${PN}/${mod}.git"
+			EGIT_REPO_URI="git://anongit.freedesktop.org/${PN}/${mod}"
 			git-r3_src_unpack
 			if [[ ${mod} != core ]]; then
 				mod2=${mod}
@@ -390,7 +386,6 @@ src_configure() {
 	#        it is serious pain in the ass for packaging
 	#        should be replaced by boost::gil if someone interested
 	internal_libs+="
-		--without-system-mdds
 		--without-system-sane
 		--without-system-vigra
 	"
@@ -524,8 +519,9 @@ src_configure() {
 
 src_compile() {
 	# more and more LO stuff tries to use OpenGL, including tests during build
-	# bug 501508, bug 540624 and probably more
+	# bug 501508, bug 540624, bug 545974 and probably more
 	addpredict /dev/dri
+	addpredict /dev/ati
 	addpredict /dev/nvidiactl
 
 	# hack for offlinehelp, this needs fixing upstream at some point
@@ -602,9 +598,6 @@ pkg_postinst() {
 
 	use java || \
 		ewarn 'If you plan to use lbase application you should enable java or you will get various crashes.'
-	if [[ ${PV} == *9999* ]]; then
-		ewarn 'Translations are not reliable on live ebuilds: app-office/libreoffice-l10n.'
-	fi
 }
 
 pkg_postrm() {
