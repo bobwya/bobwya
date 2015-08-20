@@ -24,6 +24,7 @@ build scripts is irregular. So YMMV - you have been warned!
     net-p2p/eiskaltdcpp  :  EiskaltDC++ is a cross-platform program that uses the Direct Connect and ADC protocols.
     net-p2p/syncthing : Syncthing replaces proprietary sync and cloud services with something open, trustworthy and decentralized.
     sys-apps/uksmstat : Simple tool to monitor and control UKSM.
+    sys-auth/polkit-explorer : Polkit Explorer reads in a Polkit .policy file, parses its XML contents, and presents the information it contains, on a more human-readable GUI window.
     www-client/firefox-kde-opensuse : Firefox web browser, with OpenSUSE Patchset for better KDE Desktop integration.
 
 Credit to the Arch AUR firefox-kde-opensuse PKGBUILD script used as the main basis for the  www-client/firefox-kde-opensuse (OpenSUSE KDE patchset) ebuild.
