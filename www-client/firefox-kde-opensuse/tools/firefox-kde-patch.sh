@@ -70,7 +70,6 @@ for old_ebuild_file in *.ebuild; do
 			trailing_ws_regexp="^[[:blank:]]+"
 			end_quote_regexp="[^=]\"[[:blank:]]*$"
 			end_curly_bracket_regexp="^[[:blank:]]*\}[[:blank:]]*$"
-			ebuild_header_start_regexp="^\# \\$"
 			ebuild_inherit_regexp="^inherit "
 			variables="BUILD_OBJ_DIR DESCRIPTION HOMEPAGE IUSE MOZ_HTTP_URI MOZ_PV RDEPEND"
 			split(variables, array_variables)
@@ -98,9 +97,6 @@ for old_ebuild_file in *.ebuild; do
 					sub(/$/, (" " kde_use_flag), $NF)
 				else
 					sub(/^/, (kde_use_flag " "), $ifield)
-			}
-			else if ((NR == 3) && ($0 ~ ebuild_header_start_regexp)) {
-				$0=("# $Header: " ebuild_package_version " $")
 			}
 			else if ($0 ~ ebuild_inherit_regexp) {
 				$0=$0 " mercurial"
