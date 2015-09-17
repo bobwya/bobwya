@@ -11,7 +11,7 @@ build scripts is irregular. So YMMV - you have been warned!
 	app-office/libreoffice : LibreOffice, a full office productivity suite.
 	app-office/libreoffice-l10 : Translations for the Libreoffice suite.
 	dev-cpp/pion : C++ framework for building lightweight HTTP interfaces.
-    games-fps/dhewm3 : Doom 3 GPL source modification.
+    games-fps/dhewm3 : Doom 3 GPL source modification (with updates including SDL2 support).
     kde-misc/kmozillahelper : helper application that allows Mozilla Firefox to use KDE file dialogs, file associations, protocol handlers and other KDE integration features.
     mail-client/thunderbird-kde-opensuse : Thunderbird mail client, with OpenSUSE Patchset for better KDE Desktop integration. 
 	media-tv/freetuxtv : freetuxtv GTK+ WebTV and Web Radio player for Linux.
@@ -24,6 +24,7 @@ build scripts is irregular. So YMMV - you have been warned!
     net-p2p/eiskaltdcpp  :  EiskaltDC++ is a cross-platform program that uses the Direct Connect and ADC protocols.
     net-p2p/syncthing : Syncthing replaces proprietary sync and cloud services with something open, trustworthy and decentralized.
     sys-apps/uksmstat : Simple tool to monitor and control UKSM.
+    sys-auth/pam_kwallet : PAM integration to automatically unlock kwallet when logging into a KDE4 Desktop Session.
     sys-auth/polkit-explorer : Polkit Explorer reads in a Polkit .policy file, parses its XML contents, and presents the information it contains, on a more human-readable GUI window.
     www-client/firefox-kde-opensuse : Firefox web browser, with OpenSUSE Patchset for better KDE Desktop integration.
 
