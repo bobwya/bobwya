@@ -5,7 +5,7 @@
 EAPI="5"
 VIRTUALX_REQUIRED="pgo"
 WANT_AUTOCONF="2.1"
-MOZ_ESR=1
+MOZ_ESR=""
 
 # This list can be updated with scripts/get_langs.sh from the mozilla overlay
 # No official support as of fetch time
@@ -28,7 +28,8 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${MOZ_PN}-38.0-patches-0.3"
+PATCH="${MOZ_PN}-40.0-patches-0.01"
+
 MOZ_HTTP_URI="http://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
@@ -37,13 +38,13 @@ EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 MOZCONFIG_OPTIONAL_WIFI=1
 MOZCONFIG_OPTIONAL_JIT="enabled"
 
-inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-v6.38 multilib pax-utils fdo-mime autotools virtualx mozlinguas mercurial
+inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-v6.40 multilib pax-utils fdo-mime autotools virtualx mozlinguas mercurial
 
 DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integration with KDE Desktop"
 HOMEPAGE="http://www.mozilla.com/firefox
 	${EHG_REPO_URI}"
 
-KEYWORDS="~alpha amd64 ~arm hppa ~ia64 ppc ppc64 x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~x86 ~amd64-linux ~x86-linux"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
@@ -185,9 +186,10 @@ src_prepare() {
 	# Apply our patches
 	EPATCH_SUFFIX="patch" \
 	EPATCH_FORCE="yes" \
+	EPATCH_EXCLUDE="8010_bug114311-freetype26.patch" \
 	epatch "${WORKDIR}/firefox"
 	epatch "${FILESDIR}"/${PN}-38-hppa-js-syntax-error.patch #556196
-
+	epatch "${FILESDIR}"/${PN}-38-dont-hardcode-libc-soname.patch #557956
 	# Allow user to apply any additional patches without modifying ebuild
 	epatch_user
 
@@ -321,11 +323,11 @@ src_compile() {
 		addpredict "${cards}"
 
 		CC="$(tc-getCC)" CXX="$(tc-getCXX)" LD="$(tc-getLD)" \
-		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL}" \
+		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 		Xemake -f client.mk profiledbuild || die "Xemake failed"
 	else
 		CC="$(tc-getCC)" CXX="$(tc-getCXX)" LD="$(tc-getLD)" \
-		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL}" \
+		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 		emake -f client.mk realbuild
 	fi
 
