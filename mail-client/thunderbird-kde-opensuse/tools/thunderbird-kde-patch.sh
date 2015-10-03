@@ -203,7 +203,7 @@ for old_ebuild_file in *.ebuild; do
 			# Ebuild phase based post-checks
 			if (array_phase_open["src_unpack"] && ($0 ~ mozlinguas_src_unpack_regexp)) {
 				printf("%s%s\n",	indent, "if use kde; then")
-				printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^\(10|17|24\)\..*esr$ ]]; then")
+				printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^\(10|17|24\)\\..*esr$ ]]; then")
 				printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"esr${MOZ_PV%%.*}\"")
 				printf("%s%s%s\n",	indent, indent, "else")
 				printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"firefox${MOZ_PV%%.*}\"")
@@ -211,6 +211,14 @@ for old_ebuild_file in *.ebuild; do
 				printf("%s%s%s\n",	indent, indent, "KDE_PATCHSET=\"firefox-kde-patchset\"")
 				printf("%s%s%s\n",	indent, indent, "EHG_CHECKOUT_DIR=\"${WORKDIR}/${KDE_PATCHSET}\"")
 				printf("%s%s%s\n",	indent, indent, "mercurial_fetch \"${EHG_REPO_URI}\" \"${KDE_PATCHSET}\"")
+				printf("%s%s%s\n",	indent, indent, "# Patch firefox-kde-opensuse mozilla-kde patch as thunderbird 38.3.0 has a backported bug fix... =hack")
+				printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^38\\.(3)\\..*$ ]]; then")
+				printf("%s%s%s%s\n",indent, indent, indent, "awk -f \"${FILESDIR}/mozilla-kde.patch.awk\" \"${EHG_CHECKOUT_DIR}/mozilla-kde.patch\" \\")
+				printf("%s%s%s%s%s\n",indent, indent, indent, indent, ">\"${EHG_CHECKOUT_DIR}/mozilla-kde.patch.new\" 2>/dev/null \\")
+				printf("%s%s%s%s\n",indent, indent, indent, "&& mv -f \"${EHG_CHECKOUT_DIR}/mozilla-kde.patch.new\" \"${EHG_CHECKOUT_DIR}/mozilla-kde.patch\" \\")
+				printf("%s%s%s%s%s\n",indent, indent, indent, indent, "2>/dev/null \\")
+				printf("%s%s%s%s\n",indent, indent, indent, "|| die \"unable to update mozilla-kde.patch : awk\"")
+				printf("%s%s%s\n",	indent, indent, "fi")
 				printf("%s%s\n",	indent, "fi")
 			}
 			else if (array_phase_open["pkg_pretend"] && shorten_build_object_path) {

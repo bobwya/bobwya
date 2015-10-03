@@ -1,6 +1,6 @@
 # Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: mail-client/thunderbird-kde-opensuse-31.8.0 $
+# $Id$
 
 EAPI=5
 WANT_AUTOCONF="2.1"
@@ -58,13 +58,13 @@ SRC_URI="${SRC_URI}
 	crypt? ( http://www.enigmail.net/download/source/enigmail-${EMVER}.tar.gz )
 	lightning? (
 		${MOZ_HTTP_URI/${MOZ_PN}/calendar/lightning}${MOZ_LIGHTNING_VER}/linux/lightning.xpi -> lightning-${MOZ_LIGHTNING_VER}.xpi
-		http://dev.gentoo.org/~axs/distfiles/gdata-provider-${MOZ_LIGHTNING_GDATA_VER}.tar.xz
+		https://dev.gentoo.org/~axs/distfiles/gdata-provider-${MOZ_LIGHTNING_GDATA_VER}.tar.xz
 	)
-	http://dev.gentoo.org/~anarchy/mozilla/patchsets/${PATCH}.tar.xz
-	http://dev.gentoo.org/~anarchy/mozilla/patchsets/${PATCHFF}.tar.xz
-	http://dev.gentoo.org/~axs/distfiles/${PATCH}.tar.xz
-	http://dev.gentoo.org/~axs/distfiles/${PATCHFF}.tar.xz
-	http://dev.gentoo.org/~polynomial-c/mozilla/patchsets/${PATCH}.tar.xz"
+	https://dev.gentoo.org/~anarchy/mozilla/patchsets/${PATCH}.tar.xz
+	https://dev.gentoo.org/~anarchy/mozilla/patchsets/${PATCHFF}.tar.xz
+	https://dev.gentoo.org/~axs/distfiles/${PATCH}.tar.xz
+	https://dev.gentoo.org/~axs/distfiles/${PATCHFF}.tar.xz
+	https://dev.gentoo.org/~polynomial-c/mozilla/patchsets/${PATCH}.tar.xz"
 
 ASM_DEPEND=">=dev-lang/yasm-1.1"
 
@@ -139,7 +139,7 @@ src_unpack() {
 	# Unpack language packs
 	mozlinguas_src_unpack
 	if use kde; then
-		if [[ ${MOZ_PV} =~ ^(10|17|24)..*esr$ ]]; then
+		if [[ ${MOZ_PV} =~ ^(10|17|24)\..*esr$ ]]; then
 			EHG_REVISION="esr${MOZ_PV%%.*}"
 		else
 			EHG_REVISION="firefox${MOZ_PV%%.*}"
@@ -147,6 +147,14 @@ src_unpack() {
 		KDE_PATCHSET="firefox-kde-patchset"
 		EHG_CHECKOUT_DIR="${WORKDIR}/${KDE_PATCHSET}"
 		mercurial_fetch "${EHG_REPO_URI}" "${KDE_PATCHSET}"
+		# Patch firefox-kde-opensuse mozilla-kde patch as thunderbird 38.3.0 has a backported bug fix... =hack
+		if [[ ${MOZ_PV} =~ ^38\.(3)\..*$ ]]; then
+			awk -f "${FILESDIR}/mozilla-kde.patch.awk" "${EHG_CHECKOUT_DIR}/mozilla-kde.patch" \
+				>"${EHG_CHECKOUT_DIR}/mozilla-kde.patch.new" 2>/dev/null \
+			&& mv -f "${EHG_CHECKOUT_DIR}/mozilla-kde.patch.new" "${EHG_CHECKOUT_DIR}/mozilla-kde.patch" \
+				2>/dev/null \
+			|| die "unable to update mozilla-kde.patch : awk"
+		fi
 	fi
 
 	# Unpack lightning for calendar locales
