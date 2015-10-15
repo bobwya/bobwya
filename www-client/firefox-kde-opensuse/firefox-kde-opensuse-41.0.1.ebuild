@@ -28,7 +28,7 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${MOZ_PN}-40.0-patches-0.01"
+PATCH="${MOZ_PN}-41.0-patches-01"
 MOZ_HTTP_URI="http://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
@@ -186,7 +186,6 @@ src_prepare() {
 	EPATCH_SUFFIX="patch" \
 	EPATCH_FORCE="yes" \
 	epatch "${WORKDIR}/firefox"
-	epatch "${FILESDIR}"/${PN}-38-dont-hardcode-libc-soname.patch #557956
 
 	# Allow user to apply any additional patches without modifying ebuild
 	epatch_user
