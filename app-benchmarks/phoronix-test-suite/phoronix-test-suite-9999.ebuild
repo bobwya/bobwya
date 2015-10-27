@@ -4,7 +4,7 @@
 
 EAPI=5
 
-inherit eutils bash-completion-r1
+inherit eutils bash-completion-r1 versionator
 
 DESCRIPTION="Phoronix's comprehensive, cross-platform testing and benchmark suite"
 HOMEPAGE="http://www.phoronix-test-suite.com"
@@ -18,8 +18,17 @@ if [[ ${PV} == "9999" ]] ; then
 	inherit git-r3
 	SRC_URI=""
 else
-	SRC_URI="http://www.phoronix-test-suite.com/download.php?file=${P} -> ${P}.tar.gz"
-	KEYWORDS="~amd64 ~x86"
+	MY_MAJORV="$(get_version_component_range 1-3)"
+ 	MY_P="${PN}-${MY_MAJORV}"
+	if [ -z "$(get_version_component_range 4)" ]; then
+		KEYWORDS="~amd64 ~x86"
+		SRC_URI="http://www.phoronix-test-suite.com/download.php?file=${MY_P} -> ${MY_P}.tar.gz"
+	else	
+        MY_MINORV="$(get_version_component_range 4)"
+		MY_MINORV="${MY_MINORV/pre/m}"
+		MY_P="${MY_P}${MY_MINORV}"
+		SRC_URI="http://www.phoronix-test-suite.com/download.php?file=development/${MY_P} -> ${MY_P}.tar.gz"
+	fi
 	S="${WORKDIR}/${PN}"
 fi
 IUSE=""
