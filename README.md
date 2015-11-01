@@ -20,7 +20,8 @@ build scripts is irregular. So YMMV - you have been warned!
     media-video/h264enc : h264enc is an advanced and powerful interactive menu-driven shell script written for the GNU/Linux operating system to encode video files
     net-misc/fatrat : Open source download manager for Linux written in C++ and built on top of the Qt 4 library.
 	net-misc/teamviewer : TeamViewer is a proprietary computer software package for remote control, desktop sharing, online meetings, web conferencing and file transfer between computers. (binary proprietary / Wine wrapper) 
-    net-p2p/btsync : BitTorrent Sync uses advanced peer-to-peer technology to share files between devices. (binary proprietary)
+    net-dialup/dterm : dterm is a simple terminal emulator for serial connections.
+	net-p2p/btsync : BitTorrent Sync uses advanced peer-to-peer technology to share files between devices. (binary proprietary)
     net-p2p/eiskaltdcpp  :  EiskaltDC++ is a cross-platform program that uses the Direct Connect and ADC protocols.
     sys-apps/uksmstat : Simple tool to monitor and control UKSM.
     sys-auth/pam_kwallet : PAM integration to automatically unlock kwallet when logging into a KDE4 Desktop Session.
