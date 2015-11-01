@@ -1,0 +1,70 @@
+--- a/dterm.c	2015-10-31 23:37:08.394990753 +0000
++++ b/dterm.c	2015-11-01 00:02:10.721430035 +0000
+@@ -369,7 +369,8 @@
+ 		if(*s == '!') {
+ 			if((t = strchr(s, '\n')))
+ 				*t = 0;
+-			system(++s);
++			if (system(++s) == -1)
++				DIEP("system");
+ 			break;
+ 		}
+ 
+@@ -920,7 +921,8 @@
+ 						   || (c > '~' && c < 160))
+ 							break;
+ 					}
+-					if(j) write(1, s, j);
++					if(j && (write(1, s, j) != j))
++						DIEP("write");
+ 					if(j >= i)
+ 						break;
+ 					if(c == '\r' && ignorecr) {
+@@ -929,13 +931,18 @@
+ 					else if(c < 32 && showspecial != 2) {
+ 						cbuf[0] = '^';
+ 						cbuf[1] = c + '@';
+-						write(1, cbuf, 2);
++						if (write(1, cbuf, 2) != 2)
++							DIEP("write");
++					}
++					else if(c == 127 && showspecial != 2) {
++						if (write(1, "[DEL]", 5) != 5)
++							DIEP("write")
+ 					}
+-					else if(c == 127 && showspecial != 2)
+-						write(1, "[DEL]", 5);
+ 					else {
+ 						sprintf(cbuf, "[%02x]", c);
+-						write(1, cbuf, 4);
++						if (write(1, cbuf, 4) != 4) {
++							DIEP("write");
++						}
+ 					}
+ 					j++;
+ 					s += j;
+@@ -950,7 +957,8 @@
+ 							buf[j++] = *s;
+ 					i = j;
+ 				}			
+-				write(1, buf, i);
++				if (write(1, buf, i) != i)
++					DIEP("write");
+ 			}
+ 		}
+ 
+@@ -1012,10 +1020,12 @@
+ 					inbuf = backspace;
+ 				if(maplf && inbuf == '\n')
+ 					inbuf = '\r';
+-				write(fd, &inbuf, 1);
++				if (write(fd, &inbuf, 1) != 1)
++					DIEP("write");
+ 				if(crlf && inbuf == '\r') {
+ 					inbuf = '\n';
+-					write(fd, &inbuf, 1);
++					if (write(fd, &inbuf, 1) != 1)
++						DIEP("write");
+ 				}
+ 				if(linedelay && inbuf == '\r')
+ 					millisleep(linedelay);
