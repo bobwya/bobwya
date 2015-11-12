@@ -102,7 +102,7 @@ for old_ebuild_file in *.ebuild; do
 				$0=$0 " mercurial"
 			}
 			else if ($0 ~ array_variables_regexp["DESCRIPTION"]) {
-				sub(/\".+\"/, "\"Firefox Web Browser with OpenSUSE patchset, to provide better integration with KDE Desktop\"")
+				sub(/\".+\"/, "\"Firefox Web Browser, with SUSE patchset, to provide better KDE integration\"")
 			}
 			else if (!moz_pn_defined && ($0 ~ array_variables_regexp["MOZ_PV"])) {
 				print "MOZ_PN=\"firefox\""
@@ -182,7 +182,10 @@ for old_ebuild_file in *.ebuild; do
 			# Ebuild phase based post-checks
 			if ((array_phase_open["src_unpack"] ==1) && ($0 ~ /mozlinguas\_src\_unpack/)) {
 				printf("%s%s\n",	indent, "if use kde; then")
-				printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^\(10|17|24\)\..*esr$ ]]; then")
+				printf("%s%s%s\n",	indent, indent, "# Come on Wolfgang create a Tag!!")
+				printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^(42)\\..*$ ]]; then")
+				printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"default\"")
+				printf("%s%s%s\n",	indent, indent, "elif [[ ${MOZ_PV} =~ ^\(10|17|24\)\\..*esr$ ]]; then")
 				printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"esr${MOZ_PV%%.*}\"")
 				printf("%s%s%s\n",	indent, indent, "else")
 				printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"firefox${MOZ_PV%%.*}\"")
@@ -205,7 +208,9 @@ for old_ebuild_file in *.ebuild; do
 				printf("%s%s\n",	indent, "epatch \"${FILESDIR}\"/firefox-kde-opensuse-rhbz-966424.patch")
 				printf("%s%s\n", 	indent, "if use kde; then")
 				printf("%s%s%s\n", 	indent, indent,	 "# Gecko/toolkit OpenSUSE KDE integration patchset")
-				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch\"")
+				printf("%s%s%s\n", 	indent, indent,	 "if [[ ${MOZ_PV%%.*} -lt 42 ]]; then")
+				printf("%s%s%s%s\n", indent, indent, indent, "epatch \"${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch\"")
+				printf("%s%s%s\n", 	indent, indent,	 "fi")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/mozilla-kde.patch\"")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/mozilla-language.patch\"")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch\"")

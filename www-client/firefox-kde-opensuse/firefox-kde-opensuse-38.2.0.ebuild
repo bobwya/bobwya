@@ -39,7 +39,7 @@ MOZCONFIG_OPTIONAL_JIT="enabled"
 
 inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-v6.38 multilib pax-utils fdo-mime autotools virtualx mozlinguas mercurial
 
-DESCRIPTION="Firefox Web Browser with OpenSUSE patchset, to provide better integration with KDE Desktop"
+DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="http://www.mozilla.com/firefox
 	${EHG_REPO_URI}"
 
@@ -146,7 +146,10 @@ src_unpack() {
 	# Unpack language packs
 	mozlinguas_src_unpack
 	if use kde; then
-		if [[ ${MOZ_PV} =~ ^(10|17|24)..*esr$ ]]; then
+		# Come on Wolfgang create a Tag!!
+		if [[ ${MOZ_PV} =~ ^(42)\..*$ ]]; then
+			EHG_REVISION="default"
+		elif [[ ${MOZ_PV} =~ ^(10|17|24)\..*esr$ ]]; then
 			EHG_REVISION="esr${MOZ_PV%%.*}"
 		else
 			EHG_REVISION="firefox${MOZ_PV%%.*}"
@@ -162,7 +165,9 @@ src_prepare() {
 	epatch "${FILESDIR}"/firefox-kde-opensuse-rhbz-966424.patch
 	if use kde; then
 		# Gecko/toolkit OpenSUSE KDE integration patchset
-		epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"
+		if [[ ${MOZ_PV%%.*} -lt 42 ]]; then
+			epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"
+		fi
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-language.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"

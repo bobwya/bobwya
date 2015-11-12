@@ -5,7 +5,7 @@
 EAPI="5"
 VIRTUALX_REQUIRED="pgo"
 WANT_AUTOCONF="2.1"
-MOZ_ESR=1
+MOZ_ESR=""
 
 # This list can be updated with scripts/get_langs.sh from the mozilla overlay
 # No official support as of fetch time
@@ -28,22 +28,23 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${MOZ_PN}-38.0-patches-04"
+PATCH="${MOZ_PN}-42.0-patches-02"
 MOZ_HTTP_URI="http://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
 EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 
+MOZCONFIG_OPTIONAL_GTK3=1
 MOZCONFIG_OPTIONAL_WIFI=1
 MOZCONFIG_OPTIONAL_JIT="enabled"
 
-inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-v6.38 multilib pax-utils fdo-mime autotools virtualx mozlinguas mercurial
+inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-v6.42 multilib pax-utils fdo-mime autotools virtualx mozlinguas mercurial
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="http://www.mozilla.com/firefox
 	${EHG_REPO_URI}"
 
-KEYWORDS="~alpha amd64 ~arm hppa ~ia64 ppc ppc64 x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~x86 ~amd64-linux ~x86-linux"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
@@ -60,8 +61,8 @@ ASM_DEPEND=">=dev-lang/yasm-1.1"
 
 # Mesa 7.10 needed for WebGL + bugfixes
 RDEPEND="
-	>=dev-libs/nss-3.19.2
-	>=dev-libs/nspr-4.10.8
+	>=dev-libs/nss-3.20.1
+	>=dev-libs/nspr-4.10.10
 	selinux? ( sec-policy/selinux-mozilla )
 	kde? ( kde-misc/kmozillahelper )
 	!!www-client/firefox"
@@ -74,24 +75,16 @@ DEPEND="${RDEPEND}
 	x86? ( ${ASM_DEPEND}
 		virtual/opengl )"
 
-# No source releases for alpha|beta
+# No source releases for alpha
 if [[ ${PV} =~ alpha ]]; then
 	CHANGESET="8a3042764de7"
 	SRC_URI="${SRC_URI}
-		https://dev.gentoo.org/~nirbheek/mozilla/firefox/firefox-${MOZ_PV}_${CHANGESET}.source.tar.bz2"
+		https://dev.gentoo.org/~nirbheek/mozilla/firefox/firefox-${MOZ_PV}_${CHANGESET}.source.tar.xz"
 	S="${WORKDIR}/mozilla-aurora-${CHANGESET}"
-elif [[ ${PV} =~ beta ]]; then
-	S="${WORKDIR}/mozilla-release"
-	SRC_URI="${SRC_URI}
-		${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.bz2"
 else
+	S="${WORKDIR}/firefox-${MOZ_PV}"
 	SRC_URI="${SRC_URI}
-		${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.bz2"
-	if [[ ${MOZ_ESR} == 1 ]]; then
-		S="${WORKDIR}/mozilla-esr${PV%%.*}"
-	else
-		S="${WORKDIR}/mozilla-release"
-	fi
+		${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz"
 fi
 
 QA_PRESTRIPPED="usr/$(get_libdir)/${MOZ_PN}/firefox"
@@ -221,6 +214,10 @@ src_prepare() {
 	# Don't error out when there's no files to be removed:
 	sed 's@\(xargs rm\)$@\1 -f@' \
 		-i "${S}"/toolkit/mozapps/installer/packager.mk || die
+
+	# Keep codebase the same even if not using official branding
+	sed '/^MOZ_DEV_EDITION=1/d' \
+		-i "${S}"/browser/branding/aurora/configure.sh || die
 
 	eautoreconf
 
@@ -380,6 +377,17 @@ src_install() {
 		# Let's just stick with this one...
 		icon="aurora"
 		name="Aurora"
+
+		# Override preferences to set the MOZ_DEV_EDITION defaults, since we
+		# don't define MOZ_DEV_EDITION to avoid profile debaucles.
+		# (source: browser/app/profile/firefox.js)
+		cat >>"${BUILD_OBJ_DIR}/dist/bin/browser/defaults/preferences/all-gentoo.js" <<PROFILE_EOF
+pref("app.feedback.baseURL", "https://input.mozilla.org/%LOCALE%/feedback/firefoxdev/%VERSION%/");
+sticky_pref("lightweightThemes.selectedThemeID", "firefox-devedition@mozilla.org");
+sticky_pref("browser.devedition.theme.enabled", true);
+sticky_pref("devtools.theme", "dark");
+PROFILE_EOF
+
 	else
 		sizes="16 22 24 32 256"
 		icon_path="${S}/browser/branding/official"
