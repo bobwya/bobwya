@@ -19,8 +19,8 @@ KEYWORDS="~amd64 ~x86"
 IUSE=""
 
 DEPEND=""
-RDEPEND=">=virtual/jre-1.7
-		!media-video/filebot"
+RDEPEND="media-libs/fontconfig
+		>=virtual/jre-1.7"
 
 S="${WORKDIR}"
 QA_PREBUILT="/opt/${PN}/"
