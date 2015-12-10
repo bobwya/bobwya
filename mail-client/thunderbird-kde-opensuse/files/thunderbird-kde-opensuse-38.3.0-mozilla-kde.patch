@@ -1,0 +1,15 @@
+--- a/mozilla-kde.patch	2015-12-08 21:32:48.023339500 +0000
++++ b/mozilla-kde.patch	2015-12-08 21:42:33.952683556 +0000
+@@ -3148,10 +3148,10 @@
+  using namespace mozilla;
+  
+  #define MAX_PREVIEW_SIZE 180
++ // bug 1184009
++ #define MAX_PREVIEW_SOURCE_SIZE 4096
+  
+  nsIFile *nsFilePicker::mPrevDisplayDirectory = nullptr;
+- 
+- void
+ @@ -238,17 +240,19 @@ nsFilePicker::AppendFilters(int32_t aFil
+    return nsBaseFilePicker::AppendFilters(aFilterMask);
+  }

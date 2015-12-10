@@ -28,7 +28,7 @@ EMVER="1.8.2"
 
 # Patches
 PATCH="thunderbird-38.0-patches-0.1"
-PATCHFF="firefox-38.0-patches-0.3"
+PATCHFF="firefox-38.0-patches-04"
 
 MOZ_HTTP_URI="http://ftp.mozilla.org/pub/${MOZ_PN}/releases"
 
@@ -137,13 +137,11 @@ src_unpack() {
 		KDE_PATCHSET="firefox-kde-patchset"
 		EHG_CHECKOUT_DIR="${WORKDIR}/${KDE_PATCHSET}"
 		mercurial_fetch "${EHG_REPO_URI}" "${KDE_PATCHSET}"
-		# Patch firefox-kde-opensuse mozilla-kde patch as thunderbird 38.3.0 has a backported bug fix... =hack
-		if [[ ${MOZ_PV} =~ ^38\.(3)\..*$ ]]; then
-			awk -f "${FILESDIR}/mozilla-kde.patch.awk" "${EHG_CHECKOUT_DIR}/mozilla-kde.patch" \
-				>"${EHG_CHECKOUT_DIR}/mozilla-kde.patch.new" 2>/dev/null \
-			&& mv -f "${EHG_CHECKOUT_DIR}/mozilla-kde.patch.new" "${EHG_CHECKOUT_DIR}/mozilla-kde.patch" \
-				2>/dev/null \
-			|| die "unable to update mozilla-kde.patch : awk"
+		# Patch firefox-kde-opensuse mozilla-kde.patch as upstream has a backported bug fix...
+		if [[ $(get_version_component_range 1) -eq 38 ]] && [[ $(get_version_component_range 2) -ge 3 ]] ; then
+			pushd "${EHG_CHECKOUT_DIR}" || die
+			epatch "${FILESDIR}/${PN}-38.3.0-mozilla-kde.patch"
+			popd || die
 		fi
 	fi
 
@@ -161,20 +159,24 @@ src_prepare() {
 	# Apply our patchset from firefox to thunderbird as well
 	pushd "${S}"/mozilla &>/dev/null || die
 	# Patch for https://bugzilla.redhat.com/show_bug.cgi?id=966424
-	epatch "${FILESDIR}"/thunderbird-kde-opensuse-rhbz-966424.patch
+	epatch "${FILESDIR}"/${PN}-rhbz-966424.patch
 	if use kde; then
 		# Gecko/toolkit OpenSUSE KDE integration patchset
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
 		# Uncomment the next line to enable KDE support debugging (additional console output)...
-		#epatch "${FILESDIR}/thunderbird-kde-opensuse-kde-debug.patch"
+		#epatch "${FILESDIR}/${PN}-kde-debug.patch"
 		# Uncomment the following patch line to force KDE/Qt4 file dialog for Thunderbird...
-		#epatch "${FILESDIR}/thunderbird-kde-opensuse-force-qt-dialog.patch"
+		#epatch "${FILESDIR}/${PN}-force-qt-dialog.patch"
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/mail-client/thunderbird-kde-opensuse/)
 	fi
 	EPATCH_SUFFIX="patch" \
 	EPATCH_FORCE="yes" \
 	epatch "${WORKDIR}/firefox"
+	if [[ $(get_major_version) -le 31 ]]; then
+		# Patch for https://bugzilla.mozilla.org/show_bug.cgi?id=1143411
+		epatch "${FILESDIR}/${PN}-31.8.0-buildfix-ft-master.patch"
+	fi
 	popd &>/dev/null || die
 
 	# Ensure that are plugins dir is enabled as default

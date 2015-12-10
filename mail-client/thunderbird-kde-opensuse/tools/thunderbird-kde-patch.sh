@@ -62,16 +62,20 @@ for old_ebuild_file in *.ebuild; do
 		'BEGIN{
 			kde_use_flag="kde"
 			ebuild_package_version=("mail-client/" ebuild_file)
-			gsub("\.ebuild$", "", ebuild_package_version)
-
+			sub("\.ebuild$", "", ebuild_package_version)
+			PN="thunderbird-kde-opensuse"
+			MOZ_PN="thunderbird"
 			# Setup some regular expression constants - to hopefully make the script more readable(ish)!
 			blank_line_regexp="^[[:blank:]]*$"
 			leading_ws_regexp="^[[:blank:]]+"
 			trailing_ws_regexp="^[[:blank:]]+"
 			end_quote_regexp="\"[[:blank:]]*$"
 			end_curly_bracket_regexp="^[[:blank:]]*\}[[:blank:]]*$"
+			push_mozilla_regexp="^[[:blank:]]*pushd \"\$\{S\}\"\/mozilla \&\>\/dev\/null"
+			popd_regexp="^[[:blank:]]*popd &>\/dev\/null"
 			ebuild_header_regexp="^\# \\$Header\:"
 			ebuild_inherit_regexp="^inherit "
+			PN_regexp="thunderbird\-kde\-opensuse"
 			variables="BUILD_OBJ_DIR DESCRIPTION HOMEPAGE IUSE MOZ_HTTP_URI MOZ_PV RDEPEND"
 			split(variables, array_variables)
 			for (i in array_variables)
@@ -113,7 +117,7 @@ for old_ebuild_file in *.ebuild; do
 				sub(/\".+\"/, "\"Thunderbird Mail Client with OpenSUSE patchset, to provide better integration with KDE Desktop\"")
 			}
 			else if (!moz_pn_defined && ($0 ~ array_variables_regexp["MOZ_PV"])) {
-				print "MOZ_PN=\"thunderbird\""
+				print ("MOZ_PN=\"" MOZ_PN "\"")
 				moz_pn_defined=1
 			}
 
@@ -138,6 +142,14 @@ for old_ebuild_file in *.ebuild; do
 			# Ebuild phase based pre-checks
 			if (array_phase_open["src_prepare"]) {
 				gsub(/modifing/, "modifying", $0)
+				if (pushd_mozilla_open && ! popd_mozilla && ($0 ~ popd_regexp)) {
+					printf("%s%s\n",	indent, "if [[ $(get_major_version) -le 31 ]]; then")
+					printf("%s%s%s\n",	indent, indent, "# Patch for https://bugzilla.mozilla.org/show_bug.cgi?id=1143411")
+					printf("%s%s%s\n",	indent, indent, "epatch \"${FILESDIR}/${PN}-31.8.0-buildfix-ft-master.patch\"")
+					printf("%s%s\n",	indent, "fi")
+					pushd_mozilla_open=0
+					popd_mozilla=1
+				}
 			}
 			else if (array_phase_open["src_configure"]) {
 				if ($0 ~ "^[[:blank:]]*\#[[:blank:]]+Use an objdir to keep things organized\.") {
@@ -211,13 +223,11 @@ for old_ebuild_file in *.ebuild; do
 				printf("%s%s%s\n",	indent, indent, "KDE_PATCHSET=\"firefox-kde-patchset\"")
 				printf("%s%s%s\n",	indent, indent, "EHG_CHECKOUT_DIR=\"${WORKDIR}/${KDE_PATCHSET}\"")
 				printf("%s%s%s\n",	indent, indent, "mercurial_fetch \"${EHG_REPO_URI}\" \"${KDE_PATCHSET}\"")
-				printf("%s%s%s\n",	indent, indent, "# Patch firefox-kde-opensuse mozilla-kde patch as thunderbird 38.3.0 has a backported bug fix... =hack")
-				printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^38\\.(3)\\..*$ ]]; then")
-				printf("%s%s%s%s\n",indent, indent, indent, "awk -f \"${FILESDIR}/mozilla-kde.patch.awk\" \"${EHG_CHECKOUT_DIR}/mozilla-kde.patch\" \\")
-				printf("%s%s%s%s%s\n",indent, indent, indent, indent, ">\"${EHG_CHECKOUT_DIR}/mozilla-kde.patch.new\" 2>/dev/null \\")
-				printf("%s%s%s%s\n",indent, indent, indent, "&& mv -f \"${EHG_CHECKOUT_DIR}/mozilla-kde.patch.new\" \"${EHG_CHECKOUT_DIR}/mozilla-kde.patch\" \\")
-				printf("%s%s%s%s%s\n",indent, indent, indent, indent, "2>/dev/null \\")
-				printf("%s%s%s%s\n",indent, indent, indent, "|| die \"unable to update mozilla-kde.patch : awk\"")
+				printf("%s%s%s\n",	indent, indent, "# Patch firefox-kde-opensuse mozilla-kde.patch as upstream has a backported bug fix...")
+				printf("%s%s%s\n",	indent, indent, "if [[ $(get_version_component_range 1) -eq 38 ]] && [[ $(get_version_component_range 2) -ge 3 ]] ; then")
+				printf("%s%s%s%s\n",indent, indent, indent, "pushd \"${EHG_CHECKOUT_DIR}\" || die")
+				printf("%s%s%s%s\n",indent, indent, indent, "epatch \"${FILESDIR}/${PN}-38.3.0-mozilla-kde.patch\"")
+				printf("%s%s%s%s\n",indent, indent, indent, "popd || die")
 				printf("%s%s%s\n",	indent, indent, "fi")
 				printf("%s%s\n",	indent, "fi")
 			}
@@ -230,17 +240,21 @@ for old_ebuild_file in *.ebuild; do
 			}
 			else if (array_phase_open["src_prepare"] && ($0 ~ pushd_mozilla_regexp)) {
 				printf("%s%s\n",	indent, "# Patch for https://bugzilla.redhat.com/show_bug.cgi?id=966424")
-				printf("%s%s\n",	indent, "epatch \"${FILESDIR}\"/thunderbird-kde-opensuse-rhbz-966424.patch")
+				printf("%s%s\n",	indent, "epatch \"${FILESDIR}\"/${PN}-rhbz-966424.patch")
 				printf("%s%s\n", 	indent, "if use kde; then")
 				printf("%s%s%s\n", 	indent, indent,	 "# Gecko/toolkit OpenSUSE KDE integration patchset")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/mozilla-kde.patch\"")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch\"")
 				printf("%s%s%s\n",  indent, indent,  "# Uncomment the next line to enable KDE support debugging (additional console output)...")
-				printf("%s%s%s\n",  indent, indent,  "#epatch \"${FILESDIR}/thunderbird-kde-opensuse-kde-debug.patch\"")
+				printf("%s%s%s\n",  indent, indent,  "#epatch \"${FILESDIR}/${PN}-kde-debug.patch\"")
 				printf("%s%s%s\n",  indent, indent,  "# Uncomment the following patch line to force KDE/Qt4 file dialog for Thunderbird...")
-				printf("%s%s%s\n",  indent, indent,  "#epatch \"${FILESDIR}/thunderbird-kde-opensuse-force-qt-dialog.patch\"")
+				printf("%s%s%s\n",  indent, indent,  "#epatch \"${FILESDIR}/${PN}-force-qt-dialog.patch\"")
 				printf("%s%s%s\n",  indent, indent,  "# ... _OR_ install the patch file as a User patch (/etc/portage/patches/mail-client/thunderbird-kde-opensuse/)")
 				printf("%s%s\n", 	indent, "fi")
+				pushd_mozilla_open=1
+			}
+			else if (array_phase_open["src_prepare"] && ($0 ~ local_epatch_regexp) && ($0 !~ PN_regexp)) {
+				gsub(MOZ_PN, "${PN}")
 			}
 			else if ($0 ~ array_variables_regexp["BUILD_OBJ_DIR"]) {
 				printf("MAX_OBJ_DIR_LEN=\"80\"\n")
