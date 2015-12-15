@@ -182,10 +182,7 @@ for old_ebuild_file in *.ebuild; do
 			# Ebuild phase based post-checks
 			if ((array_phase_open["src_unpack"] ==1) && ($0 ~ /mozlinguas\_src\_unpack/)) {
 				printf("%s%s\n",	indent, "if use kde; then")
-				printf("%s%s%s\n",	indent, indent, "# Come on Wolfgang create a Tag!!")
-				printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^(42)\\..*$ ]]; then")
-				printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"default\"")
-				printf("%s%s%s\n",	indent, indent, "elif [[ ${MOZ_PV} =~ ^\(10|17|24\)\\..*esr$ ]]; then")
+				printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^\(10|17|24\)\\..*esr$ ]]; then")
 				printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"esr${MOZ_PV%%.*}\"")
 				printf("%s%s%s\n",	indent, indent, "else")
 				printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"firefox${MOZ_PV%%.*}\"")
@@ -193,12 +190,6 @@ for old_ebuild_file in *.ebuild; do
 				printf("%s%s%s\n",	indent, indent, "KDE_PATCHSET=\"firefox-kde-patchset\"")
 				printf("%s%s%s\n",	indent, indent, "EHG_CHECKOUT_DIR=\"${WORKDIR}/${KDE_PATCHSET}\"")
 				printf("%s%s%s\n",	indent, indent, "mercurial_fetch \"${EHG_REPO_URI}\" \"${KDE_PATCHSET}\"")
-				printf("%s%s%s\n",	indent, indent, "# Patch firefox-kde-opensuse mozilla-kde.patch as upstream has a backported bug fix...")
-				printf("%s%s%s\n",	indent, indent, "if [[ $(get_version_component_range 1) -eq 38 ]] && [[ $(get_version_component_range 2) -ge 4 ]] ; then")
-				printf("%s%s%s%s\n",indent, indent, indent, "pushd \"${EHG_CHECKOUT_DIR}\" || die")
-				printf("%s%s%s%s\n",indent, indent, indent, "epatch \"${FILESDIR}/${PN}-38.4.0-mozilla-kde.patch\"")
-				printf("%s%s%s%s\n",indent, indent, indent, "popd || die")
-				printf("%s%s%s\n",	indent, indent, "fi")
 				printf("%s%s\n",	indent, "fi")
 				array_phase_open["src_unpack"]=2
 			}
@@ -210,25 +201,20 @@ for old_ebuild_file in *.ebuild; do
 				array_phase_open["pkg_pretend"]=2
 			}
 			else if (array_phase_open["src_prepare"] == 1) {
-				printf("%s%s\n",	indent, "# Patch for https://bugzilla.redhat.com/show_bug.cgi?id=966424")
-				printf("%s%s\n",	indent, "epatch \"${FILESDIR}\"/firefox-kde-opensuse-rhbz-966424.patch")
 				printf("%s%s\n", 	indent, "if use kde; then")
 				printf("%s%s%s\n", 	indent, indent,	 "# Gecko/toolkit OpenSUSE KDE integration patchset")
-				printf("%s%s%s\n", 	indent, indent,	 "if [[ ${MOZ_PV%%.*} -lt 42 ]]; then")
+				printf("%s%s%s\n", 	indent, indent,	 "if [[ $(get_major_version) -lt 42 ]]; then")
 				printf("%s%s%s%s\n", indent, indent, indent, "epatch \"${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch\"")
 				printf("%s%s%s\n", 	indent, indent,	 "fi")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/mozilla-kde.patch\"")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/mozilla-language.patch\"")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch\"")
-				printf("%s%s%s\n", 	indent, indent,	 "if [[ ${MOZ_PV%%.*} -lt 39 ]]; then")
+				printf("%s%s%s\n", 	indent, indent,	 "if [[ $(get_major_version) -lt 39 ]]; then")
 				printf("%s%s%s%s\n", indent, indent, indent, "epatch \"${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch\"")
 				printf("%s%s%s\n",	indent, indent,  "fi")
 				printf("%s%s%s\n",	indent, indent,	 "# Firefox OpenSUSE KDE integration patchset")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch\"")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/firefox-kde.patch\"")
-				printf("%s%s%s\n", 	indent, indent,	 "if [[ ${MOZ_PV%%.*} -lt 35 ]]; then")
-				printf("%s%s%s%s\n",indent, indent, indent, "epatch \"${EHG_CHECKOUT_DIR}/firefox-kde-114.patch\"")
-				printf("%s%s%s\n",	indent, indent,  "fi")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch\"")
                 printf("%s%s%s\n",  indent, indent,  "# Uncomment the next line to enable KDE support debugging (additional console output)...")
 				printf("%s%s%s\n",  indent, indent,  "#epatch \"${FILESDIR}/firefox-kde-opensuse-kde-debug.patch\"")

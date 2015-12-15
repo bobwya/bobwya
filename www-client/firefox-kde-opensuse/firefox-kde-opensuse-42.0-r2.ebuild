@@ -28,7 +28,7 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${MOZ_PN}-42.0-patches-02"
+PATCH="${MOZ_PN}-42.0-patches-0.3"
 MOZ_HTTP_URI="http://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
@@ -62,7 +62,7 @@ ASM_DEPEND=">=dev-lang/yasm-1.1"
 # Mesa 7.10 needed for WebGL + bugfixes
 RDEPEND="
 	>=dev-libs/nss-3.20.1
-	>=dev-libs/nspr-4.10.10
+	>=dev-libs/nspr-4.10.10-r1
 	selinux? ( sec-policy/selinux-mozilla )
 	kde? ( kde-misc/kmozillahelper )
 	!!www-client/firefox"
@@ -75,7 +75,7 @@ DEPEND="${RDEPEND}
 	x86? ( ${ASM_DEPEND}
 		virtual/opengl )"
 
-# No source releases for alpha
+# No source releases for alpha|beta
 if [[ ${PV} =~ alpha ]]; then
 	CHANGESET="8a3042764de7"
 	SRC_URI="${SRC_URI}
@@ -86,6 +86,19 @@ else
 	SRC_URI="${SRC_URI}
 		${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz"
 fi
+#elif [[ ${PV} =~ beta ]]; then
+#	S="${WORKDIR}/mozilla-beta"
+#	SRC_URI="${SRC_URI}
+#		${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz"
+#else
+#	SRC_URI="${SRC_URI}
+#		${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz"
+#	if [[ ${MOZ_ESR} == 1 ]]; then
+#		S="${WORKDIR}/mozilla-esr${PV%%.*}"
+#	else
+#		S="${WORKDIR}/mozilla-release"
+#	fi
+#fi
 
 QA_PRESTRIPPED="usr/$(get_libdir)/${MOZ_PN}/firefox"
 
@@ -139,10 +152,7 @@ src_unpack() {
 	# Unpack language packs
 	mozlinguas_src_unpack
 	if use kde; then
-		# Come on Wolfgang create a Tag!!
-		if [[ ${MOZ_PV} =~ ^(42)\..*$ ]]; then
-			EHG_REVISION="default"
-		elif [[ ${MOZ_PV} =~ ^(10|17|24)\..*esr$ ]]; then
+		if [[ ${MOZ_PV} =~ ^(10|17|24)\..*esr$ ]]; then
 			EHG_REVISION="esr${MOZ_PV%%.*}"
 		else
 			EHG_REVISION="firefox${MOZ_PV%%.*}"
@@ -150,35 +160,24 @@ src_unpack() {
 		KDE_PATCHSET="firefox-kde-patchset"
 		EHG_CHECKOUT_DIR="${WORKDIR}/${KDE_PATCHSET}"
 		mercurial_fetch "${EHG_REPO_URI}" "${KDE_PATCHSET}"
-		# Patch firefox-kde-opensuse mozilla-kde.patch as upstream has a backported bug fix...
-		if [[ $(get_version_component_range 1) -eq 38 ]] && [[ $(get_version_component_range 2) -ge 4 ]] ; then
-			pushd "${EHG_CHECKOUT_DIR}" || die
-			epatch "${FILESDIR}/${PN}-38.4.0-mozilla-kde.patch"
-			popd || die
-		fi
 	fi
 }
 
 src_prepare() {
-	# Patch for https://bugzilla.redhat.com/show_bug.cgi?id=966424
-	epatch "${FILESDIR}"/firefox-kde-opensuse-rhbz-966424.patch
 	if use kde; then
 		# Gecko/toolkit OpenSUSE KDE integration patchset
-		if [[ ${MOZ_PV%%.*} -lt 42 ]]; then
+		if [[ $(get_major_version) -lt 42 ]]; then
 			epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"
 		fi
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-language.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
-		if [[ ${MOZ_PV%%.*} -lt 39 ]]; then
+		if [[ $(get_major_version) -lt 39 ]]; then
 			epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
 		fi
 		# Firefox OpenSUSE KDE integration patchset
 		epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
 		epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"
-		if [[ ${MOZ_PV%%.*} -lt 35 ]]; then
-			epatch "${EHG_CHECKOUT_DIR}/firefox-kde-114.patch"
-		fi
 		epatch "${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
 		# Uncomment the next line to enable KDE support debugging (additional console output)...
 		#epatch "${FILESDIR}/firefox-kde-opensuse-kde-debug.patch"
@@ -252,6 +251,9 @@ src_configure() {
 
 	mozconfig_init
 	mozconfig_config
+
+	# We want rpath support to prevent unneeded hacks on different libc variants
+	append-ldflags -Wl,-rpath="${MOZILLA_FIVE_HOME}"
 
 	# It doesn't compile on alpha without this LDFLAGS
 	use alpha && append-ldflags "-Wl,--no-relax"
@@ -348,7 +350,7 @@ src_install() {
 	pax-mark m "${BUILD_OBJ_DIR}"/dist/bin/xpcshell
 
 	# Add our default prefs for firefox
-	cp "${FILESDIR}"/gentoo-default-prefs.js-1 \
+	cp "${FILESDIR}"/gentoo-default-prefs.js-2 \
 		"${BUILD_OBJ_DIR}/dist/bin/browser/defaults/preferences/all-gentoo.js" \
 		|| die
 
@@ -439,11 +441,6 @@ PROFILE_EOF
 	use sparc && { sed -e 's/Firefox/FirefoxGentoo/g' \
 					 -i "${ED}/${MOZILLA_FIVE_HOME}/application.ini" \
 					|| die "sparc sed failed"; }
-
-	# revdep-rebuild entry
-	insinto /etc/revdep-rebuild
-	echo "SEARCH_DIRS_MASK=${MOZILLA_FIVE_HOME}" >> ${T}/10firefox
-	doins "${T}"/10${MOZ_PN} || die
 }
 
 pkg_preinst() {

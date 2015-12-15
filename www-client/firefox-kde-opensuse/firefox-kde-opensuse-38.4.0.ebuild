@@ -43,7 +43,7 @@ DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE inte
 HOMEPAGE="http://www.mozilla.com/firefox
 	${EHG_REPO_URI}"
 
-KEYWORDS="~alpha amd64 ~arm ~hppa ~ia64 ~ppc ppc64 x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 ~arm hppa ~ia64 ppc ppc64 x86 ~amd64-linux ~x86-linux"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
@@ -146,10 +146,7 @@ src_unpack() {
 	# Unpack language packs
 	mozlinguas_src_unpack
 	if use kde; then
-		# Come on Wolfgang create a Tag!!
-		if [[ ${MOZ_PV} =~ ^(42)\..*$ ]]; then
-			EHG_REVISION="default"
-		elif [[ ${MOZ_PV} =~ ^(10|17|24)\..*esr$ ]]; then
+		if [[ ${MOZ_PV} =~ ^(10|17|24)\..*esr$ ]]; then
 			EHG_REVISION="esr${MOZ_PV%%.*}"
 		else
 			EHG_REVISION="firefox${MOZ_PV%%.*}"
@@ -157,35 +154,24 @@ src_unpack() {
 		KDE_PATCHSET="firefox-kde-patchset"
 		EHG_CHECKOUT_DIR="${WORKDIR}/${KDE_PATCHSET}"
 		mercurial_fetch "${EHG_REPO_URI}" "${KDE_PATCHSET}"
-		# Patch firefox-kde-opensuse mozilla-kde.patch as upstream has a backported bug fix...
-		if [[ $(get_version_component_range 1) -eq 38 ]] && [[ $(get_version_component_range 2) -ge 4 ]] ; then
-			pushd "${EHG_CHECKOUT_DIR}" || die
-			epatch "${FILESDIR}/${PN}-38.4.0-mozilla-kde.patch"
-			popd || die
-		fi
 	fi
 }
 
 src_prepare() {
-	# Patch for https://bugzilla.redhat.com/show_bug.cgi?id=966424
-	epatch "${FILESDIR}"/firefox-kde-opensuse-rhbz-966424.patch
 	if use kde; then
 		# Gecko/toolkit OpenSUSE KDE integration patchset
-		if [[ ${MOZ_PV%%.*} -lt 42 ]]; then
+		if [[ $(get_major_version) -lt 42 ]]; then
 			epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"
 		fi
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-language.patch"
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
-		if [[ ${MOZ_PV%%.*} -lt 39 ]]; then
+		if [[ $(get_major_version) -lt 39 ]]; then
 			epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
 		fi
 		# Firefox OpenSUSE KDE integration patchset
 		epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
 		epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"
-		if [[ ${MOZ_PV%%.*} -lt 35 ]]; then
-			epatch "${EHG_CHECKOUT_DIR}/firefox-kde-114.patch"
-		fi
 		epatch "${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
 		# Uncomment the next line to enable KDE support debugging (additional console output)...
 		#epatch "${FILESDIR}/firefox-kde-opensuse-kde-debug.patch"
