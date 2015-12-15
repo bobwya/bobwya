@@ -223,12 +223,6 @@ for old_ebuild_file in *.ebuild; do
 				printf("%s%s%s\n",	indent, indent, "KDE_PATCHSET=\"firefox-kde-patchset\"")
 				printf("%s%s%s\n",	indent, indent, "EHG_CHECKOUT_DIR=\"${WORKDIR}/${KDE_PATCHSET}\"")
 				printf("%s%s%s\n",	indent, indent, "mercurial_fetch \"${EHG_REPO_URI}\" \"${KDE_PATCHSET}\"")
-				printf("%s%s%s\n",	indent, indent, "# Patch firefox-kde-opensuse mozilla-kde.patch as upstream has a backported bug fix...")
-				printf("%s%s%s\n",	indent, indent, "if [[ $(get_version_component_range 1) -eq 38 ]] && [[ $(get_version_component_range 2) -ge 3 ]] ; then")
-				printf("%s%s%s%s\n",indent, indent, indent, "pushd \"${EHG_CHECKOUT_DIR}\" || die")
-				printf("%s%s%s%s\n",indent, indent, indent, "epatch \"${FILESDIR}/${PN}-38.3.0-mozilla-kde.patch\"")
-				printf("%s%s%s%s\n",indent, indent, indent, "popd || die")
-				printf("%s%s%s\n",	indent, indent, "fi")
 				printf("%s%s\n",	indent, "fi")
 			}
 			else if (array_phase_open["pkg_pretend"] && shorten_build_object_path) {

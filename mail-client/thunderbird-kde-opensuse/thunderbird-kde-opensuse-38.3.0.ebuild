@@ -137,12 +137,6 @@ src_unpack() {
 		KDE_PATCHSET="firefox-kde-patchset"
 		EHG_CHECKOUT_DIR="${WORKDIR}/${KDE_PATCHSET}"
 		mercurial_fetch "${EHG_REPO_URI}" "${KDE_PATCHSET}"
-		# Patch firefox-kde-opensuse mozilla-kde.patch as upstream has a backported bug fix...
-		if [[ $(get_version_component_range 1) -eq 38 ]] && [[ $(get_version_component_range 2) -ge 3 ]] ; then
-			pushd "${EHG_CHECKOUT_DIR}" || die
-			epatch "${FILESDIR}/${PN}-38.3.0-mozilla-kde.patch"
-			popd || die
-		fi
 	fi
 
 	xpi_unpack lightning-${MOZ_LIGHTNING_VER}.xpi
