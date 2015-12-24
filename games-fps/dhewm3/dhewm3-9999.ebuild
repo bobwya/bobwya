@@ -1,10 +1,10 @@
 # Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: $
+# $Id$
 
-EAPI=4
+EAPI="5"
 
-inherit cmake-utils games git-2
+inherit cmake-utils games git-r3
 
 DESCRIPTION="A Doom 3 GPL source modification."
 HOMEPAGE="https://github.com/dhewm/dhewm3"
@@ -16,7 +16,7 @@ SLOT="0"
 KEYWORDS=""
 IUSE="cdinstall curl dedicated roe sdl2"
 
-DEPEND="virtual/jpeg
+DEPEND="virtual/jpeg:*
 	media-libs/libogg
 	!sdl2? ( >=media-libs/libsdl-1.2[opengl,video] )
 	sdl2? ( media-libs/libsdl2[opengl,video] )
@@ -24,11 +24,7 @@ DEPEND="virtual/jpeg
 	media-libs/openal
 	curl? ( net-misc/curl )
 	sys-libs/zlib"
-RDEPEND="${DEPEND}
-	cdinstall? (
-		>=games-fps/doom3-data-1.1.1282-r1
-		roe? ( games-fps/doom3-roe )
-	)"
+RDEPEND="${DEPEND}"
 
 CMAKE_USE_DIR="${S}/neo"
 
@@ -55,23 +51,16 @@ src_compile() {
 
 src_install() {
 	DOCS="README.md" cmake-utils_src_install
-#	newicon doom3.png ${PN}.png
-#	make_desktop_entry ${PN} "Doom 3 - dhewm"
 	prepgamesdirs
 }
 
 pkg_postinst() {
 	games_pkg_postinst
-	if ! use cdinstall; then
-		elog "You need to copy *.pk4 from either your installation media or your hard drive to"
-		elog "${GAMES_DATADIR}/doom3/base before running the game,"
-		elog "or 'emerge games-fps/doom3-data' to install from CD."
-		echo
-		if use roe ; then
-			elog "To use the Resurrection of Evil expansion pack, you also need	to copy *.pk4"
-			elog "to ${GAMES_DATADIR}/doom3/d3xp from the RoE CD before running the game,"
-			elog "or 'emerge doom3-roe' to install from CD."
-		fi
+	elog "You need to copy *.pk4 from either your installation media or your hard drive to"
+	elog "${GAMES_DATADIR}/doom3/base before running the game."
+	if use roe ; then
+		elog "To use the Resurrection of Evil expansion pack, you also need	to copy *.pk4"
+		elog "to ${GAMES_DATADIR}/doom3/d3xp from the RoE CD before running the game."
 	fi
 
 	echo

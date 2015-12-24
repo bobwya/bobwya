@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=DOOM 3
+Comment=Dhewm 3 build
+Exec=/usr/games/bin/dhewm3
+Type=Application
+StartupNotify=true
+Icon=43FA_58dc18a1d24e4eb5b604f7642f71d31a01a09592.0
+Categories=Game;ActionGame;
