@@ -1,6 +1,6 @@
 # Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: $
+# $Id$
 
 EAPI=5
 
@@ -12,7 +12,7 @@ HOMEPAGE="http://bash-completion.alioth.debian.org/"
 
 SRC_URI="http://dev.gentoo.org/~mgorny/dist/${BASHCOMP_P}.tar.bz2"
 if [[ ${PV} == *9999* ]] ; then
-    inherit eutils autotools git-r3
+	inherit eutils autotools git-r3
 	MY_PATCH="${PN}-2.1_p20141224"
 	KEYWORDS=""
 else
@@ -55,22 +55,22 @@ src_unpack() {
 		EGIT_REPO_URI="git://git.debian.org/git/bash-completion/bash-completion.git"
 		EGIT_CHECKOUT_DIR="${WORKDIR}/${P}"
 		git-r3_src_unpack
-        unset EGIT_CHECKOUT_DIR EGIT_REPO_URI
+		unset EGIT_CHECKOUT_DIR EGIT_REPO_URI
 	fi
 }
 
 src_prepare() {
 	epatch "${WORKDIR}/${BASHCOMP_P}/${MY_PATCH}"-*.patch
 	if [[ ${PV} == *9999* ]] ; then
-        eautoreconf
-    fi
+		eautoreconf
+	fi
 }
 
 src_test() { :; } # Skip testsuite because of interactive shell wrt #477066
 
 src_install() {
 	einfo "ED = ${ED}"
-    einfo "S = ${S}"
+	einfo "S = ${S}"
 	# work-around race conditions, bug #526996
 	mkdir -p "${ED}"/usr/share/bash-completion/{completions,helpers} || die
 
