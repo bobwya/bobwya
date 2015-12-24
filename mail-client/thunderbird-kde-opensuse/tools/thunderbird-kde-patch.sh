@@ -34,8 +34,7 @@ gawk 'BEGIN{
 	}
 	{
 		flag_name=($0 ~ flag_regexp) ? gensub(flag_regexp, "\\1", "g") : ""
-		if (flag_name == kde_use_flag)
-			next
+		kde_use=(flag_name == kde_use_flag) ? 1 : kde_use
 		if (((flag_name > kde_use_flag) || ($0 ~ use_close_regexp)) && ! kde_use) {
           printf("\t<flag name=\"%s\">%s\n\t\t%s</flag>\n",
                     kde_use_flag,
@@ -73,10 +72,9 @@ for old_ebuild_file in *.ebuild; do
 			end_curly_bracket_regexp="^[[:blank:]]*\}[[:blank:]]*$"
 			push_mozilla_regexp="^[[:blank:]]*pushd \"\$\{S\}\"\/mozilla \&\>\/dev\/null"
 			popd_regexp="^[[:blank:]]*popd &>\/dev\/null"
-			ebuild_header_regexp="^\# \\$Header\:"
 			ebuild_inherit_regexp="^inherit "
 			PN_regexp="thunderbird\-kde\-opensuse"
-			variables="BUILD_OBJ_DIR DESCRIPTION HOMEPAGE IUSE MOZ_HTTP_URI MOZ_PV RDEPEND"
+			variables="BUILD_OBJ_DIR DESCRIPTION KEYWORDS HOMEPAGE IUSE MOZ_HTTP_URI MOZ_PV RDEPEND"
 			split(variables, array_variables)
 			for (i in array_variables)
 				array_variables_regexp[array_variables[i]]="^" gensub(/\_/, "\\_", "g", array_variables[i]) "\=\".*(\"|$)"
@@ -86,6 +84,7 @@ for old_ebuild_file in *.ebuild; do
 				array_ebuild_phases_regexp[array_ebuild_phases[i]]="^" gensub(/\_/, "\\_", "g", array_ebuild_phases[i]) "\\(\\)[[:blank:]]+"
 				array_phase_open[array_ebuild_phases[i]]=0
 			}
+			keywork_unsupported_regexp="[\~]{0,1}(alpha|arm|ppc|ppc64)"
 			ebuild_message_regexp="^[[:blank:]]+(einfo|elog|ewarn)"
 			mozlinguas_src_unpack_regexp="^[[:blank:]]*mozlinguas\_src\_unpack"
 			local_epatch_regexp="^[[:blank:]]+epatch.+\\\$\{FILESDIR\}.+\.patch.*"
@@ -107,14 +106,18 @@ for old_ebuild_file in *.ebuild; do
 				else
 					sub(/^/, (kde_use_flag " "), $ifield)
 			}
-			else if ($0 ~ ebuild_header_regexp) {
-				$0=("# $Header: " ebuild_package_version " $")
+			else if ($0 ~ array_variables_regexp["KEYWORDS"]) {
+				for (ifield=1; ifield<=NF; ++ifield) {
+					gsub(keywork_unsupported_regexp, "", $ifield)
+				}
+				gsub(/(\"[ ]+|[ ]+\")/, "\"")
+				gsub(/[ ]+/, " ")
 			}
 			else if ($0 ~ ebuild_inherit_regexp) {
 				$0=$0 " mercurial"
 			}
 			else if ($0 ~ array_variables_regexp["DESCRIPTION"]) {
-				sub(/\".+\"/, "\"Thunderbird Mail Client with OpenSUSE patchset, to provide better integration with KDE Desktop\"")
+				sub(/\".+\"/, "\"Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration\"")
 			}
 			else if (!moz_pn_defined && ($0 ~ array_variables_regexp["MOZ_PV"])) {
 				print ("MOZ_PN=\"" MOZ_PN "\"")
