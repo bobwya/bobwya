@@ -17,14 +17,16 @@ if [[ ${PV} == "9999" ]] ; then
 	EGIT3_STORE_DIR="${T}"
 	inherit git-r3
 	SRC_URI=""
+	KEYWORDS=""
 else
 	MY_MAJORV="$(get_version_component_range 1-3)"
- 	MY_P="${PN}-${MY_MAJORV}"
+	MY_P="${PN}-${MY_MAJORV}"
 	if [ -z "$(get_version_component_range 4)" ]; then
 		KEYWORDS="~amd64 ~x86"
 		SRC_URI="http://www.phoronix-test-suite.com/download.php?file=${MY_P} -> ${MY_P}.tar.gz"
-	else	
-        MY_MINORV="$(get_version_component_range 4)"
+	else
+		KEYWORDS=""
+		MY_MINORV="$(get_version_component_range 4)"
 		MY_MINORV="${MY_MINORV/pre/m}"
 		MY_P="${MY_P}${MY_MINORV}"
 		SRC_URI="http://www.phoronix-test-suite.com/download.php?file=development/${MY_P} -> ${MY_P}.tar.gz"
