@@ -8,7 +8,7 @@ MY_PN="kwallet-pam"
 
 inherit cmake-utils git-r3
 
-DESCRIPTION="PAM integration to automatically unlock kwallet when logging into a KDE4 Desktop Session"
+DESCRIPTION="PAM integration to automatically unlock kwallet when logged into KDE4 Session"
 HOMEPAGE="https://projects.kde.org/projects/kde/workspace/kwallet-pam"
 
 EGIT_REPO_URI="git://anongit.kde.org/${MY_PN}"
@@ -20,7 +20,7 @@ SLOT="4"
 KEYWORDS=""
 IUSE="debug"
 
-RDEPEND=">=dev-libs/libgcrypt-1.5.0
+RDEPEND=">=dev-libs/libgcrypt-1.5.0:*
 		net-misc/socat
 		sys-libs/pam"
 DEPEND="${RDEPEND}"
