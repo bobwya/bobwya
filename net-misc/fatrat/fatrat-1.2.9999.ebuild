@@ -1,6 +1,6 @@
-# Copyright 1999-2006 Gentoo Foundation
+# Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: $
+# $Id$
 
 EAPI=5
 
@@ -9,14 +9,14 @@ EGIT_BRANCH="1.2"
 
 inherit cmake-utils eutils git-2
 
-DESCRIPTION="Qt4 (C++) based download manager with support for HTTP, FTP, SFTP, BitTorrent, rapidshare and more"
+DESCRIPTION="Qt4 (C++) based download manager with multi-protocol support"
 HOMEPAGE="http://fatrat.dolezel.info https://github.com/LubosD/fatrat"
 SRC_URI=""
 
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="~x86 ~amd64"
-IUSE="bittorrent +curl doc jabber jplugins nls webinterface"
+IUSE="bittorrent +curl doc jplugins nls webinterface xmpp"
 
 RDEPEND="dev-qt/qtdbus:4
 	dev-qt/qtgui:4
@@ -26,10 +26,10 @@ RDEPEND="dev-qt/qtdbus:4
 				dev-qt/qtwebkit:4 )
 	curl? ( >=net-misc/curl-7.18.2 )
 	doc? ( dev-qt/assistant:4 )
-	jabber? ( >=net-libs/gloox-0.9 )
 	jplugins? ( >=virtual/jre-1.6:* )
 	webinterface? ( dev-qt/qtscript:4
-					>=dev-cpp/pion-5.0.0 )"
+					>=dev-cpp/pion-5.0.0 )
+	xmpp? ( >=net-libs/gloox-0.9 )"
 DEPEND=">=dev-util/cmake-2.6.0
 		${RDEPEND}"
 
@@ -40,7 +40,7 @@ src_configure() {
 		$(cmake-utils_use_with bittorrent) \
 		$(cmake-utils_use_with curl) \
 		$(cmake-utils_use_with doc DOCUMENTATION) \
-		$(cmake-utils_use_with jabber) \
+		$(cmake-utils_use_with xmpp JABBER) \
 		$(cmake-utils_use_with jplugins) \
 		$(cmake-utils_use_with nls) \
 		$(cmake-utils_use_with webinterface)"
