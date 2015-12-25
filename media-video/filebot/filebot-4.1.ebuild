@@ -1,15 +1,14 @@
-# Copyright 1999-2007 Gentoo Foundation
+# Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: $
+# $Id$
 
 EAPI=5
 
 inherit eutils
 
-DESCRIPTION="Java-based GUI and console tools to rename TV shows, download subtitles, and validate checksums"
+DESCRIPTION="Java-based tools to rename TV shows, download subtitles, and validate checksums"
 HOMEPAGE="http://filebot.sourceforge.net/"
 
-PN="${PN%-bin}"
 PACKAGE_NAME="FileBot"
 SRC_URI="http://downloads.sourceforge.net/project/${PN}/${PN}/${PACKAGE_NAME}_${PV}/${PACKAGE_NAME}_${PV}-portable.zip"
 
