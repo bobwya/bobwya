@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
-<herd>proxy-maintainers</herd>
-<maintainer>
-  <email>nikoli@gmx.us</email>
-  <name>Nikoli</name>
-</maintainer>
 <longdescription lang="en">
   EiskaltDC++ is a multi-platform program that uses the Direct Connect and
   ADC protocol. It is compatible with other DC clients, such as the original DC

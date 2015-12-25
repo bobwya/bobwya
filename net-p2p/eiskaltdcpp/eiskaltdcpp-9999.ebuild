@@ -1,16 +1,16 @@
-# Copyright 1999-2014 Gentoo Foundation
+# Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: $
+# $Id$
 
 EAPI="5"
 
-PLOCALES="be bg cs de el en es fr hu it pl pt_BR ru sk sr@latin sv_SE uk vi zh_CN"
+PLOCALES="be bg cs de el en es fr hu it pl pt_BR ru sk sr@latin uk"
 
 inherit cmake-utils eutils l10n fdo-mime gnome2-utils
 [[ ${PV} = *9999* ]] && inherit git-r3
 
 DESCRIPTION="Qt based client for DirectConnect and ADC protocols, based on DC++ library"
-HOMEPAGE="https://code.google.com/p/eiskaltdc/"
+HOMEPAGE="https://github.com/eiskaltdcpp/eiskaltdcpp"
 
 LICENSE="GPL-2 GPL-3"
 SLOT="0"
@@ -30,8 +30,8 @@ REQUIRED_USE="
 "
 
 if [[ ${PV} != *9999* ]]; then
-	SRC_URI="https://eiskaltdc.googlecode.com/files/${P}.tar.xz"
-	KEYWORDS="~amd64 ~x86"
+	SRC_URI="https://github.com/${PN}/${PN}/archive/v${PV}.tar.gz"
+	KEYWORDS="amd64 x86"
 else
 	EGIT_REPO_URI="https://github.com/${PN}/${PN}.git"
 	KEYWORDS=""
@@ -95,9 +95,6 @@ pkg_pretend() {
 src_prepare() {
 	l10n_find_plocales_changes 'eiskaltdcpp-qt/translations' '' '.ts'
 
-	if use qt4; then
-		"${FILESDIR}/moc_fix.sh" "${S}/${PN}-qt"
-	fi
 	epatch_user
 }
 
