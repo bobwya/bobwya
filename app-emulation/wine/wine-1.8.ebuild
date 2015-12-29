@@ -20,14 +20,18 @@ if [[ ${PV} == "9999" ]] ; then
 	#KEYWORDS=""
 else
 	MAJOR_V=$(get_version_component_range 1-2)
-	if [[ ! "$(get_version_component_range 3)" =~ ^rc ]]; then
-		KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
-		MY_PV=${PV}
-	else
+	let "MINOR_V_ODD=$(get_version_component_range 2) % 2"
+	MY_PV="${PV}"
+	if [[ "$(get_version_component_range 3)" =~ ^rc ]]; then
 		MY_PV=$(replace_version_separator 2 '-')
+	elif [[ ${MINOR_V_ODD} == 1 ]]; then
+		KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
+	else
+		KEYWORDS="-* amd64 x86 x86-fbsd"
 	fi
 	MY_P="${PN}-${MY_PV}"
 	SRC_URI="https://dl.winehq.org/wine/source/${MAJOR_V}/${MY_P}.tar.bz2"
+	unset MINOR_V_ODD MAJOR_V
 fi
 
 GV="2.40"
