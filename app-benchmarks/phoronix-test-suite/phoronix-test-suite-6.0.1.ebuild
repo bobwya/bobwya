@@ -44,22 +44,23 @@ src_prepare() {
 			-e 's:"`pwd`":"$(pwd)":'				\
 			-e 's:`dirname $0`:"$(dirname $0)":g'	\
 			-e 's:\$PTS_DIR:"\${PTS_DIR}":g'		\
-			phoronix-test-suite
+			"${S}/phoronix-test-suite"
 	# Tidyup non-Gentoo install scripts
-	rm -f pts-core/external-test-dependencies/scripts/install-{a,d,f,m,n,o,p,u,z}*-packages.sh
+	rm -f "${S}/pts-core/external-test-dependencies/scripts"/install-{a,d,f,m,n,o,p,u,z}*-packages.sh
 	if [[ ${PV} != "9999" ]] ; then
 		[ -f "CHANGE-LOG" ] && mv "CHANGE-LOG" "ChangeLog"
 		# Backport Upstream issue #79 with BASH completion helper
 		sed -i -e 's:_phoronix-test-suite-show:_phoronix_test_suite_show:g' \
-			pts-core/static/bash_completion
+			"${S}/pts-core/static/bash_completion"
 	fi
 	# BASH completion helper function "have" test - is now depreciated - so remove
-	sed -i -e '/^have phoronix-test-suite &&$/d' pts-core/static/bash_completion
+	sed -i -e '/^have phoronix-test-suite &&$/d' "${S}/pts-core/static/bash_completion"
 }
 
 src_install() {
-	dodir /usr/share/${PN}
-	insinto /usr/share/${PN}
+	PACKAGE_DATA="/usr/share/${PN}"
+	dodir "${PACKAGE_DATA}"
+	insinto "${PACKAGE_DATA}"
 
 	doman documentation/man-pages/phoronix-test-suite.1
 	dodoc AUTHORS ChangeLog
@@ -68,14 +69,14 @@ src_install() {
 	doicon pts-core/static/images/openbenchmarking.png
 	domenu pts-core/static/phoronix-test-suite.desktop
 	newbashcomp pts-core/static/bash_completion ${PN}
-	rm -f pts-core/static/phoronix-test-suite.desktop || die 'rm failed'
-	rm -f pts-core/static/bash_completion || die 'rm failed'
+	rm -f "${D}/pts-core/static/phoronix-test-suite.desktop" || die "rm failed"
+	rm -f "${D}/pts-core/static/bash_completion" || die "rm failed"
 
 	doins -r pts-core
 	exeinto /usr/bin
 	doexe phoronix-test-suite
-
-	find /usr/share/${PN}/pts-core/ -type f -name "*.sh" -print0  | xargs -0 fperms a+x
+	find "${D}${PACKAGE_DATA}" -type f -name "*.sh" -printf "${PACKAGE_DATA}/%P\0" | xargs -0 fperms a+x
+	unset PACKAGE_DATA
 
 	# Need to fix the cli-php config for downloading to work. Very naughty!
 	local slots
