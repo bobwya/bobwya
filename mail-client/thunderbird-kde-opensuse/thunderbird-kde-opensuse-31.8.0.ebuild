@@ -179,7 +179,7 @@ src_prepare() {
 	EPATCH_FORCE="yes" \
 	epatch "${WORKDIR}/firefox"
 	if [[ $(gcc-major-version) -ge 5 ]]; then
-		epatch "${FILESDIR}/thunderbird-31.7.0-gcc5-1.patch"
+		epatch "${FILESDIR}/${PN}-31.7.0-gcc5-1.patch"
 	fi
 	if [[ $(get_major_version) -le 31 ]]; then
 		# Patch for https://bugzilla.mozilla.org/show_bug.cgi?id=1143411

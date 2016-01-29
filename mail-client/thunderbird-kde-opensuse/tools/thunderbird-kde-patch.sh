@@ -87,7 +87,7 @@ for old_ebuild_file in *.ebuild; do
 			keywork_unsupported_regexp="[\~]{0,1}(alpha|arm|ppc|ppc64)"
 			ebuild_message_regexp="^[[:blank:]]+(einfo|elog|ewarn)"
 			mozlinguas_src_unpack_regexp="^[[:blank:]]*mozlinguas\_src\_unpack"
-			local_epatch_regexp="^[[:blank:]]+epatch.+\\\$\{FILESDIR\}.+\.patch.*"
+			local_epatch_regexp="^[[:blank:]]+epatch.+\\\$\\{FILESDIR\\}.+\.patch.*"
 			pushd_mozilla_regexp="^[[:blank:]]*pushd[[:blank:]]+\\\"\\\$\\\{S\\\}\\\"\/mozilla[[:blank:]]*\&>\/dev\/null"
 			set_build_obj_dir_regexp="^[[:blank:]]*echo[[:blank:]]+\\\"mk\_add\_options[[:blank:]]+MOZ\_OBJDIR\=\\\$\\\{BUILD\_OBJ\_DIR\\\}\\\"[[:blank:]]+>>[[:blank:]]+\\\"\\\$\\\{S\\\}\\\"\/\.mozconfig"
 		}
@@ -152,6 +152,9 @@ for old_ebuild_file in *.ebuild; do
 					printf("%s%s\n",	indent, "fi")
 					pushd_mozilla_open=0
 					popd_mozilla=1
+				}
+				if (($0 ~ local_epatch_regexp) && ($0 !~ PN_regexp)) {
+					gsub(MOZ_PN, "${PN}")
 				}
 			}
 			else if (array_phase_open["src_configure"]) {
@@ -249,9 +252,6 @@ for old_ebuild_file in *.ebuild; do
 				printf("%s%s%s\n",  indent, indent,  "# ... _OR_ install the patch file as a User patch (/etc/portage/patches/mail-client/thunderbird-kde-opensuse/)")
 				printf("%s%s\n", 	indent, "fi")
 				pushd_mozilla_open=1
-			}
-			else if (array_phase_open["src_prepare"] && ($0 ~ local_epatch_regexp) && ($0 !~ PN_regexp)) {
-				gsub(MOZ_PN, "${PN}")
 			}
 			else if ($0 ~ array_variables_regexp["BUILD_OBJ_DIR"]) {
 				printf("MAX_OBJ_DIR_LEN=\"80\"\n")
