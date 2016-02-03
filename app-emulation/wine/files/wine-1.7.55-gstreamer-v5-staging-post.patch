@@ -1,18 +1,31 @@
-From b97783fd33b4d9897c149d7a14747aa4969bd9e9 Mon Sep 17 00:00:00 2001
+From 2f0514345d325ecd20a88e3b0cb896ca9d23deae Mon Sep 17 00:00:00 2001
 From: Sebastian Lackner <sebastian@fds-team.de>
 Date: Thu, 19 Mar 2015 07:56:04 +0100
 Subject: Reapply various changes conflicting with Maarten Lankhorst's
  gstreamer hack v5.
 
 ---
- dlls/ntdll/thread.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ dlls/ntdll/ntdll_misc.h | 1 +
+ dlls/ntdll/thread.c     | 7 +++++++
+ 2 files changed, 8 insertions(+)
 
+diff --git a/dlls/ntdll/ntdll_misc.h b/dlls/ntdll/ntdll_misc.h
+index e1be304..d5bc678 100644
+--- a/dlls/ntdll/ntdll_misc.h
++++ b/dlls/ntdll/ntdll_misc.h
+@@ -244,6 +244,7 @@ struct ntdll_thread_data
+     WINE_VM86_TEB_INFO vm86;          /* 1fc vm86 private data */
+     void              *exit_frame;    /* 204 exit frame pointer */
+ #endif
++    void              *pthread_stack; /* 208/318 pthread stack */
+     struct list entry;
+     BOOL detached;
+ };
 diff --git a/dlls/ntdll/thread.c b/dlls/ntdll/thread.c
-index 1e7f231..cf0461d 100644
+index 2011c1e2..9f824eb 100644
 --- a/dlls/ntdll/thread.c
 +++ b/dlls/ntdll/thread.c
-@@ -461,6 +461,8 @@ static void exit_thread_common( int status )
+@@ -467,6 +467,8 @@ static void exit_thread_common( int status )
      static void *prev_teb;
      TEB *teb;
  #endif
@@ -21,7 +34,7 @@ index 1e7f231..cf0461d 100644
  
      if (status)  /* send the exit code to the server (0 is already the default) */
      {
-@@ -502,6 +504,11 @@ static void exit_thread_common( int status )
+@@ -508,6 +510,11 @@ static void exit_thread_common( int status )
      reap_thread(NtCurrentTeb());
  #endif
  
@@ -34,5 +47,5 @@ index 1e7f231..cf0461d 100644
      close( ntdll_get_thread_data()->wait_fd[1] );
      close( ntdll_get_thread_data()->reply_fd );
 -- 
-2.3.2
+2.6.4
 

@@ -38,7 +38,6 @@ MV="4.5.6"
 STAGING_P="wine-staging-${MY_PV}"
 STAGING_DIR="${WORKDIR}/${STAGING_P}"
 WINE_GENTOO="wine-gentoo-2015.03.07"
-GST_P="wine-1.7.55-gstreamer-v5"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
 HOMEPAGE="http://www.winehq.org/"
 SRC_URI="${SRC_URI}
@@ -47,7 +46,6 @@ SRC_URI="${SRC_URI}
 		abi_x86_64? ( https://dl.winehq.org/wine/wine-gecko/${GV}/wine_gecko-${GV}-x86_64.msi )
 	)
 	mono? ( https://dl.winehq.org/wine/wine-mono/${MV}/wine-mono-${MV}.msi )
-	gstreamer010? ( https://dev.gentoo.org/~np-hardass/distfiles/${PN}/${GST_P}.patch.bz2 )
 	https://dev.gentoo.org/~tetromino/distfiles/${PN}/${WINE_GENTOO}.tar.bz2"
 
 if [[ ${PV} == "9999" ]] ; then
@@ -59,7 +57,7 @@ fi
 
 LICENSE="LGPL-2.1"
 SLOT="0"
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer010 +jpeg +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test +threads +truetype +udisks v4l vaapi +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test +threads +truetype +udisks v4l vaapi +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	test? ( abi_x86_32 )
 	elibc_glibc? ( threads )
@@ -81,9 +79,9 @@ COMMON_DEPEND="
 	fontconfig? ( media-libs/fontconfig:=[${MULTILIB_USEDEP}] )
 	gphoto2? ( media-libs/libgphoto2:=[${MULTILIB_USEDEP}] )
 	openal? ( media-libs/openal:=[${MULTILIB_USEDEP}] )
-	gstreamer010? (
-		media-libs/gstreamer:0.10[${MULTILIB_USEDEP}]
-		media-libs/gst-plugins-base:0.10[${MULTILIB_USEDEP}]
+	gstreamer? (
+		media-libs/gstreamer:1.0[${MULTILIB_USEDEP}]
+		media-libs/gst-plugins-base:1.0[${MULTILIB_USEDEP}]
 	)
 	X? (
 		x11-libs/libXcursor[${MULTILIB_USEDEP}]
@@ -228,13 +226,18 @@ src_unpack() {
 			einfo "Building Wine commit ${WINE_COMMIT} referenced by Wine-Staging commit ${EGIT_VERSION} ..."
 			EGIT_COMMIT="${WINE_COMMIT}"
 		fi
+		EGIT_CHECKOUT_DIR="${S}" git-r3_src_unpack
+		if use gstreamer && grep -q "gstreamer-0.10" "${S}"/configure ; then
+			ewarn "Wine commit ${GSTREAMER_COMMIT} first introduced support for the gstreamer:1.0 branch."
+			ewarn "Specify a newer Wine commit or emerge with USE -gstreamer."
+			die "This live ebuild does not support Wine builds using the older gstreamer:0.1 branch."
+		fi
 	else
 		unpack ${P}.tar.bz2
 		use staging && unpack "${STAGING_P}.tar.gz"
 	fi
 
 	unpack "${WINE_GENTOO}.tar.bz2"
-	use gstreamer010 && unpack "${GST_P}.patch.bz2"
 
 	l10n_find_plocales_changes "${S}/po" "" ".po"
 }
@@ -247,26 +250,6 @@ src_prepare() {
 		"${FILESDIR}"/${PN}-1.7.12-osmesa-check.patch #429386
 		"${FILESDIR}"/${PN}-1.6-memset-O3.patch #480508
 	)
-	if use gstreamer010; then
-		# See http://bugs.winehq.org/show_bug.cgi?id=30557
-		ewarn "Applying experimental patch to fix GStreamer support. Note that"
-		ewarn "this patch has been reported to cause crashes in certain games."
-
-		# Wine-Staging 1.7.38 "ntdll: Fix race-condition when threads are killed
-		# during shutdown" patch and "Added patch to implement shared memory
-		# wineserver communication for various user32 functions" prevents the
-		# gstreamer patch from applying cleanly.
-		# So undo the staging patch, apply gstreamer, then re-apply rebased staging
-		# patch on top.
-		if use staging; then
-			PATCHES+=(
-				"${FILESDIR}/${PN}-1.7.55-gstreamer-v5-staging-pre.patch"
-				"${WORKDIR}/${GST_P}.patch"
-				"${FILESDIR}/${PN}-1.7.55-gstreamer-v5-staging-post.patch" )
-		else
-			PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
-		fi
-	fi
 	if use staging; then
 		ewarn "Applying the Wine-Staging patchset. Any bug reports to the"
 		ewarn "Wine bugzilla should explicitly state that staging was used."
@@ -322,7 +305,7 @@ multilib_src_configure() {
 		$(use_enable gecko mshtml)
 		$(use_with gphoto2 gphoto)
 		$(use_with gsm)
-		$(use_with gstreamer010 gstreamer)
+		$(use_with gstreamer)
 		--without-hal
 		$(use_with jpeg)
 		$(use_with ldap)
