@@ -24,6 +24,9 @@ done
 # Rename and patch all the stock firefox ebuild files
 cd "${script_folder%/tools}"
 
+# Remove Changelogs - as this is an unofficial package
+rm ChangeLog* 2>/dev/null
+
 # Patch metadata.xml file
 metadata_file="metadata.xml"
 mv "${metadata_file}" "${metadata_file}.bak"
@@ -54,7 +57,12 @@ for old_ebuild_file in *.ebuild; do
 		continue
 	fi
 
+	ebuild_version="${old_ebuild_file%.ebuild}"
+	ebuild_version="${ebuild_version#firefox-}"
 	ebuild_file="${old_ebuild_file/firefox/firefox-kde-opensuse}"
+	if [[ ${ebuild_version} == 43.0 ]]; then
+		ebuild_file="${ebuild_file/43.0/43.0.4}"
+	fi
 	new_ebuild_file="${ebuild_file}.new"
 	echo "processing ebuild file: \"${old_ebuild_file}\" -> \"${ebuild_file}\""
 	mv "${old_ebuild_file}" "${ebuild_file}"
@@ -190,7 +198,10 @@ for old_ebuild_file in *.ebuild; do
 			# Ebuild phase based post-checks
 			if ((array_phase_open["src_unpack"] ==1) && ($0 ~ /mozlinguas\_src\_unpack/)) {
 				printf("%s%s\n",	indent, "if use kde; then")
-				printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^\(10|17|24\)\\..*esr$ ]]; then")
+				printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^\(44)\\..$ ]]; then")
+				printf("%s%s%s%s\n",indent, indent, indent, "# Temporary hack... Wolfgang hurray up and create a 44 branch!!")
+				printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"default\"")
+				printf("%s%s%s\n",	indent, indent, "elif [[ ${MOZ_PV} =~ ^\(10|17|24\)\\..*esr$ ]]; then")
 				printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"esr${MOZ_PV%%.*}\"")
 				printf("%s%s%s\n",	indent, indent, "else")
 				printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"firefox${MOZ_PV%%.*}\"")

@@ -48,7 +48,7 @@ KEYWORDS="~amd64 ~hppa ~ia64 ~x86 ~amd64-linux ~x86-linux"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist egl hardened +hwaccel kde +minimal neon pgo selinux +gmp-autoupdate test"
+IUSE="bindist egl hardened +hwaccel kde +minimal pgo selinux +gmp-autoupdate test"
 RESTRICT="!bindist? ( bindist )"
 
 # More URIs appended below...
@@ -152,7 +152,10 @@ src_unpack() {
 	# Unpack language packs
 	mozlinguas_src_unpack
 	if use kde; then
-		if [[ ${MOZ_PV} =~ ^(10|17|24)\..*esr$ ]]; then
+		if [[ ${MOZ_PV} =~ ^(44)\..$ ]]; then
+			# Temporary hack... Wolfgang hurray up and create a 44 branch!!
+			EHG_REVISION="default"
+		elif [[ ${MOZ_PV} =~ ^(10|17|24)\..*esr$ ]]; then
 			EHG_REVISION="esr${MOZ_PV%%.*}"
 		else
 			EHG_REVISION="firefox${MOZ_PV%%.*}"
@@ -262,22 +265,6 @@ src_configure() {
 
 	# Add full relro support for hardened
 	use hardened && append-ldflags "-Wl,-z,relro,-z,now"
-
-	if use neon ; then
-		mozconfig_annotate '' --with-fpu=neon
-		mozconfig_annotate '' --with-thumb=yes
-		mozconfig_annotate '' --with-thumb-interwork=no
-	fi
-
-	if [[ ${CHOST} == armv* ]] ; then
-		mozconfig_annotate '' --with-float-abi=hard
-		mozconfig_annotate '' --enable-skia
-
-		if ! use system-libvpx ; then
-			sed -i -e "s|softfp|hard|" \
-				"${S}"/media/libvpx/moz.build
-		fi
-	fi
 
 	use egl && mozconfig_annotate 'Enable EGL as GL provider' --with-gl-provider=EGL
 
