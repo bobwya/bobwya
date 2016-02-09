@@ -69,7 +69,7 @@ for ebuild_file in *.ebuild; do
 		continue
 	fi
 
-	for new_version in "1.8_rc1" "1.8_rc2" "1.8_rc3" "1.8_rc4" "1.9.0" "1.9.1" "1.9.2"; do
+	for new_version in "1.8_rc1" "1.8_rc2" "1.8_rc3" "1.8_rc4" "1.9.0" "1.9.1" "1.9.2" "1.9.3"; do
 		new_ebuild_file="${ebuild_file/1.8/${new_version}}"
 
 		[ -f "${new_ebuild_file}" ] && continue
@@ -94,7 +94,7 @@ for ebuild_file in *.ebuild; do
 			# Setup some regular expression constants - to hopefully make the script more readable!
 			blank_line_regexp="^[[:blank:]]*$"
 			leading_ws_regexp="^[[:blank:]]+"
-			trailing_ws_regexp="^[[:blank:]]+"
+			trailing_ws_regexp="[[:blank:]]+$"
 			end_quote_regexp="[^=]\"[[:blank:]]*$"
 			end_curly_bracket_regexp="^[[:blank:]]*\}[[:blank:]]*$"
 			ebuild_inherit_regexp="^inherit "
@@ -125,6 +125,8 @@ for ebuild_file in *.ebuild; do
 			legacy_gstreamer_wine_version_regexp="^(1\\.6|1\\.7|1\\.8|1\\.9\\.1)"
 			gstreamer_full_atom_match="[<|>]\{0,1\}[=]\{0,1\}media-libs\\/gstreamer:[\.[:digit:]]+"
 			gst_plugins_base_full_atom_match="[<|>]\{0,1\}[=]\{0,1\}media-libs\\/gst-plugins-base:[\.[:digit:]]+"
+			patchset_regexp="local[[:blank:]]+PATCHES=\\("
+			use_custom_cflags_regexp="use[[:blank:]]+custom\\-cflags"
 			staging_use_enabled_regexp="staging\\?[[:blank:]]+"
 			staging_use_test_regexp="use staging"
 			gstreamer_use_enabled_regexp="gstreamer\\?[[:blank:]]+"
@@ -307,37 +309,56 @@ for ebuild_file in *.ebuild; do
 			
 			# Ebuild phase based post-checks
 			if ((array_phase_open["pkg_pretend"] == 1) && ($0 ~ "wine_build_environment_check")) {
-				printf("%s%s\n", indent, "if [[ ${PV} == \"9999\" ]] && use staging; then")
-				printf("%s%s%s\n", indent, indent, "ewarn \"You have enabled a live ebuild of Wine with USE +staging.\"")
-				printf("%s%s%s\n", indent, indent, "ewarn \"All git branch and commit references will link to the Wine-Staging git tree.\"")
-				printf("%s%s%s\n", indent, indent, "ewarn \"By default the Wine-Staging git tree branch master will be used.\"")
-				printf("%s%s\n", indent, "fi")
+				printf("%s%s\n",	indent, "if [[ ${PV} == \"9999\" ]] && use staging; then")
+				printf("%s%s%s\n",	indent, indent, "ewarn \"You have enabled a live ebuild of Wine with USE +staging.\"")
+				printf("%s%s%s\n",	indent, indent, "ewarn \"All git branch and commit references will link to the Wine-Staging git tree.\"")
+				printf("%s%s%s\n",	indent, indent, "ewarn \"By default the Wine-Staging git tree branch master will be used.\"")
+				printf("%s%s\n",	indent, "fi")
 				array_phase_open["pkg_pretend"]=2
 			}
 			if ((array_phase_open["src_unpack"] == 1) && ($0 ~ if_open_regexp) && ($0 ~ check_for_pv9999_regexp) && (if_stack == 1)) {
 				if_check_pv9999_open=1
-				printf("%s%s%s\n", indent, indent, "# Reference either Wine or Wine Staging git branch (depending on +staging use flag)")
-				printf("%s%s%s\n", indent, indent, "EGIT_BRANCH=${EGIT_BRANCH:-master}")
-				printf("%s%s%s\n", indent, indent, "if use staging; then")
+				printf("%s%s%s\n",	 indent, indent, "# Reference either Wine or Wine Staging git branch (depending on +staging use flag)")
+				printf("%s%s%s\n",	 indent, indent, "EGIT_BRANCH=${EGIT_BRANCH:-master}")
+				printf("%s%s%s\n",	 indent, indent, "if use staging; then")
 				printf("%s%s%s%s\n", indent, indent, indent, "EGIT_REPO_URI=${STAGING_EGIT_REPO_URI} EGIT_CHECKOUT_DIR=${STAGING_DIR} git-r3_src_unpack")
 				printf("%s%s%s%s\n", indent, indent, indent, "local WINE_COMMIT=$(\"${STAGING_DIR}/patches/patchinstall.sh\" --upstream-commit)")
 				printf("%s%s%s%s\n", indent, indent, indent, "[[ ! ${WINE_COMMIT} =~ [[:xdigit:]]{40} ]] && die \"Failed to get Wine git commit corresponding to Wine-Staging git commit ${EGIT_VERSION}.\"")
 				printf("%s%s%s%s\n", indent, indent, indent, "einfo \"Building Wine commit ${WINE_COMMIT} referenced by Wine-Staging commit ${EGIT_VERSION} ...\"")
 				printf("%s%s%s%s\n", indent, indent, indent, "EGIT_COMMIT=\"${WINE_COMMIT}\"")
-				printf("%s%s%s\n", indent, indent, "fi")
+				printf("%s%s%s\n",	 indent, indent, "fi")
 				if (wine_version !~ legacy_gstreamer_wine_version_regexp) {
-					printf("%s%s%s\n", indent, indent, "EGIT_CHECKOUT_DIR=\"${S}\" git-r3_src_unpack")
-					printf("%s%s%s\n", indent, indent, "if use gstreamer && grep -q \"gstreamer-0.10\" \"${S}\"/configure ; then")
+					printf("%s%s%s\n",	 indent, indent, "EGIT_CHECKOUT_DIR=\"${S}\" git-r3_src_unpack")
+					printf("%s%s%s\n",	 indent, indent, "if use gstreamer && grep -q \"gstreamer-0.10\" \"${S}\"/configure ; then")
 					printf("%s%s%s%s\n", indent, indent, indent, "ewarn \"Wine commit ${GSTREAMER_COMMIT} first introduced support for the gstreamer:1.0 branch.\"")
 					printf("%s%s%s%s\n", indent, indent, indent, "ewarn \"Specify a newer Wine commit or emerge with USE -gstreamer.\"")
 					printf("%s%s%s%s\n", indent, indent, indent, "die \"This live ebuild does not support Wine builds using the older gstreamer:0.1 branch.\"")
-					printf("%s%s%s\n", indent, indent, "fi")
+					printf("%s%s%s\n",	 indent, indent, "fi")
 				}
+			}
+			if ((array_phase_open["src_prepare"] == 1) && (wine_version !~ "^(1\.8.*|1\.9\.0|1\.9\.1|1\.9\.2|9999)$")) {
+				if ((patch_set_open == 0) && $0 ~ (leading_ws_regexp patchset_regexp))
+					patch_set_open=1
+				if ((patch_set_open == 1) && ($0 ~ (bracketed_expression_close_regexp "$"))) {
+					# Hack - disable forced alignment for all gcc >=5.3.x versions - needs a gcc test function for Upstream (in-tree) patch
+					printf("%s%s\n",	indent, "if [[ $(gcc-major-version) = 5 && $(gcc-minor-version) -ge 3 ]]; then")
+					printf("%s%s%s\n",	indent, indent, "local PATCHES+=( \"${FILESDIR}\"/${PN}-1.9.3-gcc-5_3_0-disable-force-alignment.patch ) #574044")
+					printf("%s%s\n",	indent, "fi")
+					patch_set_open=2
+				}
+			}
+			if ((array_phase_open["src_configure"] == 1) && (wine_version ~ "^9999$") && ($0 ~ (leading_ws_regexp use_custom_cflags_regexp))) {
+				# Hack - disable forced alignment for all gcc >=5.3.x versions - needs a gcc test function for Upstream (in-tree) patch
+				printf("%s%s\n",	indent, "if [[ ${PV} == \"9999\" ]] && [[ $(gcc-major-version) = 5 && $(gcc-minor-version) -ge 3 ]]; then")
+				printf("%s%s%s\n",	indent, indent, "local CFLAGS=\"${CFLAGS} -fno-omit-frame-pointer\" # bug 574044")
+				printf("%s%s\n",	indent, "fi")
+				array_ebuild_phases["src_configure"]=2
 			}
 		}' "${ebuild_file}" 1>"${new_ebuild_file}" 2>/dev/null
 		[ -f "${new_ebuild_file}" ] || exit 1
 		mv "${new_ebuild_file}" "${ebuild_file}"
 done
+
 
 # Rebuild the master package Manifest file
 [ -f "${ebuild_file}" ] && ebuild "${ebuild_file}" manifest

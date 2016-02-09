@@ -287,6 +287,9 @@ src_prepare() {
 src_configure() {
 	export LDCONFIG=/bin/true
 	use custom-cflags || strip-flags
+	if [[ ${PV} == "9999" ]] && [[ $(gcc-major-version) = 5 && $(gcc-minor-version) -ge 3 ]]; then
+		local CFLAGS="${CFLAGS} -fno-omit-frame-pointer" # bug 574044
+	fi
 
 	multilib-minimal_src_configure
 }
