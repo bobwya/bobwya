@@ -1,4 +1,4 @@
-# Copyright 1999-2015 Gentoo Foundation
+# Copyright 1999-2016 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
@@ -6,19 +6,20 @@ EAPI="5"
 
 inherit kde4-base
 
+DESCRIPTION="Mozilla KDE Desktop Integration"
+HOMEPAGE="https://github.com/openSUSE/kmozillahelper"
+
 DESCRIPTION="Mozilla KDE Integration"
-HOMEPAGE="http://gitorious.org/firefox-kde-opensuse"
-SRC_URI="https://build.opensuse.org/source/openSUSE:Factory/mozilla-kde4-integration/${P}.tar.bz2"
 
-LICENSE="GPL-2 LGPL-2"
+SRC_URI="https://github.com/openSUSE/${PN}/archive/${PV}.tar.gz"
 KEYWORDS="amd64 x86"
-IUSE=""
+
+LICENSE="MIT"
 SLOT="4"
+IUSE=""
 
-DEPEND="kde-base/libkworkspace"
+DEPEND=""
 RDEPEND="${DEPEND}"
-
-S="${WORKDIR}/${PN}"
 
 pkg_postinst() {
 	kde4-base_pkg_postinst

@@ -1,0 +1,16 @@
+[1]
+Description=Application settings for kmozillahelper
+clientmachine=localhost
+clientmachinematch=0
+skippager=true
+skippagerrule=2
+skipswitcher=true
+skipswitcherrule=2
+skiptaskbar=true
+skiptaskbarrule=2
+wmclass=kmozillahelper
+wmclasscomplete=false
+wmclassmatch=1
+
+[General]
+count=1

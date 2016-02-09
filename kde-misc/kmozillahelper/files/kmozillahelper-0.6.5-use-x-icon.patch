@@ -1,0 +1,11 @@
+diff -urN kmozillahelper.old/main.cpp kmozillahelper.new/main.cpp
+--- kmozillahelper.old/main.cpp	2016-02-05 18:53:33.136039599 +0000
++++ kmozillahelper.new/main.cpp	2016-02-05 18:59:02.158167736 +0000
+@@ -58,7 +58,6 @@
+     KAboutData about( "kmozillahelper", i18n( "KMozillaHelper" ), APP_HELPER_VERSION );
+     about.setBugAddress( "https://bugzilla.opensuse.org/enter_bug.cgi");
+     KAboutData::setApplicationData(about);
+-    QApplication::setWindowIcon(QIcon::fromTheme(QLatin1String("firefox"))); // TODO: what about other mozilla apps?
+     QApplication::setQuitOnLastWindowClosed( false );
+ 
+     QCommandLineParser parser;
