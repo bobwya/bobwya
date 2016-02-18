@@ -29,9 +29,11 @@ Testing and updating of these ebuild package build scripts is irregular. So YMMV
 	www-client/firefox-kde-opensuse : Firefox web browser, with OpenSUSE Patchset, for better KDE Desktop integration.
 
 Custom GL lib switcher implementation (these packages are masked and are NOT extensively tested) - loosely based off the Arch-Linux GL lib switcher.
+
 	app-eselect/eselect-opengl : Gentoo OpenGL implementation switcher (heavily customised)
-	media-libs/mesa : OpenGL-like graphic library for Linux			(patched version - to work with custom eselect-opengl switcher)
-	x11-base/xorg-server : X.Org X servers 							(patched version - to work with custom eselect-opengl switcher)
-	x11-drivers/nvidia-drivers : NVIDIA Accelerated Graphics Driver	(patched version - to work with custom eselect-opengl switcher)
+	media-libs/mesa : OpenGL-like graphic library for Linux (patched version - to work with custom eselect-opengl switcher)
+	x11-base/xorg-server : X.Org X servers (patched version - to work with custom eselect-opengl switcher)
+	x11-drivers/nvidia-drivers : NVIDIA Accelerated Graphics Driver (patched version - to work with custom eselect-opengl switcher)
+
 
 Credit to the Arch AUR firefox-kde-opensuse PKGBUILD script used as the main basis for the  www-client/firefox-kde-opensuse (OpenSUSE KDE patchset) ebuild.
