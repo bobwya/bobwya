@@ -41,7 +41,7 @@ sed -i -e '/^[[:blank:]]\+<flag name="\(gles\|openvg\)">.\+$/d' "metadata.xml"
 declare -a array_ebuilds
 for ebuild_file in *.ebuild; do
 	# Don't process ebuild files twice!
-	if grep -q "{patched_file_comment}" "${ebuild_file}" ; then
+	if grep -q "${patched_file_comment}" "${ebuild_file}" ; then
 		continue
 	fi
 	
@@ -58,7 +58,7 @@ done
 # Process all remaining ebuild files
 for old_ebuild_file in *.ebuild; do
 	# Don't process ebuild files twice!
-	if grep -q "{patched_file_comment}" "${old_ebuild_file}" ; then
+	if grep -q "${patched_file_comment}" "${old_ebuild_file}" ; then
 		continue
 	fi
 	
