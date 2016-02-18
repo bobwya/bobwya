@@ -1,0 +1,13 @@
+# Mask all packages required by custom GL implementation switcher
+
+# Mask re-written (out-of-tree) GL implementation switcher
+app-eselect/eselect-opengl
+
+# Mask patched mesa versions
+media-libs/mesa
+
+# Mask patched xorg-server versions
+x11-base/xorg-server
+
+# Mask patched nvidia proprietary drivers
+x11-drivers/nvidia-drivers

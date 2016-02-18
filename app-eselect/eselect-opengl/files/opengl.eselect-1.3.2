@@ -1,0 +1,399 @@
+# -*-eselect-*-  vim: ft=eselect
+# Copyright 1999-2016 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+#
+# Author:  Martin Schlemmer <azarah@gentoo.org>
+# Further modifications by Michał Górny <mgorny@gentoo.org>
+# Further modifications by Tomáš Chvátal <scarabeus@gentoo.org>
+# Further modifications by Donnie Berkholz <dberkholz@gentoo.org>
+# Further modifications based off submissions to bug #54984 <cyfred@gentoo.org>
+# Further modifications by Jeremy Huddleston <eradicator@gentoo.org>
+# Made into eselect module by Jeremy Huddleston <eradicator@gentoo.org>
+# Experimental/ unofficial changes made by Robert Walker <bob.mt.wya@gmail.com>
+
+inherit multilib package-manager config
+
+# Eselect data
+DESCRIPTION="Manage the OpenGL implementation used by your system (unsupported version)"
+SVN_DATE='$Date$'
+VERSION=$(svn_date_to_version "${SVN_DATE}" )
+EBUILD_VERSION="1.3.2"
+
+# Our data
+MAIN_ENV_FILE="${EROOT}/etc/env.d/000opengl"
+XORGD_FILE="${EROOT}/etc/X11/xorg.conf.d/20-opengl.conf"
+PREFIX="${EROOT}/usr"
+DST_PREFIX="${EROOT}/usr"
+unset IGNORE_MISSING
+
+# List existing GL implementation (stdout)
+get_current_implementation() {
+	local gl_implementation
+	local opengl_profile=$(load_config "${MAIN_ENV_FILE}" OPENGL_PROFILE)
+
+	if [[ -n ${opengl_profile} ]] ; then
+		# Read GL implementation directly or ...
+
+		gl_implementation="${opengl_profile}"
+	else
+		# ... use a fallback test: hunt through env linker paths
+
+		local ldpath="$(load_config "${MAIN_ENV_FILE}" LDPATH):"
+		local lddir="${ldpath%%:*}"
+		while [ -n "${lddir}" ]; do
+			echo "ldpath=\"${ldpath}\" ; lddir=\"${lddir}\""
+			# Do some basic sanity checks on GL implementation lib path
+			if [[ "${lddir}" =~ \/opengl\/[\-\_[:alpha:]]+\/lib ]] && [ -d "${lddir}" ]; then
+				gl_implementation="${lddir##*opengl/}"
+				gl_implementation="${gl_implementation%/lib*}"
+				break
+			fi
+			ldpath="${ldpath#*:}"
+			lddir="${ldpath%%:*}"
+		done
+	fi
+
+	echo "${gl_implementation}"
+}
+
+# List all existing GL implementations (stdout)
+get_implementations() {
+	local -a gl_implementations
+	local lib_dir
+	local dir
+	local dir_name
+
+	for lib_dir in $(list_libdirs) ; do
+		[[ ${ROOT} != / ]] && lib_dir=${lib_dir#${EROOT}}
+		for dir in "${PREFIX}/${lib_dir}"/opengl/* ; do
+			dir_name=$(basename "${dir}")
+			[[ -d ${dir} && ${dir_name} != "global" ]] || continue
+			has ${dir_name} "${gl_implementations[@]}" && continue
+			gl_implementations+=( "${dir_name}" )
+		done
+	done
+
+	echo "${gl_implementations[*]}"
+}
+
+# List conf file contents: xorg module search paths override (stdout)
+write_xorg_confd() {
+	local dir
+	echo 'Section "Files"'
+	for dir; do
+		echo -e "\tModulePath \"${dir}\"\n"
+	done
+	echo 'EndSection'
+}
+
+# Remove env file: linker paths override; from /etc/env.d/
+# Remove conf file: xorg module search paths override; from /etc/X11/xorg.conf.d
+remove_gl_conf_files() {
+	if [[ -f ${MAIN_ENV_FILE} ]] ; then
+		rm -f "${MAIN_ENV_FILE}" || die -q "Failed to remove ${MAIN_ENV_FILE}"
+	fi
+	if [[ -f ${XORGD_FILE} ]] ; then
+		rm -f "${XORGD_FILE}" || die -q "Failed to remove ${XORGD_FILE}"
+	fi
+}
+
+# Check if current GL implementation is valid (/usr/lib{32,64}/opengl/*/lib)
+# Function is only cursory e.g. does not check for multi-lib breakage
+check_current_implementation() {
+	local gl_implementation=${1}
+	local found_libgl
+
+	for lib_dir in $(list_libdirs); do
+		[[ ${ROOT} != / ]] && lib_dir=${lib_dir#${EROOT}}
+		[[ -d ${PREFIX}/${lib_dir}/opengl && ! -h ${PREFIX}/${lib_dir} ]] || continue
+
+		local gl_implementation_lib_dir="${PREFIX}/${lib_dir}/opengl/${gl_implementation}"
+		if [[ -f "${gl_implementation_dir}/lib/libGL.so" || -f "${gl_implementation_dir}/.gles-only" ]]; then
+			found_libgl=true
+			break
+		fi
+	done
+
+	if [[ -n ${IGNORE_MISSING} && -z ${found_libgl} ]]; then
+		write_error_msg "The current OpenGL implementation: ${gl_implementation} ;"
+		write_error_msg "does not seem to supply a libGL.so file."
+		write_error_msg "Potentially this might be due to breakage introduced by a prioprietary driver installer."
+		write_error_msg "Please try to re-emerge the package which provides your current OpenGL implementation."
+		die -q "Selected OpenGL implementation incomplete."
+	fi
+}
+
+# Clear up existing symlinks from /usr/lib/lib{EGL*,GL*,OpenGL}.{la,a,so*} to /usr/lib/opengl/*/lib/*
+cleanup_previous_lib_symlinks() {
+	local lib_dir=$1
+
+	local gl_root="${PREFIX#${ROOT}}/${lib_dir}/opengl"
+	[ -d "${gl_root}" ] || return
+
+	pushd ${PREFIX#${ROOT}}/${lib_dir} &>/dev/null
+	local gl_root_len="${#gl_root}"
+	for lib_file in lib{EGL*,GL*,OpenGL}.{la,a,so*} ; do
+		if [[ ! -f ${lib_file} ]] || [[ ! -h ${lib_file} ]] ; then
+			continue
+		fi
+		
+		local target_dir="$(dirname $( readlink -qf ${lib_file} ) )"
+		if [[ "${target_dir:0:${gl_root_len}}" == "${gl_root}" ]]; then
+			rm -f "${lib_file}" &>/dev/null
+		fi
+	done
+	popd &>/dev/null
+}
+
+# Create symlinks from /usr/lib/* to /usr/lib/opengl/*/lib/lib{EGL*,GL*,OpenGL}.{la,a,so*} 
+create_lib_symlinks() {
+	local lib_dir=$1
+	local gl_implementation=$2
+	
+	pushd ${PREFIX#${ROOT}}/${lib_dir}/opengl/${gl_implementation}/lib/ &>/dev/null
+	for lib_file in lib{EGL*,GL*,OpenGL}.{la,a,so*} ; do
+		[[ ! -f ${lib_file} ]] && continue
+		
+		local target_lib="$(basename $( readlink -qf ${lib_file} ) )"
+		ln -sf ${PREFIX#${ROOT}}/${lib_dir}/opengl/${gl_implementation}/lib/${target_lib} ${PREFIX#${ROOT}}/${lib_dir}/${lib_file}
+	done
+	popd &>/dev/null
+}
+
+# Switch to a new GL implementation or reload existing GL implementation
+# Sets linker GL path(s) & add additional X11 xorg search paths - set mesa as linker fallback
+set_new_implementation() {
+	local gl_implementation=$1
+	local available_implementations=$(get_implementations)
+	local lib_dir
+	local ldpath
+	local -a xorgmodpath
+
+	# Set a sane umask... bug #83115
+	umask 022
+
+	if ! has ${gl_implementation} ${available_implementations}; then
+		die -q "Invalid opengl implementation selected."
+	fi
+
+	check_current_implementation ${gl_implementation}
+
+	echo -n "Switching to ${gl_implementation} OpenGL interface..."
+	remove_gl_conf_files
+
+	# Iterate over main lib directories (/usr/lib{32,64}/)
+	for lib_dir in $(list_libdirs); do
+		[[ ${ROOT} != / ]] && lib_dir=${lib_dir#${EROOT}}
+
+		# Make sure we have a valid /usr/lib{32,64}/opengl/lib directory
+		# Make sure lib directory is not a symlink (e.g. /usr/lib -> /usr/lib64)
+		[[ -d ${PREFIX}/${lib_dir}/opengl && ! -h ${PREFIX}/${lib_dir} ]] || continue
+
+		# Check if the opengl implementation directory exists - if so add it to linker path ...
+		if [[ -d ${PREFIX}/${lib_dir}/opengl/${gl_implementation} ]] ; then
+			ldpath=${ldpath:+${ldpath}:}${PREFIX#${ROOT}}/${lib_dir}/opengl/${gl_implementation}/lib
+		fi
+
+		# ... add additional X11 xorg global module & GL extension paths too ...
+		if [[ -d ${PREFIX}/${lib_dir}/xorg/${gl_implementation}/extensions ]]; then
+			xorgmodpath+=(
+				"${PREFIX#${ROOT}}/${lib_dir}/xorg/${gl_implementation}"
+			)
+		fi
+		if [[ -d "${PREFIX}/${lib_dir}/xorg/modules" ]]; then
+			xorgmodpath+=(
+				"${PREFIX#${ROOT}}/${lib_dir}/xorg/modules"
+			)
+		fi
+		
+		if [[ -d "${PREFIX}/${lib_dir}/opengl/${gl_implementation}" ]]; then
+			cleanup_previous_lib_symlinks "${lib_dir}"
+			create_lib_symlinks "${lib_dir}" "${gl_implementation}"
+		fi
+		[[ "${gl_implementation}" == "mesa" ]] && continue
+		
+		# ... finally add mesa GL libraries, as a fallback option, to linker path (if using a proprietary driver)
+		if [[ -d "${PREFIX}/${lib_dir}/opengl/mesa" ]]; then
+			ldpath=${ldpath:+${ldpath}:}${PREFIX#${ROOT}}/${lib_dir}/opengl/${gl_implementation}/lib
+		fi
+	done
+	
+	store_config ${MAIN_ENV_FILE} LDPATH "${ldpath}"
+	store_config ${MAIN_ENV_FILE} OPENGL_PROFILE "${gl_implementation}"
+
+	mkdir -p $(dirname "${XORGD_FILE}") || die
+	write_xorg_confd "${xorgmodpath[@]}" >"${XORGD_FILE}"
+
+	do_action env update &> /dev/null
+
+	echo " done"
+}
+
+### show action ###
+describe_show() {
+	echo "Print the current OpenGL implementation."
+}
+
+do_show() {
+	local current=$(get_current_implementation)
+
+	if [[ -n ${current} ]] ; then
+		echo ${current}
+		return 0
+	else
+		echo "(none)"
+		return 2
+	fi
+}
+
+### list action ###
+describe_list() {
+	echo "List the available OpenGL implementations."
+}
+
+do_list() {
+	local targets=( $(get_implementations) )
+	local i
+
+	write_list_start "Available OpenGL implementations:"
+	for (( i = 0; i < ${#targets[@]}; i++ )); do
+		[[ ${targets[i]} = $(get_current_implementation) ]] \
+			&& targets[i]=$(highlight_marker "${targets[i]}")
+	done
+	write_numbered_list -m "(none found)" "${targets[@]}"
+}
+
+### cleanup action ###
+describe_cleanup() {
+	# Provided to support reversion back to the official Gentoo app-eselect/eselect-opengl package
+	echo "Purge all OpenGL/GL lib symlinks in /usr/lib{32,64} directories"
+}
+
+describe_cleanup_parameters() {
+	echo
+}
+
+describe_cleanup_options() {
+	echo "--prefix=<val> : Set the source prefix (default: /usr)"
+	echo "--dst-prefix=<val> : Set the destination prefix (default: /usr)"
+}
+
+do_cleanup() {
+	local action="error"
+	local new
+	local opt
+
+	while [[ ${#@} -gt 0 ]] ; do
+		opt=$1
+		shift
+		case ${opt} in
+			--prefix=*)
+				PREFIX=${ROOT}${opt#*=}
+				available=$(get_implementations)
+			;;
+			--dst-prefix=*)
+				DST_PREFIX=${ROOT}${opt#*=}
+			;;
+			*)
+				die -q "Unrecognized option: ${opt}"
+			;;
+		esac
+	done
+
+	# Iterate over main lib directories (/usr/lib{32,64}/)
+	for lib_dir in $(list_libdirs); do
+		[[ ${ROOT} != / ]] && lib_dir=${lib_dir#${EROOT}}
+
+		# Make sure we have a valid /usr/lib{32,64}/opengl/lib directory
+		# Make sure lib directory is not a symlink (e.g. /usr/lib -> /usr/lib64)
+		[[ -d ${PREFIX}/${lib_dir}/opengl && ! -h ${PREFIX}/${lib_dir} ]] || continue
+	
+		cleanup_previous_lib_symlinks "${lib_dir}"
+		echo " done"
+	done
+}
+
+### set action ###
+describe_set() {
+	echo "Select the OpenGL implementation."
+}
+
+describe_set_parameters() {
+	echo "<target>"
+}
+
+describe_set_options() {
+	echo "<target> : The profile to activate"
+	echo "--use-old : Reload existing implementation (if one is currently set)"
+	echo "--prefix=<val> :  Set the source prefix (default: /usr)"
+	echo "--dst-prefix=<val> : Set the destination prefix (default: /usr)"
+	echo "--ignore-missing : Ignore missing files when setting a new implementation"
+}
+
+do_set() {
+	local action="error"
+	local current=$(get_current_implementation)
+	local available=$(get_implementations)
+	local new
+	local opt
+
+	while [[ ${#@} -gt 0 ]] ; do
+		opt=$1
+		shift
+		case ${opt} in
+			--use-old)
+				if [[ -n ${current} ]] && has ${current} ${available}; then
+					action="old-implementation"
+				fi
+			;;
+			--prefix=*)
+				PREFIX=${ROOT}${opt#*=}
+				available=$(get_implementations)
+			;;
+			--dst-prefix=*)
+				DST_PREFIX=${ROOT}${opt#*=}
+			;;
+			--ignore-missing)
+				IGNORE_MISSING=true
+			;;
+			*)
+				if [[ ${action} != "old-implementation" ]] ; then
+					action="set-implementation"
+				fi
+
+				if is_number ${opt} ; then
+					targets=( $(get_implementations) )
+					new=${targets[$(( ${opt} - 1 ))]}
+					if [[ -z ${new} ]] ; then
+						die -q "Unrecognized option: ${opt}"
+					fi
+				elif has ${opt} ${available}; then
+					new="${opt}"
+				else
+					die -q "Unrecognized option: ${opt}"
+				fi
+			;;
+		esac
+	done
+
+	case ${action} in
+		old-implementation)
+			set_new_implementation ${current}
+			return $?
+		;;
+		set-implementation)
+			if [[ -n ${new} ]] ; then
+				set_new_implementation ${new}
+				return $?
+			else
+				die -q "Please specify an implementation to set"
+			fi
+		;;
+		unset-implementation)
+			cleanup_previous_lib_symlinks
+		;;
+		*)
+			die -q "Invalid usage of set action."
+		;;
+	esac
+}

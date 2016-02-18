@@ -1,4 +1,4 @@
-# Copyright 1999-2015 Gentoo Foundation
+# Copyright 1999-2016 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
@@ -15,7 +15,7 @@ PYTHON_COMPAT=( python2_7 )
 
 inherit autotools multilib-minimal python-any-r1 pax-utils ${GIT_ECLASS}
 
-OPENGL_DIR="xorg-x11"
+OPENGL_DIR="${PN}"
 
 MY_P="${P/_/-}"
 FOLDER="${PV/_rc*/}"
@@ -79,12 +79,12 @@ LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.64"
 # keep correct libdrm and dri2proto dep
 # keep blocks in rdepend for binpkg
 RDEPEND="
-	!<x11-base/xorg-server-1.7
+	!<x11-base/xorg-server-1.16.4-r6
 	!<=x11-proto/xf86driproto-2.0.3
 	abi_x86_32? ( !app-emulation/emul-linux-x86-opengl[-abi_x86_32(-)] )
 	classic? ( app-eselect/eselect-mesa )
 	gallium? ( app-eselect/eselect-mesa )
-	>=app-eselect/eselect-opengl-1.3.1-r5
+	=app-eselect/eselect-opengl-1.3.2
 	udev? ( kernel_linux? ( >=virtual/libudev-215:=[${MULTILIB_USEDEP}] ) )
 	>=dev-libs/expat-2.1.0-r3:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libX11-1.6.2:=[${MULTILIB_USEDEP}]
@@ -303,11 +303,11 @@ multilib_src_configure() {
 multilib_src_install() {
 	emake install DESTDIR="${D}"
 
-	# Move lib{EGL*,GL*,OpenVG,OpenGL}.{la,a,so*} files from /usr/lib to /usr/lib/opengl/xorg-x11/lib
-	ebegin "Moving lib{EGL*,GL*,OpenVG,OpenGL}.{la,a,so*} in order to implement dynamic GL switching support"
+	# Move lib{EGL*,GL*,OpenVG,OpenGL}.{la,a,so*} files from /usr/lib to /usr/lib/opengl/mesa/lib
+	ebegin "Moving lib{EGL*,GL*,OpenGL}.{la,a,so*} in order to implement dynamic GL switching support"
 	local gl_dir="/usr/$(get_libdir)/opengl/${OPENGL_DIR}"
 	dodir ${gl_dir}/lib
-	for x in "${ED}"/usr/$(get_libdir)/lib{EGL*,GL*,OpenVG,OpenGL}.{la,a,so*} ; do
+	for x in "${ED}"/usr/$(get_libdir)/lib{EGL*,GL*,OpenGL}.{la,a,so*} ; do
 		if [ -f ${x} -o -L ${x} ]; then
 			mv -f "${x}" "${ED}${gl_dir}"/lib \
 				|| die "Failed to move ${x}"
@@ -430,8 +430,11 @@ pkg_postinst() {
 
 	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix various issues"
 	ewarn "when switching GL providers."
-	ewarn "This package can only be used in conjuction with a specially patched version"
-	ewarn "of app-select/eselect-opengl ."
+	ewarn "This package can only be used in conjuction with specially patched versions of:"
+	ewarn " * app-select/eselect-opengl"
+	ewarn " * x11-base/xorg-server"
+	ewarn " * x11-drivers/nvidia-drivers"
+	ewarn "from the bobwya overlay."
 }
 
 pkg_prerm() {

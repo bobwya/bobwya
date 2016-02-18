@@ -6,35 +6,23 @@ script_path=$(readlink -f $0)
 script_folder=$( dirname "${script_path}" )
 script_name=$( basename "${script_path}" )
 
-
 # Global version constants
 eselect_opengl_supported_version="1.3.2"
 xorg_server_supported_version="1.16.4-r6"
-package_supported_version="11.0.6"
+package_supported_version="304.131"
 
 # Global constants
 patched_file_comment='experimental version of ${CATEGORY}/${PN}'
 
 
+# Global section
 cd "${script_folder%/tools}"
 
 # Import function declarations
 . "tools/common-functions.sh"
 
-
-# Global section
-
-cd "${script_folder%/tools}/files"
-
-rm mesa-10*.patch "glx_ro_text_segm.patch" "eselect-mesa.conf.7.10" 2>/dev/null
-
-cd "${script_folder%/tools}"
-
 # Remove Changelogs - as this is an unofficial package
 rm ChangeLog* 2>/dev/null
-
-# Patch metadata.xml file
-sed -i -e '/^[[:blank:]]\+<flag name="\(gles\|openvg\)">.\+$/d' "metadata.xml"
 
 
 # Remove all obsolete ebuild files
@@ -44,8 +32,8 @@ for ebuild_file in *.ebuild; do
 	if grep -q "{patched_file_comment}" "${ebuild_file}" ; then
 		continue
 	fi
-	
-	if [[ $(compare_ebuild_versions "mesa-${package_supported_version}" "${ebuild_file}") -eq 1 ]] ; then
+
+	if [[ $(compare_ebuild_versions "nvidia-drivers-${package_supported_version}" "${ebuild_file}") -eq 1 ]] ; then
 		echo "removing ebuild file: \"${ebuild_file}\" (unsupported)"
 		rm "${ebuild_file}"
 		continue
@@ -54,7 +42,6 @@ for ebuild_file in *.ebuild; do
 	remove_obsolete_ebuild_revisions "${ebuild_file}"
 done
 
-	
 # Process all remaining ebuild files
 for old_ebuild_file in *.ebuild; do
 	# Don't process ebuild files twice!
