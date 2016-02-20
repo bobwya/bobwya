@@ -210,13 +210,22 @@ set_new_implementation() {
 			cleanup_previous_lib_symlinks "${lib_dir}"
 			create_lib_symlinks "${lib_dir}" "${gl_implementation}"
 		fi
-		[[ "${gl_implementation}" == "mesa" ]] && continue
-		
-		# ... finally add mesa GL libraries, as a fallback option, to linker path (if using a proprietary driver)
-		if [[ -d "${PREFIX}/${lib_dir}/opengl/mesa" ]]; then
-			ldpath=${ldpath:+${ldpath}:}${PREFIX#${ROOT}}/${lib_dir}/opengl/${gl_implementation}/lib
-		fi
 	done
+	if [[ "${gl_implementation}" != "mesa" ]]; then
+		# ... finally add mesa GL libraries, as a fallback option, to linker path (if using a proprietary driver)
+		for lib_dir in $(list_libdirs); do
+			[[ ${ROOT} != / ]] && lib_dir=${lib_dir#${EROOT}}
+
+			# Make sure we have a valid /usr/lib{32,64}/opengl/lib directory
+			# Make sure lib directory is not a symlink (e.g. /usr/lib -> /usr/lib64)
+			[[ -d ${PREFIX}/${lib_dir}/opengl && ! -h ${PREFIX}/${lib_dir} ]] || continue
+
+			# Check if the mesa opengl implementation directory exists - if so add it to linker path ...
+			if [[ -d ${PREFIX}/${lib_dir}/opengl/mesa ]] ; then
+				ldpath=${ldpath:+${ldpath}:}${PREFIX#${ROOT}}/${lib_dir}/opengl/mesa/lib
+			fi
+		done
+	fi
 	
 	store_config ${MAIN_ENV_FILE} LDPATH "${ldpath}"
 	store_config ${MAIN_ENV_FILE} OPENGL_PROFILE "${gl_implementation}"
@@ -309,8 +318,8 @@ do_cleanup() {
 		[[ -d ${PREFIX}/${lib_dir}/opengl && ! -h ${PREFIX}/${lib_dir} ]] || continue
 	
 		cleanup_previous_lib_symlinks "${lib_dir}"
-		echo " done"
 	done
+	echo " done"
 }
 
 ### set action ###
