@@ -41,12 +41,12 @@ gawk 'BEGIN{
         if (((flag_name > kde_use_flag) || ($0 ~ use_close_regexp)) && ! kde_use) {
             printf("\t<flag name=\"%s\">%s\n\t\t%s</flag>\n",
                     kde_use_flag,
-                    "Use OpenSUSE patchset to build in support for KDE4 file dialog",
-					"via <pkg>kde-misc/kmozillahelper</pkg>.")
+                    "Use OpenSUSE patchset to build in support for native",
+					"KDE4/Plasma 5 file dialog via <pkg>kde-misc/kmozillahelper</pkg>.")
             kde_use=1
         }
         printf("%s\n", $0)
-    }' "${metadata_file}.bak" > "${metadata_file}" 2>/dev/null
+    }' "${metadata_file}.bak" >"${metadata_file}" 2>/dev/null
 rm "${metadata_file}.bak"
 
 # Rename and patch all ebuild files
@@ -181,8 +181,8 @@ for old_ebuild_file in *.ebuild; do
 
 			# Print extra stuff after the current ebuild line has been printed
 			if (rdepend_close) {
-				printf("%skde? ( kde-misc/kmozillahelper )\n%s!!www-client/firefox\"\n",
-						indent, indent)
+				printf("%s%s\n", indent, "kde? ( kde-misc/kmozillahelper  )")
+				printf("%s%s\n", indent, "!!www-client/firefox\"")
 				rdepend_close=0
 			}
 			else if ($0 ~ array_variables_regexp["MOZ_HTTP_URI"]) {
@@ -198,10 +198,7 @@ for old_ebuild_file in *.ebuild; do
 			# Ebuild phase based post-checks
 			if ((array_phase_open["src_unpack"] ==1) && ($0 ~ /mozlinguas\_src\_unpack/)) {
 				printf("%s%s\n",	indent, "if use kde; then")
-				printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^\(44)\\..$ ]]; then")
-				printf("%s%s%s%s\n",indent, indent, indent, "# Temporary hack... Wolfgang hurray up and create a 44 branch!!")
-				printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"default\"")
-				printf("%s%s%s\n",	indent, indent, "elif [[ ${MOZ_PV} =~ ^\(10|17|24\)\\..*esr$ ]]; then")
+				printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^\(10|17|24\)\\..*esr$ ]]; then")
 				printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"esr${MOZ_PV%%.*}\"")
 				printf("%s%s%s\n",	indent, indent, "else")
 				printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"firefox${MOZ_PV%%.*}\"")
@@ -240,6 +237,7 @@ for old_ebuild_file in *.ebuild; do
                 printf("%s%s%s\n",  indent, indent,  "# Uncomment the following patch line to force KDE/Qt4 file dialog for Firefox...")
                 printf("%s%s%s\n",  indent, indent,  "#epatch \"${FILESDIR}/firefox-kde-opensuse-force-qt-dialog.patch\"")
                 printf("%s%s%s\n",  indent, indent,  "# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox-kde-opensuse/)")
+                printf("%s%s%s\n",  indent, indent,  "# ... _OR_ add to your user .xinitrc: \"xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true\"")
 				printf("%s%s\n", 	indent, "fi")
 				array_phase_open["src_prepare"]=2
 			}

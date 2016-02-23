@@ -63,7 +63,7 @@ RDEPEND="
 	>=dev-libs/nss-3.20.1
 	>=dev-libs/nspr-4.10.10
 	selinux? ( sec-policy/selinux-mozilla )
-	kde? ( kde-misc/kmozillahelper )
+	kde? ( kde-misc/kmozillahelper  )
 	!!www-client/firefox"
 
 DEPEND="${RDEPEND}
@@ -146,10 +146,7 @@ src_unpack() {
 	# Unpack language packs
 	mozlinguas_src_unpack
 	if use kde; then
-		if [[ ${MOZ_PV} =~ ^(44)\..$ ]]; then
-			# Temporary hack... Wolfgang hurray up and create a 44 branch!!
-			EHG_REVISION="default"
-		elif [[ ${MOZ_PV} =~ ^(10|17|24)\..*esr$ ]]; then
+		if [[ ${MOZ_PV} =~ ^(10|17|24)\..*esr$ ]]; then
 			EHG_REVISION="esr${MOZ_PV%%.*}"
 		else
 			EHG_REVISION="firefox${MOZ_PV%%.*}"
@@ -181,6 +178,7 @@ src_prepare() {
 		# Uncomment the following patch line to force KDE/Qt4 file dialog for Firefox...
 		#epatch "${FILESDIR}/firefox-kde-opensuse-force-qt-dialog.patch"
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox-kde-opensuse/)
+		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
 	# Apply our patches
 	EPATCH_SUFFIX="patch" \
