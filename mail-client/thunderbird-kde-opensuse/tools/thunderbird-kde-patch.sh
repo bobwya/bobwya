@@ -24,6 +24,9 @@ done
 # Rename and patch all the stock thunderbird ebuild files
 cd "${script_folder%/tools}"
 
+# Remove Changelogs - as this is an unofficial package
+rm ChangeLog* 2>/dev/null
+
 # Patch metadata.xml file
 metadata_file="metadata.xml"
 mv "${metadata_file}" "${metadata_file}.bak"
@@ -36,14 +39,14 @@ gawk 'BEGIN{
 		flag_name=($0 ~ flag_regexp) ? gensub(flag_regexp, "\\1", "g") : ""
 		kde_use=(flag_name == kde_use_flag) ? 1 : kde_use
 		if (((flag_name > kde_use_flag) || ($0 ~ use_close_regexp)) && ! kde_use) {
-          printf("\t<flag name=\"%s\">%s\n\t\t%s</flag>\n",
+            printf("\t<flag name=\"%s\">%s\n\t\t%s</flag>\n",
                     kde_use_flag,
-                    "Use OpenSUSE patchset to build in support for native KDE4 file dialog",
-					"via <pkg>kde-misc/kmozillahelper</pkg>.")
+                    "Use OpenSUSE patchset to build in support for native",
+					"KDE4/Plasma 5 file dialog via <pkg>kde-misc/kmozillahelper</pkg>.")
 			kde_use=1
 		}
 		printf("%s\n", $0)
-	}' "${metadata_file}.bak" > "${metadata_file}" 2>/dev/null
+	}' "${metadata_file}.bak" >"${metadata_file}" 2>/dev/null
 rm "${metadata_file}.bak"
 
 # Rename and patch all ebuild files
@@ -204,8 +207,8 @@ for old_ebuild_file in *.ebuild; do
 
 			# Print extra stuff after the current ebuild line has been printed
 			if (rdepend_close) {
-				printf("%skde? ( kde-misc/kmozillahelper )\n%s!!mail-client/thunderbird\"\n",
-						indent, indent)
+				printf("%s%s\n", indent, "kde? ( kde-misc/kmozillahelper )")
+				printf("%s%s\n", indent, "!!mail-client/thunderbird\"")
 				rdepend_close=0
 			}
 			else if ($0 ~ array_variables_regexp["MOZ_HTTP_URI"]) {

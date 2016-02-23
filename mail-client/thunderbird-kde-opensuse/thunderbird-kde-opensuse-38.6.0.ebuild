@@ -1,11 +1,11 @@
-# Copyright 1999-2015 Gentoo Foundation
+# Copyright 1999-2016 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
 EAPI=5
 WANT_AUTOCONF="2.1"
 MOZ_ESR=""
-MOZ_LIGHTNING_VER="4.0.4.1"
+MOZ_LIGHTNING_VER="4.0.5"
 MOZ_LIGHTNING_GDATA_VER="1.9"
 
 # This list can be updated using scripts/get_langs.sh from the mozilla overlay
@@ -42,17 +42,18 @@ DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE 
 HOMEPAGE="http://www.mozilla.com/en-US/thunderbird/
 	${EHG_REPO_URI}"
 
-KEYWORDS="amd64 x86 ~x86-fbsd ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist crypt hardened kde ldap lightning +minimal mozdom selinux"
 RESTRICT="!bindist? ( bindist )"
 
+# URI for upstream lightning package (when it is available)
+#${MOZ_HTTP_URI/${MOZ_PN}/calendar/lightning}/${MOZ_LIGHTNING_VER}/linux/lightning.xpi -> lightning-${MOZ_LIGHTNING_VER}.xpi
 PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/{${PATCH},${PATCHFF}}.tar.xz )
 SRC_URI="${SRC_URI}
 	${MOZ_HTTP_URI}/${MOZ_PV}/source/${MOZ_P}.source.tar.bz2
-	${MOZ_HTTP_URI/${MOZ_PN}/calendar/lightning}/${MOZ_LIGHTNING_VER}/linux/lightning.xpi -> lightning-${MOZ_LIGHTNING_VER}.xpi
-	https://dev.gentoo.org/~axs/distfiles/lightning-${MOZ_LIGHTNING_VER}.xpi
+	https://dev.gentoo.org/~axs/distfiles/lightning-${MOZ_LIGHTNING_VER}.tar.xz
 	lightning? ( https://dev.gentoo.org/~axs/distfiles/gdata-provider-${MOZ_LIGHTNING_GDATA_VER}.tar.xz )
 	crypt? ( http://www.enigmail.net/download/source/enigmail-${EMVER}.tar.gz )
 	${PATCH_URIS[@]}"
@@ -60,7 +61,7 @@ SRC_URI="${SRC_URI}
 ASM_DEPEND=">=dev-lang/yasm-1.1"
 
 CDEPEND="
-	>=dev-libs/nss-3.19.2
+	>=dev-libs/nss-3.21
 	>=dev-libs/nspr-4.10.10
 	!x11-plugins/enigmail
 	crypt?  ( || (
@@ -140,7 +141,9 @@ src_unpack() {
 		mercurial_fetch "${EHG_REPO_URI}" "${KDE_PATCHSET}"
 	fi
 
-	xpi_unpack lightning-${MOZ_LIGHTNING_VER}.xpi
+	# this version of lightning is a .tar.xz, no xpi needed
+	#xpi_unpack lightning-${MOZ_LIGHTNING_VER}.xpi
+
 	# this version of gdata-provider is a .tar.xz , no xpi needed
 	#use lightning && xpi_unpack gdata-provider-${MOZ_LIGHTNING_GDATA_VER}.xpi
 }
@@ -167,7 +170,8 @@ src_prepare() {
 	fi
 	EPATCH_SUFFIX="patch" \
 	EPATCH_FORCE="yes" \
-	EPATCH_EXCLUDE="8011_bug1194520-freetype261_until_moz43.patch" \
+	EPATCH_EXCLUDE="8010_bug114311-freetype26.patch
+			8011_bug1194520-freetype261_until_moz43.patch" \
 	epatch "${WORKDIR}/firefox"
 	if [[ $(get_major_version) -le 31 ]]; then
 		# Patch for https://bugzilla.mozilla.org/show_bug.cgi?id=1143411
@@ -319,7 +323,7 @@ src_install() {
 		|| die
 
 	# Pax mark xpcshell for hardened support, only used for startupcache creation.
-	pax-mark m "${BUILD_OBJ_DIR}"/mozilla/dist/bin/xpcshell
+	pax-mark m "${BUILD_OBJ_DIR}"/dist/bin/xpcshell
 
 	MOZ_MAKE_FLAGS="${MAKEOPTS}" \
 	emake DESTDIR="${D}" install
