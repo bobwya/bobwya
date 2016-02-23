@@ -6,6 +6,8 @@ script_path=$(readlink -f $0)
 script_folder=$( dirname "${script_path}" )
 script_name=$( basename "${script_path}" )
 
+# Global variables
+new_wine_versions="1.8_rc1 1.8_rc2 1.8_rc3 1.8_rc4 1.9.0 1.9.1 1.9.2 1.9.3 1.9.4"
 
 # Rename and patch all the stock mesa ebuild files
 cd "${script_folder%/tools}"
@@ -69,7 +71,7 @@ for ebuild_file in *.ebuild; do
 		continue
 	fi
 
-	for new_version in "1.8_rc1" "1.8_rc2" "1.8_rc3" "1.8_rc4" "1.9.0" "1.9.1" "1.9.2" "1.9.3"; do
+	for new_version in ${new_wine_versions}; do
 		new_ebuild_file="${ebuild_file/1.8/${new_version}}"
 
 		[ -f "${new_ebuild_file}" ] && continue
@@ -357,8 +359,9 @@ for ebuild_file in *.ebuild; do
 		}' "${ebuild_file}" 1>"${new_ebuild_file}" 2>/dev/null
 		[ -f "${new_ebuild_file}" ] || exit 1
 		mv "${new_ebuild_file}" "${ebuild_file}"
+		new_ebuild_file="${new_ebuild_file%.new}"
 done
 
 
 # Rebuild the master package Manifest file
-[ -f "${ebuild_file}" ] && ebuild "${ebuild_file}" manifest
+[ -n "${new_ebuild_file}" ] && [ -f "${new_ebuild_file}" ] && ebuild "${new_ebuild_file}" manifest

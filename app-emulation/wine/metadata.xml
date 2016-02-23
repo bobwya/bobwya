@@ -38,6 +38,7 @@ Think of Wine as a compatibility layer for running Windows programs. Wine does n
 		<flag name="gstreamer010">Use <pkg>media-libs/gstreamer:0.1:1.0</pkg> to provide DirectShow functionality</flag>
 		<flag name="gstreamer010">Use <pkg>media-libs/gstreamer:0.1:1.0</pkg> to provide DirectShow functionality</flag>
 		<flag name="gstreamer010">Use <pkg>media-libs/gstreamer:0.1:1.0</pkg> to provide DirectShow functionality</flag>
+		<flag name="gstreamer010">Use <pkg>media-libs/gstreamer:0.1:1.0</pkg> to provide DirectShow functionality</flag>
 		<flag name="gstreamer010">Use <pkg>media-libs/gstreamer:0.1</pkg> to provide DirectShow functionality;
 			For versions less than wine-1.9.2, uses experimental patch which may break some apps</flag>
 		<flag name="mono">Add support for .NET using Wine's Mono add-on</flag>
