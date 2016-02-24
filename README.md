@@ -10,6 +10,7 @@ Testing and updating of these ebuild package build scripts is irregular. So YMMV
 	app-crypt/chntpw : Offline NT Password & Registry Editor.
 	app-office/libreoffice : LibreOffice, a full office productivity suite.
 	app-office/libreoffice-l10 : Translations for the Libreoffice suite.
+	app-arch/unshield : Tool and library to extract CAB files from InstallShield installers.
 	dev-cpp/pion : C++ framework for building lightweight HTTP interfaces.
 	games-fps/dhewm3 : Doom 3 GPL source modification (with updates including SDL2 support).
 	kde-misc/kmozillahelper : helper application that allows Mozilla Firefox to use KDE/Plasma 5 file dialogs, file associations, protocol handlers and other KDE/Plasma 5 integration features.

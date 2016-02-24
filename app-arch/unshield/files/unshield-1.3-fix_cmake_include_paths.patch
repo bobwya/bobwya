@@ -1,0 +1,11 @@
+--- a/CMakeLists.txt	2016-02-24 09:43:14.923895924 +0000
++++ b/CMakeLists.txt	2016-02-24 09:53:29.328893077 +0000
+@@ -60,3 +61,5 @@
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libunshield.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libunshield.pc @ONLY)
++include_directories(${CMAKE_CURRENT_BINARY_DIR})
++include_directories(${CMAKE_CURRENT_BINARY_DIR}/lib)
+ 
+ # To force position independent code for static libs on Linux x64
+@@ -73,1 +73,1 @@
+-install(FILES libunshield.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
++install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libunshield.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)

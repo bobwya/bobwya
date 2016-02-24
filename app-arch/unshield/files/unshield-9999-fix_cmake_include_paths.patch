@@ -1,0 +1,7 @@
+diff -u1 -rN a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt	2016-02-24 08:35:02.521305407 +0000
++++ b/CMakeLists.txt	2016-02-24 08:48:59.499423674 +0000
+@@ -62,2 +62,3 @@
+ include_directories(${CMAKE_CURRENT_BINARY_DIR})
++include_directories(${CMAKE_CURRENT_BINARY_DIR}/lib)
+ 
