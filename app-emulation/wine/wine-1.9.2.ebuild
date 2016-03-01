@@ -20,14 +20,15 @@ if [[ ${PV} == "9999" ]] ; then
 	#KEYWORDS=""
 else
 	MAJOR_V=$(get_version_component_range 1-2)
-	let "MINOR_V_ODD=$(get_version_component_range 2) % 2"
+	MINOR_V=$(get_version_component_range 2)
+	STABLE_RELEASE=$((1-MINOR_V%2))
 	MY_PV="${PV}"
 	if [[ "$(get_version_component_range 3)" =~ ^rc ]]; then
-		MY_PV=$(replace_version_separator 2 '-')
-	elif [[ ${MINOR_V_ODD} == 1 ]]; then
-		KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
-	else
+		MY_PV=$(replace_version_separator 2 '''-''')
+	elif [[ ${STABLE_RELEASE} == 1 ]]; then
 		KEYWORDS="-* amd64 x86 x86-fbsd"
+	else
+		KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
 	fi
 	MY_P="${PN}-${MY_PV}"
 	SRC_URI="https://dl.winehq.org/wine/source/${MAJOR_V}/${MY_P}.tar.bz2 -> ${P}.tar.bz2"
@@ -228,9 +229,9 @@ src_unpack() {
 		fi
 		EGIT_CHECKOUT_DIR="${S}" git-r3_src_unpack
 		if use gstreamer && grep -q "gstreamer-0.10" "${S}"/configure ; then
-			ewarn "Wine commit ${GSTREAMER_COMMIT} first introduced support for the gstreamer:1.0 branch."
+			ewarn "Wine commit ${GSTREAMER_COMMIT} first introduced support for the gstreamer:1.0 API / ABI."
 			ewarn "Specify a newer Wine commit or emerge with USE -gstreamer."
-			die "This live ebuild does not support Wine builds using the older gstreamer:0.1 branch."
+			die "This live ebuild does not support Wine builds using the older gstreamer:0.1 API / ABI."
 		fi
 	else
 		unpack ${P}.tar.bz2

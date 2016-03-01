@@ -36,8 +36,6 @@ fi
 
 GV="2.40"
 MV="4.5.6"
-STAGING_P="wine-staging-${MY_PV}"
-STAGING_DIR="${WORKDIR}/${STAGING_P}"
 WINE_GENTOO="wine-gentoo-2015.03.07"
 GST_P="wine-1.7.55-gstreamer-v5"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
@@ -51,23 +49,13 @@ SRC_URI="${SRC_URI}
 	gstreamer010? ( https://dev.gentoo.org/~np-hardass/distfiles/${PN}/${GST_P}.patch.bz2 )
 	https://dev.gentoo.org/~tetromino/distfiles/${PN}/${WINE_GENTOO}.tar.bz2"
 
-if [[ ${PV} == "9999" ]] ; then
-	STAGING_EGIT_REPO_URI="git://github.com/wine-compholio/wine-staging.git"
-else
-	SRC_URI="${SRC_URI}
-	staging? ( https://github.com/wine-compholio/wine-staging/archive/v${MY_PV}.tar.gz -> ${STAGING_P}.tar.gz )"
-fi
-
 LICENSE="LGPL-2.1"
 SLOT="0"
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer010 +jpeg +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test +threads +truetype +udisks v4l vaapi +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer010 +jpeg +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap +png prelink pulseaudio +realtime +run-exes samba scanner selinux +ssl test +threads +truetype +udisks v4l +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	test? ( abi_x86_32 )
 	elibc_glibc? ( threads )
 	mono? ( abi_x86_32 )
-	pipelight? ( staging )
-	s3tc? ( staging )
-	vaapi? ( staging )
 	osmesa? ( opengl )" #286560
 
 # FIXME: the test suite is unsuitable for us; many tests require net access
@@ -112,7 +100,6 @@ COMMON_DEPEND="
 	osmesa? ( media-libs/mesa[osmesa,${MULTILIB_USEDEP}] )
 	pcap? ( net-libs/libpcap[${MULTILIB_USEDEP}] )
 	pulseaudio? ( media-sound/pulseaudio[${MULTILIB_USEDEP}] )
-	staging? ( sys-apps/attr[${MULTILIB_USEDEP}] )
 	xml? (
 		dev-libs/libxml2[${MULTILIB_USEDEP}]
 		dev-libs/libxslt[${MULTILIB_USEDEP}]
@@ -121,7 +108,6 @@ COMMON_DEPEND="
 	ssl? ( net-libs/gnutls:=[${MULTILIB_USEDEP}] )
 	png? ( media-libs/libpng:0=[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
-	vaapi? ( x11-libs/libva[X,${MULTILIB_USEDEP}] )
 	xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
 	abi_x86_32? (
 		!app-emulation/emul-linux-x86-baselibs[-abi_x86_32(-)]
@@ -143,7 +129,6 @@ COMMON_DEPEND="
 RDEPEND="${COMMON_DEPEND}
 	dos? ( games-emulation/dosbox )
 	perl? ( dev-lang/perl dev-perl/XML-Simple )
-	s3tc? ( >=media-libs/libtxc_dxtn-1.0.1-r1[${MULTILIB_USEDEP}] )
 	samba? ( >=net-fs/samba-3.0.25 )
 	selinux? ( sec-policy/selinux-wine )
 	udisks? ( sys-fs/udisks:2 )
@@ -151,7 +136,6 @@ RDEPEND="${COMMON_DEPEND}
 
 # tools/make_requests requires perl
 DEPEND="${COMMON_DEPEND}
-	staging? ( dev-lang/perl dev-perl/XML-Simple )
 	X? (
 		x11-proto/inputproto
 		x11-proto/xextproto
@@ -207,11 +191,6 @@ wine_build_environment_check() {
 
 pkg_pretend() {
 	wine_build_environment_check || die
-	if [[ ${PV} == "9999" ]] && use staging; then
-		ewarn "You have enabled a live ebuild of Wine with USE +staging."
-		ewarn "All git branch and commit references will link to the Wine-Staging git tree."
-		ewarn "By default the Wine-Staging git tree branch master will be used."
-	fi
 }
 
 pkg_setup() {
@@ -220,19 +199,10 @@ pkg_setup() {
 
 src_unpack() {
 	if [[ ${PV} == "9999" ]] ; then
-		# Reference either Wine or Wine Staging git branch (depending on +staging use flag)
 		EGIT_BRANCH=${EGIT_BRANCH:-master}
-		if use staging; then
-			EGIT_REPO_URI=${STAGING_EGIT_REPO_URI} EGIT_CHECKOUT_DIR=${STAGING_DIR} git-r3_src_unpack
-			local WINE_COMMIT=$("${STAGING_DIR}/patches/patchinstall.sh" --upstream-commit)
-			[[ ! ${WINE_COMMIT} =~ [[:xdigit:]]{40} ]] && die "Failed to get Wine git commit corresponding to Wine-Staging git commit ${EGIT_VERSION}."
-			einfo "Building Wine commit ${WINE_COMMIT} referenced by Wine-Staging commit ${EGIT_VERSION} ..."
-			EGIT_COMMIT="${WINE_COMMIT}"
-		fi
 		EGIT_CHECKOUT_DIR="${S}" git-r3_src_unpack
 	else
 		unpack ${P}.tar.bz2
-		use staging && unpack "${STAGING_P}.tar.gz"
 	fi
 
 	unpack "${WINE_GENTOO}.tar.bz2"
@@ -250,44 +220,13 @@ src_prepare() {
 		"${FILESDIR}"/${PN}-1.6-memset-O3.patch #480508
 	)
 	if use gstreamer010; then
-		# See http://bugs.winehq.org/show_bug.cgi?id=30557
 		ewarn "Applying experimental patch to fix GStreamer support. Note that"
 		ewarn "this patch has been reported to cause crashes in certain games."
 
-		# Wine-Staging 1.7.38 "ntdll: Fix race-condition when threads are killed
-		# during shutdown" patch and "Added patch to implement shared memory
-		# wineserver communication for various user32 functions" prevents the
-		# gstreamer patch from applying cleanly.
-		# So undo the staging patch, apply gstreamer, then re-apply rebased staging
-		# patch on top.
-		if use staging; then
-			PATCHES+=(
-				"${FILESDIR}/${PN}-1.7.55-gstreamer-v5-staging-pre.patch"
-				"${WORKDIR}/${GST_P}.patch"
-				"${FILESDIR}/${PN}-1.7.55-gstreamer-v5-staging-post.patch" )
-		else
-			PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
-		fi
-	fi
-	if use staging; then
-		ewarn "Applying the Wine-Staging patchset. Any bug reports to the"
-		ewarn "Wine bugzilla should explicitly state that staging was used."
-
-		local STAGING_EXCLUDE=""
-		use pipelight || STAGING_EXCLUDE="${STAGING_EXCLUDE} -W Pipelight"
-
-		# Launch wine-staging patcher in a subshell, using epatch as a backend, and gitapply.sh as a backend for binary patches
-		ebegin "Running Wine-Staging patch installer"
-		(
-			set -- DESTDIR="${S}" --backend=epatch --no-autoconf --all ${STAGING_EXCLUDE}
-			cd "${STAGING_DIR}/patches"
-			source "${STAGING_DIR}/patches/patchinstall.sh" || die "Failed to apply Wine-Staging patches."
-		)
-		eend $?
+		PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
 	fi
 	autotools-utils_src_prepare
 
-	# Modification of the server protocol requires regenerating the server requests
 	if [[ "$(md5sum server/protocol.def)" != "${md5}" ]]; then
 		einfo "server/protocol.def was patched; running tools/make_requests"
 		tools/make_requests || die #432348
@@ -297,7 +236,6 @@ src_prepare() {
 		sed -i '/^MimeType/d' loader/wine.desktop || die #117785
 	fi
 
-	# hi-res default icon, #472990, http://bugs.winehq.org/show_bug.cgi?id=24652
 	cp "${WORKDIR}"/${WINE_GENTOO}/icons/oic_winlogo.ico dlls/user32/resources/ || die
 
 	l10n_get_locales > po/LINGUAS # otherwise wine doesn't respect LINGUAS
@@ -350,11 +288,6 @@ multilib_src_configure() {
 		$(use_with xinerama)
 		$(use_with xml)
 		$(use_with xml xslt)
-	)
-
-	use staging && myconf+=(
-		--with-xattr
-		$(use_with vaapi va)
 	)
 
 	local PKG_CONFIG AR RANLIB
