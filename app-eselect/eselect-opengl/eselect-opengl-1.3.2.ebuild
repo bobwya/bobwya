@@ -1,4 +1,4 @@
-# Copyright 1999-2015 Gentoo Foundation
+# Copyright 1999-2016 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
@@ -8,6 +8,7 @@ inherit eutils multilib
 
 DESCRIPTION="Utility to change the OpenGL interface being used"
 HOMEPAGE="https://www.gentoo.org/"
+MY_PN="opengl.eselect"
 
 # Source:
 # http://www.opengl.org/registry/api/glext.h
@@ -15,7 +16,7 @@ HOMEPAGE="https://www.gentoo.org/"
 GLEXT="85"
 GLXEXT="34"
 
-SRC_URI=""
+SRC_URI="https://github.com/bobwya/${MY_PN}/archive/${PV}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -31,7 +32,7 @@ RDEPEND=">=app-admin/eselect-1.2.4
 		 !=x11-drivers/ati-drivers-14.12
 		 !<=app-emulation/emul-linux-x86-opengl-20140508"
 
-S="${WORKDIR}"
+S="${WORKDIR}/${MY_PN}-${PV}"
 
 pkg_preinst() {
 	# we may be moving the config file, so get it early
@@ -49,20 +50,23 @@ pkg_postinst() {
 	if [[ -n "${OLD_IMPLEMENTATION}" && "${OLD_IMPLEMENTATION}" != '(none)' ]] ; then
 		eselect opengl set "${OLD_IMPLEMENTATION}"
 	fi
-	[[ -f "${EROOT}"/etc/env.d/03opengl ]] && rm -vf "${EROOT}"/etc/env.d/03opengl
-	[[ -f "${EROOT}"/etc/X11/xorg.conf.d/20opengl.conf ]] && rm -vf "${EROOT}"/etc/X11/xorg.conf.d/20opengl.conf
+	for CONF_FILE in "etc/env.d/000opengl" "etc/X11/xorg.conf.d/20opengl.conf" ; do
+		[[ -f "${EROOT}/${CONF_FILE}" ]] && rm -vf "${EROOT}/${CONF_FILE}"
+	done
+	unset CONF_FILE
 }
 
 src_prepare() {
 	# don't die on Darwin users
 	if [[ ${CHOST} == *-darwin* ]] ; then
-		sed -i -e 's/libGL\.so/libGL.dylib/' opengl.eselect || die
+		sed -i -e 's/libGL\.so/libGL.dylib/' ${MY_PN} || die
 	fi
 }
 
 src_install() {
 	insinto "/usr/share/eselect/modules"
-	newins "${FILESDIR}/opengl.eselect-${PV}" opengl.eselect
+	doins "${MY_PN}"
+	doman "${MY_PN}.5"
 }
 
 pkg_postinst() {
@@ -70,11 +74,9 @@ pkg_postinst() {
 	ewarn "when switching GL providers."
 	ewarn "This package can only be used in conjuction with patched versions of:"
 	ewarn " * media-libs/mesa"
-	ewarn " * app-select/eselect-opengl"
 	ewarn " * x11-base/xorg-server"
+	ewarn " * x11-drivers/nvidia-drivers"
 	ewarn "from the bobwya overlay."
-	ewarn ""
-	ewarn "Please ensure you cleanup the /usr/lib{32,64}/ lib*GL* symlinks, using:"
-	ewarn "  eselect opengl cleanup"
-	ewarn "... before reverting back to the mainline Gentoo implementation of this package"
+	einfo "Please refer to the manual page before first use:"
+	einfo "  man opengl.eselect"
 }
