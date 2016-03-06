@@ -1,14 +1,12 @@
 # !/bin/bash
 
-# Absolute path to this script.
 script_path=$(readlink -f $0)
-# Absolute path this script is in.
 script_folder=$( dirname "${script_path}" )
 script_name=$( basename "${script_path}" )
 
 # Global variables
-new_wine_versions="1.8_rc1 1.8_rc2 1.8_rc3 1.8_rc4 1.8.1 1.9.0 1.9.1 1.9.2 1.9.3 1.9.4"
-wine_staging_unsupported_versions="1.8.1"
+new_wine_versions="1.8_rc1 1.8_rc2 1.8_rc3 1.8_rc4 1.8.1 1.9.0 1.9.1 1.9.2 1.9.3 1.9.4 1.9.5"
+wine_staging_unsupported_versions="1.8.1 1.9.5"
 legacy_gstreamer_wine_versions="1.6.* 1.7.* 1.8* 1.9.1"
 
 # Rename and patch all the stock mesa ebuild files

@@ -39,10 +39,13 @@ BEGIN{
 	package_version_variable_regexp="\\$\\{PV\\}"
 	staging_use_flags_regexp="[\+]{0,1}(pipelight|s3tc|staging|vaapi)"
 	add_gst_patch_regexp="PATCHES\\+\\=\\( \"\\$\\{WORKDIR\\}\\/\\$\\{GST\\_\\P}\\.patch\" \\)"
-	
+	multilib_patch_version_regexp="\"\\$\\{FILESDIR\\}\"\\/\\$\\{PN\\}\\-1\\.4\\_rc2"
+	new_multilib_patch_version="\"${FILESDIR}\"/${PN}-1.9.5"
+    multilib_patch_regexp="multilib\\-portage\\.patch"
 	legacy_gstreamer_wine_version_regexp=convert_version_list_to_regexp(legacy_gstreamer_wine_versions)
 	suppress_staging_wine_version_regexp=convert_version_list_to_regexp(wine_staging_unsupported_versions)
-	gcc_stack_alignment_forced_version_regexp=convert_version_list_to_regexp("1.9.3 1.9.4")
+	gcc_stack_alignment_forced_version_regexp=convert_version_list_to_regexp("1.9.3 1.9.4 1.9.5")
+    updated_multilib_patch_version_regexp=convert_version_list_to_regexp("1.9.5")
 }
 
 {
@@ -162,6 +165,8 @@ BEGIN{
 		}
 	}
 	else if (array_phase_open["src_prepare"] == 1) {
+		if (($0 ~ (multilib_patch_version_regexp "\\-" multilib_patch_regexp)) && (wine_version ~ updated_multilib_patch_version_regexp))
+			sub(multilib_patch_version_regexp, new_multilib_patch_version)
 		if (($0 ~ if_open_regexp) && ($0 ~ gstreamer_use_test_regexp)) {
 			gstreamer_check_open=if_stack
 			sub("gstreamer", "gstreamer010")
@@ -176,7 +181,7 @@ BEGIN{
 			if ($0 ~ add_gst_patch_regexp)
 				sub(("^" leading_ws_regexp), indent)
 			else
-				suppress_current_line=wine_staging_check_open
+				suppress_current_line+=wine_staging_check_open
 			if ($0 ~ comment_regexp)
 				suppress_current_line=1
 		}
