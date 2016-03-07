@@ -165,8 +165,9 @@ BEGIN{
 		}
 	}
 	else if (array_phase_open["src_prepare"] == 1) {
-		if (($0 ~ (multilib_patch_version_regexp "\\-" multilib_patch_regexp)) && (wine_version ~ updated_multilib_patch_version_regexp))
-			sub(multilib_patch_version_regexp, new_multilib_patch_version)
+		patch_set_define_open=($0 ~ (leading_ws_regexp patchset_regexp)) ? 1 : patch_set_define_open
+		if (sub((multilib_patch_version_regexp "\\-" multilib_patch_regexp), "") == 1)
+			suppress_current_line=(($0 ~ comment_regexp) || ($0 ~ blank_line_regexp)) ? 1 : suppress_current_line
 		if (($0 ~ if_open_regexp) && ($0 ~ gstreamer_use_test_regexp)) {
 			gstreamer_check_open=if_stack
 			sub("gstreamer", "gstreamer010")
@@ -182,7 +183,7 @@ BEGIN{
 				sub(("^" leading_ws_regexp), indent)
 			else
 				suppress_current_line+=wine_staging_check_open
-			if ($0 ~ comment_regexp)
+			if ($0 ~ "^" comment_regexp)
 				suppress_current_line=1
 		}
 		if ($0 ~ if_close_regexp) {
@@ -275,15 +276,25 @@ BEGIN{
 			++do_git_unpack_replaced
 		}
 	}
-	if ((array_phase_open["src_prepare"] == 1) && (wine_version ~ gcc_stack_alignment_forced_version_regexp)) {
-		if ((patch_set_open == 0) && $0 ~ (leading_ws_regexp patchset_regexp))
-			++patch_set_open
-		if ((patch_set_open == 1) && ($0 ~ (bracketed_expression_close_regexp "$"))) {
-			# Hack - disable forced alignment for all gcc >=5.3.x versions - needs a gcc test function for Upstream (in-tree) patch
-			printf("%s%s\n",	indent, "if [[ $(gcc-major-version) = 5 && $(gcc-minor-version) -ge 3 ]]; then")
-			printf("%s%s%s\n",	indent, indent, "local PATCHES+=( \"${FILESDIR}\"/${PN}-1.9.3-gcc-5_3_0-disable-force-alignment.patch ) #574044")
-			printf("%s%s\n",	indent, "fi")
-			++patch_set_open
+	if ((array_phase_open["src_prepare"] == 1) && (patch_set_define_open == 1)) {
+		if ($0 ~ (bracketed_expression_close_regexp "$")) {
+			printf("%s%s\n",		indent, "if [[ ${PV} != \"9999\" ]]; then")
+			if (wine_version ~ updated_multilib_patch_version_regexp)
+				printf("%s%s%s\n",	indent, indent, "PATCHES+=( \"${FILESDIR}\"/${PN}-1.9.5-multilib-portage.patch ) #395615")
+			else
+				printf("%s%s%s\n",	indent, indent, "PATCHES+=( \"${FILESDIR}\"/${PN}-1.4_rc2-multilib-portage.patch ) #395615")
+			if (wine_version ~ gcc_stack_alignment_forced_version_regexp) {
+				printf ("%s%s%s\n",	indent, indent, "# Disable forced alignment for all gcc >=5.3.x versions - needs a gcc test function for Upstream (in-tree) patch")
+				printf ("%s%s%s\n",	indent, indent, "[[ $(gcc-major-version) = 5 && $(gcc-minor-version) -ge 3 ]] && \\")
+				printf ("%s%s%s%s\n",	indent, indent, indent, "PATCHES+=( \"${FILESDIR}\"/${PN}-1.9.3-gcc-5_3_0-disable-force-alignment.patch ) #574044")
+			}
+			printf("%s%s\n",		indent, "else")
+			printf ("%s%s%s\n",		indent, indent, "# Avoid build failures by not patching live ebuild - allows building against older Wine / Wine-Staging commits")
+			printf ("%s%s%s\n",		indent, indent, "\"${FILESDIR}/${PN}-9999-multilib-portage-sed-patch.sh\" #395615")
+			printf ("%s%s%s\n",		indent, indent, "[[ $(gcc-major-version) = 5 && $(gcc-minor-version) -ge 3 ]] && \\")
+			printf ("%s%s%s%s\n",	indent, indent, indent, "\"${FILESDIR}/${PN}-9999-gcc-5_3_0-disable-force-alignment-sed-patch.sh\" #574044")
+			printf("%s%s\n",		indent, "fi")
+			++patch_set_define_open
 		}
 	}
 	if ((array_phase_open["src_configure"] == 1) && (wine_version ~ "^9999$") && ($0 ~ (leading_ws_regexp use_custom_cflags_regexp))) {
