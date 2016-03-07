@@ -46,7 +46,7 @@ function setup_global_regexps(variables,		i)
 	blank_line_regexp="^[[:blank:]]*$"
 	leading_ws_regexp="^[[:blank:]]+"
 	trailing_ws_regexp="[[:blank:]]+$"
-	comment_regexp=(leading_ws_regexp "\\#")
+	comment_regexp=("^[[:blank:]]*\\#.*$")
 	end_quote_regexp="[^=]\"[[:blank:]]*$"
 	quote_or_ws_seperator_regexp="([[:blank:]]+|\")"
 	end_curly_bracket_regexp="^[[:blank:]]*\}[[:blank:]]*$"
