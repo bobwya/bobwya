@@ -247,19 +247,12 @@ src_prepare() {
 	local md5="$(md5sum server/protocol.def)"
 	local PATCHES=(
 		"${FILESDIR}"/${PN}-1.5.26-winegcc.patch #260726
+		"${FILESDIR}"/${PN}-1.4_rc2-multilib-portage.patch #395615
 		"${FILESDIR}"/${PN}-1.7.12-osmesa-check.patch #429386
 		"${FILESDIR}"/${PN}-1.6-memset-O3.patch #480508
 	)
-	if [[ ${PV} != "9999" ]]; then
-		PATCHES+=( "${FILESDIR}"/${PN}-1.4_rc2-multilib-portage.patch ) #395615
-		# Disable forced alignment for all gcc >=5.3.x versions - needs a gcc test function for Upstream (in-tree) patch
-		[[ $(gcc-major-version) = 5 && $(gcc-minor-version) -ge 3 ]] && \
-			PATCHES+=( "${FILESDIR}"/${PN}-1.9.3-gcc-5_3_0-disable-force-alignment.patch ) #574044
-	else
-		# Avoid build failures by not patching live ebuild - allows building against older Wine / Wine-Staging commits
-		"${FILESDIR}/${P}-multilib-portage-sed-patch.sh" #395615
-		[[ $(gcc-major-version) = 5 && $(gcc-minor-version) -ge 3 ]] && \
-			"${FILESDIR}/${P}-gcc-5_3_0-disable-force-alignment-sed-patch.sh" #574044
+	if [[ $(gcc-major-version) = 5 && $(gcc-minor-version) -ge 3 ]]; then
+		local PATCHES+=( "${FILESDIR}"/${PN}-1.9.3-gcc-5_3_0-disable-force-alignment.patch ) #574044
 	fi
 	if use staging; then
 		ewarn "Applying the Wine-Staging patchset. Any bug reports to the"

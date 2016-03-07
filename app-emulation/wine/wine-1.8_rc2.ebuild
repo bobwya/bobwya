@@ -245,17 +245,10 @@ src_prepare() {
 	local md5="$(md5sum server/protocol.def)"
 	local PATCHES=(
 		"${FILESDIR}"/${PN}-1.5.26-winegcc.patch #260726
+		"${FILESDIR}"/${PN}-1.4_rc2-multilib-portage.patch #395615
 		"${FILESDIR}"/${PN}-1.7.12-osmesa-check.patch #429386
 		"${FILESDIR}"/${PN}-1.6-memset-O3.patch #480508
 	)
-	if [[ ${PV} != "9999" ]]; then
-		PATCHES+=( "${FILESDIR}"/${PN}-1.4_rc2-multilib-portage.patch ) #395615
-	else
-		# Avoid build failures by not patching live ebuild - allows building against older Wine / Wine-Staging commits
-		"${FILESDIR}/${P}-multilib-portage-sed-patch.sh" #395615
-		[[ $(gcc-major-version) = 5 && $(gcc-minor-version) -ge 3 ]] && \
-			"${FILESDIR}/${P}-gcc-5_3_0-disable-force-alignment-sed-patch.sh" #574044
-	fi
 	if use gstreamer010; then
 		# See http://bugs.winehq.org/show_bug.cgi?id=30557
 		ewarn "Applying experimental patch to fix GStreamer support. Note that"
