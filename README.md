@@ -13,6 +13,7 @@ Testing and updating of these ebuild package build scripts is irregular. So YMMV
 	app-arch/unshield : Tool and library to extract CAB files from InstallShield installers.
 	dev-cpp/pion : C++ framework for building lightweight HTTP interfaces.
 	games-fps/dhewm3 : Doom 3 GPL source modification (with updates including SDL2 support).
+	games-util/lutris : Lutris is an open gaming platform for Linux. It helps you install and manage your games in a unified interface.
 	kde-misc/kmozillahelper : helper application that allows Mozilla Firefox to use KDE/Plasma 5 file dialogs, file associations, protocol handlers and other KDE/Plasma 5 integration features.
 	mail-client/thunderbird-kde-opensuse : Thunderbird mail client, with OpenSUSE Patchset for better KDE Desktop integration. 
 	media-tv/freetuxtv : freetuxtv GTK+ WebTV and Web Radio player for Linux.

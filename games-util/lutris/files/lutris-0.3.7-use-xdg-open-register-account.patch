@@ -1,0 +1,10 @@
+--- a/lutris/gui/lutriswindow.py	2016-03-08 17:11:54.276467793 +0000
++++ b/lutris/gui/lutriswindow.py	2016-03-07 18:15:19.000000000 +0000
+@@ -3,2 +3,3 @@
+ import os
++import subprocess
+ import time
+@@ -388,2 +389,2 @@
+     def on_register_account(self, *args):
+-        Gtk.show_uri(None, "http://lutris.net/user/register", Gdk.CURRENT_TIME)
++		 subprocess.call(('xdg-open', "http://lutris.net/user/register"))
