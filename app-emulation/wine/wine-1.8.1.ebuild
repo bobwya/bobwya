@@ -35,7 +35,7 @@ else
 fi
 
 GV="2.40"
-MV="4.5.6"
+MV="4.6.0"
 WINE_GENTOO="wine-gentoo-2015.03.07"
 GST_P="wine-1.7.55-gstreamer-v5"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"

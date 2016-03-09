@@ -19,7 +19,7 @@ BEGIN{
 	
 	# Setup some regular expression constants - to hopefully make the script more readable!
 	ebuild_inherit_regexp="^inherit "
-	variables="COMMON_DEPEND RDEPEND DEPEND IUSE GST_P KEYWORDS STAGING_P STAGING_DIR REQUIRED_USE SRC_URI"
+	variables="COMMON_DEPEND RDEPEND DEPEND IUSE GST_P KEYWORDS MV STAGING_P STAGING_DIR REQUIRED_USE SRC_URI"
 	setup_global_regexps(variables)
 	emake_target_regexp="emake install DESTDIR=\"\\$\\{D\\}\""
 	eselect_check_regexp="^[[:blank:]]+[\\>\\=\\>]+app\\-eselect\\\/eselect\\-opengl"
@@ -46,6 +46,8 @@ BEGIN{
 	suppress_staging_wine_version_regexp=convert_version_list_to_regexp(wine_staging_unsupported_versions)
 	gcc_stack_alignment_forced_version_regexp=convert_version_list_to_regexp("1.9.3 1.9.4 1.9.5")
     updated_multilib_patch_version_regexp=convert_version_list_to_regexp("1.9.5")
+	wine_mono_version_regexp="[[:digit:]]+\\.[[:digit:]]+\\.[[:digit:]]+"
+	wine_mono_version_latest="4.6.0"
 }
 
 {
@@ -89,6 +91,9 @@ BEGIN{
 			}
 		}
 		
+		if ($0 ~ array_variables_regexp["MV"])
+			sub(wine_mono_version_regexp, wine_mono_version_latest)
+
 		if (($0 ~ array_variables_regexp["IUSE"]) && (wine_version ~ legacy_gstreamer_wine_version_regexp))
 			sub("gstreamer", "gstreamer010")
 
