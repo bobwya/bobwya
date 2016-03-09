@@ -9,7 +9,7 @@ inherit cmake-utils
 DESCRIPTION="Tool and library to extract CAB files from InstallShield installers"
 HOMEPAGE="https://github.com/twogood/unshield"
 
-if [[ ${PV} == "9999" ]] ; then
+if [[ "${PV}" == "9999" ]]; then
 	EGIT_REPO_URI="https://github.com/twogood/${PN}.git"
 	inherit git-r3
 	SRC_URI=""
@@ -31,7 +31,9 @@ RDEPEND="
 DEPEND="${RDEPEND}"
 
 src_prepare() {
-	epatch "${FILESDIR}"/${P}-fix_cmake_include_paths.patch
+	if [[ "${PV}" == "1.3" ]]; then
+		epatch "${FILESDIR}/${PN}-1.3-fix_cmake_include_paths.patch"
+	fi
 	cmake-utils_src_prepare
 }
 
