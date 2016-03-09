@@ -34,7 +34,7 @@ else
 	SRC_URI="https://dl.winehq.org/wine/source/${MAJOR_V}/${MY_P}.tar.bz2 -> ${P}.tar.bz2"
 fi
 
-GV="2.40"
+GV="2.44"
 MV="4.6.0"
 WINE_GENTOO="wine-gentoo-2015.03.07"
 GST_P="wine-1.7.55-gstreamer-v5"
