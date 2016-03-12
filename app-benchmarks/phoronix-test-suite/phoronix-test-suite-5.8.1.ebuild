@@ -1,4 +1,4 @@
-# Copyright 1999-2015 Gentoo Foundation
+# Copyright 1999-2016 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
@@ -12,6 +12,7 @@ SRC_URI=""
 
 LICENSE="GPL-3"
 SLOT="0"
+
 if [[ ${PV} == "9999" ]] ; then
 	EGIT_REPO_URI="https://github.com/${PN}/${PN}.git"
 	EGIT3_STORE_DIR="${T}"
@@ -33,10 +34,10 @@ else
 	fi
 	S="${WORKDIR}/${PN}"
 fi
+
 IUSE=""
 
 DEPEND=""
-# php 5.3 doesn't have pcre and reflection useflags anymore
 RDEPEND="dev-lang/php[cli,curl,gd,json,posix,pcntl,truetype,zip]"
 
 src_prepare() {
@@ -47,20 +48,22 @@ src_prepare() {
 			"${S}/phoronix-test-suite"
 	# Tidyup non-Gentoo install scripts
 	rm -f "${S}/pts-core/external-test-dependencies/scripts"/install-{a,d,f,m,n,o,p,u,z}*-packages.sh
-	if [[ ${PV} != "9999" ]] ; then
+	if [[ $(get_version_component_range 1) -lt 6 ]] ; then
 		[ -f "CHANGE-LOG" ] && mv "CHANGE-LOG" "ChangeLog"
 		# Backport Upstream issue #79 with BASH completion helper
 		sed -i -e 's:_phoronix-test-suite-show:_phoronix_test_suite_show:g' \
-			"${S}/pts-core/static/bash_completion"
+			"${S}/pts-core/static/bash_completion" \
+			|| die "sed unable to correct PTS bash completion helper"
 	fi
 	# BASH completion helper function "have" test - is now depreciated - so remove
-	sed -i -e '/^have phoronix-test-suite &&$/d' "${S}/pts-core/static/bash_completion"
+	sed -i -e '/^have phoronix-test-suite &&$/d' "${S}/pts-core/static/bash_completion" \
+		|| die "sed unable to remove PTS bash completion have test"
 }
 
 src_install() {
-	PACKAGE_DATA="/usr/share/${PN}"
-	dodir "${PACKAGE_DATA}"
-	insinto "${PACKAGE_DATA}"
+	local PACKAGE_DATA_DIR="/usr/share/${PN}"
+	dodir "${PACKAGE_DATA_DIR}"
+	insinto "${PACKAGE_DATA_DIR}"
 
 	doman documentation/man-pages/phoronix-test-suite.1
 	dodoc AUTHORS ChangeLog
@@ -69,63 +72,35 @@ src_install() {
 	doicon pts-core/static/images/openbenchmarking.png
 	domenu pts-core/static/phoronix-test-suite.desktop
 	newbashcomp pts-core/static/bash_completion ${PN}
-	rm -f "${D}/pts-core/static/phoronix-test-suite.desktop" || die "rm failed"
-	rm -f "${D}/pts-core/static/bash_completion" || die "rm failed"
+	rm -f "${S}/pts-core/static/bash_completion"
 
 	doins -r pts-core
 	exeinto /usr/bin
 	doexe phoronix-test-suite
-	find "${D}${PACKAGE_DATA}" -type f -name "*.sh" -printf "${PACKAGE_DATA}/%P\0" | xargs -0 fperms a+x
-	unset PACKAGE_DATA
+	find "${D}${PACKAGE_DATA_DIR}" -type f -name "*.sh" -printf "${PACKAGE_DATA_DIR}/%P\0" | xargs -0 fperms a+x
 
-	# Need to fix the cli-php config for downloading to work. Very naughty!
-	local slots
-	local slot
-	if [[ "x${PHP_TARGETS}" == "x" ]] ; then
-		ewarn
-		ewarn "PHP_TARGETS seems empty, php.ini file can't be configure."
-		ewarn "Make sure that PHP_TARGETS in /etc/make.conf is set."
-		ewarn "phoronix-test-suite needs the 'allow_url_fopen' option set to \"On\""
-		ewarn "for downloading to work properly."
-		ewarn
-	else
-		for slot in ${PHP_TARGETS}; do
-			slots+=" ${slot/-/.}"
-		done
-	fi
-
-	for slot in ${slots}; do
-		local PHP_INI_FILE="/etc/php/cli-${slot}/php.ini"
-		if [[ -f ${PHP_INI_FILE} ]] ; then
-			dodir $(dirname ${PHP_INI_FILE})
-			cp ${PHP_INI_FILE} "${D}${PHP_INI_FILE}"
-			sed -e 's|^allow_url_fopen .*|allow_url_fopen = On|g' -i "${D}${PHP_INI_FILE}"
+	# Fix the cli-php config for downloading to work.
+	local PHP_SLOT
+	for PHP_SLOT in $(eselect --brief php list cli); do
+		local php_dir="etc/php/cli-${PHP_SLOT}"
+		if [[ -f "${ROOT}${php_dir}/php.ini" ]] ; then
+			dodir "${php_dir}"
+			cp -f "${ROOT}${php_dir}/php.ini" "${D}${php_dir}/php.ini" \
+				|| die "cp unable to copy php.ini file"
+			sed -i -e 's|^allow_url_fopen .*|allow_url_fopen = On|g' "${D}${php_dir}/php.ini" \
+				|| die "sed unable to modify php.ini file copy"
+		elif [[ "x$(eselect php show cli)" == "x${PHP_SLOT}" ]] ; then
+			ewarn
+			ewarn "${PHP_SLOT} does not have a php.ini file."
+			ewarn "${PN} needs the 'allow_url_fopen' option set to \"On\""
+			ewarn "for downloading to work properly."
+			ewarn
 		else
-			if [[ "x$(eselect php show cli)" == "x${slot}" ]] ; then
-				ewarn
-				ewarn "${slot} hasn't a php.ini file."
-				ewarn "phoronix-test-suite needs the 'allow_url_fopen' option set to \"On\""
-				ewarn "for downloading to work properly."
-				ewarn "Check that your PHP_INI_VERSION is set during ${slot} merge"
-				ewarn
-			else
-				elog
-				elog "${slot} hasn't a php.ini file."
-				elog "phoronix-test-suite may need the 'allow_url_fopen' option set to \"On\""
-				elog "for downloading to work properly if you switch to ${slot}"
-				elog "Check that your PHP_INI_VERSION is set during ${slot} merge"
-				elog
-			fi
+			elog
+			elog "${PHP_SLOT} does not have a php.ini file."
+			elog "${PN} may need the 'allow_url_fopen' option set to \"On\""
+			elog "for downloading to work properly if you switch to ${PHP_SLOT}"
+			elog
 		fi
 	done
-
-	ewarn
-	ewarn "If you upgrade from phoronix-test-suite-2*, you should reinstall all"
-	ewarn "your tests because"
-	ewarn "   \$HOME/.phoronix-test-suite/installed-tests/\$TEST_NAME/"
-	ewarn "moves to"
-	ewarn "   \$HOME/.phoronix-test-suite/installed-tests/pts/\$TEST_NAME-\$TEST_VERSION/"
-	ewarn "in phoronix-test-suite-3* version. The \$TEST_VERSION can be find in"
-	ewarn "pts-install.xml file."
-	ewarn
 }
