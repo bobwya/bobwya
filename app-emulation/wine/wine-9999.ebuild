@@ -12,7 +12,6 @@ inherit autotools-utils eutils fdo-mime flag-o-matic gnome2-utils l10n multilib 
 
 if [[ ${PV} == "9999" ]] ; then
 	EGIT_REPO_URI="git://source.winehq.org/git/wine.git http://source.winehq.org/git/wine.git"
-	GSTREAMER_COMMIT="e8311270ab7e01b8c58ec615f039335bd166882a"
 	inherit git-r3
 	MY_PV="${PV}"
 	MY_P="${P}"
@@ -62,7 +61,6 @@ IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fon
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	test? ( abi_x86_32 )
 	elibc_glibc? ( threads )
-	mono? ( abi_x86_32 )
 	pipelight? ( staging )
 	s3tc? ( staging )
 	vaapi? ( staging )
@@ -82,7 +80,7 @@ COMMON_DEPEND="
 	openal? ( media-libs/openal:=[${MULTILIB_USEDEP}] )
 	gstreamer? (
 		media-libs/gstreamer:1.0[${MULTILIB_USEDEP}]
-		media-libs/gst-plugins-base:1.0[${MULTILIB_USEDEP}]
+		media-plugins/gst-plugins-meta:1.0[${MULTILIB_USEDEP}]
 	)
 	X? (
 		x11-libs/libXcursor[${MULTILIB_USEDEP}]
@@ -171,23 +169,8 @@ usr/share/applications/wine-winecfg.desktop"
 
 S="${WORKDIR}/${MY_P}"
 
-wine_build_environment_check() {
+wine_build_environment_prechecks() {
 	[[ ${MERGE_TYPE} = "binary" ]] && return 0
-
-	# bug #549768
-	if use abi_x86_64 && [[ $(gcc-major-version) = 5 && $(gcc-minor-version) -le 2 ]]; then
-		einfo "Checking for gcc-5 ms_abi compiler bug ..."
-		$(tc-getCC) -O2 "${FILESDIR}"/pr66838.c -o "${T}"/pr66838 || die
-		# Run in subshell to prevent "Aborted" message
-		if ! ( "${T}"/pr66838 || false ) >/dev/null 2>&1; then
-			eerror "64-bit wine cannot be built with gcc-5.1 or initial patchset of 5.2.0"
-			eerror "due to compiler bugs; please re-emerge the latest gcc-5.2.x ebuild,"
-			eerror "or use gcc-config to select a different compiler version."
-			eerror "See https://bugs.gentoo.org/549768"
-			eerror
-			return 1
-		fi
-	fi
 
 	if use abi_x86_64 && [[ $(( $(gcc-major-version) * 100 + $(gcc-minor-version) )) -lt 404 ]]; then
 		eerror "You need gcc-4.4+ to build 64-bit wine"
@@ -203,17 +186,63 @@ wine_build_environment_check() {
 	fi
 }
 
-pkg_pretend() {
-	wine_build_environment_check || die
-	if [[ ${PV} == "9999" ]] && use staging; then
-		ewarn "You have enabled a live ebuild of Wine with USE +staging."
-		ewarn "All git branch and commit references will link to the Wine-Staging git tree."
-		ewarn "By default the Wine-Staging git tree branch master will be used."
+wine_build_environment_pretests() {
+	[[ ${MERGE_TYPE} = "binary" ]] && return 0
+
+	# bug #549768
+	if use abi_x86_64 && [[ $(gcc-major-version) = 5 && $(gcc-minor-version) -le 2 ]]; then
+		einfo "Checking for gcc-5.1/5.2 MS X86_64 ABI compiler bug ..."
+		$(tc-getCC) -O2 "${FILESDIR}/pr66838.c" -o "${T}/pr66838" || die "compilation failed: pr66838 test"
+		# Run in subshell to prevent "Aborted" message
+		if ! ( "${T}/pr66838" || false )&>/dev/null; then
+			eerror "gcc-5.1/5.2 MS X86_64 ABI compiler bug detected."
+			eerror "64-bit wine cannot be built with affected versions of gcc."
+			eerror "Please re-emerge wine using an unaffected version of gcc or apply"
+			eerror "Upstream (backport) patch to your current version of gcc-5.1/5.2."
+			eerror "See https://bugs.gentoo.org/549768"
+			eerror
+			return 1
+		fi
 	fi
 }
 
+wine_build_environment_setup_tests() {
+	[[ ${MERGE_TYPE} = "binary" ]] && return 0
+
+	# bug #574044
+	if use abi_x86_64 && [[ $(gcc-major-version) = 5 && $(gcc-minor-version) = 3 ]]; then
+		einfo "Checking for gcc-5.3.0 X86_64 misaligned stack compiler bug ..."
+		# Compile in subshell to prevent "Aborted" message
+		if ! ( $(tc-getCC) -O2 -mincoming-stack-boundary=3 "${FILESDIR}"/pr69140.c -o "${T}"/pr69140 || false )&>/dev/null; then
+			eerror "gcc-5.3.0 X86_64 misaligned stack compiler bug detected."
+			CFLAGS_X86_64="-fno-omit-frame-pointer"
+			test-flags-CC "${CFLAGS_X86_64}" &>/dev/null || die "CFLAGS+='${CFLAGS_X86_64}' not supported by selected gcc compiler"
+			ewarn "abi_x86_64.amd64 compilation phase (workaround automatically applied):"
+			ewarn "  CFLAGS+='${CFLAGS_X86_64}'"
+			ewarn "See https://bugs.gentoo.org/574044"
+			ewarn
+		fi
+	fi
+}
+
+pkg_pretend() {
+	wine_build_environment_prechecks || die
+	wine_build_environment_pretests || die
+}
+
 pkg_setup() {
-	wine_build_environment_check || die
+	wine_build_environment_setup_tests || die
+
+	if [[ ${PV} == "9999" ]]; then
+		if use staging; then
+			ewarn "You have enabled a live ebuild of Wine with USE +staging."
+			ewarn "All git branch and commit references will link to the Wine-Staging git tree."
+		fi
+		if [[ -z "${EGIT_BRANCH}" ]] && [[ -z "${EGIT_COMMIT}" ]]; then
+			use staging && einfo "By default the Wine-Staging git tree branch master will be used."
+			use staging || einfo "By default the Wine git tree branch master will be used."
+		fi
+	fi
 }
 
 src_unpack() {
@@ -228,7 +257,8 @@ src_unpack() {
 			EGIT_COMMIT="${WINE_COMMIT}"
 		fi
 		EGIT_CHECKOUT_DIR="${S}" git-r3_src_unpack
-		if use gstreamer && grep -q "gstreamer-0.10" "${S}"/configure ; then
+		if use gstreamer && grep -q "gstreamer-0.10" "${S}"/configure &>/dev/null ; then
+			local GSTREAMER_COMMIT="e8311270ab7e01b8c58ec615f039335bd166882a"
 			ewarn "Wine commit ${GSTREAMER_COMMIT} first introduced support for the gstreamer:1.0 API / ABI."
 			ewarn "Specify a newer Wine commit or emerge with USE -gstreamer."
 			die "This live ebuild does not support Wine builds using the older gstreamer:0.1 API / ABI."
@@ -251,12 +281,16 @@ src_prepare() {
 		"${FILESDIR}"/${PN}-1.6-memset-O3.patch #480508
 	)
 	if [[ ${PV} != "9999" ]]; then
-		PATCHES+=( "${FILESDIR}"/${PN}-1.4_rc2-multilib-portage.patch ) #395615
+		PATCHES+=( "${FILESDIR}"/${PN}-1.9.5-multilib-portage.patch ) #395615
 	else
-		# Avoid build failures by not patching live ebuild - allows building against older Wine / Wine-Staging commits
-		"${FILESDIR}/${PN}-9999-multilib-portage-sed-patch.sh" #395615
-		[[ $(gcc-major-version) = 5 && $(gcc-minor-version) -ge 3 ]] && \
-			"${FILESDIR}/${PN}-9999-gcc-5_3_0-disable-force-alignment-sed-patch.sh" #574044
+		# Do not patch wine live ebuild - allows building against older Wine / Wine-Staging commits
+		# bug #395615
+		ebegin "Running \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" ..."
+		(
+			source "${FILESDIR}/${PN}-9999-multilib-portage-sed.sh" ||
+				die "Failed bash script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\""
+		)
+		eend $?
 	fi
 	if use staging; then
 		ewarn "Applying the Wine-Staging patchset. Any bug reports to the"
@@ -295,9 +329,6 @@ src_prepare() {
 src_configure() {
 	export LDCONFIG=/bin/true
 	use custom-cflags || strip-flags
-	if [[ ${PV} == "9999" ]] && [[ $(gcc-major-version) = 5 && $(gcc-minor-version) -ge 3 ]]; then
-		local CFLAGS="${CFLAGS} -fno-omit-frame-pointer" # bug 574044
-	fi
 
 	multilib-minimal_src_configure
 }
@@ -356,6 +387,12 @@ multilib_src_configure() {
 
 	if use amd64; then
 		if [[ ${ABI} == amd64 ]]; then
+			# bug #574044
+			if [[ -n "${CFLAGS_X86_64}" ]]; then
+				append-cflags "${CFLAGS_X86_64}"
+				einfo "CFLAGS='${CFLAGS}'"
+				unset CFLAGS_X86_64
+			fi
 			myconf+=( --enable-win64 )
 		else
 			myconf+=( --disable-win64 )

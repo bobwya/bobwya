@@ -14,7 +14,7 @@ function convert_version_list_to_regexp(version_list,
 }
 
 BEGIN{
-	setup_ebuild_phases("pkg_pretend pkg_setup src_unpack src_prepare src_configure multilib_src_configure multilib_src_test multilib_src_install_all pkg_preinst pkg_postinst pkg_prerm pkg_postrm",
+	setup_ebuild_phases("wine_build_environment_check pkg_pretend pkg_setup src_unpack src_prepare src_configure multilib_src_configure multilib_src_test multilib_src_install_all pkg_preinst pkg_postinst pkg_prerm pkg_postrm",
 						array_ebuild_phases, array_phase_open, array_ebuild_phases_regexp)
 	
 	# Setup some regular expression constants - to hopefully make the script more readable!
@@ -29,27 +29,33 @@ BEGIN{
 	gstreamer_full_atom_match="[<|>]\{0,1\}[=]\{0,1\}media-libs\\/gstreamer:[\.[:digit:]]+"
 	gst_plugins_base_full_atom_match="[<|>]\{0,1\}[=]\{0,1\}media-libs\\/gst-plugins-base:[\.[:digit:]]+"
 	patchset_regexp="local[[:blank:]]+PATCHES=\\("
-	use_custom_cflags_regexp="use[[:blank:]]+custom\\-cflags"
 	staging_use_enabled_regexp="staging\\?[[:blank:]]+"
 	staging_use_test_regexp="use[[:blank:]]+staging"
 	gstreamer_use_enabled_regexp="gstreamer\\?[[:blank:]]+"
-	gstreamer_use_test_regexp="use gstreamer"
+	gstreamer_use_test_regexp="use[[:blank:]]+gstreamer"
+	pipelight_use_test_regexp="use[[:blank:]]+pipelight"
+	abi_x86_64_use_test_regexp="use[[:blank:]]+abi\\_x86\\_64"
+	abi_eq_amd64_regexp="\\$\\{ABI\\}[[:blank:]]+==[[:blank:]]+amd64"
 	configure_use_with_regexp="\\$\\(use_with[[:blank:]].+\\)"
 	package_regexp="\\$\\{P\\}"
 	package_version_variable_regexp="\\$\\{PV\\}"
 	staging_use_flags_regexp="[\+]{0,1}(pipelight|s3tc|staging|vaapi)"
 	add_gst_patch_regexp="PATCHES\\+\\=\\( \"\\$\\{WORKDIR\\}\\/\\$\\{GST\\_\\P}\\.patch\" \\)"
-	multilib_patch_version_regexp="\"\\$\\{FILESDIR\\}\"\\/\\$\\{PN\\}\\-1\\.4\\_rc2"
 	new_multilib_patch_version="\"${FILESDIR}\"/${PN}-1.9.5"
     multilib_patch_regexp="multilib\\-portage\\.patch"
+	wine_mono_version_regexp="[[:digit:]]+\\.[[:digit:]]+\\.[[:digit:]]+"
+	wine_mono_version4_6_0="4.6.0"
+	wine_gecko_version_regexp="[[:digit:]]+\\.[[:digit:]]+"
+	wine_gecko_version2_44="2.44"
+	gentoo_excluded_bugs_regexp="bug[[:blank:]]+\\#(549768|574044)"
+	gcc5_tests_regexp="[[:blank:]]+\\$\\(gcc\\-major\\-version\\)[[:blank:]]+=[[:blank:]]+5[[:blank:]]+"
+	
 	legacy_gstreamer_wine_version_regexp=convert_version_list_to_regexp(legacy_gstreamer_wine_versions)
 	suppress_staging_wine_version_regexp=convert_version_list_to_regexp(wine_staging_unsupported_versions)
-	gcc_stack_alignment_forced_version_regexp=convert_version_list_to_regexp("1.9.3 1.9.4 1.9.5")
-    updated_multilib_patch_version_regexp=convert_version_list_to_regexp("1.9.5")
-	wine_mono_version_regexp="[[:digit:]]+\\.[[:digit:]]+\\.[[:digit:]]+"
-	wine_mono_version_latest="4.6.0"
-	wine_gecko_version_regexp="[[:digit:]]+\\.[[:digit:]]+"
-	wine_gecko_version_latest="2.44"
+    updated_multilib_patch_version_regexp=convert_version_list_to_regexp("1.9.5 1.9.6 9999")
+	wine_gecko_version2_44_regexp=convert_version_list_to_regexp("1.9.3 1.9.4 1.9.5 1.9.6 9999")
+	wine_mono_version4_6_0_regexp=convert_version_list_to_regexp("1.9.5 1.9.6 9999")
+	
 }
 
 {
@@ -66,10 +72,8 @@ BEGIN{
 		else_check_pv9999_open=1
 				
 	if (preamble_over == 0) {
-		if ((if_check_pv9999_open == 1) && ($0 ~ "EGIT_BRANCH=\"master\"")) {
-			printf("%s%s\n", indent, "GSTREAMER_COMMIT=\"e8311270ab7e01b8c58ec615f039335bd166882a\"")
+		if ((if_check_pv9999_open == 1) && ($0 ~ "EGIT_BRANCH=\"master\""))
 			suppress_current_line=1
-		}
 			
 		if ($0 ~ array_variables_regexp["SRC_URI"])
 			src_uri_open=1
@@ -93,10 +97,10 @@ BEGIN{
 			}
 		}
 		
-		if ($0 ~ array_variables_regexp["GV"])
-			sub(wine_gecko_version_regexp, wine_gecko_version_latest)
-		if ($0 ~ array_variables_regexp["MV"])
-			sub(wine_mono_version_regexp, wine_mono_version_latest)
+		if ((wine_version ~ wine_gecko_version2_44_regexp) && ($0 ~ array_variables_regexp["GV"]))
+			sub(wine_gecko_version_regexp, wine_gecko_version2_44)
+		if ((wine_version ~ wine_mono_version4_6_0_regexp) && ($0 ~ array_variables_regexp["MV"]))
+			sub(wine_mono_version_regexp, wine_mono_version4_6_0)
 			
 		if (($0 ~ array_variables_regexp["IUSE"]) && (wine_version ~ legacy_gstreamer_wine_version_regexp))
 			sub("gstreamer", "gstreamer010")
@@ -112,7 +116,7 @@ BEGIN{
 				sub(gstreamer_use_enabled_regexp, "gstreamer010? ")
 			else {
 				sub(gstreamer_full_atom_match, "media-libs\/gstreamer:1.0")
-				sub(gst_plugins_base_full_atom_match, "media-libs\/gst-plugins-base:1.0")
+				sub(gst_plugins_base_full_atom_match, "media-plugins\/gst-plugins-meta:1.0")
 			}
 			if ($0 ~ bracketed_expression_close_regexp)
 				gstreamer_expression_open=0
@@ -159,8 +163,74 @@ BEGIN{
 
 
 	# Ebuild phase based pre-checks
-	if (($0 ~ if_regexp) && ($0 ~ "wine_build_environment_check\\(\\)"))
-		printf("%s\n\n", "S=\"${WORKDIR}/${MY_P}\"")
+	if (array_phase_open["wine_build_environment_check"] == 1) {
+		sub("wine_build_environment_check", "wine_build_environment_prechecks")
+		if (change_source_path != 1) {
+			printf("%s\n\n", "S=\"${WORKDIR}/${MY_P}\"")
+			change_source_path=1
+		}
+		if (($0 ~ comment_regexp) && ($0 ~ gentoo_excluded_bugs_regexp))
+			suppress_current_line=1
+		if (($0 ~ if_open_regexp) && (if_stack == 1) && ($0 ~ abi_x86_64_use_test_regexp) && ($0 ~ gcc5_tests_regexp))
+			suppress_bug_check_open=1
+		suppress_current_line=(suppress_bug_check_open == 1) ? 1 : suppress_current_line
+		if (($0 ~ if_close_regexp) && (if_stack == 0) && (suppress_bug_check_open == 1))
+			suppress_bug_check_open=0
+	}
+	else if (array_phase_open["pkg_pretend"] == 1) {
+		if (wine_build_environment_pretests == 0) {
+			wine_build_environment_pretests=1
+			
+			printf("%s\n",		"wine_build_environment_pretests() {")
+			printf("%s%s\n\n",	indent, "[[ ${MERGE_TYPE} = \"binary\" ]] && return 0")
+			printf("%s%s\n",	indent, "# bug #549768")
+			printf("%s%s\n",	indent, "if use abi_x86_64 && [[ $(gcc-major-version) = 5 && $(gcc-minor-version) -le 2 ]]; then")
+			printf("%s%s%s\n",	indent, indent, "einfo \"Checking for gcc-5.1/5.2 MS X86_64 ABI compiler bug ...\"")
+			printf("%s%s%s\n",	indent, indent, "$(tc-getCC) -O2 \"${FILESDIR}/pr66838.c\" -o \"${T}/pr66838\" || die \"compilation failed: pr66838 test\"")
+			printf("%s%s%s\n",	indent, indent, "# Run in subshell to prevent \"Aborted\" message")
+			printf("%s%s%s\n",	indent, indent, "if ! ( \"${T}/pr66838\" || false )&>/dev/null; then")
+			printf("%s%s%s%s\n",indent, indent, indent, "eerror \"gcc-5.1/5.2 MS X86_64 ABI compiler bug detected.\"")
+			printf("%s%s%s%s\n",indent, indent, indent, "eerror \"64-bit wine cannot be built with affected versions of gcc.\"")
+			printf("%s%s%s%s\n",indent, indent, indent, "eerror \"Please re-emerge wine using an unaffected version of gcc or apply\"")
+			printf("%s%s%s%s\n",indent, indent, indent, "eerror \"Upstream (backport) patch to your current version of gcc-5.1/5.2.\"")
+			printf("%s%s%s%s\n",indent, indent, indent, "eerror \"See https://bugs.gentoo.org/549768\"")
+			printf("%s%s%s%s\n",indent, indent, indent, "eerror")
+			printf("%s%s%s%s\n",indent, indent, indent, "return 1")
+			printf("%s%s%s\n",	indent, indent, "fi")
+			printf("%s%s\n",	indent, "fi")
+			printf("%s\n\n",	"}")
+		}
+		if (wine_build_environment_test == 0) {
+			wine_build_environment_test=1
+
+			printf("%s\n",		"wine_build_environment_setup_tests() {")
+			printf("%s%s\n\n",	indent, "[[ ${MERGE_TYPE} = \"binary\" ]] && return 0")
+
+			printf("%s%s\n",	indent, "# bug #574044")
+			printf("%s%s\n",	indent, "if use abi_x86_64 && [[ $(gcc-major-version) = 5 && $(gcc-minor-version) = 3 ]]; then")
+			printf("%s%s%s\n",	indent, indent, "einfo \"Checking for gcc-5.3.0 X86_64 misaligned stack compiler bug ...\"")
+			printf("%s%s%s\n",	indent, indent, "# Compile in subshell to prevent \"Aborted\" message")
+			printf("%s%s%s\n",	indent, indent, "if ! ( $(tc-getCC) -O2 -mincoming-stack-boundary=3 \"${FILESDIR}\"/pr69140.c -o \"${T}\"/pr69140 || false )&>/dev/null; then")
+			printf("%s%s%s%s\n",indent, indent, indent, "eerror \"gcc-5.3.0 X86_64 misaligned stack compiler bug detected.\"")
+			printf("%s%s%s%s\n",indent, indent, indent, "CFLAGS_X86_64=\"-fno-omit-frame-pointer\"")
+			printf("%s%s%s%s\n",indent, indent, indent, "test-flags-CC \"${CFLAGS_X86_64}\" &>/dev/null || die \"CFLAGS+='${CFLAGS_X86_64}' not supported by selected gcc compiler\"")
+			printf("%s%s%s%s\n",indent, indent, indent, "ewarn \"abi_x86_64.amd64 compilation phase (workaround automatically applied):\"")
+			printf("%s%s%s%s\n",indent, indent, indent, "ewarn \"  CFLAGS+='${CFLAGS_X86_64}'\"")
+			printf("%s%s%s%s\n",indent, indent, indent, "ewarn \"See https://bugs.gentoo.org/574044\"")
+			printf("%s%s%s%s\n",indent, indent, indent, "ewarn")
+			printf("%s%s%s\n",	indent, indent, "fi")
+			printf("%s%s\n",	indent, "fi")
+	
+			printf("}\n\n")
+		}
+
+		if (sub("wine_build_environment_check", "wine_build_environment_prechecks") == 1)
+			wine_build_environment_prechecks=1
+	}
+	else if (array_phase_open["pkg_setup"] == 1) {
+		if (sub("wine_build_environment_check", "wine_build_environment_setup_tests") == 1)
+			wine_build_environment_tests=1
+	} 
 	else if (array_phase_open["src_unpack"] == 1) {
 		if ((if_check_pv9999_open > 0) && (else_check_pv9999_open == 0) && ($0 !~ check_for_pv9999_regexp))
 			suppress_current_line=1
@@ -175,8 +245,8 @@ BEGIN{
 	}
 	else if (array_phase_open["src_prepare"] == 1) {
 		patch_set_define_open=($0 ~ (leading_ws_regexp patchset_regexp)) ? 1 : patch_set_define_open
-		if (sub((multilib_patch_version_regexp "\\-" multilib_patch_regexp), "") == 1)
-			suppress_current_line=(($0 ~ comment_regexp) || ($0 ~ blank_line_regexp)) ? 1 : suppress_current_line
+		if ($0 ~ multilib_patch_regexp)
+			suppress_current_line=1
 		if (($0 ~ if_open_regexp) && ($0 ~ gstreamer_use_test_regexp)) {
 			gstreamer_check_open=if_stack
 			sub("gstreamer", "gstreamer010")
@@ -189,7 +259,7 @@ BEGIN{
 			sub("$", " || die \"Failed to apply Wine-Staging patches.\"")
 		if (wine_version ~ suppress_staging_wine_version_regexp) {
 			if ($0 ~ add_gst_patch_regexp)
-				sub(("^" leading_ws_regexp), indent)
+				sub(("^" leading_ws_regexp), (indent indent))
 			else
 				suppress_current_line+=wine_staging_check_open
 			if ($0 ~ "^" comment_regexp)
@@ -225,7 +295,7 @@ BEGIN{
 
 	# Extract whitespace type and indent level for current line in the ebuild - so we step lightly!
 	if (match($0, leading_ws_regexp))
-		indent=substr($0, RSTART, RLENGTH)
+		indent=(indent == 0) ? substr($0, RSTART, RLENGTH) : indent
 
 	if (preamble_over == 0) {
 		if (if_check_pv9999_open == 1) {
@@ -252,15 +322,31 @@ BEGIN{
 	}
 	
 	# Ebuild phase based post-checks
-	if ((wine_version !~ suppress_staging_wine_version_regexp) && (array_phase_open["pkg_pretend"] == 1) && ($0 ~ "wine_build_environment_check")) {
-		printf("%s%s\n",	indent, "if [[ ${PV} == \"9999\" ]] && use staging; then")
-		printf("%s%s%s\n",	indent, indent, "ewarn \"You have enabled a live ebuild of Wine with USE +staging.\"")
-		printf("%s%s%s\n",	indent, indent, "ewarn \"All git branch and commit references will link to the Wine-Staging git tree.\"")
-		printf("%s%s%s\n",	indent, indent, "ewarn \"By default the Wine-Staging git tree branch master will be used.\"")
-		printf("%s%s\n",	indent, "fi")
-		array_phase_open["pkg_pretend"]=2
+	if ((array_phase_open["pkg_pretend"] == 1) && (wine_build_environment_prechecks == 1)) {
+		printf("%s%s\n",			indent, "wine_build_environment_pretests || die")
+		wine_build_environment_prechecks=0
 	}
-	if (array_phase_open["src_unpack"] == 1) {
+	else if ((array_phase_open["pkg_setup"] == 1) && (wine_build_environment_tests == 1)) {
+		if (wine_version ~ suppress_staging_wine_version_regexp) {
+			printf("\n%s%s\n",		indent, "if [[ ${PV} == \"9999\" ]] && [[ -z \"${EGIT_BRANCH}\" ]] && [[ -z \"${EGIT_COMMIT}\" ]]; then")
+			printf("%s%s%s\n",		indent, indent, "einfo \"By default the Wine git tree branch master will be used.\"")
+			printf("%s%s\n",		indent, "fi")
+		}
+		else {
+			printf("\n%s%s\n",		indent, "if [[ ${PV} == \"9999\" ]]; then")
+			printf("%s%s%s\n",		indent, indent, "if use staging; then")
+			printf("%s%s%s%s\n",	indent, indent, indent, "ewarn \"You have enabled a live ebuild of Wine with USE +staging.\"")
+			printf("%s%s%s%s\n",	indent, indent, indent, "ewarn \"All git branch and commit references will link to the Wine-Staging git tree.\"")
+			printf("%s%s%s\n",		indent, indent, "fi")
+			printf("%s%s%s\n",		indent, indent, "if [[ -z \"${EGIT_BRANCH}\" ]] && [[ -z \"${EGIT_COMMIT}\" ]]; then")
+			printf("%s%s%s%s\n",	indent, indent, indent, "use staging && einfo \"By default the Wine-Staging git tree branch master will be used.\"")
+			printf("%s%s%s%s\n",	indent, indent, indent, "use staging || einfo \"By default the Wine git tree branch master will be used.\"")
+			printf("%s%s%s\n",		indent, indent, "fi")
+			printf("%s%s\n",		indent, "fi")
+		}
+		array_phase_open["pkg_setup"]=2
+	}
+	else if (array_phase_open["src_unpack"] == 1) {
 		if ((if_check_pv9999_open > 0) && (do_git_unpack_replaced == 0)) {
 			if (wine_version !~ suppress_staging_wine_version_regexp)
 				printf("%s%s%s\n",	 indent, indent, "# Reference either Wine or Wine Staging git branch (depending on +staging use flag)")
@@ -276,7 +362,8 @@ BEGIN{
 			}
 			printf("%s%s%s\n",	 indent, indent, "EGIT_CHECKOUT_DIR=\"${S}\" git-r3_src_unpack")
 			if (wine_version !~ legacy_gstreamer_wine_version_regexp) {
-				printf("%s%s%s\n",	 indent, indent, "if use gstreamer && grep -q \"gstreamer-0.10\" \"${S}\"/configure ; then")
+				printf("%s%s%s\n",	 indent, indent, "if use gstreamer && grep -q \"gstreamer-0.10\" \"${S}\"/configure &>/dev/null ; then")
+				printf("%s%s%s%s\n", indent, indent, indent, "local GSTREAMER_COMMIT=\"e8311270ab7e01b8c58ec615f039335bd166882a\"")
 				printf("%s%s%s%s\n", indent, indent, indent, "ewarn \"Wine commit ${GSTREAMER_COMMIT} first introduced support for the gstreamer:1.0 API / ABI.\"")
 				printf("%s%s%s%s\n", indent, indent, indent, "ewarn \"Specify a newer Wine commit or emerge with USE -gstreamer.\"")
 				printf("%s%s%s%s\n", indent, indent, indent, "die \"This live ebuild does not support Wine builds using the older gstreamer:0.1 API / ABI.\"")
@@ -285,35 +372,41 @@ BEGIN{
 			++do_git_unpack_replaced
 		}
 	}
-	if ((array_phase_open["src_prepare"] == 1) && (patch_set_define_open == 1)) {
-		if ($0 ~ (bracketed_expression_close_regexp "$")) {
+	else if (array_phase_open["src_prepare"] == 1) {
+		if ((patch_set_define_open == 1) && ($0 ~ (bracketed_expression_close_regexp "$"))) {
 			printf("%s%s\n",		indent, "if [[ ${PV} != \"9999\" ]]; then")
 			if (wine_version ~ updated_multilib_patch_version_regexp)
 				printf("%s%s%s\n",	indent, indent, "PATCHES+=( \"${FILESDIR}\"/${PN}-1.9.5-multilib-portage.patch ) #395615")
 			else
 				printf("%s%s%s\n",	indent, indent, "PATCHES+=( \"${FILESDIR}\"/${PN}-1.4_rc2-multilib-portage.patch ) #395615")
-			if (wine_version ~ gcc_stack_alignment_forced_version_regexp) {
-				printf ("%s%s%s\n",	indent, indent, "# Disable forced alignment for all gcc >=5.3.x versions - needs a gcc test function for Upstream (in-tree) patch")
-				printf ("%s%s%s\n",	indent, indent, "[[ $(gcc-major-version) = 5 && $(gcc-minor-version) -ge 3 ]] && \\")
-				printf ("%s%s%s%s\n",	indent, indent, indent, "PATCHES+=( \"${FILESDIR}\"/${PN}-1.9.3-gcc-5_3_0-disable-force-alignment.patch ) #574044")
-			}
 			printf("%s%s\n",		indent, "else")
-			printf ("%s%s%s\n",		indent, indent, "# Avoid build failures by not patching live ebuild - allows building against older Wine / Wine-Staging commits")
-			printf ("%s%s%s\n",		indent, indent, "\"${FILESDIR}/${PN}-9999-multilib-portage-sed-patch.sh\" #395615")
-			printf ("%s%s%s\n",		indent, indent, "[[ $(gcc-major-version) = 5 && $(gcc-minor-version) -ge 3 ]] && \\")
-			printf ("%s%s%s%s\n",	indent, indent, indent, "\"${FILESDIR}/${PN}-9999-gcc-5_3_0-disable-force-alignment-sed-patch.sh\" #574044")
+			printf ("%s%s%s\n",		indent, indent, "# Do not patch wine live ebuild - allows building against older Wine / Wine-Staging commits")
+			printf ("%s%s%s\n",		indent, indent, "# bug #395615")
+			printf ("%s%s%s\n",		indent, indent, "ebegin \"Running \\\"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\\\" ...\"")
+			printf ("%s%s%s\n",		indent, indent, "(")
+			printf ("%s%s%s%s\n",	indent, indent, indent, "source \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" ||")
+			printf ("%s%s%s%s%s\n",	indent, indent, indent, indent, "die \"Failed bash script: \\\"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\\\"\"")
+			printf ("%s%s%s\n",		indent, indent, ")")
+			printf ("%s%s%s\n",		indent, indent, "eend $?")
 			printf("%s%s\n",		indent, "fi")
 			++patch_set_define_open
 		}
+		if (($0 ~ (leading_ws_regexp pipelight_use_test_regexp)) && (wine_version == "1.9.5")) {
+			printf("%s%s%s\n",		indent, indent, "use nls || STAGING_EXCLUDE=\"${STAGING_EXCLUDE} -W makefiles-Disabled_Rules\" #577198")		
+		}
 	}
-	if ((array_phase_open["src_configure"] == 1) && (wine_version ~ "^9999$") && ($0 ~ (leading_ws_regexp use_custom_cflags_regexp))) {
-		# Hack - disable forced alignment for all gcc >=5.3.x versions - needs a gcc test function for Upstream (in-tree) patch
-		printf("%s%s\n",	indent, "if [[ ${PV} == \"9999\" ]] && [[ $(gcc-major-version) = 5 && $(gcc-minor-version) -ge 3 ]]; then")
-		printf("%s%s%s\n",	indent, indent, "local CFLAGS=\"${CFLAGS} -fno-omit-frame-pointer\" # bug 574044")
-		printf("%s%s\n",	indent, "fi")
-		array_ebuild_phases["src_configure"]=2
+	else if (array_phase_open["multilib_src_configure"] == 1) {
+		if (($0 ~ if_open_regexp) && ($0 ~ abi_eq_amd64_regexp)) {
+			printf("%s%s%s%s\n",	indent, indent, indent, "# bug #574044")
+			printf("%s%s%s%s\n",	indent, indent, indent, "if [[ -n \"${CFLAGS_X86_64}\" ]]; then")
+			printf("%s%s%s%s%s\n",	indent, indent, indent, indent, "append-cflags \"${CFLAGS_X86_64}\"")
+			printf("%s%s%s%s%s\n",	indent, indent, indent, indent, "einfo \"CFLAGS='${CFLAGS}'\"")
+			printf("%s%s%s%s%s\n",	indent, indent, indent, indent, "unset CFLAGS_X86_64")
+			printf("%s%s%s%s\n",	indent, indent, indent, "fi")
+			array_phase_open["multilib_src_configure"]=2
+		}
 	}
-
+	
 	if ((if_check_pv9999_open > 0) && (if_check_pv9999_open == if_stack+1) && ($0 ~ if_close_regexp))
 			if_check_pv9999_open=else_check_pv9999_open=0
 
