@@ -61,6 +61,7 @@ IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fon
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	test? ( abi_x86_32 )
 	elibc_glibc? ( threads )
+	mono? ( abi_x86_32 )
 	pipelight? ( staging )
 	s3tc? ( staging )
 	vaapi? ( staging )
@@ -299,9 +300,6 @@ src_prepare() {
 		local STAGING_EXCLUDE=""
 		use pipelight || STAGING_EXCLUDE="${STAGING_EXCLUDE} -W Pipelight"
 		use nls || STAGING_EXCLUDE="${STAGING_EXCLUDE} -W makefiles-Disabled_Rules" #577198
-
-		#577198 1.9.5 only
-		STAGING_EXCLUDE="${STAGING_EXCLUDE} -W makefiles-Disabled_Rules"
 
 		# Launch wine-staging patcher in a subshell, using epatch as a backend, and gitapply.sh as a backend for binary patches
 		ebegin "Running Wine-Staging patch installer"
