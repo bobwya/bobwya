@@ -5,12 +5,11 @@ bobwya
 Gentoo Overlay containing various packages I have been unable to find @ Gentoo Portage Overlays website or elsewhere.
 Testing and updating of these ebuild package build scripts is irregular. So YMMV - you have been warned!
 
+	app-arch/unshield : Tool and library to extract CAB files from InstallShield installers.
 	app-backup/fsarchiver : Flexible filesystem archiver for backup and deployment tool.
 	app-benchmarks/i7z : A better Intel i7 (and now i3, i5) CPU reporting tool for Linux.
 	app-crypt/chntpw : Offline NT Password & Registry Editor.
-	app-office/libreoffice : LibreOffice, a full office productivity suite.
-	app-office/libreoffice-l10 : Translations for the Libreoffice suite.
-	app-arch/unshield : Tool and library to extract CAB files from InstallShield installers.
+	app-text/hunspell : Hunspell is the spell checker of LibreOffice, OpenOffice.org, Mozilla Firefox 3 & Thunderbird, Google Chrome, etc.
 	dev-cpp/pion : C++ framework for building lightweight HTTP interfaces.
 	games-fps/dhewm3 : Doom 3 GPL source modification (with updates including SDL2 support).
 	games-util/lutris : Lutris is an open gaming platform for Linux. It helps you install and manage your games in a unified interface.
