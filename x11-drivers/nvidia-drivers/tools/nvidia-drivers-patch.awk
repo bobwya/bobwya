@@ -26,10 +26,8 @@ BEGIN{
 		if ($0 ~ gentoo_copyright_header_regexp)
 			sub("[[:digit:]]{4}\\-[[:digit:]]{4}", "1999-2016")
 
-		if (($0 ~ "^IUSE\=\".+\"$") && ($0 ~ "[^+]compat")) {
-			sub("compat", "+compat")
+		if (($0 ~ "^IUSE\=\".+\"$") && ($0 ~ "[^+]compat"))
 			use_compat_found=1
-		}
 		for (i_variable_regexp in array_variables_regexp) {
 			if ($0 ~ array_variables_regexp[i_variable_regexp]) {
 				variable_declaration_open=1
