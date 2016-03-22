@@ -48,7 +48,7 @@ CDEPEND="=app-eselect/eselect-opengl-1.3.2
 	)
 	glamor? (
 		media-libs/libepoxy
-		>=media-libs/mesa-10.3.4-r1[egl,gbm]
+		>=media-libs/mesa-11.0.6-r1[egl,gbm]
 		!x11-libs/glamor
 	)
 	kdrive? (
@@ -58,7 +58,7 @@ CDEPEND="=app-eselect/eselect-opengl-1.3.2
 	!minimal? (
 		>=x11-libs/libX11-1.1.5
 		>=x11-libs/libXext-1.0.5
-		>=media-libs/mesa-10.3.4-r1[nptl=]
+		>=media-libs/mesa-11.0.6-r1[nptl=]
 	)
 	tslib? ( >=x11-libs/tslib-1.0 )
 	udev? ( >=virtual/udev-150 )

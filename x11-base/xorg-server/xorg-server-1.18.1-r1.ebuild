@@ -49,7 +49,7 @@ CDEPEND="=app-eselect/eselect-opengl-1.3.2
 	)
 	glamor? (
 		media-libs/libepoxy
-		>=media-libs/mesa-10.3.4-r1[egl,gbm]
+		>=media-libs/mesa-11.0.6-r1[egl,gbm]
 		!x11-libs/glamor
 	)
 	kdrive? (

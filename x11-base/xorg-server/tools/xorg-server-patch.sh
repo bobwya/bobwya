@@ -25,7 +25,7 @@ cd "${script_folder%/tools}"
 cd "${script_folder%/tools}/files"
 rm	xorg-server-1.12-cve-*.patch \
 	xorg-server-1.17-cve-2015-0255*.patch \
-	xorg-server-1.12-disable-acpi.patch \
+	xorg-server{-1.12,}-disable-acpi.patch \
 		2>/dev/null
 
 # Rename and patch all the stock mesa ebuild files

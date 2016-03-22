@@ -54,7 +54,7 @@ function setup_global_regexps(variables,		i)
 	else_regexp="^[[:blank:]]*else"
 	if_close_regexp="^[[:blank:]]*fi"
 	ebuild_version_comparision_regexp="[\\<\\=\\>\\!]+"
-	package_version_regexp="\\-[\\.[:digit:]]+(\\-r[[:digit:]]+|)$"
+	package_version_regexp="\\-[\\.[:digit:]]+(\\-r[[:digit:]]+|)"
 	keywords_regexp="^[[:blank:]]+KEYWORDS=\".+\""
 	keyword_regexp="\\~{0,1}(alpha|amd64|arm|arm64|hppa|ia64|mips|ppc|ppc64|s390|sh|sparc|x86|amd64\\-fbsd|x86\\-fbsd|x86\\-freebsd|amd64\\-linux|arm\\-linux|ia64\\-linux|x86\\-linux|sparc\\-solaris|x64\\-solaris|x86\\-solaris)"
 	ebuild_message_regexp="^[[:blank:]]+(einfo|elog|ewarn)"
