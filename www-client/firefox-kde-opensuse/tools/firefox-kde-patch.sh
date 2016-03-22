@@ -79,7 +79,7 @@ for old_ebuild_file in *.ebuild; do
 			end_quote_regexp="[^=]\"[[:blank:]]*$"
 			end_curly_bracket_regexp="^[[:blank:]]*\}[[:blank:]]*$"
 			ebuild_inherit_regexp="^inherit "
-			variables="BUILD_OBJ_DIR DESCRIPTION HOMEPAGE KEYWORDS IUSE KEYWORDS MOZ_HTTP_URI MOZ_PV RDEPEND"
+			variables="BUILD_OBJ_DIR DESCRIPTION HOMEPAGE KEYWORDS IUSE MOZ_HTTP_URI MOZ_PV RDEPEND"
 			split(variables, array_variables)
 			for (i in array_variables)
 				array_variables_regexp[array_variables[i]]="^" gensub(/\_/, "\\_", "g", array_variables[i]) "\=\".*(\"|$)"
@@ -89,7 +89,7 @@ for old_ebuild_file in *.ebuild; do
 				array_ebuild_phases_regexp[array_ebuild_phases[i]]="^" gensub(/\_/, "\\_", "g", array_ebuild_phases[i]) "\\(\\)[[:blank:]]+"
 				array_phase_open[array_ebuild_phases[i]]=0
 			}
-			keywork_unsupported_regexp="[\~]{0,1}(alpha|arm|ppc|ppc64)"
+			keyword_unsupported_regexp="[\~]{0,1}(alpha|arm64|arm|hppa|ppc|ppc64)"
 			ebuild_message_regexp="^[[:blank:]]+(einfo|elog|ewarn)"
 			local_epatch_regexp="^[[:blank:]]+epatch.+\\\$\{FILESDIR\}.+\.patch.*"
 		}
@@ -108,11 +108,10 @@ for old_ebuild_file in *.ebuild; do
 					sub(/^/, (kde_use_flag " "), $ifield)
 			}
 			else if ($0 ~ array_variables_regexp["KEYWORDS"]) {
-				for (ifield=1; ifield<=NF; ++ifield) {
-					gsub(keywork_unsupported_regexp, "", $ifield)
-				}
-				gsub(/(\"[ ]+|[ ]+\")/, "\"")
-				gsub(/[ ]+/, " ")
+				for (ifield=1; ifield<=NF; ++ifield)
+					gsub(keyword_unsupported_regexp, "", $ifield)
+				gsub(/(\"[[:blank:]]+|[[:blank:]]+\")/, "\"")
+				gsub(/[[:blank:]]{2,}/, " ")
 			}
 			else if ($0 ~ ebuild_inherit_regexp) {
 				$0=$0 " mercurial"
@@ -181,7 +180,7 @@ for old_ebuild_file in *.ebuild; do
 
 			# Print extra stuff after the current ebuild line has been printed
 			if (rdepend_close) {
-				printf("%s%s\n", indent, "kde? ( kde-misc/kmozillahelper  )")
+				printf("%s%s\n", indent, "kde? ( kde-misc/kmozillahelper:*  )")
 				printf("%s%s\n", indent, "!!www-client/firefox\"")
 				rdepend_close=0
 			}
