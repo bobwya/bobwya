@@ -108,6 +108,7 @@ RDEPEND="
 				) )
 		) )
 		>=sys-devel/llvm-3.4.2:=[${MULTILIB_USEDEP}]
+		<sys-devel/llvm-3.8
 	)
 	opencl? (
 				app-eselect/eselect-opencl
@@ -432,7 +433,7 @@ pkg_postinst() {
 
 	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix various issues"
 	ewarn "when switching GL providers."
-	ewarn "This package can only be used in conjuction with specially patched versions of:"
+	ewarn "This package can only be used in conjuction with patched versions of:"
 	ewarn " * app-select/eselect-opengl"
 	ewarn " * x11-base/xorg-server"
 	ewarn " * x11-drivers/nvidia-drivers"
