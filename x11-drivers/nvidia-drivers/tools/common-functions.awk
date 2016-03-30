@@ -50,7 +50,7 @@ function setup_global_regexps(variables,		i)
 	end_quote_regexp="[^=]\"[[:blank:]]*$"
 	end_curly_bracket_regexp="^[[:blank:]]*\}[[:blank:]]*$"
 	closing_bracket_regexp="\\)$"
-	if_open_regexp="^[[:blank:]]*if.+then$"
+	if_open_regexp="^[[:blank:]]*if[[:blank:]]+"
 	else_regexp="^[[:blank:]]*else"
 	if_close_regexp="^[[:blank:]]*fi"
 	ebuild_version_comparision_regexp="[\\<\\=\\>\\!]+"

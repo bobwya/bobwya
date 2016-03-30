@@ -85,17 +85,29 @@ pkg_pretend() {
 		die "Unexpected \${DEFAULT_ABI} = ${DEFAULT_ABI}"
 	fi
 
-	if use kernel_linux && kernel_is ge 4 3; then
-		ewarn "Gentoo supports kernels which are supported by NVIDIA"
-		ewarn "which are limited to the following kernels:"
-		ewarn "<sys-kernel/gentoo-sources-4.3"
-		ewarn "<sys-kernel/vanilla-sources-4.3"
-		ewarn ""
-		ewarn "You are free to utilize epatch_user to provide whatever"
-		ewarn "support you feel is appropriate, but will not receive"
-		ewarn "support as a result of those changes."
-		ewarn ""
-		ewarn "Do not file a bug report about this."
+	if use kernel_linux; then
+		if kernel_is ge 4 5; then
+			ewarn "Gentoo supports kernels which are supported by NVIDIA"
+			ewarn "which are limited to the following kernels:"
+			ewarn "<sys-kernel/gentoo-sources-4.3"
+			ewarn "<sys-kernel/vanilla-sources-4.3"
+			ewarn ""
+			ewarn "You are free to utilize epatch_user to provide whatever"
+			ewarn "support you feel is appropriate, but will not receive"
+			ewarn "support as a result of those changes."
+			ewarn ""
+			ewarn "Do not file a bug report about this."
+		elif use kms && kernel_is le 4 1; then
+			ewarn "NVIDIA does not fully support kernel modesetting on"
+			ewarn "on kernel versions prior to 4.1:"
+			ewarn "<sys-kernel/gentoo-sources-4.1"
+			ewarn "<sys-kernel/vanilla-sources-4.1"
+			ewarn
+		elif use kms; then
+			einfo "USE +kms: checking kernel for KMS CONFIG recommended by NVIDIA."
+			einfo
+			CONFIG_CHECK="~CONFIG_DRM_KMS_HELPER ~CONFIG_DRM_KMS_FB_HELPER"
+		fi
 	fi
 
 	# Since Nvidia ships many different series of drivers, we need to give the user
@@ -391,7 +403,7 @@ src_install-libs() {
 	if use X; then
 		NV_GLX_LIBRARIES=(
 			"libEGL.so 1 ${GL_ROOT}"
-			"libEGL_nvidia.so 0 ${GL_ROOT}"
+			"libEGL_nvidia.so 0"
 			"libGL.so ${NV_SOVER} ${GL_ROOT}"
 			"libGLESv1_CM.so ${NV_SOVER} ${GL_ROOT}"
 			"libGLdispatch.so 0 ${GL_ROOT}"
@@ -498,6 +510,7 @@ pkg_postinst() {
 	ewarn " * media-libs/mesa"
 	ewarn " * x11-base/xorg-server"
 	ewarn "from the bobwya overlay."
+	ewarn
 }
 
 pkg_prerm() {

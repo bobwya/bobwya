@@ -9,7 +9,7 @@ script_name=$( basename "${script_path}" )
 # Global version constants
 eselect_opengl_supported_version="1.3.2"
 xorg_server_supported_version="1.16.4-r6"
-package_supported_version="304.131"
+package_unsupported_versions="96 173"
 
 # Global constants
 patched_file_comment='experimental version of ${CATEGORY}/${PN}'
@@ -33,6 +33,15 @@ for ebuild_file in *.ebuild; do
 		continue
 	fi
 
+	for package_unsupported_version in ${package_unsupported_versions}; do
+		test_ebuild_version=$(compare_ebuild_versions "nvidia-drivers-${package_unsupported_version}" "${ebuild_file}")
+		if (( test_ebuild_version == 0)) ; then
+			echo "removing ebuild file: \"${ebuild_file}\" (unsupported)"
+			rm "${ebuild_file}"
+			continue 2
+		fi
+	done
+	
 	if [[ $(compare_ebuild_versions "nvidia-drivers-${package_supported_version}" "${ebuild_file}") -eq 1 ]] ; then
 		echo "removing ebuild file: \"${ebuild_file}\" (unsupported)"
 		rm "${ebuild_file}"

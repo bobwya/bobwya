@@ -88,18 +88,30 @@ pkg_pretend() {
 		die "Unexpected \${DEFAULT_ABI} = ${DEFAULT_ABI}"
 	fi
 
-	if use kernel_linux && kernel_is ge 4 5; then
-		ewarn "Gentoo supports kernels which are supported by NVIDIA"
-		ewarn "which are limited to the following kernels:"
-		ewarn "<sys-kernel/gentoo-sources-4.5"
-		ewarn "<sys-kernel/vanilla-sources-4.5"
-		ewarn ""
-		ewarn "You are free to utilize epatch_user to provide whatever"
-		ewarn "support you feel is appropriate, but will not receive"
-		ewarn "support as a result of those changes."
-		ewarn ""
-		ewarn "Do not file a bug report about this."
-		ewarn ""
+	if use kernel_linux; then
+		if kernel_is ge 4 5; then
+			ewarn "Gentoo supports kernels which are supported by NVIDIA"
+			ewarn "which are limited to the following kernels:"
+			ewarn "<sys-kernel/gentoo-sources-4.5"
+			ewarn "<sys-kernel/vanilla-sources-4.5"
+			ewarn ""
+			ewarn "You are free to utilize epatch_user to provide whatever"
+			ewarn "support you feel is appropriate, but will not receive"
+			ewarn "support as a result of those changes."
+			ewarn ""
+			ewarn "Do not file a bug report about this."
+			ewarn ""
+		elif use kms && kernel_is le 4 1; then
+			ewarn "NVIDIA does not fully support kernel modesetting on"
+			ewarn "on kernel versions prior to 4.1:"
+			ewarn "<sys-kernel/gentoo-sources-4.1"
+			ewarn "<sys-kernel/vanilla-sources-4.1"
+			ewarn
+		elif use kms; then
+			einfo "USE +kms: checking kernel for KMS CONFIG recommended by NVIDIA."
+			einfo
+			CONFIG_CHECK="~CONFIG_DRM_KMS_HELPER ~CONFIG_DRM_KMS_FB_HELPER"
+		fi
 	fi
 
 	# Since Nvidia ships many different series of drivers, we need to give the user
@@ -124,7 +136,7 @@ pkg_setup() {
 	if use driver && use kernel_linux; then
 		MODULE_NAMES="nvidia(video:${S}/kernel)"
 		use uvm && MODULE_NAMES+=" nvidia-uvm(video:${S}/kernel)"
-		use kms && MODULE_NAMES+=" nvidia-modeset(video:${S}/kernel)"
+		use kms && MODULE_NAMES+=" nvidia-modeset(video:${S}/kernel) nvidia-drm(video:${S}/kernel)"
 
 		# This needs to run after MODULE_NAMES (so that the eclass checks
 		# whether the kernel supports loadable modules) but before BUILD_PARAMS
@@ -172,7 +184,7 @@ src_prepare() {
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
 		ewarn "need support with these patches, contact the PaX team."
-		epatch "${FILESDIR}"/${PN}-355.06-pax.patch
+		epatch "${FILESDIR}"/${PN}-364.12-pax.patch
 	fi
 
 	# Allow user patches so they can support RC kernels and whatever else
@@ -383,6 +395,9 @@ src_install() {
 
 		exeinto /etc/X11/xinit/xinitrc.d
 		newexe "${FILESDIR}"/95-nvidia-settings-r1 95-nvidia-settings
+
+		insinto /etc/vulkan/icd.d
+		doins nvidia_icd.json
 	fi
 
 	dobin ${NV_OBJ}/nvidia-bug-report.sh
@@ -416,14 +431,14 @@ src_install-libs() {
 	if use X; then
 		NV_GLX_LIBRARIES=(
 			"libEGL.so.1 ${GL_ROOT}"
-			"libEGL_nvidia.so.${NV_SOVER} ${GL_ROOT}"
+			"libEGL_nvidia.so.${NV_SOVER}"
 			"libGL.so.$(usex compat ${NV_SOVER} 1.0.0) ${GL_ROOT}"
 			"libGLESv1_CM.so.1 ${GL_ROOT}"
-			"libGLESv1_CM_nvidia.so.${NV_SOVER} ${GL_ROOT}"
+			"libGLESv1_CM_nvidia.so.${NV_SOVER}"
 			"libGLESv2.so.2 ${GL_ROOT}"
-			"libGLESv2_nvidia.so.${NV_SOVER} ${GL_ROOT}"
+			"libGLESv2_nvidia.so.${NV_SOVER}"
 			"libGLX.so.0 ${GL_ROOT}"
-			"libGLX_nvidia.so.${NV_SOVER} ${GL_ROOT}"
+			"libGLX_nvidia.so.${NV_SOVER}"
 			"libGLdispatch.so.0 ${GL_ROOT}"
 			"libOpenCL.so.1.0.0 ${CL_ROOT}"
 			"libOpenGL.so.0 ${GL_ROOT}"
@@ -527,12 +542,6 @@ pkg_postinst() {
 		elog "media-video/nvidia-settings"
 		elog
 	fi
-	if ! use compat; then
-		ewarn "USE=compat controls whether the non-GLVND libGL library is installed."
-		ewarn "Installing the GLVND libGL library (chosen option) may cause issues with"
-		ewarn "applications that rely on non-standards compliant Nvidia driver behaviour."
-	fi
-
 	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix"
 	ewarn "issues when switching GL providers."
 	ewarn "This package should only be used in conjuction with patched versions of:"
@@ -540,6 +549,7 @@ pkg_postinst() {
 	ewarn " * media-libs/mesa"
 	ewarn " * x11-base/xorg-server"
 	ewarn "from the bobwya overlay."
+	ewarn
 }
 
 pkg_prerm() {

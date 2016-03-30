@@ -11,8 +11,9 @@ BEGIN{
 	eselect_opengl_check_regexp="app\\-eselect\\\/eselect\\-opengl"
 	x11_base_xorg_server_regexp="x11\\-base\\\/xorg\\-server"
 	donvidia_call_regexp=(leading_ws_regexp "donvidia")
-	X_use_test_regexp="use X"
-	has_version_test_regexp="has_version"
+	X_use_test_regexp="use[[:blank:]]+X"
+	use_kernel_linux_regexp="use[[:blank:]]+kernel\\_linux"
+	has_version_test_regexp="has\\_version"
 	gl_root_regexp="[[:blank:]]+\\$\\{GL\\_ROOT\\}"
 	nvidia_xorg_lib_extension_dir_regexp="\\\/opengl\\\/nvidia\\\/extensions"
 	nvidia_opengl_lib_dir_regexp="\\\/opengl\\\/nvidia\\\/lib"
@@ -21,13 +22,13 @@ BEGIN{
 }
 {
 	suppress_current_line=0	
+	if_stack+=($0 ~ if_open_regexp) ? 1 : 0
+	if_stack+=($0 ~ if_close_regexp) ? -1 : 0
 
 	if (preamble_over == 0) {
 		if ($0 ~ gentoo_copyright_header_regexp)
 			sub("[[:digit:]]{4}\\-[[:digit:]]{4}", "1999-2016")
 
-		if (($0 ~ "^IUSE\=\".+\"$") && ($0 ~ "[^+]compat"))
-			use_compat_found=1
 		for (i_variable_regexp in array_variables_regexp) {
 			if ($0 ~ array_variables_regexp[i_variable_regexp]) {
 				variable_declaration_open=1
@@ -62,9 +63,35 @@ BEGIN{
 	}
 	
 	# Ebuild phase based pre-checks
-	if (array_phase_open["src_install"] == 1) {
-		if_stack+=($0 ~ if_open_regexp) ? 1 : 0
-		if_stack+=($0 ~ if_close_regexp) ? -1 : 0
+	if (array_phase_open["pkg_pretend"] == 1) {
+		if (($0 ~ if_open_regexp) && ($0 ~ use_kernel_linux_regexp) && (if_stack == 1)) {
+			kernel_linux_block_open=1
+			suppress_current_line=1
+			printf("%s%s\n", indent, "if use kernel_linux; then")
+			printf("%s%s%s\n", indent,  indent, "if kernel_is ge 4 5; then")
+		}
+		else if (kernel_linux_block_open == 1) {
+			if ($0 ~ (leading_ws_regexp "ewarn")) {
+				sub(("^" indent), (indent indent))
+			}
+			else {
+				printf("%s%s%s\n",		indent,	indent,	"elif use kms && kernel_is le 4 1; then")
+				printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn \"NVIDIA does not fully support kernel modesetting on\"")
+				printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn \"on kernel versions prior to 4.1:\"")
+				printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn \"<sys-kernel/gentoo-sources-4.1\"")
+				printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn \"<sys-kernel/vanilla-sources-4.1\"")
+				printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn")
+				printf("%s%s%s\n",		indent,	indent,	"elif use kms; then")
+				printf("%s%s%s%s\n",	indent,	indent,	indent, "einfo \"USE +kms: checking kernel for KMS CONFIG recommended by NVIDIA.\"")
+				printf("%s%s%s%s\n",	indent,	indent,	indent, "einfo")
+				printf("%s%s%s%s\n",	indent,	indent,	indent, "CONFIG_CHECK=\"~CONFIG_DRM_KMS_HELPER ~CONFIG_DRM_KMS_FB_HELPER\"")
+				printf("%s%s%s\n",		indent,	indent,	"fi")
+				kernel_linux_block_open=0
+			}
+		}
+	}
+	else if (array_phase_open["src_install"] == 1) {
+
 		gsub(nvidia_xorg_lib_extension_dir_regexp, nvidia_xorg_lib_extension_dir)
 		if (($0 ~ if_open_regexp) && ($0 ~ has_version_test_regexp) && ($0 ~ x11_base_xorg_server_regexp) && (if_stack == 2)) {
 			has_version_xorg_server_open=1
@@ -78,9 +105,7 @@ BEGIN{
 			}
 		}
 	}
-	if (array_phase_open["src_install-libs"] == 1) {
-		if_stack+=($0 ~ if_open_regexp) ? 1 : 0
-		if_stack+=($0 ~ if_close_regexp) ? -1 : 0
+	else if (array_phase_open["src_install-libs"] == 1) {
 		if (($0 ~ (if_open_regexp X_use_test_regexp)) && (if_stack == 1))
 			if_use_X_open=1
 		if (if_use_X_open == 1) {
@@ -99,15 +124,7 @@ BEGIN{
 		if (($0 ~ if_close_regexp) && (if_stack == 1))
 			if_use_X_open=0
 	}
-	if ((array_phase_open["pkg_postinst"] ==1) &&  ($0 ~ end_curly_bracket_regexp)) {
-		if (use_compat_found == 1) {
-			printf("%s%s\n", indent, "if ! use compat; then")
-			printf("%s%s%s\n", indent,  indent, "ewarn \"USE=compat controls whether the non-GLVND libGL library is installed.\"")
-			printf("%s%s%s\n", indent,  indent, "ewarn \"Installing the GLVND libGL library (chosen option) may cause issues with\"")
-			printf("%s%s%s\n", indent,  indent, "ewarn \"applications that rely on non-standards compliant Nvidia driver behaviour.\"")
-			printf("%s%s\n", indent, "fi")
-			printf("\n")
-		}
+	else if ((array_phase_open["pkg_postinst"] ==1) &&  ($0 ~ end_curly_bracket_regexp)) {
 		printf("%s%s\n", indent, "ewarn \"This is an experimental version of ${CATEGORY}/${PN} designed to fix\"")
 		printf("%s%s\n", indent, "ewarn \"issues when switching GL providers.\"")
 		printf("%s%s\n", indent, "ewarn \"This package should only be used in conjuction with patched versions of:\"")
@@ -115,6 +132,7 @@ BEGIN{
 		printf("%s%s\n", indent, "ewarn \" * media-libs/mesa\"")
 		printf("%s%s\n", indent, "ewarn \" * x11-base/xorg-server\"")
 		printf("%s%s\n", indent, "ewarn \"from the bobwya overlay.\"")
+		printf("%s%s\n", indent, "ewarn")
 	}
 	if ((array_phase_open["pkg_prerm"] == 1) || (array_phase_open["pkg_postrm"] == 1)) {
 		if ($0 ~ "eselect opengl")
@@ -127,7 +145,7 @@ BEGIN{
 
 	# Extract whitespace type and indent level for current line in the ebuild - so we step lightly!
 	if (match($0, leading_ws_regexp))
-		indent=substr($0, RSTART, RLENGTH)
+		indent=(indent == 0) ? substr($0, RSTART, RLENGTH) : indent
 
 	
 	# Ebuild phase based post-checks
