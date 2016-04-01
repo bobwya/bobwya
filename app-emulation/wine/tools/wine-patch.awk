@@ -52,10 +52,9 @@ BEGIN{
 	
 	legacy_gstreamer_wine_version_regexp=convert_version_list_to_regexp(legacy_gstreamer_wine_versions)
 	suppress_staging_wine_version_regexp=convert_version_list_to_regexp(wine_staging_unsupported_versions)
-    updated_multilib_patch_version_regexp=convert_version_list_to_regexp("1.9.5 1.9.6 9999")
-	wine_gecko_version2_44_regexp=convert_version_list_to_regexp("1.9.3 1.9.4 1.9.5 1.9.6 9999")
-	wine_mono_version4_6_0_regexp=convert_version_list_to_regexp("1.9.5 1.9.6 9999")
-	
+    updated_multilib_patch_version_regexp=convert_version_list_to_regexp("1.9.5 1.9.6 1.9.7 9999")
+	wine_gecko_version2_44_regexp=convert_version_list_to_regexp("1.9.3 1.9.4 1.9.5 1.9.6 1.9.7 9999")
+	wine_mono_version4_6_0_regexp=convert_version_list_to_regexp("1.9.5 1.9.6 1.9.7 9999")
 }
 
 {
