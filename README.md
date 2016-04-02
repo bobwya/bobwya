@@ -27,6 +27,7 @@ Testing and updating of these ebuild package build scripts is irregular. So YMMV
 	sys-apps/uksmstat : Simple tool to monitor and control UKSM.
 	sys-auth/pam_kwallet : PAM integration to automatically unlock kwallet when logging into a KDE4 Desktop Session.
 	sys-auth/polkit-explorer : Polkit Explorer reads in a Polkit .policy file, parses its XML contents, and presents the information it contains, on a more human-readable GUI window.
+	x11-apps/starfield : Reminiscence to the screensaver that shipped until WinXP... When MS Windows was still the dominant computing platform.
 	www-client/firefox-kde-opensuse : Firefox web browser, with OpenSUSE Patchset, for better KDE Desktop integration.
 
 Custom GL lib switcher implementation (these packages are masked and are NOT extensively tested) - loosely based off the Arch-Linux GL lib switcher.
