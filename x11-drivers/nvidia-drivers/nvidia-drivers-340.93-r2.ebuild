@@ -78,7 +78,7 @@ pkg_pretend() {
 	fi
 
 	if use kernel_linux; then
-		if kernel_is ge 4 5; then
+		if  kernel_is ge 4 3; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
 			ewarn "<sys-kernel/gentoo-sources-4.3"
@@ -95,10 +95,6 @@ pkg_pretend() {
 			ewarn "<sys-kernel/gentoo-sources-4.1"
 			ewarn "<sys-kernel/vanilla-sources-4.1"
 			ewarn
-		elif use kms; then
-			einfo "USE +kms: checking kernel for KMS CONFIG recommended by NVIDIA."
-			einfo
-			CONFIG_CHECK="~CONFIG_DRM_KMS_HELPER ~CONFIG_DRM_KMS_FB_HELPER"
 		fi
 	fi
 

@@ -69,7 +69,7 @@ RDEPEND="
 	wayland? ( dev-libs/wayland )
 	X? (
 		>=x11-base/xorg-server-1.16.4-r6
-		>=x11-libs/libvdpau-0.3-r1
+		>=x11-libs/libvdpau-1.0
 		multilib? (
 			>=x11-libs/libX11-1.6.2[abi_x86_32]
 			>=x11-libs/libXext-1.3.2[abi_x86_32]
@@ -88,8 +88,9 @@ pkg_pretend() {
 		die "Unexpected \${DEFAULT_ABI} = ${DEFAULT_ABI}"
 	fi
 
+	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 5; then
+		if  kernel_is ge 4 5; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
 			ewarn "<sys-kernel/gentoo-sources-4.5"
@@ -110,7 +111,7 @@ pkg_pretend() {
 		elif use kms; then
 			einfo "USE +kms: checking kernel for KMS CONFIG recommended by NVIDIA."
 			einfo
-			CONFIG_CHECK="~CONFIG_DRM_KMS_HELPER ~CONFIG_DRM_KMS_FB_HELPER"
+			CONFIG_CHECK+="~CONFIG_DRM_KMS_HELPER ~CONFIG_DRM_KMS_FB_HELPER"
 		fi
 	fi
 
@@ -121,7 +122,7 @@ pkg_pretend() {
 	nvidia-driver-check-warning
 
 	# Kernel features/options to check for
-	CONFIG_CHECK="~ZONE_DMA ~MTRR ~SYSVIPC ~!LOCKDEP"
+	CONFIG_CHECK+="~ZONE_DMA ~MTRR ~SYSVIPC ~!LOCKDEP"
 	use x86 && CONFIG_CHECK+=" ~HIGHMEM"
 
 	# Now do the above checks

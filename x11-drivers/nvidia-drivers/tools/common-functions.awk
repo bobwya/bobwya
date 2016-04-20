@@ -1,5 +1,18 @@
 # !/bin/awk
 
+function convert_version_list_to_regexp(version_list,
+	version_regexp)
+{
+	version_regexp=version_list
+	gsub("(\\.|\\-)", "\\\\&", version_regexp)
+	gsub("\\*", ".*", version_regexp)
+	gsub("[[:blank:]]+", "|", version_regexp)
+	sub("^", "^(", version_regexp)
+	sub("$", ")$", version_regexp)
+	
+	return (version_regexp)
+}
+
 function setup_ebuild_phases(ebuild_phases, array_ebuild_phases, array_phase_open, array_ebuild_phases_regexp,
 		i)
 {
@@ -42,7 +55,7 @@ function setup_global_regexps(variables,		i)
 {
 	split(variables, array_variables)
 	for (i in array_variables)
-		array_variables_regexp[array_variables[i]]=("^" gensub(/\_/, "\\_", "g", array_variables[i]) "\=\".*(\"|$)")
+		array_variables_regexp[array_variables[i]]=("^[[:blank:]]*" gensub(/\_/, "\\_", "g", array_variables[i]) "\=\".*(\"|$)")
 		
 	blank_line_regexp="^[[:blank:]]*$"
 	leading_ws_regexp="^[[:blank:]]+"

@@ -5,7 +5,7 @@ BEGIN{
 						array_ebuild_phases, array_phase_open, array_ebuild_phases_regexp)
 	
 	# Setup some regular expression constants - to hopefully make the script more readable!
-	variables="QA_TEXTRELS_x86 QA_TEXTRELS_x86_fbsd QA_TEXTRELS_amd64 QA_EXECSTACK_x86 QA_EXECSTACK_amd64 QA_WX_LOAD_x86 QA_WX_LOAD_amd64 QA_FLAGS_IGNORED_amd64 QA_FLAGS_IGNORED_x86"
+	variables="CONFIG_CHECK QA_TEXTRELS_x86 QA_TEXTRELS_x86_fbsd QA_TEXTRELS_amd64 QA_EXECSTACK_x86 QA_EXECSTACK_amd64 QA_WX_LOAD_x86 QA_WX_LOAD_amd64 QA_FLAGS_IGNORED_amd64 QA_FLAGS_IGNORED_x86"
 	setup_global_regexps(variables)
 	nvidia_glx_libraries_variable_regexp=(leading_ws_regexp "NV\\_GLX\\_LIBRARIES[+]{0,1}\\=\\(")
 	eselect_opengl_check_regexp="app\\-eselect\\\/eselect\\-opengl"
@@ -19,6 +19,7 @@ BEGIN{
 	nvidia_opengl_lib_dir_regexp="\\\/opengl\\\/nvidia\\\/lib"
 	nvidia_xorg_lib_extension_dir="\/xorg\/nvidia\/extensions"
 	nvidia_specific_lib_regexp="lib[\\-\\_[:alnum:]]*nvidia[\\-\\_[:alpha:]]*\\.so"
+	nvidia_supported_kms_version_regexp=convert_version_list_to_regexp(nvidia_supported_kms_versions)
 }
 {
 	suppress_current_line=0	
@@ -66,9 +67,11 @@ BEGIN{
 	if (array_phase_open["pkg_pretend"] == 1) {
 		if (($0 ~ if_open_regexp) && ($0 ~ use_kernel_linux_regexp) && (if_stack == 1)) {
 			kernel_linux_block_open=1
-			suppress_current_line=1
+			if (nvidia_version ~ nvidia_supported_kms_version_regexp)
+				printf("%s%s\n", indent, "CONFIG_CHECK=\"\"")
 			printf("%s%s\n", indent, "if use kernel_linux; then")
-			printf("%s%s%s\n", indent,  indent, "if kernel_is ge 4 5; then")
+			sub((use_kernel_linux_regexp "[[:blank:]]+\\&\\&"), "")
+			sub(("^" indent), (indent indent))
 		}
 		else if (kernel_linux_block_open == 1) {
 			if ($0 ~ (leading_ws_regexp "ewarn")) {
@@ -81,13 +84,19 @@ BEGIN{
 				printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn \"<sys-kernel/gentoo-sources-4.1\"")
 				printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn \"<sys-kernel/vanilla-sources-4.1\"")
 				printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn")
-				printf("%s%s%s\n",		indent,	indent,	"elif use kms; then")
-				printf("%s%s%s%s\n",	indent,	indent,	indent, "einfo \"USE +kms: checking kernel for KMS CONFIG recommended by NVIDIA.\"")
-				printf("%s%s%s%s\n",	indent,	indent,	indent, "einfo")
-				printf("%s%s%s%s\n",	indent,	indent,	indent, "CONFIG_CHECK=\"~CONFIG_DRM_KMS_HELPER ~CONFIG_DRM_KMS_FB_HELPER\"")
+				if (nvidia_version ~ nvidia_supported_kms_version_regexp) {
+					printf("%s%s%s\n",		indent,	indent,	"elif use kms; then")
+					printf("%s%s%s%s\n",	indent,	indent,	indent, "einfo \"USE +kms: checking kernel for KMS CONFIG recommended by NVIDIA.\"")
+					printf("%s%s%s%s\n",	indent,	indent,	indent, "einfo")
+					printf("%s%s%s%s\n",	indent,	indent,	indent, "CONFIG_CHECK+=\"~CONFIG_DRM_KMS_HELPER ~CONFIG_DRM_KMS_FB_HELPER\"")
+				}
 				printf("%s%s%s\n",		indent,	indent,	"fi")
-				kernel_linux_block_open=0
+				++kernel_linux_block_open
 			}
+		}
+		if ((nvidia_version ~ nvidia_supported_kms_version_regexp) && (kernel_linux_block_open == 2) && ($0 ~ array_variables_regexp["CONFIG_CHECK"])) {
+			sub("=", "+=")
+			#++kernel_linux_block_open
 		}
 	}
 	else if (array_phase_open["src_install"] == 1) {
