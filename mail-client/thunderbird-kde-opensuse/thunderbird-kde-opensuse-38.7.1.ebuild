@@ -173,10 +173,8 @@ src_prepare() {
 	EPATCH_EXCLUDE="8010_bug114311-freetype26.patch
 			8011_bug1194520-freetype261_until_moz43.patch" \
 	epatch "${WORKDIR}/firefox"
-	if [[ $(get_major_version) -le 31 ]]; then
-		# Patch for https://bugzilla.mozilla.org/show_bug.cgi?id=1143411
-		epatch "${FILESDIR}/${PN}-31.8.0-buildfix-ft-master.patch"
-	fi
+	# Patch for https://bugzilla.mozilla.org/show_bug.cgi?id=1143411
+	[[ $(get_major_version) -le 31 ]] && epatch "${FILESDIR}/${PN}-31.8.0-buildfix-ft-master.patch"
 	popd &>/dev/null || die
 
 	# Ensure that are plugins dir is enabled as default

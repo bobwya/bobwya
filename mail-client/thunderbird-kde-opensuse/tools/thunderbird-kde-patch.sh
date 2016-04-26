@@ -77,7 +77,7 @@ for old_ebuild_file in *.ebuild; do
 			popd_regexp="^[[:blank:]]*popd &>\/dev\/null"
 			ebuild_inherit_regexp="^inherit "
 			PN_regexp="thunderbird\-kde\-opensuse"
-			variables="BUILD_OBJ_DIR DESCRIPTION KEYWORDS HOMEPAGE IUSE MOZ_HTTP_URI MOZ_PV RDEPEND"
+			variables="BUILD_OBJ_DIR DESCRIPTION KEYWORDS HOMEPAGE IUSE MOZ_HTTP_URI MOZ_PV PATCHFF RDEPEND"
 			split(variables, array_variables)
 			for (i in array_variables)
 				array_variables_regexp[array_variables[i]]="^" gensub(/\_/, "\\_", "g", array_variables[i]) "\=\".*(\"|$)"
@@ -96,9 +96,12 @@ for old_ebuild_file in *.ebuild; do
 		}
 		{
 			suppress_current_line=0
-			
+
 			# Alter current ebuild line before it is printed
-			if ($0 ~ array_variables_regexp["IUSE"]) {
+			if ($0 ~ array_variables_regexp["PATCHFF"]) {
+				patch_version=gensub("^.+\"firefox\-([\.[:digit:]]+)\-patches.+\"$", "\\1", 1, $1)
+			}
+			else if ($0 ~ array_variables_regexp["IUSE"]) {
 				for (ifield=2; ifield<=NF; ++ifield) {
 					field=gensub(/^[\"\+\-]+/, "", "g", $ifield)
 					if (field > kde_use_flag)
@@ -144,15 +147,13 @@ for old_ebuild_file in *.ebuild; do
 				for (i in array_ebuild_phases)
 					array_phase_open[array_ebuild_phases[i]]=0
 			}
-			
+
 			# Ebuild phase based pre-checks
 			if (array_phase_open["src_prepare"]) {
 				gsub(/modifing/, "modifying", $0)
 				if (pushd_mozilla_open && ! popd_mozilla && ($0 ~ popd_regexp)) {
-					printf("%s%s\n",	indent, "if [[ $(get_major_version) -le 31 ]]; then")
-					printf("%s%s%s\n",	indent, indent, "# Patch for https://bugzilla.mozilla.org/show_bug.cgi?id=1143411")
-					printf("%s%s%s\n",	indent, indent, "epatch \"${FILESDIR}/${PN}-31.8.0-buildfix-ft-master.patch\"")
-					printf("%s%s\n",	indent, "fi")
+					printf("%s%s\n", indent, "# Patch for https://bugzilla.mozilla.org/show_bug.cgi?id=1143411")
+					printf("%s%s\n", indent, "[[ $(get_major_version) -le 31 ]] && epatch \"${FILESDIR}/${PN}-31.8.0-buildfix-ft-master.patch\"")
 					pushd_mozilla_open=0
 					popd_mozilla=1
 				}
@@ -171,7 +172,7 @@ for old_ebuild_file in *.ebuild; do
 					suppress_current_line=1
 				}
 			}
-			
+
 			# Process initial variables
 			if ($0 ~ array_variables_regexp["RDEPEND"]) {
 				rdepend_open=1
@@ -220,7 +221,7 @@ for old_ebuild_file in *.ebuild; do
 				printf("%s${EHG_REPO_URI}\"\n", indent)
 				homepage_close=0
 			}
-			
+
 			# Ebuild phase based post-checks
 			if (array_phase_open["src_unpack"] && ($0 ~ mozlinguas_src_unpack_regexp)) {
 				printf("%s%s\n",	indent, "if use kde; then")
@@ -242,8 +243,10 @@ for old_ebuild_file in *.ebuild; do
 				shorten_build_object_path=0
 			}
 			else if (array_phase_open["src_prepare"] && ($0 ~ pushd_mozilla_regexp)) {
-				printf("%s%s\n",	indent, "# Patch for https://bugzilla.redhat.com/show_bug.cgi?id=966424")
-				printf("%s%s\n",	indent, "epatch \"${FILESDIR}\"/${PN}-rhbz-966424.patch")
+				if (patch_version < 42.0) {
+					printf("%s%s\n",	indent, "# Patch for https://bugzilla.redhat.com/show_bug.cgi?id=966424")
+					printf("%s%s\n",	indent, "epatch \"${FILESDIR}\"/${PN}-rhbz-966424.patch")
+				}
 				printf("%s%s\n", 	indent, "if use kde; then")
 				printf("%s%s%s\n", 	indent, indent,	 "# Gecko/toolkit OpenSUSE KDE integration patchset")
 				printf("%s%s%s\n", 	indent, indent,	 "epatch \"${EHG_CHECKOUT_DIR}/mozilla-kde.patch\"")

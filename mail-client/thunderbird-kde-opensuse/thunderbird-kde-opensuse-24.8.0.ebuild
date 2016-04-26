@@ -174,10 +174,8 @@ src_prepare() {
 	EPATCH_SUFFIX="patch" \
 	EPATCH_FORCE="yes" \
 	epatch "${WORKDIR}/firefox"
-	if [[ $(get_major_version) -le 31 ]]; then
-		# Patch for https://bugzilla.mozilla.org/show_bug.cgi?id=1143411
-		epatch "${FILESDIR}/${PN}-31.8.0-buildfix-ft-master.patch"
-	fi
+	# Patch for https://bugzilla.mozilla.org/show_bug.cgi?id=1143411
+	[[ $(get_major_version) -le 31 ]] && epatch "${FILESDIR}/${PN}-31.8.0-buildfix-ft-master.patch"
 	popd &>/dev/null || die
 
 	if use crypt ; then

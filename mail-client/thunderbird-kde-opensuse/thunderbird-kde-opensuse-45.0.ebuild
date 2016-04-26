@@ -2,11 +2,11 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=5
+EAPI=6
 WANT_AUTOCONF="2.1"
 MOZ_ESR=""
-MOZ_LIGHTNING_VER="4.0.5"
-MOZ_LIGHTNING_GDATA_VER="1.9"
+MOZ_LIGHTNING_VER="4.7"
+MOZ_LIGHTNING_GDATA_VER="2.6"
 
 # This list can be updated using scripts/get_langs.sh from the mozilla overlay
 MOZ_LANGS=(ar ast be bg bn-BD br ca cs cy da de el en en-GB en-US es-AR
@@ -24,45 +24,43 @@ fi
 MOZ_P="${MOZ_PN}-${MOZ_PV}"
 
 # Enigmail version
-EMVER="1.8.2"
+EMVER="1.9.1"
 
 # Patches
 PATCH="thunderbird-38.0-patches-0.1"
-PATCHFF="firefox-38.0-patches-05"
+PATCHFF="firefox-45.0-patches-03"
 
-MOZ_HTTP_URI="http://ftp.mozilla.org/pub/${MOZ_PN}/releases"
+MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
 EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 
 MOZCONFIG_OPTIONAL_JIT="enabled"
-inherit flag-o-matic toolchain-funcs mozconfig-v6.38 makeedit multilib autotools pax-utils check-reqs nsplugins mozlinguas mercurial
+inherit flag-o-matic toolchain-funcs mozconfig-v6.45 makeedit autotools pax-utils check-reqs nsplugins mozlinguas mercurial
 
 DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="http://www.mozilla.com/en-US/thunderbird/
 	${EHG_REPO_URI}"
 
-KEYWORDS="amd64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist crypt hardened kde ldap lightning +minimal mozdom selinux"
 RESTRICT="!bindist? ( bindist )"
 
-# URI for upstream lightning package (when it is available)
-#${MOZ_HTTP_URI/${MOZ_PN}/calendar/lightning}/${MOZ_LIGHTNING_VER}/linux/lightning.xpi -> lightning-${MOZ_LIGHTNING_VER}.xpi
 PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/{${PATCH},${PATCHFF}}.tar.xz )
 SRC_URI="${SRC_URI}
-	${MOZ_HTTP_URI}/${MOZ_PV}/source/${MOZ_P}.source.tar.bz2
-	https://dev.gentoo.org/~axs/distfiles/lightning-${MOZ_LIGHTNING_VER}.tar.xz
-	lightning? ( https://dev.gentoo.org/~axs/distfiles/gdata-provider-${MOZ_LIGHTNING_GDATA_VER}.tar.xz )
+	${MOZ_HTTP_URI}/${MOZ_PV}/source/${MOZ_P}.source.tar.xz
+	https://dev.gentoo.org/~axs/distfiles/lightning-${MOZ_LIGHTNING_VER}-r1.tar.xz
+	lightning? ( https://dev.gentoo.org/~axs/distfiles/gdata-provider-${MOZ_LIGHTNING_GDATA_VER}-r1.tar.xz )
 	crypt? ( http://www.enigmail.net/download/source/enigmail-${EMVER}.tar.gz )
 	${PATCH_URIS[@]}"
 
 ASM_DEPEND=">=dev-lang/yasm-1.1"
 
 CDEPEND="
-	>=dev-libs/nss-3.21
-	>=dev-libs/nspr-4.10.10
+	>=dev-libs/nss-3.21.1
+	>=dev-libs/nspr-4.12
 	!x11-plugins/enigmail
 	crypt?  ( || (
 		( >=app-crypt/gnupg-2.0
@@ -85,11 +83,7 @@ RDEPEND="${CDEPEND}
 	kde? ( kde-misc/kmozillahelper )
 	!!mail-client/thunderbird"
 
-if [[ ${PV} =~ beta ]]; then
-	S="${WORKDIR}/comm-beta"
-else
-	S="${WORKDIR}/comm-esr${PV%%.*}"
-fi
+S="${WORKDIR}/${MOZ_P}"
 
 BUILD_OBJ_DIR="${S}/tbird"
 MAX_OBJ_DIR_LEN="80"
@@ -150,14 +144,11 @@ src_unpack() {
 
 src_prepare() {
 	# Apply our Thunderbird patchset
-	EPATCH_SUFFIX="patch" \
-	EPATCH_FORCE="yes" \
-	epatch "${WORKDIR}/thunderbird"
+	rm -f "${WORKDIR}"/thunderbird/2001_ldap_respect_cflags.patch
+	eapply "${WORKDIR}/thunderbird"
 
 	# Apply our patchset from firefox to thunderbird as well
 	pushd "${S}"/mozilla &>/dev/null || die
-	# Patch for https://bugzilla.redhat.com/show_bug.cgi?id=966424
-	epatch "${FILESDIR}"/${PN}-rhbz-966424.patch
 	if use kde; then
 		# Gecko/toolkit OpenSUSE KDE integration patchset
 		epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
@@ -168,15 +159,9 @@ src_prepare() {
 		#epatch "${FILESDIR}/${PN}-force-qt-dialog.patch"
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/mail-client/thunderbird-kde-opensuse/)
 	fi
-	EPATCH_SUFFIX="patch" \
-	EPATCH_FORCE="yes" \
-	EPATCH_EXCLUDE="8010_bug114311-freetype26.patch
-			8011_bug1194520-freetype261_until_moz43.patch" \
-	epatch "${WORKDIR}/firefox"
-	if [[ $(get_major_version) -le 31 ]]; then
-		# Patch for https://bugzilla.mozilla.org/show_bug.cgi?id=1143411
-		epatch "${FILESDIR}/${PN}-31.8.0-buildfix-ft-master.patch"
-	fi
+	eapply "${WORKDIR}/firefox"
+	# Patch for https://bugzilla.mozilla.org/show_bug.cgi?id=1143411
+	[[ $(get_major_version) -le 31 ]] && epatch "${FILESDIR}/${PN}-31.8.0-buildfix-ft-master.patch"
 	popd &>/dev/null || die
 
 	# Ensure that are plugins dir is enabled as default
@@ -202,7 +187,7 @@ src_prepare() {
 	done
 
 	# Allow user to apply any additional patches without modifying ebuild
-	epatch_user
+	eapply_user
 
 	# Confirm the version of lightning being grabbed for langpacks is the same
 	# as that used in thunderbird
