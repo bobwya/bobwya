@@ -34,8 +34,8 @@ else
 	SRC_URI="https://dl.winehq.org/wine/source/${MAJOR_V}/${MY_P}.tar.bz2 -> ${P}.tar.bz2"
 fi
 
-GV="2.44"
-MV="4.6.2"
+GV="2.40"
+MV="4.5.6"
 STAGING_P="wine-staging-${MY_PV}"
 STAGING_DIR="${WORKDIR}/${STAGING_P}${STAGING_SUFFIX}"
 STAGING_HELPER="wine-staging-git-helper-0.1.1"
@@ -67,6 +67,7 @@ IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fon
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	test? ( abi_x86_32 )
 	elibc_glibc? ( threads )
+	mono? ( abi_x86_32 )
 	pipelight? ( staging )
 	s3tc? ( staging )
 	vaapi? ( staging )
@@ -294,6 +295,7 @@ src_prepare() {
 		"${FILESDIR}"/${PN}-1.5.26-winegcc.patch #260726
 		"${FILESDIR}"/${PN}-1.7.12-osmesa-check.patch #429386
 		"${FILESDIR}"/${PN}-1.6-memset-O3.patch #480508
+		"${FILESDIR}"/${PN}-sysmacros.patch #580046
 	)
 	if [[ ${PV} != "9999" ]]; then
 		if use gstreamer; then
@@ -301,7 +303,7 @@ src_prepare() {
 			[[ "${PV}" == "1.9.1" ]] && { sed -i -e '1,71d' "${WORKDIR}/${GST_P}.patch" || die "sed"; }
 			PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
 		fi
-		PATCHES+=( "${FILESDIR}"/${PN}-1.9.5-multilib-portage.patch ) #395615
+		PATCHES+=( "${FILESDIR}"/${PN}-1.4_rc2-multilib-portage.patch ) #395615
 	else
 		# only apply gstreamer:1.0 patch to older versions of wine, using gstreamer:0.1 API/ABI
 		grep -q "gstreamer-0.10" "${S}/configure" &>/dev/null || unset GST_P

@@ -2,18 +2,18 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI="5"
+EAPI=6
 
-AUTOTOOLS_AUTORECONF=1
 PLOCALES="ar bg ca cs da de el en en_US eo es fa fi fr he hi hr hu it ja ko lt ml nb_NO nl or pa pl pt_BR pt_PT rm ro ru sk sl sr_RS@cyrillic sr_RS@latin sv te th tr uk wa zh_CN zh_TW"
 PLOCALE_BACKUP="en"
 
-inherit autotools-utils eutils fdo-mime flag-o-matic gnome2-utils l10n multilib multilib-minimal pax-utils toolchain-funcs virtualx versionator
+inherit autotools eutils fdo-mime flag-o-matic gnome2-utils l10n multilib multilib-minimal pax-utils toolchain-funcs virtualx versionator
 
 if [[ ${PV} == "9999" ]] ; then
 	EGIT_REPO_URI="git://source.winehq.org/git/wine.git http://source.winehq.org/git/wine.git"
 	inherit git-r3
 	MY_PV="${PV}"
+	STAGING_PV="${MY_PV}"
 	MY_P="${P}"
 	SRC_URI=""
 	#KEYWORDS=""
@@ -29,16 +29,17 @@ else
 	else
 		KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
 	fi
+	[[ "${MY_PV}" =~ ^1\.8\.[[:digit:]]+$ ]] && STAGING_SUFFIX="-unofficial"
 	MY_P="${PN}-${MY_PV}"
 	SRC_URI="https://dl.winehq.org/wine/source/${MAJOR_V}/${MY_P}.tar.bz2 -> ${P}.tar.bz2"
 fi
 
-GV="2.40"
-MV="4.5.6"
+GV="2.44"
+MV="4.6.0"
 STAGING_P="wine-staging-${MY_PV}"
-STAGING_DIR="${WORKDIR}/${STAGING_P}"
+STAGING_DIR="${WORKDIR}/${STAGING_P}${STAGING_SUFFIX}"
+STAGING_HELPER="wine-staging-git-helper-0.1.1"
 WINE_GENTOO="wine-gentoo-2015.03.07"
-GST_P="wine-1.7.55-gstreamer-v5"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
 HOMEPAGE="http://www.winehq.org/"
 SRC_URI="${SRC_URI}
@@ -47,23 +48,23 @@ SRC_URI="${SRC_URI}
 		abi_x86_64? ( https://dl.winehq.org/wine/wine-gecko/${GV}/wine_gecko-${GV}-x86_64.msi )
 	)
 	mono? ( https://dl.winehq.org/wine/wine-mono/${MV}/wine-mono-${MV}.msi )
-	gstreamer010? ( https://dev.gentoo.org/~np-hardass/distfiles/${PN}/${GST_P}.patch.bz2 )
 	https://dev.gentoo.org/~tetromino/distfiles/${PN}/${WINE_GENTOO}.tar.bz2"
 
 if [[ ${PV} == "9999" ]] ; then
 	STAGING_EGIT_REPO_URI="git://github.com/wine-compholio/wine-staging.git"
+	SRC_URI="${SRC_URI}
+	staging? ( https://github.com/bobwya/${STAGING_HELPER%-*}/archive/${STAGING_HELPER##*-}.tar.gz -> ${STAGING_HELPER}.tar.gz )"
 else
 	SRC_URI="${SRC_URI}
-	staging? ( https://github.com/wine-compholio/wine-staging/archive/v${MY_PV}.tar.gz -> ${STAGING_P}.tar.gz )"
+	staging? ( https://github.com/wine-compholio/wine-staging/archive/v${MY_PV}${STAGING_SUFFIX}.tar.gz -> ${STAGING_P}.tar.gz )"
 fi
 
 LICENSE="LGPL-2.1"
 SLOT="0"
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer010 +jpeg +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test +threads +truetype +udisks v4l vaapi +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test +threads +truetype +udisks v4l vaapi +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	test? ( abi_x86_32 )
 	elibc_glibc? ( threads )
-	mono? ( abi_x86_32 )
 	pipelight? ( staging )
 	s3tc? ( staging )
 	vaapi? ( staging )
@@ -81,9 +82,9 @@ COMMON_DEPEND="
 	fontconfig? ( media-libs/fontconfig:=[${MULTILIB_USEDEP}] )
 	gphoto2? ( media-libs/libgphoto2:=[${MULTILIB_USEDEP}] )
 	openal? ( media-libs/openal:=[${MULTILIB_USEDEP}] )
-	gstreamer010? (
-		media-libs/gstreamer:0.10[${MULTILIB_USEDEP}]
-		media-libs/gst-plugins-base:0.10[${MULTILIB_USEDEP}]
+	gstreamer? (
+		media-libs/gstreamer:1.0[${MULTILIB_USEDEP}]
+		media-plugins/gst-plugins-meta:1.0[${MULTILIB_USEDEP}]
 	)
 	X? (
 		x11-libs/libXcursor[${MULTILIB_USEDEP}]
@@ -143,7 +144,7 @@ RDEPEND="${COMMON_DEPEND}
 	dos? ( games-emulation/dosbox )
 	perl? ( dev-lang/perl dev-perl/XML-Simple )
 	s3tc? ( >=media-libs/libtxc_dxtn-1.0.1-r1[${MULTILIB_USEDEP}] )
-	samba? ( >=net-fs/samba-3.0.25 )
+	samba? ( >=net-fs/samba-3.0.25[winbind] )
 	selinux? ( sec-policy/selinux-wine )
 	udisks? ( sys-fs/udisks:2 )
 	pulseaudio? ( realtime? ( sys-auth/rtkit ) )"
@@ -194,8 +195,8 @@ wine_build_environment_pretests() {
 
 	# bug #549768
 	if use abi_x86_64 && [[ $(gcc-major-version) = 5 && $(gcc-minor-version) -le 2 ]]; then
-		einfo "Checking for gcc-5.1/5.2 MS X86_64 ABI compiler bug ..."
-		$(tc-getCC) -O2 "${FILESDIR}/pr66838.c" -o "${T}/pr66838" || die "compilation failed: pr66838 test"
+		einfo "Checking for gcc-5.1/gcc-5.2 MS X86_64 ABI compiler bug ..."
+		$(tc-getCC) -O2 "${FILESDIR}/pr66838.c" -o "${T}/pr66838" || die "cc compilation failed: pr66838 test"
 		# Run in subshell to prevent "Aborted" message
 		if ! ( "${T}/pr66838" || false )&>/dev/null; then
 			eerror "gcc-5.1/5.2 MS X86_64 ABI compiler bug detected."
@@ -207,10 +208,6 @@ wine_build_environment_pretests() {
 			return 1
 		fi
 	fi
-}
-
-wine_build_environment_setup_tests() {
-	[[ ${MERGE_TYPE} = "binary" ]] && return 0
 
 	# bug #574044
 	if use abi_x86_64 && [[ $(gcc-major-version) = 5 && $(gcc-minor-version) = 3 ]]; then
@@ -233,40 +230,57 @@ pkg_pretend() {
 	wine_build_environment_pretests || die
 }
 
-pkg_setup() {
-	wine_build_environment_setup_tests || die
-
-	if [[ ${PV} == "9999" ]]; then
-		if use staging; then
-			ewarn "You have enabled a live ebuild of Wine with USE +staging."
-			ewarn "All git branch and commit references will link to the Wine-Staging git tree."
-		fi
-		if [[ -z "${EGIT_BRANCH}" ]] && [[ -z "${EGIT_COMMIT}" ]]; then
-			use staging && einfo "By default the Wine-Staging git tree branch master will be used."
-			use staging || einfo "By default the Wine git tree branch master will be used."
-		fi
-	fi
-}
-
 src_unpack() {
-	if [[ ${PV} == "9999" ]] ; then
-		# Reference either Wine or Wine Staging git branch (depending on +staging use flag)
-		EGIT_BRANCH=${EGIT_BRANCH:-master}
-		if use staging; then
-			EGIT_REPO_URI=${STAGING_EGIT_REPO_URI} EGIT_CHECKOUT_DIR=${STAGING_DIR} git-r3_src_unpack
-			local WINE_COMMIT=$("${STAGING_DIR}/patches/patchinstall.sh" --upstream-commit)
-			[[ ! ${WINE_COMMIT} =~ [[:xdigit:]]{40} ]] && die "Failed to get Wine git commit corresponding to Wine-Staging git commit ${EGIT_VERSION}."
-			einfo "Building Wine commit ${WINE_COMMIT} referenced by Wine-Staging commit ${EGIT_VERSION} ..."
-			EGIT_COMMIT="${WINE_COMMIT}"
-		fi
+	# Fully Mirror both git trees, Wine & Wine-Staging, so we can access commits in all branches
+	[[ ${PV} == "9999" ]] && EGIT_MIN_CLONE_TYPE="mirror"
+	if [[ ${PV} == "9999" ]] && ! use staging; then
 		EGIT_CHECKOUT_DIR="${S}" git-r3_src_unpack
+	elif [[ ${PV} == "9999" ]] && use staging; then
+		unpack "${STAGING_HELPER}.tar.gz"
+		if [[ ! -z "${EGIT_STAGING_COMMIT}" || ! -z "${EGIT_STAGING_BRANCH}" ]]; then
+			# References are relative to Wine-Staging git tree (pre-checkout Wine-Staging git tree)
+			# Use env variables "EGIT_STAGING_COMMIT" or "EGIT_STAGING_BRANCH" to reference Wine-Staging git tree
+			ebegin "Building Wine git with USE +staging. You have specified a Wine-Staging git reference..."
+			(
+				source "${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh" || die
+				[[ ! -z "${EGIT_STAGING_COMMIT}" ]] && WINE_STAGING_REF="commit EGIT_STAGING_COMMIT"
+				[[   -z "${EGIT_STAGING_COMMIT}" ]] && WINE_STAGING_REF="branch EGIT_STAGING_BRANCH"
+				ewarn "Building Wine against Wine-Staging git ${WINE_STAGING_REF}=\"${EGIT_STAGING_COMMIT:-${EGIT_STAGING_BRANCH}}\" ."
+				EGIT_BRANCH="${EGIT_STAGING_BRANCH:-master}"
+				EGIT_COMMIT="${EGIT_STAGING_COMMIT:-}"
+				unset ${PN}_LIVE_{REPO,BRANCH,COMMIT};
+				EGIT_REPO_URI="${STAGING_EGIT_REPO_URI}" EGIT_CHECKOUT_DIR="${STAGING_DIR}" git-r3_src_unpack
+				WINE_STAGING_COMMIT="${EGIT_VERSION}"
+				get_upstream_wine_commit  "${STAGING_DIR}" "${WINE_STAGING_COMMIT}" "WINE_COMMIT"
+				EGIT_COMMIT="${WINE_COMMIT}"
+				EGIT_CHECKOUT_DIR="${S}" git-r3_src_unpack
+				einfo "Building Wine commit \"${WINE_COMMIT}\" referenced by Wine-Staging commit \"${WINE_STAGING_COMMIT}\" ..."
+			)
+			eend $?
+		else
+			# References are relative to Wine git tree (post-checkout Wine-Staging git tree)
+			ebegin "Building Wine git with USE +staging. You are using a Wine git reference..."
+			(
+				source "${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh" || die
+				EGIT_CHECKOUT_DIR="${S}" git-r3_src_unpack
+				WINE_COMMIT="${EGIT_VERSION}"
+				unset ${PN}_LIVE_{REPO,BRANCH,COMMIT} EGIT_COMMIT;
+				EGIT_REPO_URI="${STAGING_EGIT_REPO_URI}" EGIT_CHECKOUT_DIR="${STAGING_DIR}" git-r3_src_unpack
+				if ! walk_wine_staging_git_tree "${STAGING_DIR}" "${S}" "${WINE_COMMIT}" "WINE_STAGING_COMMIT" ; then
+					find_closest_wine_commit "${STAGING_DIR}" "${S}" "WINE_COMMIT" "WINE_STAGING_COMMIT" "WINE_COMMIT_OFFSET"
+					(($? == 0)) && display_closest_wine_commit_message "${WINE_COMMIT}" "${WINE_STAGING_COMMIT}" "${WINE_COMMIT_OFFSET}"
+					die "Failed to find Wine-Staging git commit corresponding to supplied Wine git commit \"${WINE_COMMIT}\" ."
+				fi
+				einfo "Building Wine-Staging commit \"${WINE_STAGING_COMMIT}\" corresponding to Wine commit \"${WINE_COMMIT}\" ..."
+			)
+			eend $?
+		fi
 	else
 		unpack ${P}.tar.bz2
 		use staging && unpack "${STAGING_P}.tar.gz"
 	fi
 
 	unpack "${WINE_GENTOO}.tar.bz2"
-	use gstreamer010 && unpack "${GST_P}.patch.bz2"
 
 	l10n_find_plocales_changes "${S}/po" "" ".po"
 }
@@ -277,38 +291,18 @@ src_prepare() {
 		"${FILESDIR}"/${PN}-1.5.26-winegcc.patch #260726
 		"${FILESDIR}"/${PN}-1.7.12-osmesa-check.patch #429386
 		"${FILESDIR}"/${PN}-1.6-memset-O3.patch #480508
+		"${FILESDIR}"/${PN}-sysmacros.patch #580046
 	)
 	if [[ ${PV} != "9999" ]]; then
-		PATCHES+=( "${FILESDIR}"/${PN}-1.4_rc2-multilib-portage.patch ) #395615
+		PATCHES+=( "${FILESDIR}"/${PN}-1.9.5-multilib-portage.patch ) #395615
 	else
-		# Do not patch wine live ebuild - allows building against older Wine / Wine-Staging commits
-		# bug #395615
-		ebegin "Running \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" ..."
+		#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
+		ebegin "sh running script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" ..."
 		(
 			source "${FILESDIR}/${PN}-9999-multilib-portage-sed.sh" ||
-				die "Failed bash script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\""
+				die "sh failed script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" ."
 		)
 		eend $?
-	fi
-	if use gstreamer010; then
-		# See http://bugs.winehq.org/show_bug.cgi?id=30557
-		ewarn "Applying experimental patch to fix GStreamer support. Note that"
-		ewarn "this patch has been reported to cause crashes in certain games."
-
-		# Wine-Staging 1.7.38 "ntdll: Fix race-condition when threads are killed
-		# during shutdown" patch and "Added patch to implement shared memory
-		# wineserver communication for various user32 functions" prevents the
-		# gstreamer patch from applying cleanly.
-		# So undo the staging patch, apply gstreamer, then re-apply rebased staging
-		# patch on top.
-		if use staging; then
-			PATCHES+=(
-				"${FILESDIR}/${PN}-1.7.55-gstreamer-v5-staging-pre.patch"
-				"${WORKDIR}/${GST_P}.patch"
-				"${FILESDIR}/${PN}-1.7.55-gstreamer-v5-staging-post.patch" )
-		else
-			PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
-		fi
 	fi
 	if use staging; then
 		ewarn "Applying the Wine-Staging patchset. Any bug reports to the"
@@ -325,8 +319,14 @@ src_prepare() {
 			source "${STAGING_DIR}/patches/patchinstall.sh" || die "Failed to apply Wine-Staging patches."
 		)
 		eend $?
+
+		if [[ ! -z "${STAGING_SUFFIX}" ]]; then
+			sed -i -e 's/(Staging)/(Staging'"${STAGING_SUFFIX}"')/' libs/wine/Makefile.in || die "sed"
+		fi
 	fi
-	autotools-utils_src_prepare
+
+	default
+	eautoreconf
 
 	# Modification of the server protocol requires regenerating the server requests
 	if [[ "$(md5sum server/protocol.def)" != "${md5}" ]]; then
@@ -365,7 +365,7 @@ multilib_src_configure() {
 		$(use_enable gecko mshtml)
 		$(use_with gphoto2 gphoto)
 		$(use_with gsm)
-		$(use_with gstreamer010 gstreamer)
+		$(use_with gstreamer)
 		--without-hal
 		$(use_with jpeg)
 		$(use_with ldap)
@@ -499,6 +499,7 @@ pkg_postinst() {
 		ewarn "the existence of a .NET implementation, so you will likely need"
 		ewarn "to install an external one, like via winetricks"
 	fi
+
 }
 
 pkg_postrm() {

@@ -1,5 +1,18 @@
 # !/bin/awk
 
+function convert_version_list_to_regexp(version_list,
+	version_regexp)
+{
+	version_regexp=version_list
+	gsub("(\\.|\\-)", "\\\\&", version_regexp)
+	gsub("\\*", ".*", version_regexp)
+	gsub("[[:blank:]]+", "|", version_regexp)
+	sub("^", "^(", version_regexp)
+	sub("$", ")$", version_regexp)
+	
+	return (version_regexp)
+}
+
 function setup_ebuild_phases(ebuild_phases, array_ebuild_phases, array_phase_open, array_ebuild_phases_regexp,
 		i)
 {

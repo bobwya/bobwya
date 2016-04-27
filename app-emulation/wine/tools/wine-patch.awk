@@ -1,25 +1,12 @@
 # !/bin/awk
 
-function convert_version_list_to_regexp(version_list,
-	version_regexp)
-{
-	version_regexp=version_list
-	gsub("\\.", "\\.", version_regexp)
-	gsub("\\*", ".*", version_regexp)
-	gsub("[[:blank:]]+", "|", version_regexp)
-	sub("^", "^(", version_regexp)
-	sub("$", ")$", version_regexp)
-	
-	return (version_regexp)
-}
-
 BEGIN{
 	setup_ebuild_phases("wine_build_environment_check pkg_pretend pkg_setup src_unpack src_prepare src_configure multilib_src_configure multilib_src_test multilib_src_install_all pkg_preinst pkg_postinst pkg_prerm pkg_postrm",
 						array_ebuild_phases, array_phase_open, array_ebuild_phases_regexp)
-	
+
 	# Setup some regular expression constants - to hopefully make the script more readable!
 	ebuild_inherit_regexp="^inherit "
-	variables="COMMON_DEPEND RDEPEND DEPEND IUSE GST_P GV KEYWORDS MV STAGING_P STAGING_DIR REQUIRED_USE SRC_URI"
+	variables="COMMON_DEPEND RDEPEND DEPEND IUSE GST_P GV KEYWORDS MV STAGING_P STAGING_DIR STAGING_EGIT_REPO_URI REQUIRED_USE SRC_URI"
 	setup_global_regexps(variables)
 	emake_target_regexp="emake install DESTDIR=\"\\$\\{D\\}\""
 	eselect_check_regexp="^[[:blank:]]+[\\>\\=\\>]+app\\-eselect\\\/eselect\\-opengl"
@@ -29,6 +16,7 @@ BEGIN{
 	gstreamer_full_atom_match="[<|>]\{0,1\}[=]\{0,1\}media-libs\\/gstreamer:[\.[:digit:]]+"
 	gst_plugins_base_full_atom_match="[<|>]\{0,1\}[=]\{0,1\}media-libs\\/gst-plugins-base:[\.[:digit:]]+"
 	patchset_regexp="local[[:blank:]]+PATCHES=\\("
+	mono_use_enabled_regexp="mono\\?[[:blank:]]+"
 	staging_use_enabled_regexp="staging\\?[[:blank:]]+"
 	staging_use_test_regexp="use[[:blank:]]+staging"
 	gstreamer_use_enabled_regexp="gstreamer\\?[[:blank:]]+"
@@ -36,29 +24,37 @@ BEGIN{
 	pipelight_use_test_regexp="use[[:blank:]]+pipelight"
 	abi_x86_64_use_test_regexp="use[[:blank:]]+abi\\_x86\\_64"
 	abi_eq_amd64_regexp="\\$\\{ABI\\}[[:blank:]]+==[[:blank:]]+amd64"
+	unpack_regexp=(leading_ws_regexp "unpack[[:blank:]]+")
 	configure_use_with_regexp="\\$\\(use_with[[:blank:]].+\\)"
 	package_regexp="\\$\\{P\\}"
 	package_version_variable_regexp="\\$\\{PV\\}"
 	staging_use_flags_regexp="[\+]{0,1}(pipelight|s3tc|staging|vaapi)"
 	add_gst_patch_regexp="PATCHES\\+\\=\\( \"\\$\\{WORKDIR\\}\\/\\$\\{GST\\_\\P}\\.patch\" \\)"
+	gstreamer_patch_bzip_regexp="\\$\\{GST_P\\}\\.patch\\.bz2"
+	gstreamer_patch_regexp="\\$\\{WORKDIR\\}\\/\\$\\{GST\\_\\P\\}\\.patch"
+	gstreamer_1_0_patch="wine-1.8-gstreamer-1.0"
+	gstreamer_patch_uri_regexp="https\\:\\/\\/\\dev\\.gentoo\\.org\\/\\~np\\-hardass\\/distfiles\\/\\$\\{PN\\}\\/\\$\\{GST\\_P\\}\\.patch\\.bz2$"
 	new_multilib_patch_version="\"${FILESDIR}\"/${PN}-1.9.5"
     multilib_patch_regexp="multilib\\-portage\\.patch"
+	sysmacros_patch_regexp="sysmacros\\.patch"
+	autotools_utils_src_prepare_regexp=(leading_ws_regexp "autotools\\-utils\\_src\\_prepare")
 	wine_mono_version_regexp="[[:digit:]]+\\.[[:digit:]]+\\.[[:digit:]]+"
-	wine_mono_version4_6_0="4.6.0"
 	wine_gecko_version_regexp="[[:digit:]]+\\.[[:digit:]]+"
-	wine_gecko_version2_44="2.44"
 	gentoo_excluded_bugs_regexp="bug[[:blank:]]+\\#(549768|574044)"
 	gcc5_tests_regexp="[[:blank:]]+\\$\\(gcc\\-major\\-version\\)[[:blank:]]+=[[:blank:]]+5[[:blank:]]+"
-	
-	legacy_gstreamer_wine_version_regexp=convert_version_list_to_regexp(legacy_gstreamer_wine_versions)
+
+	legacy_gstreamer_patch_1_0_version_regexp=convert_version_list_to_regexp(legacy_gstreamer_patch_1_0_versions)
 	suppress_staging_wine_version_regexp=convert_version_list_to_regexp(wine_staging_unsupported_versions)
-    updated_multilib_patch_version_regexp=convert_version_list_to_regexp("1.9.5 1.9.6 1.9.7 9999")
-	wine_gecko_version2_44_regexp=convert_version_list_to_regexp("1.9.3 1.9.4 1.9.5 1.9.6 1.9.7 9999")
-	wine_mono_version4_6_0_regexp=convert_version_list_to_regexp("1.9.5 1.9.6 1.9.7 9999")
+    updated_multilib_patch_version_regexp=convert_version_list_to_regexp(updated_multilib_patch_wine_versions)
+	no_sysmacros_patch_wine_version_regexp=convert_version_list_to_regexp(no_sysmacros_patch_wine_versions)
+	wine_gecko_version2_44_regexp=convert_version_list_to_regexp(wine_gecko_version2_44_wine_versions)
+	wine_mono_version4_6_0_regexp=convert_version_list_to_regexp(wine_mono_version4_6_0_wine_versions)
+	wine_mono_version4_6_2_regexp=convert_version_list_to_regexp(wine_mono_version4_6_2_wine_versions)
+	wine_staging_helper="wine-staging-git-helper-0.1.1"
 }
 
 {
-	suppress_current_line=0	
+	suppress_current_line=0
 
 	if_stack+=($0 ~ if_open_regexp) ? 1 : 0
 	if_stack+=($0 ~ if_close_regexp) ? -1 : 0
@@ -69,70 +65,59 @@ BEGIN{
 	}
 	else if ((if_check_pv9999_open > 0) && (if_check_pv9999_open == if_stack) && ($0 ~ else_regexp))
 		else_check_pv9999_open=1
-				
+
 	if (preamble_over == 0) {
 		if ((if_check_pv9999_open == 1) && ($0 ~ "EGIT_BRANCH=\"master\""))
 			suppress_current_line=1
-			
+
 		if ($0 ~ array_variables_regexp["SRC_URI"])
 			src_uri_open=1
-		
+
 		if (src_uri_open == 1) {
 			if ($0 ~ "\"https\:.+\"")
 				sub("\\$\\{P\\}.tar.bz2\"$", "${MY_P}.tar.bz2 -> ${P}.tar.bz2\"")
-			
+
 			if ($0 ~ staging_use_enabled_regexp)
-				sub(package_version_variable_regexp, "${MY_PV}")
-			
-			if ($0 ~ gstreamer_use_enabled_regexp) {
-				if (wine_version ~ legacy_gstreamer_wine_version_regexp) {
-					sub("gstreamer", "gstreamer010")
+				sub(package_version_variable_regexp, "${MY_PV}${STAGING_SUFFIX}")
+
+			if (gstreamer_patch_uri_found == 0) {
+				if (wine_version ~ legacy_gstreamer_patch_1_0_version_regexp) {
+					gstreamer_patch_uri_found+=sub(gstreamer_patch_uri_regexp, "gstreamer? ( & )")
 				}
 				else {
-					sub((gstreamer_use_enabled_regexp bracketed_expression_regexp), "")
+					gstreamer_patch_uri_found+=sub(gstreamer_patch_uri_regexp, "")
 					if ($0 ~ blank_line_regexp)
 						suppress_current_line=1
 				}
 			}
 		}
-		
+
 		if ((wine_version ~ wine_gecko_version2_44_regexp) && ($0 ~ array_variables_regexp["GV"]))
-			sub(wine_gecko_version_regexp, wine_gecko_version2_44)
+			sub(wine_gecko_version_regexp, "2.44")
 		if ((wine_version ~ wine_mono_version4_6_0_regexp) && ($0 ~ array_variables_regexp["MV"]))
-			sub(wine_mono_version_regexp, wine_mono_version4_6_0)
-			
-		if (($0 ~ array_variables_regexp["IUSE"]) && (wine_version ~ legacy_gstreamer_wine_version_regexp))
-			sub("gstreamer", "gstreamer010")
+			sub(wine_mono_version_regexp, "4.6.0")
+		if ((wine_version ~ wine_mono_version4_6_2_regexp) && ($0 ~ array_variables_regexp["MV"]))
+			sub(wine_mono_version_regexp, "4.6.2")
 
 		if (($0 ~ array_variables_regexp["COMMON_DEPEND"]) || ($0 ~ array_variables_regexp["RDEPEND"]) || ($0 ~ array_variables_regexp["DEPEND"]))
 			depend_assignment_open=1
-
-		# Process gstreamer dependencies in *DEPEND="" variables
-		if ((depend_assignment_open == 1) && ($0 ~ (gstreamer_use_enabled_regexp bracketed_expression_open_regexp)))
-			gstreamer_expression_open=1
-		if (gstreamer_expression_open == 1) {
-			if (wine_version ~ legacy_gstreamer_wine_version_regexp)
-				sub(gstreamer_use_enabled_regexp, "gstreamer010? ")
-			else {
-				sub(gstreamer_full_atom_match, "media-libs\/gstreamer:1.0")
-				sub(gst_plugins_base_full_atom_match, "media-plugins\/gst-plugins-meta:1.0")
-			}
-			if ($0 ~ bracketed_expression_close_regexp)
-				gstreamer_expression_open=0
-		}
 
 		if ($0 ~ test_gstreamer_or_staging_regexp)
 			suppress_current_line=1
 		if ($0 ~ array_variables_regexp["KEYWORDS"])
 			suppress_current_line=1
-		if (($0 ~ array_variables_regexp["GST_P"]) && (wine_version !~ legacy_gstreamer_wine_version_regexp))
+		if (($0 ~ array_variables_regexp["GST_P"]) && (wine_version !~ legacy_gstreamer_patch_1_0_version_regexp))
 			suppress_current_line=1
 
 		if ($0 ~ array_variables_regexp["STAGING_P"])
 			sub(package_version_variable_regexp, "${MY_PV}")
-
+		if ($0 ~ array_variables_regexp["STAGING_DIR"])
+			sub("\".+\"$", "\"${WORKDIR}/${STAGING_P}${STAGING_SUFFIX}\"")
 		if ((src_uri_open == 1) && ($0 ~ end_quote_regexp))
 			src_uri_open=0
+
+		if ($0 ~ array_variables_regexp["REQUIRED_USE"])
+			required_use_assignment_open=1
 		if (wine_version ~ suppress_staging_wine_version_regexp) {
 			if (($0 ~ array_variables_regexp["STAGING_P"]) || ($0 ~ array_variables_regexp["STAGING_DIR"]))
 				suppress_current_line=1
@@ -140,17 +125,24 @@ BEGIN{
 				suppress_current_line=1
 			if ($0 ~ array_variables_regexp["IUSE"])
 				gsub((quote_or_ws_seperator_regexp staging_use_flags_regexp quote_or_ws_seperator_regexp), " ")
-				
-			if ($0 ~ array_variables_regexp["REQUIRED_USE"])
-				required_use_assignment_open=1
-			if (((required_use_assignment_open == 1) || (depend_assignment_open == 1)) && ($0 ~ (quote_or_ws_seperator_regexp staging_use_flags_regexp "\\?"))) {
-				gsub(staging_use_flags_regexp "\\?[[:blank:]]" bracketed_expression_regexp, "")
-				if ($0 ~ blank_line_regexp)
+
+			if ((required_use_assignment_open == 1) || (depend_assignment_open == 1)) {
+				if (($0 ~ (quote_or_ws_seperator_regexp staging_use_flags_regexp "\\?")) && (gsub((staging_use_flags_regexp "\\?[[:blank:]]" bracketed_expression_regexp), "") > 0) && ($0 ~ blank_line_regexp))
 					suppress_current_line=1
 			}
-			if ($0 ~ end_quote_regexp)
-				required_use_assignment_open=0
 		}
+		else if ((else_check_pv9999_open == 1) && (if_check_pv9999_count == 2) && (staging_git_helper == 0)) {
+			printf("%s%s\n", indent, "SRC_URI=\"${SRC_URI}")
+			printf("%s%s\n", indent, "staging? ( https://github.com/bobwya/${STAGING_HELPER%-*}/archive/${STAGING_HELPER##*-}.tar.gz -> ${STAGING_HELPER}.tar.gz )\"")
+			++staging_git_helper
+		}
+
+		if ((required_use_assignment_open == 1) && ((wine_version ~ wine_mono_version4_6_0_regexp) || (wine_version ~ wine_mono_version4_6_2_regexp))) {
+			if (sub((mono_use_enabled_regexp bracketed_expression_regexp), "") && ($0 ~ blank_line_regexp))
+				suppress_current_line=1
+		}
+		if ((required_use_assignment_open == 1) && ($0 ~ end_quote_regexp))
+			required_use_assignment_open=0
 	}
 
 	# Ebuild phase process opening stanzas for functions
@@ -179,13 +171,13 @@ BEGIN{
 	else if (array_phase_open["pkg_pretend"] == 1) {
 		if (wine_build_environment_pretests == 0) {
 			wine_build_environment_pretests=1
-			
+
 			printf("%s\n",		"wine_build_environment_pretests() {")
 			printf("%s%s\n\n",	indent, "[[ ${MERGE_TYPE} = \"binary\" ]] && return 0")
 			printf("%s%s\n",	indent, "# bug #549768")
 			printf("%s%s\n",	indent, "if use abi_x86_64 && [[ $(gcc-major-version) = 5 && $(gcc-minor-version) -le 2 ]]; then")
-			printf("%s%s%s\n",	indent, indent, "einfo \"Checking for gcc-5.1/5.2 MS X86_64 ABI compiler bug ...\"")
-			printf("%s%s%s\n",	indent, indent, "$(tc-getCC) -O2 \"${FILESDIR}/pr66838.c\" -o \"${T}/pr66838\" || die \"compilation failed: pr66838 test\"")
+			printf("%s%s%s\n",	indent, indent, "einfo \"Checking for gcc-5.1/gcc-5.2 MS X86_64 ABI compiler bug ...\"")
+			printf("%s%s%s\n",	indent, indent, "$(tc-getCC) -O2 \"${FILESDIR}/pr66838.c\" -o \"${T}/pr66838\" || die \"cc compilation failed: pr66838 test\"")
 			printf("%s%s%s\n",	indent, indent, "# Run in subshell to prevent \"Aborted\" message")
 			printf("%s%s%s\n",	indent, indent, "if ! ( \"${T}/pr66838\" || false )&>/dev/null; then")
 			printf("%s%s%s%s\n",indent, indent, indent, "eerror \"gcc-5.1/5.2 MS X86_64 ABI compiler bug detected.\"")
@@ -196,15 +188,7 @@ BEGIN{
 			printf("%s%s%s%s\n",indent, indent, indent, "eerror")
 			printf("%s%s%s%s\n",indent, indent, indent, "return 1")
 			printf("%s%s%s\n",	indent, indent, "fi")
-			printf("%s%s\n",	indent, "fi")
-			printf("%s\n\n",	"}")
-		}
-		if (wine_build_environment_test == 0) {
-			wine_build_environment_test=1
-
-			printf("%s\n",		"wine_build_environment_setup_tests() {")
-			printf("%s%s\n\n",	indent, "[[ ${MERGE_TYPE} = \"binary\" ]] && return 0")
-
+			printf("%s%s\n\n",	indent, "fi")
 			printf("%s%s\n",	indent, "# bug #574044")
 			printf("%s%s\n",	indent, "if use abi_x86_64 && [[ $(gcc-major-version) = 5 && $(gcc-minor-version) = 3 ]]; then")
 			printf("%s%s%s\n",	indent, indent, "einfo \"Checking for gcc-5.3.0 X86_64 misaligned stack compiler bug ...\"")
@@ -219,7 +203,7 @@ BEGIN{
 			printf("%s%s%s%s\n",indent, indent, indent, "ewarn")
 			printf("%s%s%s\n",	indent, indent, "fi")
 			printf("%s%s\n",	indent, "fi")
-	
+
 			printf("}\n\n")
 		}
 
@@ -227,35 +211,92 @@ BEGIN{
 			wine_build_environment_prechecks=1
 	}
 	else if (array_phase_open["pkg_setup"] == 1) {
-		if (sub("wine_build_environment_check", "wine_build_environment_setup_tests") == 1)
-			wine_build_environment_tests=1
-	} 
+		suppress_current_line=1
+	}
 	else if (array_phase_open["src_unpack"] == 1) {
-		if ((if_check_pv9999_open > 0) && (else_check_pv9999_open == 0) && ($0 !~ check_for_pv9999_regexp))
+		if ((if_check_pv9999_open > 0) && (else_check_pv9999_open == 0))
 			suppress_current_line=1
-		if ((wine_version ~ suppress_staging_wine_version_regexp) && ($0 ~ (leading_ws_regexp staging_use_test_regexp)))
-			suppress_current_line=1
-		if ($0 ~ gstreamer_use_test_regexp) {
-			if (wine_version ~ legacy_gstreamer_wine_version_regexp)
-				sub("gstreamer", "gstreamer010")
-			else
+		if ((if_check_pv9999_open > 0) && (do_git_unpack_replaced == 0)) {
+			if (wine_version ~ suppress_staging_wine_version_regexp) {
+				printf("%s%s\n", 	indent, "if [[ ${PV} == \"9999\" ]]; then")
+				printf("%s%s%s\n",	indent, indent, "# Fully Mirror git tree, Wine, so we can access commits in all branches")
+				printf("%s%s%s\n",	indent, indent, "EGIT_MIN_CLONE_TYPE=\"mirror\"")
+				printf("%s%s%s\n",	indent, indent, "EGIT_CHECKOUT_DIR=\"${S}\" git-r3_src_unpack")
+			}
+			else {
+				printf("%s%s\n",	indent, "# Fully Mirror both git trees, Wine & Wine-Staging, so we can access commits in all branches")
+				printf("%s%s\n",	indent, "[[ ${PV} == \"9999\" ]] && EGIT_MIN_CLONE_TYPE=\"mirror\"")
+				printf("%s%s\n",	indent, "if [[ ${PV} == \"9999\" ]] && ! use staging; then")
+				printf("%s%s%s\n",	indent, indent, "EGIT_CHECKOUT_DIR=\"${S}\" git-r3_src_unpack")
+				printf("%s%s\n",	indent, "elif [[ ${PV} == \"9999\" ]] && use staging; then")
+				printf("%s%s%s\n",	indent, indent, "unpack \"${STAGING_HELPER}.tar.gz\"")
+				printf("%s%s%s\n", indent, indent, "if [[ ! -z \"${EGIT_STAGING_COMMIT}\" || ! -z \"${EGIT_STAGING_BRANCH}\" ]]; then")
+				printf("%s%s%s%s\n", indent, indent, indent, "# References are relative to Wine-Staging git tree (pre-checkout Wine-Staging git tree)")
+				printf("%s%s%s%s\n", indent, indent, indent, "# Use env variables \"EGIT_STAGING_COMMIT\" or \"EGIT_STAGING_BRANCH\" to reference Wine-Staging git tree")
+				printf("%s%s%s%s\n", indent, indent, indent, "ebegin \"Building Wine git with USE +staging. You have specified a Wine-Staging git reference...\"")
+				printf("%s%s%s%s\n", indent, indent, indent, "(")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "source \"${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh\" || die")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "[[ ! -z \"${EGIT_STAGING_COMMIT}\" ]] && WINE_STAGING_REF=\"commit EGIT_STAGING_COMMIT\"")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "[[   -z \"${EGIT_STAGING_COMMIT}\" ]] && WINE_STAGING_REF=\"branch EGIT_STAGING_BRANCH\"")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "ewarn \"Building Wine against Wine-Staging git ${WINE_STAGING_REF}=\\\"${EGIT_STAGING_COMMIT:-${EGIT_STAGING_BRANCH}}\\\" .\"")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "EGIT_BRANCH=\"${EGIT_STAGING_BRANCH:-master}\"")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "EGIT_COMMIT=\"${EGIT_STAGING_COMMIT:-}\"")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "unset ${PN}_LIVE_{REPO,BRANCH,COMMIT};")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "EGIT_REPO_URI=\"${STAGING_EGIT_REPO_URI}\" EGIT_CHECKOUT_DIR=\"${STAGING_DIR}\" git-r3_src_unpack")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "WINE_STAGING_COMMIT=\"${EGIT_VERSION}\"")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "get_upstream_wine_commit  \"${STAGING_DIR}\" \"${WINE_STAGING_COMMIT}\" \"WINE_COMMIT\"")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "EGIT_COMMIT=\"${WINE_COMMIT}\"")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "EGIT_CHECKOUT_DIR=\"${S}\" git-r3_src_unpack")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "einfo \"Building Wine commit \\\"${WINE_COMMIT}\\\" referenced by Wine-Staging commit \\\"${WINE_STAGING_COMMIT}\\\" ...\"")
+				printf("%s%s%s%s\n", indent, indent, indent, ")")
+				printf("%s%s%s%s\n", indent, indent, indent, "eend $?")
+				printf("%s%s%s\n",	 indent, indent, "else")
+				printf("%s%s%s%s\n", indent, indent, indent, "# References are relative to Wine git tree (post-checkout Wine-Staging git tree)")
+				printf("%s%s%s%s\n", indent, indent, indent, "ebegin \"Building Wine git with USE +staging. You are using a Wine git reference...\"")
+				printf("%s%s%s%s\n", indent, indent, indent, "(")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "source \"${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh\" || die")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "EGIT_CHECKOUT_DIR=\"${S}\" git-r3_src_unpack")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "WINE_COMMIT=\"${EGIT_VERSION}\"")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "unset ${PN}_LIVE_{REPO,BRANCH,COMMIT} EGIT_COMMIT;")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "EGIT_REPO_URI=\"${STAGING_EGIT_REPO_URI}\" EGIT_CHECKOUT_DIR=\"${STAGING_DIR}\" git-r3_src_unpack")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "if ! walk_wine_staging_git_tree \"${STAGING_DIR}\" \"${S}\" \"${WINE_COMMIT}\" \"WINE_STAGING_COMMIT\" ; then")
+				printf("%s%s%s%s%s%s\n", indent, indent, indent, indent, indent, "find_closest_wine_commit \"${STAGING_DIR}\" \"${S}\" \"WINE_COMMIT\" \"WINE_STAGING_COMMIT\" \"WINE_COMMIT_OFFSET\"")
+				printf("%s%s%s%s%s%s\n", indent, indent, indent, indent, indent, "(($? == 0)) && display_closest_wine_commit_message \"${WINE_COMMIT}\" \"${WINE_STAGING_COMMIT}\" \"${WINE_COMMIT_OFFSET}\"")
+				printf("%s%s%s%s%s%s\n", indent, indent, indent, indent, indent, "die \"Failed to find Wine-Staging git commit corresponding to supplied Wine git commit \\\"${WINE_COMMIT}\\\" .\"")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "fi")
+				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "einfo \"Building Wine-Staging commit \\\"${WINE_STAGING_COMMIT}\\\" corresponding to Wine commit \\\"${WINE_COMMIT}\\\" ...\"")
+				printf("%s%s%s%s\n", indent, indent, indent, ")")
+				printf("%s%s%s%s\n", indent, indent, indent, "eend $?")
+				printf("%s%s%s\n",	 indent, indent, "fi")
+			}
+			++do_git_unpack_replaced
+		}
+		if ((if_check_pv9999_open > 0) && (else_check_pv9999_open == 1) && ($0 ~ (leading_ws_regexp staging_use_test_regexp))) {
+			if (wine_version ~ legacy_gstreamer_patch_1_0_version_regexp)
+				printf("%s%s%s\n",	indent, indent, "use gstreamer && unpack \"${GST_P}.patch.bz2\"")
+			if (wine_version ~ suppress_staging_wine_version_regexp)
 				suppress_current_line=1
 		}
+		if (($0 ~ gstreamer_use_test_regexp) || ($0 ~ (unpack_regexp "\"" gstreamer_patch_bzip_regexp "\"")))
+			suppress_current_line=1
 	}
 	else if (array_phase_open["src_prepare"] == 1) {
 		patch_set_define_open=($0 ~ (leading_ws_regexp patchset_regexp)) ? 1 : patch_set_define_open
-		if ($0 ~ multilib_patch_regexp)
-			suppress_current_line=1
-		if (($0 ~ if_open_regexp) && ($0 ~ gstreamer_use_test_regexp)) {
-			gstreamer_check_open=if_stack
-			sub("gstreamer", "gstreamer010")
+		if (patch_set_define_open == 1) {
+			if (($0 ~ multilib_patch_regexp) || ($0 ~ gstreamer_patch_regexp))
+				suppress_current_line=1
+			if ((wine_version ~ no_sysmacros_patch_wine_version_regexp) && ($0 ~ sysmacros_patch_regexp))
+				suppress_current_line=1
 		}
-		if ((gstreamer_check_open > 0) && (wine_version !~ legacy_gstreamer_wine_version_regexp))
-			suppress_current_line=1
 		if (($0 ~ if_open_regexp) && ($0 ~ staging_use_test_regexp))
 			wine_staging_check_open=if_stack
 		if ((wine_staging_check_open == 1) && ($0 ~ source_wine_staging_patcher_regexp))
 			sub("$", " || die \"Failed to apply Wine-Staging patches.\"")
+		if ((wine_version !~ suppress_staging_wine_version_regexp) && (wine_staging_check_open == 1) && ($0 ~ if_close_regexp)) {
+			printf("\n%s%s%s\n", indent, indent, "if [[ ! -z \"${STAGING_SUFFIX}\" ]]; then")
+			printf("%s%s%s%s\n", indent, indent, indent, "sed -i -e 's/(Staging)/(Staging'\"${STAGING_SUFFIX}\"')/' libs/wine/Makefile.in || die \"sed\"")
+			printf("%s%s%s\n", indent, indent, "fi")
+		}
 		if (wine_version ~ suppress_staging_wine_version_regexp) {
 			if ($0 ~ add_gst_patch_regexp)
 				sub(("^" leading_ws_regexp), (indent indent))
@@ -264,14 +305,10 @@ BEGIN{
 			if ($0 ~ "^" comment_regexp)
 				suppress_current_line=1
 		}
-		if ($0 ~ if_close_regexp) {
-			gstreamer_check_open=(gstreamer_check_open == if_stack+1) ? 0 : gstreamer_check_open
+		if ($0 ~ if_close_regexp)
 			wine_staging_check_open=(wine_staging_check_open == if_stack+1) ? 0 : wine_staging_check_open
-		}
 	}
 	else if (array_phase_open["multilib_src_configure"] == 1) {
-		if ((wine_version ~ legacy_gstreamer_wine_version_regexp) && ($0 ~ configure_use_with_regexp))
-			sub("gstreamer", "gstreamer010 gstreamer")
 		if ($0 ~ (leading_ws_regexp staging_use_test_regexp)) {
 			wine_staging_check_open=1
 			open_bracketed_expression=($0 ~ bracketed_expression_open_regexp "$") ? 1 : 0
@@ -282,8 +319,23 @@ BEGIN{
 			open_bracketed_expression=0
 		wine_staging_check_open=(open_bracketed_expression == 0) ? 0 : wine_staging_check_open
 	}
-	
-	
+	else if (array_phase_open["pkg_postinst"] == 1) {
+		if (($0 ~ if_open_regexp) && ($0 ~ gstreamer_use_test_regexp)) {
+			gstreamer_check_open=if_stack
+			if (wine_version ~ legacy_gstreamer_patch_1_0_version_regexp) {
+				printf("%s%s\n", indent, "if [[ ! -z \"${GST_P}\" ]] && use gstreamer; then")
+				printf("%s%s%s\n", indent, indent, "ewarn \"This package uses a Gentoo specific patchset to provide \"")
+				printf("%s%s%s\n", indent, indent, "ewarn \"gstreamer:1.0 API / ABI support.  Any bugs related to GStreamer\"")
+				printf("%s%s%s\n", indent, indent, "ewarn \"should be filed at Gentoo's bugzilla, not upstream's.\"")
+				printf("%s%s\n", indent, "fi")
+			}
+		}
+		if (gstreamer_check_open > 0)
+			suppress_current_line=1
+		if ($0 ~ if_close_regexp)
+			gstreamer_check_open=(gstreamer_check_open == if_stack+1) ? 0 : gstreamer_check_open
+	}
+
 	# Print current line in ebuild
 	if (suppress_current_line == 0) {
 		# Eat more than 1 empty line
@@ -300,9 +352,11 @@ BEGIN{
 		if (if_check_pv9999_open == 1) {
 			if ($0 ~ "inherit git-r3") {
 				printf("%s%s\n", indent, "MY_PV=\"${PV}\"")
+				if (wine_version !~ suppress_staging_wine_version_regexp)
+					printf("%s%s\n", indent, "STAGING_PV=\"${MY_PV}\"")
 				printf("%s%s\n", indent, "MY_P=\"${P}\"")
 			}
-			
+
 			if ($0 ~ "[[:blank:]]*MAJOR_V\=") {
 				printf("%s%s\n", indent, "MINOR_V=$(get_version_component_range 2)")
 				printf("%s%s\n", indent, "STABLE_RELEASE=$((1-MINOR_V%2))")
@@ -314,84 +368,55 @@ BEGIN{
 				printf("%s%s\n", indent, "else")
 				printf("%s%s%s\n", indent, indent, "KEYWORDS=\"-* ~amd64 ~x86 ~x86-fbsd\"")
 				printf("%s%s\n", indent, "fi")
+				if (wine_version !~ suppress_staging_wine_version_regexp)
+					printf("%s%s\n", indent, "[[ \"${MY_PV}\" =~ ^1\\.8\\.[[:digit:]]+$ ]] && STAGING_SUFFIX=\"-unofficial\"")
 				printf("%s%s\n", indent, "MY_P=\"${PN}-${MY_PV}\"")
 			}
 		}
+		if (($0 ~ array_variables_regexp["STAGING_DIR"]) && (wine_version !~ suppress_staging_wine_version_regexp))
+			printf("%s\n", ("STAGING_HELPER=\"" wine_staging_helper "\""))
 		depend_assignment_open=((depend_assignment_open == 1) && ($0 ~ end_quote_regexp)) ? 0 : depend_assignment_open
 	}
-	
+
 	# Ebuild phase based post-checks
 	if ((array_phase_open["pkg_pretend"] == 1) && (wine_build_environment_prechecks == 1)) {
-		printf("%s%s\n",			indent, "wine_build_environment_pretests || die")
+		printf("%s%s\n", indent, "wine_build_environment_pretests || die")
 		wine_build_environment_prechecks=0
-	}
-	else if ((array_phase_open["pkg_setup"] == 1) && (wine_build_environment_tests == 1)) {
-		if (wine_version ~ suppress_staging_wine_version_regexp) {
-			printf("\n%s%s\n",		indent, "if [[ ${PV} == \"9999\" ]] && [[ -z \"${EGIT_BRANCH}\" ]] && [[ -z \"${EGIT_COMMIT}\" ]]; then")
-			printf("%s%s%s\n",		indent, indent, "einfo \"By default the Wine git tree branch master will be used.\"")
-			printf("%s%s\n",		indent, "fi")
-		}
-		else {
-			printf("\n%s%s\n",		indent, "if [[ ${PV} == \"9999\" ]]; then")
-			printf("%s%s%s\n",		indent, indent, "if use staging; then")
-			printf("%s%s%s%s\n",	indent, indent, indent, "ewarn \"You have enabled a live ebuild of Wine with USE +staging.\"")
-			printf("%s%s%s%s\n",	indent, indent, indent, "ewarn \"All git branch and commit references will link to the Wine-Staging git tree.\"")
-			printf("%s%s%s\n",		indent, indent, "fi")
-			printf("%s%s%s\n",		indent, indent, "if [[ -z \"${EGIT_BRANCH}\" ]] && [[ -z \"${EGIT_COMMIT}\" ]]; then")
-			printf("%s%s%s%s\n",	indent, indent, indent, "use staging && einfo \"By default the Wine-Staging git tree branch master will be used.\"")
-			printf("%s%s%s%s\n",	indent, indent, indent, "use staging || einfo \"By default the Wine git tree branch master will be used.\"")
-			printf("%s%s%s\n",		indent, indent, "fi")
-			printf("%s%s\n",		indent, "fi")
-		}
-		array_phase_open["pkg_setup"]=2
-	}
-	else if (array_phase_open["src_unpack"] == 1) {
-		if ((if_check_pv9999_open > 0) && (do_git_unpack_replaced == 0)) {
-			if (wine_version !~ suppress_staging_wine_version_regexp)
-				printf("%s%s%s\n",	 indent, indent, "# Reference either Wine or Wine Staging git branch (depending on +staging use flag)")
-			printf("%s%s%s\n",	 indent, indent, "EGIT_BRANCH=${EGIT_BRANCH:-master}")
-			if (wine_version !~ suppress_staging_wine_version_regexp) {
-				printf("%s%s%s\n",	 indent, indent, "if use staging; then")
-				printf("%s%s%s%s\n", indent, indent, indent, "EGIT_REPO_URI=${STAGING_EGIT_REPO_URI} EGIT_CHECKOUT_DIR=${STAGING_DIR} git-r3_src_unpack")
-				printf("%s%s%s%s\n", indent, indent, indent, "local WINE_COMMIT=$(\"${STAGING_DIR}/patches/patchinstall.sh\" --upstream-commit)")
-				printf("%s%s%s%s\n", indent, indent, indent, "[[ ! ${WINE_COMMIT} =~ [[:xdigit:]]{40} ]] && die \"Failed to get Wine git commit corresponding to Wine-Staging git commit ${EGIT_VERSION}.\"")
-				printf("%s%s%s%s\n", indent, indent, indent, "einfo \"Building Wine commit ${WINE_COMMIT} referenced by Wine-Staging commit ${EGIT_VERSION} ...\"")
-				printf("%s%s%s%s\n", indent, indent, indent, "EGIT_COMMIT=\"${WINE_COMMIT}\"")
-				printf("%s%s%s\n",	 indent, indent, "fi")
-			}
-			printf("%s%s%s\n",	 indent, indent, "EGIT_CHECKOUT_DIR=\"${S}\" git-r3_src_unpack")
-			if (wine_version !~ legacy_gstreamer_wine_version_regexp) {
-				printf("%s%s%s\n",	 indent, indent, "if use gstreamer && grep -q \"gstreamer-0.10\" \"${S}\"/configure &>/dev/null ; then")
-				printf("%s%s%s%s\n", indent, indent, indent, "local GSTREAMER_COMMIT=\"e8311270ab7e01b8c58ec615f039335bd166882a\"")
-				printf("%s%s%s%s\n", indent, indent, indent, "ewarn \"Wine commit ${GSTREAMER_COMMIT} first introduced support for the gstreamer:1.0 API / ABI.\"")
-				printf("%s%s%s%s\n", indent, indent, indent, "ewarn \"Specify a newer Wine commit or emerge with USE -gstreamer.\"")
-				printf("%s%s%s%s\n", indent, indent, indent, "die \"This live ebuild does not support Wine builds using the older gstreamer:0.1 API / ABI.\"")
-				printf("%s%s%s\n",	 indent, indent, "fi")
-			}
-			++do_git_unpack_replaced
-		}
 	}
 	else if (array_phase_open["src_prepare"] == 1) {
 		if ((patch_set_define_open == 1) && ($0 ~ (bracketed_expression_close_regexp "$"))) {
 			printf("%s%s\n",		indent, "if [[ ${PV} != \"9999\" ]]; then")
+			if (wine_version ~ legacy_gstreamer_patch_1_0_version_regexp) {
+				printf("%s%s%s\n",	indent, indent, "if use gstreamer; then")
+				printf("%s%s%s%s\n",indent, indent, indent, "# version 1.9.1 already implements partial gstreamer:1.0 support")
+				printf("%s%s%s%s\n",indent, indent, indent, "[[ \"${PV}\" == \"1.9.1\" ]] && { sed -i -e '1,71d' \"${WORKDIR}/${GST_P}.patch\" || die \"sed\"; }")
+				printf("%s%s%s%s\n",indent, indent, indent, "PATCHES+=( \"${WORKDIR}/${GST_P}.patch\" )")
+				printf("%s%s%s\n",	indent, indent, "fi")
+			}
 			if (wine_version ~ updated_multilib_patch_version_regexp)
 				printf("%s%s%s\n",	indent, indent, "PATCHES+=( \"${FILESDIR}\"/${PN}-1.9.5-multilib-portage.patch ) #395615")
 			else
 				printf("%s%s%s\n",	indent, indent, "PATCHES+=( \"${FILESDIR}\"/${PN}-1.4_rc2-multilib-portage.patch ) #395615")
 			printf("%s%s\n",		indent, "else")
-			printf ("%s%s%s\n",		indent, indent, "# Do not patch wine live ebuild - allows building against older Wine / Wine-Staging commits")
-			printf ("%s%s%s\n",		indent, indent, "# bug #395615")
-			printf ("%s%s%s\n",		indent, indent, "ebegin \"Running \\\"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\\\" ...\"")
-			printf ("%s%s%s\n",		indent, indent, "(")
-			printf ("%s%s%s%s\n",	indent, indent, indent, "source \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" ||")
-			printf ("%s%s%s%s%s\n",	indent, indent, indent, indent, "die \"Failed bash script: \\\"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\\\"\"")
-			printf ("%s%s%s\n",		indent, indent, ")")
-			printf ("%s%s%s\n",		indent, indent, "eend $?")
+			if (wine_version ~ legacy_gstreamer_patch_1_0_version_regexp) {
+				printf("%s%s%s\n",	indent, indent, "# only apply gstreamer:1.0 patch to older versions of wine, using gstreamer:0.1 API/ABI")
+				printf("%s%s%s\n",	indent, indent, "grep -q \"gstreamer-0.10\" \"${S}/configure\" &>/dev/null || unset GST_P")
+				printf("%s%s%s\n",	indent, indent, "[[ ! -z \"${GST_P}\" ]] && use gstreamer && PATCHES+=( \"${WORKDIR}/${GST_P}.patch\" )")
+			}
+			printf("%s%s%s\n",		indent, indent, "#395615 - run bash/sed script, combining both versions of the multilib-portage.patch")
+			printf("%s%s%s\n",		indent, indent, "ebegin \"sh running script: \\\"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\\\" ...\"")
+			printf("%s%s%s\n",		indent, indent, "(")
+			printf("%s%s%s%s\n",	indent, indent, indent, "source \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" ||")
+			printf("%s%s%s%s%s\n",	indent, indent, indent, indent, "die \"sh failed script: \\\"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\\\" .\"")
+			printf("%s%s%s\n",		indent, indent, ")")
+			printf("%s%s%s\n",		indent, indent, "eend $?")
+
 			printf("%s%s\n",		indent, "fi")
 			++patch_set_define_open
 		}
-		if (($0 ~ (leading_ws_regexp pipelight_use_test_regexp)) && (wine_version == "1.9.5")) {
-			printf("%s%s%s\n",		indent, indent, "use nls || STAGING_EXCLUDE=\"${STAGING_EXCLUDE} -W makefiles-Disabled_Rules\" #577198")		
+		if (($0 ~ (leading_ws_regexp pipelight_use_test_regexp)) && (wine_version == "1.9.5-r1")) {
+			printf("%s%s%s\n",		indent, indent, ("#577198 only affects " wine_version))
+			printf("%s%s%s\n",		indent, indent, "use nls || STAGING_EXCLUDE=\"${STAGING_EXCLUDE} -W makefiles-Disabled_Rules\"")
 		}
 	}
 	else if (array_phase_open["multilib_src_configure"] == 1) {
@@ -405,7 +430,7 @@ BEGIN{
 			array_phase_open["multilib_src_configure"]=2
 		}
 	}
-	
+
 	if ((if_check_pv9999_open > 0) && (if_check_pv9999_open == if_stack+1) && ($0 ~ if_close_regexp))
 			if_check_pv9999_open=else_check_pv9999_open=0
 
