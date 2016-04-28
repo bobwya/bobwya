@@ -38,18 +38,20 @@ fi
 IUSE=""
 
 DEPEND=""
-RDEPEND="dev-lang/php[cli,curl,gd,json,posix,pcntl,truetype,zip]"
+RDEPEND="${DEPEND}
+		dev-lang/php[cli,curl,gd,json,posix,pcntl,truetype,zip]"
 
 src_prepare() {
 	sed -i -e 's:PTS_DIR=`pwd`:PTS_DIR="/usr/share/phoronix-test-suite":' \
-			-e 's:"`pwd`":"$(pwd)":'				\
-			-e 's:`dirname $0`:"$(dirname $0)":g'	\
-			-e 's:\$PTS_DIR:"\${PTS_DIR}":g'		\
-			"${S}/phoronix-test-suite"
-	# Tidyup non-Gentoo install scripts
-	rm -f "${S}/pts-core/external-test-dependencies/scripts"/install-{a,d,f,m,n,o,p,u,z}*-packages.sh
-	if [[ $(get_version_component_range 1) -lt 6 ]] ; then
-		[ -f "CHANGE-LOG" ] && mv "CHANGE-LOG" "ChangeLog"
+		-e 's:"`pwd`":"$(pwd)":'				\
+		-e 's:`dirname $0`:"$(dirname $0)":g'	\
+		-e 's:\$PTS_DIR:"\${PTS_DIR}":g'		\
+			"${S}/phoronix-test-suite" \
+			|| die "sed: correcting main PTS file"
+	rm -f "${S}/pts-core/external-test-dependencies/scripts"/install-{a,d,f,m,n,o,p,u,z}*-packages.sh \
+			|| die "rm: unable to remove non-Gentoo install scripts"
+	if [[ $(get_major_version) -lt 6 ]] ; then
+		[ -f "CHANGE-LOG" ] && { mv "CHANGE-LOG" "ChangeLog" || die "mv ChangeLog file"; }
 		# Backport Upstream issue #79 with BASH completion helper
 		sed -i -e 's:_phoronix-test-suite-show:_phoronix_test_suite_show:g' \
 			"${S}/pts-core/static/bash_completion" \
@@ -57,7 +59,7 @@ src_prepare() {
 	fi
 	# BASH completion helper function "have" test - is now depreciated - so remove
 	sed -i -e '/^have phoronix-test-suite &&$/d' "${S}/pts-core/static/bash_completion" \
-		|| die "sed unable to remove PTS bash completion have test"
+			|| die "sed: unable to remove PTS bash completion have test"
 }
 
 src_install() {
@@ -72,7 +74,7 @@ src_install() {
 	doicon pts-core/static/images/openbenchmarking.png
 	domenu pts-core/static/phoronix-test-suite.desktop
 	newbashcomp pts-core/static/bash_completion ${PN}
-	rm -f "${S}/pts-core/static/bash_completion"
+	rm -f "${S}/pts-core/static/bash_completion" || die "rm: PTS bash_completion"
 
 	doins -r pts-core
 	exeinto /usr/bin
@@ -86,9 +88,9 @@ src_install() {
 		if [[ -f "${ROOT}${php_dir}/php.ini" ]] ; then
 			dodir "${php_dir}"
 			cp -f "${ROOT}${php_dir}/php.ini" "${D}${php_dir}/php.ini" \
-				|| die "cp unable to copy php.ini file"
+					|| die "cp unable to copy php.ini file"
 			sed -i -e 's|^allow_url_fopen .*|allow_url_fopen = On|g' "${D}${php_dir}/php.ini" \
-				|| die "sed unable to modify php.ini file copy"
+					|| die "sed unable to modify php.ini file copy"
 		elif [[ "x$(eselect php show cli)" == "x${slot}" ]] ; then
 			ewarn
 			ewarn "${slot} does not have a php.ini file."
