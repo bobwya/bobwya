@@ -50,7 +50,7 @@ BEGIN{
 	wine_gecko_version2_44_regexp=convert_version_list_to_regexp(wine_gecko_version2_44_wine_versions)
 	wine_mono_version4_6_0_regexp=convert_version_list_to_regexp(wine_mono_version4_6_0_wine_versions)
 	wine_mono_version4_6_2_regexp=convert_version_list_to_regexp(wine_mono_version4_6_2_wine_versions)
-	wine_staging_helper="wine-staging-git-helper-0.1.1"
+	wine_staging_helper="wine-staging-git-helper-0.1.2"
 }
 
 {
