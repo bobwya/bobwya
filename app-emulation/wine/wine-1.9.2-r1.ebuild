@@ -192,10 +192,10 @@ wine_build_environment_prechecks() {
 }
 
 wine_build_environment_pretests() {
-	[[ ${MERGE_TYPE} = "binary" ]] && return 0
+	[[ "${MERGE_TYPE}" == "binary" ]] && return 0
 
 	# bug #549768
-	if use abi_x86_64 && [[ $(gcc-major-version) = 5 && $(gcc-minor-version) -le 2 ]]; then
+	if use abi_x86_64 && [[ $(gcc-major-version) -eq 5 && $(gcc-minor-version) -le 2 ]]; then
 		einfo "Checking for gcc-5.1/gcc-5.2 MS X86_64 ABI compiler bug ..."
 		$(tc-getCC) -O2 "${FILESDIR}/pr66838.c" -o "${T}/pr66838" || die "cc compilation failed: pr66838 test"
 		# Run in subshell to prevent "Aborted" message
@@ -211,7 +211,7 @@ wine_build_environment_pretests() {
 	fi
 
 	# bug #574044
-	if use abi_x86_64 && [[ $(gcc-major-version) = 5 && $(gcc-minor-version) = 3 ]]; then
+	if use abi_x86_64 && [[ $(gcc-major-version) -eq 5 && $(gcc-minor-version) -eq 3 ]]; then
 		einfo "Checking for gcc-5.3.0 X86_64 misaligned stack compiler bug ..."
 		# Compile in subshell to prevent "Aborted" message
 		if ! ( $(tc-getCC) -O2 -mincoming-stack-boundary=3 "${FILESDIR}"/pr69140.c -o "${T}"/pr69140 || false )&>/dev/null; then
@@ -227,6 +227,11 @@ wine_build_environment_pretests() {
 }
 
 pkg_pretend() {
+	wine_build_environment_prechecks || die
+	wine_build_environment_pretests || die
+}
+
+pkg_setup() {
 	wine_build_environment_prechecks || die
 	wine_build_environment_pretests || die
 }

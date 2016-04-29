@@ -173,9 +173,9 @@ BEGIN{
 			wine_build_environment_pretests=1
 
 			printf("%s\n",		"wine_build_environment_pretests() {")
-			printf("%s%s\n\n",	indent, "[[ ${MERGE_TYPE} = \"binary\" ]] && return 0")
+			printf("%s%s\n\n",	indent, "[[ \"${MERGE_TYPE}\" == \"binary\" ]] && return 0")
 			printf("%s%s\n",	indent, "# bug #549768")
-			printf("%s%s\n",	indent, "if use abi_x86_64 && [[ $(gcc-major-version) = 5 && $(gcc-minor-version) -le 2 ]]; then")
+			printf("%s%s\n",	indent, "if use abi_x86_64 && [[ $(gcc-major-version) -eq 5 && $(gcc-minor-version) -le 2 ]]; then")
 			printf("%s%s%s\n",	indent, indent, "einfo \"Checking for gcc-5.1/gcc-5.2 MS X86_64 ABI compiler bug ...\"")
 			printf("%s%s%s\n",	indent, indent, "$(tc-getCC) -O2 \"${FILESDIR}/pr66838.c\" -o \"${T}/pr66838\" || die \"cc compilation failed: pr66838 test\"")
 			printf("%s%s%s\n",	indent, indent, "# Run in subshell to prevent \"Aborted\" message")
@@ -190,7 +190,7 @@ BEGIN{
 			printf("%s%s%s\n",	indent, indent, "fi")
 			printf("%s%s\n\n",	indent, "fi")
 			printf("%s%s\n",	indent, "# bug #574044")
-			printf("%s%s\n",	indent, "if use abi_x86_64 && [[ $(gcc-major-version) = 5 && $(gcc-minor-version) = 3 ]]; then")
+			printf("%s%s\n",	indent, "if use abi_x86_64 && [[ $(gcc-major-version) -eq 5 && $(gcc-minor-version) -eq 3 ]]; then")
 			printf("%s%s%s\n",	indent, indent, "einfo \"Checking for gcc-5.3.0 X86_64 misaligned stack compiler bug ...\"")
 			printf("%s%s%s\n",	indent, indent, "# Compile in subshell to prevent \"Aborted\" message")
 			printf("%s%s%s\n",	indent, indent, "if ! ( $(tc-getCC) -O2 -mincoming-stack-boundary=3 \"${FILESDIR}\"/pr69140.c -o \"${T}\"/pr69140 || false )&>/dev/null; then")
@@ -207,11 +207,16 @@ BEGIN{
 			printf("}\n\n")
 		}
 
-		if (sub("wine_build_environment_check", "wine_build_environment_prechecks") == 1)
+		if ($0 ~ (leading_ws_regexp wine_build_environment_check)) {
 			wine_build_environment_prechecks=1
+			suppress_current_line=1
+		}
 	}
 	else if (array_phase_open["pkg_setup"] == 1) {
-		suppress_current_line=1
+		if ($0 ~ (leading_ws_regexp wine_build_environment_check)) {
+			wine_build_environment_prechecks=1
+			suppress_current_line=1
+		}
 	}
 	else if (array_phase_open["src_unpack"] == 1) {
 		if ((if_check_pv9999_open > 0) && (else_check_pv9999_open == 0))
@@ -379,7 +384,8 @@ BEGIN{
 	}
 
 	# Ebuild phase based post-checks
-	if ((array_phase_open["pkg_pretend"] == 1) && (wine_build_environment_prechecks == 1)) {
+	if (((array_phase_open["pkg_pretend"] == 1) || (array_phase_open["pkg_setup"] == 1)) && (wine_build_environment_prechecks == 1)) {
+		printf("%s%s\n", indent, "wine_build_environment_prechecks || die")
 		printf("%s%s\n", indent, "wine_build_environment_pretests || die")
 		wine_build_environment_prechecks=0
 	}
