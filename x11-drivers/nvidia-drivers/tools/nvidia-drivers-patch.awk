@@ -3,7 +3,7 @@
 BEGIN{
 	setup_ebuild_phases("pkg_pretend pkg_setup src_prepare src_compile src_install src_install-libs pkg_preinst pkg_postinst pkg_prerm pkg_postrm",
 						array_ebuild_phases, array_phase_open, array_ebuild_phases_regexp)
-	
+
 	# Setup some regular expression constants - to hopefully make the script more readable!
 	variables="CONFIG_CHECK QA_TEXTRELS_x86 QA_TEXTRELS_x86_fbsd QA_TEXTRELS_amd64 QA_EXECSTACK_x86 QA_EXECSTACK_amd64 QA_WX_LOAD_x86 QA_WX_LOAD_amd64 QA_FLAGS_IGNORED_amd64 QA_FLAGS_IGNORED_x86"
 	setup_global_regexps(variables)
@@ -13,6 +13,7 @@ BEGIN{
 	donvidia_call_regexp=(leading_ws_regexp "donvidia")
 	X_use_test_regexp="use[[:blank:]]+X"
 	use_kernel_linux_regexp="use[[:blank:]]+kernel\\_linux"
+	use_kms_regexp="use[[:blank:]]+kms"
 	has_version_test_regexp="has\\_version"
 	gl_root_regexp="[[:blank:]]+\\$\\{GL\\_ROOT\\}"
 	nvidia_xorg_lib_extension_dir_regexp="\\\/opengl\\\/nvidia\\\/extensions"
@@ -22,7 +23,7 @@ BEGIN{
 	nvidia_supported_kms_version_regexp=convert_version_list_to_regexp(nvidia_supported_kms_versions)
 }
 {
-	suppress_current_line=0	
+	suppress_current_line=0
 	if_stack+=($0 ~ if_open_regexp) ? 1 : 0
 	if_stack+=($0 ~ if_close_regexp) ? -1 : 0
 
@@ -41,7 +42,7 @@ BEGIN{
 		}
 		if ($0 ~ end_quote_regexp)
 			variable_declaration_open=0
-			
+
 		# Change dependency on app-eselect/eselect_opengl to an out-of-tree, patched version
 		if ($0 ~ (leading_ws_regexp ebuild_version_comparision_regexp eselect_opengl_check_regexp)) {
 			sub(package_version_regexp, ("-" eselect_opengl_supported_version))
@@ -51,7 +52,7 @@ BEGIN{
 			printf("%s%s>=x11-base/xorg-server-%s\n", indent, indent, xorg_server_supported_version)
 			suppress_current_line=1
 		}
-		
+
 		# Mark all converted ebuilds as unstable
 		if ($0 ~ keywords_regexp)
 			$0=gensub(keyword_regexp, "~\\1", "g")
@@ -62,7 +63,7 @@ BEGIN{
 		preamble_over=1
 		target_block_open=0
 	}
-	
+
 	# Ebuild phase based pre-checks
 	if (array_phase_open["pkg_pretend"] == 1) {
 		if (($0 ~ if_open_regexp) && ($0 ~ use_kernel_linux_regexp) && (if_stack == 1)) {
@@ -98,6 +99,15 @@ BEGIN{
 			sub("=", "+=")
 			#++kernel_linux_block_open
 		}
+	}
+	else if ((array_phase_open["pkg_setup"] == 1) && (nvidia_version ~ nvidia_supported_kms_version_regexp) && ($0 ~ (leading_ws_regexp use_kms_regexp))) {
+		# keep repoman happy!
+		printf("%s%s%s\n",		indent,	indent,	"if use kms; then")
+		printf("%s%s%s%s\n",	indent,	indent,	indent, "MODULE_NAMES+=\" nvidia-modeset(video:${S}/kernel)\"")
+		printf("%s%s%s%s\n",	indent,	indent,	indent, "MODULE_NAMES+=\" nvidia-drm(video:${S}/kernel)\"")
+		printf("%s%s%s\n",		indent,	indent,	"fi")
+		suppress_current_line=1
+		++array_phase_open["pkg_setup"]
 	}
 	else if (array_phase_open["src_install"] == 1) {
 
@@ -147,7 +157,7 @@ BEGIN{
 		if ($0 ~ "eselect opengl")
 			sub("xorg\\-x11", "mesa")
 	}
-	
+
 	# Print current line in ebuild
 	if (!suppress_current_line)
 		print $0
@@ -156,7 +166,7 @@ BEGIN{
 	if (match($0, leading_ws_regexp))
 		indent=(indent == 0) ? substr($0, RSTART, RLENGTH) : indent
 
-	
+
 	# Ebuild phase based post-checks
 
 	# Ebuild phase process closing stanzas for functions

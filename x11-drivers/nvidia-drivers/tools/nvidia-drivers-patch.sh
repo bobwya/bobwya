@@ -9,7 +9,7 @@ script_name=$( basename "${script_path}" )
 # Global version constants
 eselect_opengl_supported_version="1.3.2"
 xorg_server_supported_version="1.16.4-r6"
-nvidia_supported_kms_versions="364.12 364.15"
+nvidia_supported_kms_versions="364.*"
 package_unsupported_versions="96 173"
 package_name="${script_name%-patch.sh}"
 
@@ -66,7 +66,6 @@ for old_ebuild_file in *.ebuild; do
 	mv "${old_ebuild_file}" "${ebuild_file}"
 	nvidia_version="${ebuild_file#${package_name}-}"
 	nvidia_version="${nvidia_version%-*.ebuild}"
-	echo "nvidia_version=${nvidia_version}"
 	awk -F '[[:blank:]]+' \
 			-veselect_opengl_supported_version="${eselect_opengl_supported_version}" \
 			-veselect_opengl_supported_version="${eselect_opengl_supported_version}" \
@@ -75,7 +74,7 @@ for old_ebuild_file in *.ebuild; do
 			-vnvidia_version="${nvidia_version}" \
 			--file "tools/common-functions.awk" \
 			--file "tools/${script_name%.*}.awk" \
-			"${ebuild_file}" 1>"${new_ebuild_file}" #2>/dev/null
+			"${ebuild_file}" 1>"${new_ebuild_file}" 2>/dev/null
 		[ -f "${new_ebuild_file}" ] || exit 1
 		mv "${new_ebuild_file}" "${ebuild_file}"
 		new_ebuild_file="${new_ebuild_file%.new}"

@@ -137,7 +137,10 @@ pkg_setup() {
 	if use driver && use kernel_linux; then
 		MODULE_NAMES="nvidia(video:${S}/kernel)"
 		use uvm && MODULE_NAMES+=" nvidia-uvm(video:${S}/kernel)"
-		use kms && MODULE_NAMES+=" nvidia-modeset(video:${S}/kernel) nvidia-drm(video:${S}/kernel)"
+		if use kms; then
+			MODULE_NAMES+=" nvidia-modeset(video:${S}/kernel)"
+			MODULE_NAMES+=" nvidia-drm(video:${S}/kernel)"
+		fi
 
 		# This needs to run after MODULE_NAMES (so that the eclass checks
 		# whether the kernel supports loadable modules) but before BUILD_PARAMS

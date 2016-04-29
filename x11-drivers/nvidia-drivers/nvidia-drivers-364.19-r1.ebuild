@@ -213,7 +213,9 @@ src_compile() {
 			AR="$(tc-getAR)" \
 			CC="$(tc-getCC)" \
 			LIBDIR="$(get_libdir)" \
+			NV_VERBOSE=1 \
 			RANLIB="$(tc-getRANLIB)" \
+			DO_STRIP= \
 			build-xnvctrl
 
 		emake -C "${S}"/nvidia-settings-${PV}/src \
@@ -224,7 +226,7 @@ src_compile() {
 			NVML_ENABLED=0 \
 			NV_USE_BUNDLED_LIBJANSSON=0 \
 			NV_VERBOSE=1 \
-			STRIP_CMD=true
+			DO_STRIP=
 	fi
 }
 
@@ -373,8 +375,10 @@ src_install() {
 			DESTDIR="${D}" \
 			GTK3_AVAILABLE=$(usex gtk3 1 0) \
 			LIBDIR="${D}/usr/$(get_libdir)" \
-			PREFIX=/usr \
 			NV_USE_BUNDLED_LIBJANSSON=0 \
+			NV_VERBOSE=1 \
+			PREFIX=/usr \
+			DO_STRIP= \
 			install
 
 		if use static-libs; then
