@@ -128,9 +128,7 @@ BEGIN{
 	# Ebuild phase based post-checks
 	if ((array_phase_open["src_unpack"] ==1) && ($0 ~ /mozlinguas\_src\_unpack/)) {
 		printf("%s%s\n",	indent, "if use kde; then")
-		printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^46\\..*$ ]]; then")
-		printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"c6717354928b\"")
-		printf("%s%s%s\n",	indent, indent, "elif [[ ${MOZ_PV} =~ ^\(10|17|24\)\\..*esr$ ]]; then")
+		printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^\(10|17|24\)\\..*esr$ ]]; then")
 		printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"esr${MOZ_PV%%.*}\"")
 		printf("%s%s%s\n",	indent, indent, "else")
 		printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"firefox${MOZ_PV%%.*}\"")
