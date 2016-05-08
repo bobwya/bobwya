@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=DOOM 3 Resurrection of Evil
 Comment=Dhewm 3 build
-Exec=/usr/games/bin/dhewm3 +set fs_game d3xp
+Exec=/usr/bin/dhewm3 +set fs_game d3xp
 Type=Application
 StartupNotify=true
 Icon=1E3E_19b1ebc2ce688f57005936877111d724ba07b1ca.0
