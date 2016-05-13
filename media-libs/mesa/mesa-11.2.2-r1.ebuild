@@ -37,7 +37,7 @@ RESTRICT="!bindist? ( bindist )"
 
 INTEL_CARDS="i915 i965 ilo intel"
 RADEON_CARDS="r100 r200 r300 r600 radeon radeonsi"
-VIDEO_CARDS="${INTEL_CARDS} ${RADEON_CARDS} freedreno nouveau vmware"
+VIDEO_CARDS="${INTEL_CARDS} ${RADEON_CARDS} freedreno nouveau vc4 vmware"
 for card in ${VIDEO_CARDS}; do
 	IUSE_VIDEO_CARDS+=" video_cards_${card}"
 done
@@ -75,7 +75,7 @@ REQUIRED_USE="
 	${PYTHON_REQUIRED_USE}
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.64"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.67"
 # keep correct libdrm and dri2proto dep
 # keep blocks in rdepend for binpkg
 RDEPEND="
@@ -105,8 +105,7 @@ RDEPEND="
 				>=dev-libs/libelf-0.8.13-r2:=[${MULTILIB_USEDEP}]
 				) )
 		) )
-		>=sys-devel/llvm-3.4.2:=[${MULTILIB_USEDEP}]
-		<sys-devel/llvm-3.8
+		>=sys-devel/llvm-3.6.0:=[${MULTILIB_USEDEP}]
 	)
 	opencl? (
 				app-eselect/eselect-opencl
@@ -121,7 +120,7 @@ RDEPEND="
 	vdpau? ( >=x11-libs/libvdpau-1.1:=[${MULTILIB_USEDEP}] )
 	wayland? ( >=dev-libs/wayland-1.2.0:=[${MULTILIB_USEDEP}] )
 	xvmc? ( >=x11-libs/libXvMC-1.0.8:=[${MULTILIB_USEDEP}] )
-	${LIBDRM_DEPSTRING}[video_cards_freedreno?,video_cards_nouveau?,video_cards_vmware?,${MULTILIB_USEDEP}]
+	${LIBDRM_DEPSTRING}[video_cards_freedreno?,video_cards_nouveau?,video_cards_vc4?,video_cards_vmware?,${MULTILIB_USEDEP}]
 "
 for card in ${INTEL_CARDS}; do
 	RDEPEND="${RDEPEND}
@@ -191,8 +190,6 @@ pkg_setup() {
 }
 
 src_prepare() {
-	epatch "${FILESDIR}"/${PN}-11.1.2-i965-fix-use-after-free.patch
-
 	[[ ${PV} == 9999 ]] && eautoreconf
 }
 
@@ -240,6 +237,7 @@ multilib_src_configure() {
 		use vaapi && myconf+=" --with-va-libdir=/usr/$(get_libdir)/va/drivers"
 
 		gallium_enable swrast
+		gallium_enable video_cards_vc4 vc4
 		gallium_enable video_cards_vmware svga
 		gallium_enable video_cards_nouveau nouveau
 		gallium_enable video_cards_i915 i915
@@ -267,7 +265,7 @@ multilib_src_configure() {
 		fi
 	fi
 
-	# x86 hardened pax_kernel needs glx-read-only-text, bug 240956
+	# x86 hardened pax_kernel needs glx-rts, bug 240956
 	if [[ ${ABI} == x86 ]]; then
 		myconf+=" $(use_enable pax_kernel glx-read-only-text)"
 	fi
@@ -275,6 +273,12 @@ multilib_src_configure() {
 	# on abi_x86_32 hardened we need to have asm disable
 	if [[ ${ABI} == x86* ]] && use pic; then
 		myconf+=" --disable-asm"
+	fi
+
+	if use gallium; then
+		myconf+=" $(use_enable osmesa gallium-osmesa)"
+	else
+		myconf+=" $(use_enable osmesa)"
 	fi
 
 	# build fails with BSD indent, bug #428112
@@ -285,6 +289,7 @@ multilib_src_configure() {
 		--enable-dri \
 		--enable-glx \
 		--enable-shared-glapi \
+		--disable-shader-cache \
 		$(use_enable !bindist texture-float) \
 		$(use_enable d3d9 nine) \
 		$(use_enable debug) \
@@ -294,7 +299,6 @@ multilib_src_configure() {
 		$(use_enable gles1) \
 		$(use_enable gles2) \
 		$(use_enable nptl glx-tls) \
-		$(use_enable osmesa) \
 		$(use_enable !udev sysfs) \
 		--enable-llvm-shared-libs \
 		--with-dri-drivers=${DRI_DRIVERS} \
