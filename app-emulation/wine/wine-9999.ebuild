@@ -217,12 +217,10 @@ wine_build_environment_pretests() {
 		# Compile in subshell to prevent "Aborted" message
 		if ! ( $(tc-getCC) -O2 -mincoming-stack-boundary=3 "${FILESDIR}"/pr69140.c -o "${T}"/pr69140 || false )&>/dev/null; then
 			eerror "gcc-5.3.0 X86_64 misaligned stack compiler bug detected."
-			CFLAGS_X86_64="-fno-omit-frame-pointer"
-			test-flags-CC "${CFLAGS_X86_64}" &>/dev/null || die "CFLAGS+='${CFLAGS_X86_64}' not supported by selected gcc compiler"
-			ewarn "abi_x86_64.amd64 compilation phase (workaround automatically applied):"
-			ewarn "  CFLAGS+='${CFLAGS_X86_64}'"
-			ewarn "See https://bugs.gentoo.org/574044"
-			ewarn
+			eerror "Please re-emerge the latest gcc-5.3.0 ebuild, or use gcc-config to select a different compiler version."
+			eerror "See https://bugs.gentoo.org/574044"
+			eerror
+			return 1
 		fi
 	fi
 }
@@ -420,12 +418,6 @@ multilib_src_configure() {
 
 	if use amd64; then
 		if [[ ${ABI} == amd64 ]]; then
-			# bug #574044
-			if [[ -n "${CFLAGS_X86_64}" ]]; then
-				append-cflags "${CFLAGS_X86_64}"
-				einfo "CFLAGS='${CFLAGS}'"
-				unset CFLAGS_X86_64
-			fi
 			myconf+=( --enable-win64 )
 		else
 			myconf+=( --disable-win64 )
@@ -506,15 +498,17 @@ pkg_postinst() {
 		ewarn "Without Wine Gecko, wine prefixes will not have a default"
 		ewarn "implementation of iexplore.  Many older windows applications"
 		ewarn "rely upon the existence of an iexplore implementation, so"
-		ewarn "you will likely need to install an external one, like via winetricks"
+		ewarn "you will likely need to install an external one, via winetricks."
 	fi
 	if ! use mono; then
 		ewarn "Without Wine Mono, wine prefixes will not have a default"
 		ewarn "implementation of .NET.  Many windows applications rely upon"
 		ewarn "the existence of a .NET implementation, so you will likely need"
-		ewarn "to install an external one, like via winetricks"
+		ewarn "to install an external one, via winetricks."
 	fi
-
+	if use staging; then
+		ewarn "This version of Wine-Staging does not support the CMST patchset."
+	fi
 	if [[ ! -z "${GST_P}" ]] && use gstreamer; then
 		ewarn "This package uses a Gentoo specific patchset to provide "
 		ewarn "gstreamer:1.0 API / ABI support.  Any bugs related to GStreamer"

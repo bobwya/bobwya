@@ -45,6 +45,7 @@ BEGIN{
 
 	legacy_gstreamer_patch_1_0_version_regexp=convert_version_list_to_regexp(legacy_gstreamer_patch_1_0_versions)
 	suppress_staging_wine_version_regexp=convert_version_list_to_regexp(wine_staging_unsupported_versions)
+	wine_staging_no_csmt_version_regexp=convert_version_list_to_regexp(wine_staging_no_csmt_versions)
     updated_multilib_patch_version_regexp=convert_version_list_to_regexp(updated_multilib_patch_wine_versions)
 	no_sysmacros_patch_wine_version_regexp=convert_version_list_to_regexp(no_sysmacros_patch_wine_versions)
 	wine_gecko_version2_44_regexp=convert_version_list_to_regexp(wine_gecko_version2_44_wine_versions)
@@ -195,12 +196,10 @@ BEGIN{
 			printf("%s%s%s\n",	indent, indent, "# Compile in subshell to prevent \"Aborted\" message")
 			printf("%s%s%s\n",	indent, indent, "if ! ( $(tc-getCC) -O2 -mincoming-stack-boundary=3 \"${FILESDIR}\"/pr69140.c -o \"${T}\"/pr69140 || false )&>/dev/null; then")
 			printf("%s%s%s%s\n",indent, indent, indent, "eerror \"gcc-5.3.0 X86_64 misaligned stack compiler bug detected.\"")
-			printf("%s%s%s%s\n",indent, indent, indent, "CFLAGS_X86_64=\"-fno-omit-frame-pointer\"")
-			printf("%s%s%s%s\n",indent, indent, indent, "test-flags-CC \"${CFLAGS_X86_64}\" &>/dev/null || die \"CFLAGS+='${CFLAGS_X86_64}' not supported by selected gcc compiler\"")
-			printf("%s%s%s%s\n",indent, indent, indent, "ewarn \"abi_x86_64.amd64 compilation phase (workaround automatically applied):\"")
-			printf("%s%s%s%s\n",indent, indent, indent, "ewarn \"  CFLAGS+='${CFLAGS_X86_64}'\"")
-			printf("%s%s%s%s\n",indent, indent, indent, "ewarn \"See https://bugs.gentoo.org/574044\"")
-			printf("%s%s%s%s\n",indent, indent, indent, "ewarn")
+			printf("%s%s%s%s\n",indent, indent, indent, "eerror \"Please re-emerge the latest gcc-5.3.0 ebuild, or use gcc-config to select a different compiler version.\"")
+			printf("%s%s%s%s\n",indent, indent, indent, "eerror \"See https://bugs.gentoo.org/574044\"")
+			printf("%s%s%s%s\n",indent, indent, indent, "eerror")
+			printf("%s%s%s%s\n",indent, indent, indent, "return 1")
 			printf("%s%s%s\n",	indent, indent, "fi")
 			printf("%s%s\n",	indent, "fi")
 
@@ -325,20 +324,32 @@ BEGIN{
 		wine_staging_check_open=(open_bracketed_expression == 0) ? 0 : wine_staging_check_open
 	}
 	else if (array_phase_open["pkg_postinst"] == 1) {
-		if (($0 ~ if_open_regexp) && ($0 ~ gstreamer_use_test_regexp)) {
+		sub("like via winetricks\"$", "via winetricks.\"")
+		if (($0 ~ if_open_regexp) && ($0 ~ gstreamer_use_test_regexp))
 			gstreamer_check_open=if_stack
-			if (wine_version ~ legacy_gstreamer_patch_1_0_version_regexp) {
-				printf("%s%s\n", indent, "if [[ ! -z \"${GST_P}\" ]] && use gstreamer; then")
-				printf("%s%s%s\n", indent, indent, "ewarn \"This package uses a Gentoo specific patchset to provide \"")
-				printf("%s%s%s\n", indent, indent, "ewarn \"gstreamer:1.0 API / ABI support.  Any bugs related to GStreamer\"")
-				printf("%s%s%s\n", indent, indent, "ewarn \"should be filed at Gentoo's bugzilla, not upstream's.\"")
-				printf("%s%s\n", indent, "fi")
-			}
-		}
 		if (gstreamer_check_open > 0)
 			suppress_current_line=1
 		if ($0 ~ if_close_regexp)
 			gstreamer_check_open=(gstreamer_check_open == if_stack+1) ? 0 : gstreamer_check_open
+
+		if ($0 ~ blank_line_regexp) {
+			++blank_line_count
+			suppress_current_line+=(blank_line_count >= 2) ? 1 : 0
+		}
+		if ($0 ~ end_curly_bracket_regexp) {
+			if ((wine_version !~ suppress_staging_wine_version_regexp) && (wine_version ~ wine_staging_no_csmt_version_regexp)) {
+				printf("%s%s\n",	indent, "if use staging; then")
+				printf("%s%s%s\n",	indent, indent, "ewarn \"This version of Wine-Staging does not support the CMST patchset.\"")
+				printf("%s%s\n",	indent, "fi")
+			}
+			if (wine_version ~ legacy_gstreamer_patch_1_0_version_regexp) {
+				printf("%s%s\n", 	indent, "if [[ ! -z \"${GST_P}\" ]] && use gstreamer; then")
+				printf("%s%s%s\n",	indent, indent, "ewarn \"This package uses a Gentoo specific patchset to provide \"")
+				printf("%s%s%s\n",	indent, indent, "ewarn \"gstreamer:1.0 API / ABI support.  Any bugs related to GStreamer\"")
+				printf("%s%s%s\n",	indent, indent, "ewarn \"should be filed at Gentoo's bugzilla, not upstream's.\"")
+				printf("%s%s\n",	indent, "fi")
+			}
+		}
 	}
 
 	# Print current line in ebuild
@@ -425,17 +436,7 @@ BEGIN{
 			printf("%s%s%s\n",		indent, indent, "use nls || STAGING_EXCLUDE=\"${STAGING_EXCLUDE} -W makefiles-Disabled_Rules\"")
 		}
 	}
-	else if (array_phase_open["multilib_src_configure"] == 1) {
-		if (($0 ~ if_open_regexp) && ($0 ~ abi_eq_amd64_regexp)) {
-			printf("%s%s%s%s\n",	indent, indent, indent, "# bug #574044")
-			printf("%s%s%s%s\n",	indent, indent, indent, "if [[ -n \"${CFLAGS_X86_64}\" ]]; then")
-			printf("%s%s%s%s%s\n",	indent, indent, indent, indent, "append-cflags \"${CFLAGS_X86_64}\"")
-			printf("%s%s%s%s%s\n",	indent, indent, indent, indent, "einfo \"CFLAGS='${CFLAGS}'\"")
-			printf("%s%s%s%s%s\n",	indent, indent, indent, indent, "unset CFLAGS_X86_64")
-			printf("%s%s%s%s\n",	indent, indent, indent, "fi")
-			array_phase_open["multilib_src_configure"]=2
-		}
-	}
+
 
 	if ((if_check_pv9999_open > 0) && (if_check_pv9999_open == if_stack+1) && ($0 ~ if_close_regexp))
 			if_check_pv9999_open=else_check_pv9999_open=0

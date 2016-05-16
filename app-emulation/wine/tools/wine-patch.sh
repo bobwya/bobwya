@@ -5,14 +5,15 @@ script_folder=$( dirname "${script_path}" )
 script_name=$( basename "${script_path}" )
 
 # Global variables
-new_wine_versions="1.8_rc1-r1 1.8_rc2-r1 1.8_rc3-r1 1.8_rc4-r1 1.8.1-r1 1.8.2 1.9.0-r1 1.9.1-r1 1.9.2-r1 1.9.3-r1 1.9.4-r1 1.9.5-r1 1.9.6-r1 1.9.7-r1 1.9.8 1.9.9 9999"
-wine_staging_unsupported_versions=""
+new_wine_versions="1.8_rc1-r1 1.8_rc2-r1 1.8_rc3-r1 1.8_rc4-r1 1.8.1-r1 1.8.2 1.9.0-r1 1.9.1-r1 1.9.2-r1 1.9.3-r1 1.9.4-r1 1.9.5-r1 1.9.6-r1 1.9.7-r1 1.9.8 1.9.9 1.9.10 9999"
+wine_staging_unsupported_versions="1.9.10"
+wine_staging_no_csmt_versions="1.9.6-r1 1.9.7-r1 1.9.8 1.9.9 1.9.10 9999"
 legacy_gstreamer_patch_1_0_versions="1.8_rc* 1.8-r1 1.8.1-r1 1.8.2 1.9.0-r1 1.9.1-r1 9999"
-updated_multilib_patch_wine_versions="1.8.2 1.9.5-r1 1.9.6-r1 1.9.7-r1 1.9.8 1.9.9 9999"
-no_sysmacros_patch_wine_versions="1.9.9 9999"
-wine_gecko_version2_44_wine_versions="1.9.3-r1 1.9.4-r1 1.9.5-r1 1.9.6-r1 1.9.7-r1 1.9.8 1.9.9 9999"
+updated_multilib_patch_wine_versions="1.8.2 1.9.5-r1 1.9.6-r1 1.9.7-r1 1.9.8 1.9.9 1.9.10 9999"
+no_sysmacros_patch_wine_versions="1.9.9 1.9.10 9999"
+wine_gecko_version2_44_wine_versions="1.9.3-r1 1.9.4-r1 1.9.5-r1 1.9.6-r1 1.9.7-r1 1.9.8 1.9.9 1.9.10 9999"
 wine_mono_version4_6_0_wine_versions="1.9.5-r1 1.9.6-r1 1.9.7-r1"
-wine_mono_version4_6_2_wine_versions="1.9.8 1.9.9 9999"
+wine_mono_version4_6_2_wine_versions="1.9.8 1.9.9 1.9.10 9999"
 
 # Rename and patch all the stock mesa ebuild files
 cd "${script_folder%/tools}"
@@ -70,6 +71,7 @@ for ebuild_file in *.ebuild; do
 	awk -F '[[:blank:]]+' \
 			-vwine_version="${ebuild_version}" \
 			-vwine_staging_unsupported_versions="${wine_staging_unsupported_versions}" \
+			-vwine_staging_no_csmt_versions="${wine_staging_no_csmt_versions}" \
 			-vlegacy_gstreamer_patch_1_0_versions="${legacy_gstreamer_patch_1_0_versions}" \
 			-vupdated_multilib_patch_wine_versions="${updated_multilib_patch_wine_versions}" \
 			-vno_sysmacros_patch_wine_versions="${no_sysmacros_patch_wine_versions}" \
