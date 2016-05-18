@@ -42,6 +42,7 @@ BEGIN{
 	wine_gecko_version_regexp="[[:digit:]]+\\.[[:digit:]]+"
 	gentoo_excluded_bugs_regexp="bug[[:blank:]]+\\#(549768|574044)"
 	gcc5_tests_regexp="[[:blank:]]+\\$\\(gcc\\-major\\-version\\)[[:blank:]]+=[[:blank:]]+5[[:blank:]]+"
+	local_staging_exclude_define_regexp="local[[:blank:]]+STAGING_EXCLUDE=\"\""
 
 	legacy_gstreamer_patch_1_0_version_regexp=convert_version_list_to_regexp(legacy_gstreamer_patch_1_0_versions)
 	suppress_staging_wine_version_regexp=convert_version_list_to_regexp(wine_staging_unsupported_versions)
@@ -431,9 +432,16 @@ BEGIN{
 			printf("%s%s\n",		indent, "fi")
 			++patch_set_define_open
 		}
-		if (($0 ~ (leading_ws_regexp pipelight_use_test_regexp)) && (wine_version == "1.9.5-r1")) {
-			printf("%s%s%s\n",		indent, indent, ("#577198 only affects " wine_version))
-			printf("%s%s%s\n",		indent, indent, "use nls || STAGING_EXCLUDE=\"${STAGING_EXCLUDE} -W makefiles-Disabled_Rules\"")
+		if (wine_version !~ suppress_staging_wine_version_regexp) {
+			if ((wine_version == "1.9.5-r1") && ($0 ~ (leading_ws_regexp pipelight_use_test_regexp)))  {
+				printf("%s%s%s\n",		indent, indent, ("#577198 only affects " wine_version))
+				printf("%s%s%s\n",		indent, indent, "use nls || STAGING_EXCLUDE=\"${STAGING_EXCLUDE} -W makefiles-Disabled_Rules\"")
+			}
+			if ($0 ~ (leading_ws_regexp local_staging_exclude_define_regexp)) {
+				printf("%s%s%s\n",		indent, indent, "if grep -q \"0001-mshtml-Wine-Gecko-2.47-beta1-release.patch\" \"${STAGING_DIR}/patches/patchinstall.sh\"; then")
+				printf("%s%s%s%s\n",	indent, indent, indent, "STAGING_EXCLUDE=\"${STAGING_EXCLUDE} -W mshtml_Wine_Gecko_2_47\"")
+				printf("%s%s%s\n",		indent, indent, "fi")
+			}
 		}
 	}
 

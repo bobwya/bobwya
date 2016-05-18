@@ -312,6 +312,9 @@ src_prepare() {
 		ewarn "Wine bugzilla should explicitly state that staging was used."
 
 		local STAGING_EXCLUDE=""
+		if grep -q "0001-mshtml-Wine-Gecko-2.47-beta1-release.patch" "${STAGING_DIR}/patches/patchinstall.sh"; then
+			STAGING_EXCLUDE="${STAGING_EXCLUDE} -W mshtml_Wine_Gecko_2_47"
+		fi
 		use pipelight || STAGING_EXCLUDE="${STAGING_EXCLUDE} -W Pipelight"
 
 		# Launch wine-staging patcher in a subshell, using epatch as a backend, and gitapply.sh as a backend for binary patches

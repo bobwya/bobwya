@@ -312,6 +312,9 @@ src_prepare() {
 		ewarn "Wine bugzilla should explicitly state that staging was used."
 
 		local STAGING_EXCLUDE=""
+		if grep -q "0001-mshtml-Wine-Gecko-2.47-beta1-release.patch" "${STAGING_DIR}/patches/patchinstall.sh"; then
+			STAGING_EXCLUDE="${STAGING_EXCLUDE} -W mshtml_Wine_Gecko_2_47"
+		fi
 		use pipelight || STAGING_EXCLUDE="${STAGING_EXCLUDE} -W Pipelight"
 		#577198 only affects 1.9.5-r1
 		use nls || STAGING_EXCLUDE="${STAGING_EXCLUDE} -W makefiles-Disabled_Rules"
