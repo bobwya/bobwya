@@ -10,7 +10,7 @@ BEGIN{
 	setup_global_regexps(variables)
 	emake_target_regexp="emake install DESTDIR=\"\\$\\{D\\}\""
 	eselect_check_regexp="^[[:blank:]]+[\\>\\=\\>]+app\\-eselect\\\/eselect\\-opengl"
-	source_wine_staging_patcher_regexp="^[[:blank:]]*source[[:blank:]]+\".*patchinstall\\.sh.*\"$"
+	eend_subshell_regexp="eend[[:blank:]]+\\$\\?$"
 	check_for_pv9999_regexp="\\[\\[ \\$\\{PV\\} == \"9999\" \\]\\]"
 	test_gstreamer_or_staging_regexp="\\?\\?[[:blank:]]+\\([[:blank:]]+gstreamer[[:blank:]]+staging[[:blank:]]+\\)"
 	gstreamer_full_atom_match="[<|>]\{0,1\}[=]\{0,1\}media-libs\\/gstreamer:[\.[:digit:]]+"
@@ -238,7 +238,7 @@ BEGIN{
 				printf("%s%s%s\n", indent, indent, "if [[ ! -z \"${EGIT_STAGING_COMMIT}\" || ! -z \"${EGIT_STAGING_BRANCH}\" ]]; then")
 				printf("%s%s%s%s\n", indent, indent, indent, "# References are relative to Wine-Staging git tree (pre-checkout Wine-Staging git tree)")
 				printf("%s%s%s%s\n", indent, indent, indent, "# Use env variables \"EGIT_STAGING_COMMIT\" or \"EGIT_STAGING_BRANCH\" to reference Wine-Staging git tree")
-				printf("%s%s%s%s\n", indent, indent, indent, "ebegin \"Building Wine git with USE +staging. You have specified a Wine-Staging git reference...\"")
+				printf("%s%s%s%s\n", indent, indent, indent, "ebegin \"(subshell): you have specified a Wine-Staging git reference (building Wine git with USE +staging) ...\"")
 				printf("%s%s%s%s\n", indent, indent, indent, "(")
 				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "source \"${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh\" || die")
 				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "[[ ! -z \"${EGIT_STAGING_COMMIT}\" ]] && WINE_STAGING_REF=\"commit EGIT_STAGING_COMMIT\"")
@@ -254,10 +254,10 @@ BEGIN{
 				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "EGIT_CHECKOUT_DIR=\"${S}\" git-r3_src_unpack")
 				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "einfo \"Building Wine commit \\\"${WINE_COMMIT}\\\" referenced by Wine-Staging commit \\\"${WINE_STAGING_COMMIT}\\\" ...\"")
 				printf("%s%s%s%s\n", indent, indent, indent, ")")
-				printf("%s%s%s%s\n", indent, indent, indent, "eend $?")
+				printf("%s%s%s%s\n", indent, indent, indent, "eend $? || die \"(subshell): ... failed to determine target Wine commit.\"")
 				printf("%s%s%s\n",	 indent, indent, "else")
 				printf("%s%s%s%s\n", indent, indent, indent, "# References are relative to Wine git tree (post-checkout Wine-Staging git tree)")
-				printf("%s%s%s%s\n", indent, indent, indent, "ebegin \"Building Wine git with USE +staging. You are using a Wine git reference...\"")
+				printf("%s%s%s%s\n", indent, indent, indent, "ebegin \"(subshell): You are using a Wine git reference (building Wine git with USE +staging) ...\"")
 				printf("%s%s%s%s\n", indent, indent, indent, "(")
 				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "source \"${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh\" || die")
 				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "EGIT_CHECKOUT_DIR=\"${S}\" git-r3_src_unpack")
@@ -271,7 +271,7 @@ BEGIN{
 				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "fi")
 				printf("%s%s%s%s%s\n", indent, indent, indent, indent, "einfo \"Building Wine-Staging commit \\\"${WINE_STAGING_COMMIT}\\\" corresponding to Wine commit \\\"${WINE_COMMIT}\\\" ...\"")
 				printf("%s%s%s%s\n", indent, indent, indent, ")")
-				printf("%s%s%s%s\n", indent, indent, indent, "eend $?")
+				printf("%s%s%s%s\n", indent, indent, indent, "eend $? || die \"(subshell): ... failed to determine target Wine-Staging commit.\"")
 				printf("%s%s%s\n",	 indent, indent, "fi")
 			}
 			++do_git_unpack_replaced
@@ -295,8 +295,8 @@ BEGIN{
 		}
 		if (($0 ~ if_open_regexp) && ($0 ~ staging_use_test_regexp))
 			wine_staging_check_open=if_stack
-		if ((wine_staging_check_open == 1) && ($0 ~ source_wine_staging_patcher_regexp))
-			sub("$", " || die \"Failed to apply Wine-Staging patches.\"")
+		if ((wine_staging_check_open == 1) && ($0 ~ eend_subshell_regexp))
+			sub("$", " || die \"(subshell) script: failed to apply Wine-Staging patches.\"")
 		if ((wine_version !~ suppress_staging_wine_version_regexp) && (wine_staging_check_open == 1) && ($0 ~ if_close_regexp)) {
 			printf("\n%s%s%s\n", indent, indent, "if [[ ! -z \"${STAGING_SUFFIX}\" ]]; then")
 			printf("%s%s%s%s\n", indent, indent, indent, "sed -i -e 's/(Staging)/(Staging'\"${STAGING_SUFFIX}\"')/' libs/wine/Makefile.in || die \"sed\"")
@@ -422,12 +422,11 @@ BEGIN{
 				printf("%s%s%s\n",	indent, indent, "[[ ! -z \"${GST_P}\" ]] && use gstreamer && PATCHES+=( \"${WORKDIR}/${GST_P}.patch\" )")
 			}
 			printf("%s%s%s\n",		indent, indent, "#395615 - run bash/sed script, combining both versions of the multilib-portage.patch")
-			printf("%s%s%s\n",		indent, indent, "ebegin \"sh running script: \\\"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\\\" ...\"")
+			printf("%s%s%s\n",		indent, indent, "ebegin \"(subshell) script: \\\"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\\\" ...\"")
 			printf("%s%s%s\n",		indent, indent, "(")
-			printf("%s%s%s%s\n",	indent, indent, indent, "source \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" ||")
-			printf("%s%s%s%s%s\n",	indent, indent, indent, indent, "die \"sh failed script: \\\"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\\\" .\"")
+			printf("%s%s%s%s\n",	indent, indent, indent, "source \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" || die")
 			printf("%s%s%s\n",		indent, indent, ")")
-			printf("%s%s%s\n",		indent, indent, "eend $?")
+			printf("%s%s%s\n",		indent, indent, "eend $? || die \"(subshell) script: \\\"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\\\".\"")
 
 			printf("%s%s\n",		indent, "fi")
 			++patch_set_define_open
@@ -439,7 +438,7 @@ BEGIN{
 			}
 			if ($0 ~ (leading_ws_regexp local_staging_exclude_define_regexp)) {
 				printf("%s%s%s\n",		indent, indent, "if grep -q \"0001-mshtml-Wine-Gecko-2.47-beta1-release.patch\" \"${STAGING_DIR}/patches/patchinstall.sh\"; then")
-				printf("%s%s%s%s\n",	indent, indent, indent, "STAGING_EXCLUDE=\"${STAGING_EXCLUDE} -W mshtml_Wine_Gecko_2_47\"")
+				printf("%s%s%s%s\n",	indent, indent, indent, "STAGING_EXCLUDE=\"${STAGING_EXCLUDE} -W mshtml-Wine_Gecko_2.47\"")
 				printf("%s%s%s\n",		indent, indent, "fi")
 			}
 		}

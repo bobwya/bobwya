@@ -80,7 +80,7 @@ for ebuild_file in *.ebuild; do
 			-vwine_mono_version4_6_2_wine_versions="${wine_mono_version4_6_2_wine_versions}" \
 			--file "tools/common-functions.awk" \
 			--file "tools/${script_name%.*}.awk" \
-			"${ebuild_file}" 1>"${new_ebuild_file}" #2>/dev/null
+			"${ebuild_file}" 1>"${new_ebuild_file}" 2>/dev/null
 		[ -f "${new_ebuild_file}" ] || exit 1
 		mv "${new_ebuild_file}" "${ebuild_file}"
 		new_ebuild_file="${new_ebuild_file%.new}"

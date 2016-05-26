@@ -244,7 +244,7 @@ src_unpack() {
 		if [[ ! -z "${EGIT_STAGING_COMMIT}" || ! -z "${EGIT_STAGING_BRANCH}" ]]; then
 			# References are relative to Wine-Staging git tree (pre-checkout Wine-Staging git tree)
 			# Use env variables "EGIT_STAGING_COMMIT" or "EGIT_STAGING_BRANCH" to reference Wine-Staging git tree
-			ebegin "Building Wine git with USE +staging. You have specified a Wine-Staging git reference..."
+			ebegin "(subshell): you have specified a Wine-Staging git reference (building Wine git with USE +staging) ..."
 			(
 				source "${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh" || die
 				[[ ! -z "${EGIT_STAGING_COMMIT}" ]] && WINE_STAGING_REF="commit EGIT_STAGING_COMMIT"
@@ -260,10 +260,10 @@ src_unpack() {
 				EGIT_CHECKOUT_DIR="${S}" git-r3_src_unpack
 				einfo "Building Wine commit \"${WINE_COMMIT}\" referenced by Wine-Staging commit \"${WINE_STAGING_COMMIT}\" ..."
 			)
-			eend $?
+			eend $? || die "(subshell): ... failed to determine target Wine commit."
 		else
 			# References are relative to Wine git tree (post-checkout Wine-Staging git tree)
-			ebegin "Building Wine git with USE +staging. You are using a Wine git reference..."
+			ebegin "(subshell): You are using a Wine git reference (building Wine git with USE +staging) ..."
 			(
 				source "${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh" || die
 				EGIT_CHECKOUT_DIR="${S}" git-r3_src_unpack
@@ -277,7 +277,7 @@ src_unpack() {
 				fi
 				einfo "Building Wine-Staging commit \"${WINE_STAGING_COMMIT}\" corresponding to Wine commit \"${WINE_COMMIT}\" ..."
 			)
-			eend $?
+			eend $? || die "(subshell): ... failed to determine target Wine-Staging commit."
 		fi
 	else
 		unpack ${P}.tar.bz2
@@ -301,12 +301,11 @@ src_prepare() {
 		PATCHES+=( "${FILESDIR}"/${PN}-1.4_rc2-multilib-portage.patch ) #395615
 	else
 		#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
-		ebegin "sh running script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" ..."
+		ebegin "(subshell) script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" ..."
 		(
-			source "${FILESDIR}/${PN}-9999-multilib-portage-sed.sh" ||
-				die "sh failed script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" ."
+			source "${FILESDIR}/${PN}-9999-multilib-portage-sed.sh" || die
 		)
-		eend $?
+		eend $? || die "(subshell) script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\"."
 	fi
 	if use staging; then
 		ewarn "Applying the Wine-Staging patchset. Any bug reports to the"
@@ -314,7 +313,7 @@ src_prepare() {
 
 		local STAGING_EXCLUDE=""
 		if grep -q "0001-mshtml-Wine-Gecko-2.47-beta1-release.patch" "${STAGING_DIR}/patches/patchinstall.sh"; then
-			STAGING_EXCLUDE="${STAGING_EXCLUDE} -W mshtml_Wine_Gecko_2_47"
+			STAGING_EXCLUDE="${STAGING_EXCLUDE} -W mshtml-Wine_Gecko_2.47"
 		fi
 		use pipelight || STAGING_EXCLUDE="${STAGING_EXCLUDE} -W Pipelight"
 
@@ -323,9 +322,9 @@ src_prepare() {
 		(
 			set -- DESTDIR="${S}" --backend=epatch --no-autoconf --all ${STAGING_EXCLUDE}
 			cd "${STAGING_DIR}/patches"
-			source "${STAGING_DIR}/patches/patchinstall.sh" || die "Failed to apply Wine-Staging patches."
+			source "${STAGING_DIR}/patches/patchinstall.sh"
 		)
-		eend $?
+		eend $? || die "(subshell) script: failed to apply Wine-Staging patches."
 
 		if [[ ! -z "${STAGING_SUFFIX}" ]]; then
 			sed -i -e 's/(Staging)/(Staging'"${STAGING_SUFFIX}"')/' libs/wine/Makefile.in || die "sed"
