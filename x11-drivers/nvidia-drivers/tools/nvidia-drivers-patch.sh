@@ -9,7 +9,7 @@ script_name=$( basename "${script_path}" )
 # Global version constants
 eselect_opengl_supported_version="1.3.2"
 xorg_server_supported_version="1.16.4-r6"
-nvidia_supported_kms_versions="364.*"
+nvidia_supported_kms_versions="364.* 367.*"
 package_unsupported_versions="96 173"
 package_name="${script_name%-patch.sh}"
 
@@ -43,13 +43,13 @@ for ebuild_file in *.ebuild; do
 			continue 2
 		fi
 	done
-	
+
 	if [[ $(compare_ebuild_versions "nvidia-drivers-${package_supported_version}" "${ebuild_file}") -eq 1 ]] ; then
 		echo "removing ebuild file: \"${ebuild_file}\" (unsupported)"
 		rm "${ebuild_file}"
 		continue
 	fi
-	
+
 	remove_obsolete_ebuild_revisions "${ebuild_file}"
 done
 
@@ -59,7 +59,7 @@ for old_ebuild_file in *.ebuild; do
 	if grep -q "${patched_file_comment}" "${old_ebuild_file}" ; then
 		continue
 	fi
-	
+
 	ebuild_file=$(increment_ebuild_revision "${old_ebuild_file}")
 	new_ebuild_file="${ebuild_file}.new"
 	echo "Processing ebuild file: \"${old_ebuild_file}\" -> \"${ebuild_file}\""

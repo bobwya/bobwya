@@ -111,7 +111,7 @@ pkg_pretend() {
 		elif use kms; then
 			einfo "USE +kms: checking kernel for KMS CONFIG recommended by NVIDIA."
 			einfo
-			CONFIG_CHECK+="~CONFIG_DRM_KMS_HELPER ~CONFIG_DRM_KMS_FB_HELPER"
+			CONFIG_CHECK+="~DRM_KMS_HELPER ~DRM_KMS_FB_HELPER"
 		fi
 	fi
 
@@ -122,7 +122,7 @@ pkg_pretend() {
 	nvidia-driver-check-warning
 
 	# Kernel features/options to check for
-	CONFIG_CHECK+="~ZONE_DMA ~MTRR ~SYSVIPC ~!LOCKDEP"
+	CONFIG_CHECK+=" ~ZONE_DMA ~MTRR ~SYSVIPC ~!LOCKDEP"
 	use x86 && CONFIG_CHECK+=" ~HIGHMEM"
 
 	# Now do the above checks

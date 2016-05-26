@@ -89,14 +89,14 @@ BEGIN{
 					printf("%s%s%s\n",		indent,	indent,	"elif use kms; then")
 					printf("%s%s%s%s\n",	indent,	indent,	indent, "einfo \"USE +kms: checking kernel for KMS CONFIG recommended by NVIDIA.\"")
 					printf("%s%s%s%s\n",	indent,	indent,	indent, "einfo")
-					printf("%s%s%s%s\n",	indent,	indent,	indent, "CONFIG_CHECK+=\"~CONFIG_DRM_KMS_HELPER ~CONFIG_DRM_KMS_FB_HELPER\"")
+					printf("%s%s%s%s\n",	indent,	indent,	indent, "CONFIG_CHECK+=\"~DRM_KMS_HELPER ~DRM_KMS_FB_HELPER\"")
 				}
 				printf("%s%s%s\n",		indent,	indent,	"fi")
 				++kernel_linux_block_open
 			}
 		}
 		if ((nvidia_version ~ nvidia_supported_kms_version_regexp) && (kernel_linux_block_open == 2) && ($0 ~ array_variables_regexp["CONFIG_CHECK"])) {
-			sub("=", "+=")
+			sub("=\"", "+=\" ")
 			#++kernel_linux_block_open
 		}
 	}
