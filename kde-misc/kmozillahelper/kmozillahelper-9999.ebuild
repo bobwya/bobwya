@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI="5"
+EAPI="6"
 
 inherit kde5
 
@@ -50,7 +50,7 @@ RDEPEND="${COMMON_DEPEND}"
 src_prepare() {
 	default
 	# Use a stock X icon for kdialog window - suppress display of this icon using the supplied kwin rule
-	epatch "${FILESDIR}/${PN}-0.6.5-use-x-icon.patch"
+	eapply "${FILESDIR}/${PN}-0.6.5-use-x-icon.patch"
 }
 
 pkg_postinst() {
