@@ -13,6 +13,7 @@ if [[ ${PV} == "9999" ]] ; then
 	EGIT_REPO_URI="git://source.winehq.org/git/wine.git http://source.winehq.org/git/wine.git"
 	inherit git-r3
 	MY_PV="${PV}"
+	STAGING_PV="${MY_PV}"
 	MY_P="${P}"
 	SRC_URI=""
 	#KEYWORDS=""
@@ -28,12 +29,16 @@ else
 	else
 		KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
 	fi
+	[[ "${MY_PV}" =~ ^1\.8\.[[:digit:]]+$ ]] && STAGING_SUFFIX="-unofficial"
 	MY_P="${PN}-${MY_PV}"
 	SRC_URI="https://dl.winehq.org/wine/source/${MAJOR_V}/${MY_P}.tar.bz2 -> ${P}.tar.bz2"
 fi
 
 GV="2.44"
 MV="4.6.2"
+STAGING_P="wine-staging-${MY_PV}"
+STAGING_DIR="${WORKDIR}/${STAGING_P}${STAGING_SUFFIX}"
+STAGING_HELPER="wine-staging-git-helper-0.1.2"
 WINE_GENTOO="wine-gentoo-2015.03.07"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
 HOMEPAGE="http://www.winehq.org/"
@@ -45,12 +50,24 @@ SRC_URI="${SRC_URI}
 	mono? ( https://dl.winehq.org/wine/wine-mono/${MV}/wine-mono-${MV}.msi )
 	https://dev.gentoo.org/~tetromino/distfiles/${PN}/${WINE_GENTOO}.tar.bz2"
 
+if [[ ${PV} == "9999" ]] ; then
+	STAGING_EGIT_REPO_URI="git://github.com/wine-compholio/wine-staging.git"
+	SRC_URI="${SRC_URI}
+	staging? ( https://github.com/bobwya/${STAGING_HELPER%-*}/archive/${STAGING_HELPER##*-}.tar.gz -> ${STAGING_HELPER}.tar.gz )"
+else
+	SRC_URI="${SRC_URI}
+	staging? ( https://github.com/wine-compholio/wine-staging/archive/v${MY_PV}${STAGING_SUFFIX}.tar.gz -> ${STAGING_P}.tar.gz )"
+fi
+
 LICENSE="LGPL-2.1"
 SLOT="0"
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap +png prelink pulseaudio +realtime +run-exes samba scanner selinux +ssl test +threads +truetype +udisks v4l +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test +threads +truetype +udisks v4l vaapi +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	test? ( abi_x86_32 )
 	elibc_glibc? ( threads )
+	pipelight? ( staging )
+	s3tc? ( staging )
+	vaapi? ( staging )
 	osmesa? ( opengl )" #286560
 
 # FIXME: the test suite is unsuitable for us; many tests require net access
@@ -95,6 +112,7 @@ COMMON_DEPEND="
 	osmesa? ( media-libs/mesa[osmesa,${MULTILIB_USEDEP}] )
 	pcap? ( net-libs/libpcap[${MULTILIB_USEDEP}] )
 	pulseaudio? ( media-sound/pulseaudio[${MULTILIB_USEDEP}] )
+	staging? ( sys-apps/attr[${MULTILIB_USEDEP}] )
 	xml? (
 		dev-libs/libxml2[${MULTILIB_USEDEP}]
 		dev-libs/libxslt[${MULTILIB_USEDEP}]
@@ -103,6 +121,7 @@ COMMON_DEPEND="
 	ssl? ( net-libs/gnutls:=[${MULTILIB_USEDEP}] )
 	png? ( media-libs/libpng:0=[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
+	vaapi? ( x11-libs/libva[X,${MULTILIB_USEDEP}] )
 	xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
 	abi_x86_32? (
 		!app-emulation/emul-linux-x86-baselibs[-abi_x86_32(-)]
@@ -124,6 +143,7 @@ COMMON_DEPEND="
 RDEPEND="${COMMON_DEPEND}
 	dos? ( games-emulation/dosbox )
 	perl? ( dev-lang/perl dev-perl/XML-Simple )
+	s3tc? ( >=media-libs/libtxc_dxtn-1.0.1-r1[${MULTILIB_USEDEP}] )
 	samba? ( >=net-fs/samba-3.0.25[winbind] )
 	selinux? ( sec-policy/selinux-wine )
 	udisks? ( sys-fs/udisks:2 )
@@ -131,6 +151,7 @@ RDEPEND="${COMMON_DEPEND}
 
 # tools/make_requests requires perl
 DEPEND="${COMMON_DEPEND}
+	staging? ( dev-lang/perl dev-perl/XML-Simple )
 	X? (
 		x11-proto/inputproto
 		x11-proto/xextproto
@@ -213,12 +234,53 @@ pkg_setup() {
 }
 
 src_unpack() {
-	if [[ ${PV} == "9999" ]]; then
-		# Fully Mirror git tree, Wine, so we can access commits in all branches
-		EGIT_MIN_CLONE_TYPE="mirror"
+	# Fully Mirror both git trees, Wine & Wine-Staging, so we can access commits in all branches
+	[[ ${PV} == "9999" ]] && EGIT_MIN_CLONE_TYPE="mirror"
+	if [[ ${PV} == "9999" ]] && ! use staging; then
 		EGIT_CHECKOUT_DIR="${S}" git-r3_src_unpack
+	elif [[ ${PV} == "9999" ]] && use staging; then
+		unpack "${STAGING_HELPER}.tar.gz"
+		if [[ ! -z "${EGIT_STAGING_COMMIT}" || ! -z "${EGIT_STAGING_BRANCH}" ]]; then
+			# References are relative to Wine-Staging git tree (pre-checkout Wine-Staging git tree)
+			# Use env variables "EGIT_STAGING_COMMIT" or "EGIT_STAGING_BRANCH" to reference Wine-Staging git tree
+			ebegin "(subshell): you have specified a Wine-Staging git reference (building Wine git with USE +staging) ..."
+			(
+				source "${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh" || die
+				[[ ! -z "${EGIT_STAGING_COMMIT}" ]] && WINE_STAGING_REF="commit EGIT_STAGING_COMMIT"
+				[[   -z "${EGIT_STAGING_COMMIT}" ]] && WINE_STAGING_REF="branch EGIT_STAGING_BRANCH"
+				ewarn "Building Wine against Wine-Staging git ${WINE_STAGING_REF}=\"${EGIT_STAGING_COMMIT:-${EGIT_STAGING_BRANCH}}\" ."
+				EGIT_BRANCH="${EGIT_STAGING_BRANCH:-master}"
+				EGIT_COMMIT="${EGIT_STAGING_COMMIT:-}"
+				unset ${PN}_LIVE_{REPO,BRANCH,COMMIT};
+				EGIT_REPO_URI="${STAGING_EGIT_REPO_URI}" EGIT_CHECKOUT_DIR="${STAGING_DIR}" git-r3_src_unpack
+				WINE_STAGING_COMMIT="${EGIT_VERSION}"
+				get_upstream_wine_commit  "${STAGING_DIR}" "${WINE_STAGING_COMMIT}" "WINE_COMMIT"
+				EGIT_COMMIT="${WINE_COMMIT}"
+				EGIT_CHECKOUT_DIR="${S}" git-r3_src_unpack
+				einfo "Building Wine commit \"${WINE_COMMIT}\" referenced by Wine-Staging commit \"${WINE_STAGING_COMMIT}\" ..."
+			)
+			eend $? || die "(subshell): ... failed to determine target Wine commit."
+		else
+			# References are relative to Wine git tree (post-checkout Wine-Staging git tree)
+			ebegin "(subshell): You are using a Wine git reference (building Wine git with USE +staging) ..."
+			(
+				source "${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh" || die
+				EGIT_CHECKOUT_DIR="${S}" git-r3_src_unpack
+				WINE_COMMIT="${EGIT_VERSION}"
+				unset ${PN}_LIVE_{REPO,BRANCH,COMMIT} EGIT_COMMIT;
+				EGIT_REPO_URI="${STAGING_EGIT_REPO_URI}" EGIT_CHECKOUT_DIR="${STAGING_DIR}" git-r3_src_unpack
+				if ! walk_wine_staging_git_tree "${STAGING_DIR}" "${S}" "${WINE_COMMIT}" "WINE_STAGING_COMMIT" ; then
+					find_closest_wine_commit "${STAGING_DIR}" "${S}" "WINE_COMMIT" "WINE_STAGING_COMMIT" "WINE_COMMIT_OFFSET"
+					(($? == 0)) && display_closest_wine_commit_message "${WINE_COMMIT}" "${WINE_STAGING_COMMIT}" "${WINE_COMMIT_OFFSET}"
+					die "Failed to find Wine-Staging git commit corresponding to supplied Wine git commit \"${WINE_COMMIT}\" ."
+				fi
+				einfo "Building Wine-Staging commit \"${WINE_STAGING_COMMIT}\" corresponding to Wine commit \"${WINE_COMMIT}\" ..."
+			)
+			eend $? || die "(subshell): ... failed to determine target Wine-Staging commit."
+		fi
 	else
 		unpack ${P}.tar.bz2
+		use staging && unpack "${STAGING_P}.tar.gz"
 	fi
 
 	unpack "${WINE_GENTOO}.tar.bz2"
@@ -243,10 +305,34 @@ src_prepare() {
 		)
 		eend $? || die "(subshell) script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\"."
 	fi
+	if use staging; then
+		ewarn "Applying the Wine-Staging patchset. Any bug reports to the"
+		ewarn "Wine bugzilla should explicitly state that staging was used."
+
+		local STAGING_EXCLUDE=""
+		if grep -q "0001-mshtml-Wine-Gecko-2.47-beta1-release.patch" "${STAGING_DIR}/patches/patchinstall.sh"; then
+			STAGING_EXCLUDE="${STAGING_EXCLUDE} -W mshtml-Wine_Gecko_2.47"
+		fi
+		use pipelight || STAGING_EXCLUDE="${STAGING_EXCLUDE} -W Pipelight"
+
+		# Launch wine-staging patcher in a subshell, using epatch as a backend, and gitapply.sh as a backend for binary patches
+		ebegin "Running Wine-Staging patch installer"
+		(
+			set -- DESTDIR="${S}" --backend=epatch --no-autoconf --all ${STAGING_EXCLUDE}
+			cd "${STAGING_DIR}/patches"
+			source "${STAGING_DIR}/patches/patchinstall.sh"
+		)
+		eend $? || die "(subshell) script: failed to apply Wine-Staging patches."
+
+		if [[ ! -z "${STAGING_SUFFIX}" ]]; then
+			sed -i -e 's/(Staging)/(Staging'"${STAGING_SUFFIX}"')/' libs/wine/Makefile.in || die "sed"
+		fi
+	fi
 
 	default
 	eautoreconf
 
+	# Modification of the server protocol requires regenerating the server requests
 	if [[ "$(md5sum server/protocol.def)" != "${md5}" ]]; then
 		einfo "server/protocol.def was patched; running tools/make_requests"
 		tools/make_requests || die #432348
@@ -256,6 +342,7 @@ src_prepare() {
 		sed -i '/^MimeType/d' loader/wine.desktop || die #117785
 	fi
 
+	# hi-res default icon, #472990, http://bugs.winehq.org/show_bug.cgi?id=24652
 	cp "${WORKDIR}"/${WINE_GENTOO}/icons/oic_winlogo.ico dlls/user32/resources/ || die
 
 	l10n_get_locales > po/LINGUAS # otherwise wine doesn't respect LINGUAS
@@ -308,6 +395,11 @@ multilib_src_configure() {
 		$(use_with xinerama)
 		$(use_with xml)
 		$(use_with xml xslt)
+	)
+
+	use staging && myconf+=(
+		--with-xattr
+		$(use_with vaapi va)
 	)
 
 	local PKG_CONFIG AR RANLIB
