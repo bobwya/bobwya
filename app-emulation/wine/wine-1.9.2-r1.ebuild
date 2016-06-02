@@ -39,6 +39,7 @@ MV="4.5.6"
 STAGING_P="wine-staging-${MY_PV}"
 STAGING_DIR="${WORKDIR}/${STAGING_P}${STAGING_SUFFIX}"
 STAGING_HELPER="wine-staging-git-helper-0.1.2"
+GV_BETA_PATCH="0001-mshtml-Wine-Gecko-2.47-beta1-release.patch"
 WINE_GENTOO="wine-gentoo-2015.03.07"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
 HOMEPAGE="http://www.winehq.org/"
@@ -77,7 +78,7 @@ RESTRICT="test"
 
 COMMON_DEPEND="
 	truetype? ( >=media-libs/freetype-2.0.0[${MULTILIB_USEDEP}] )
-	capi? ( net-dialup/capi4k-utils )
+	capi? ( net-libs/libcapi[${MULTILIB_USEDEP}] )
 	ncurses? ( >=sys-libs/ncurses-5.2:0=[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
 	fontconfig? ( media-libs/fontconfig:=[${MULTILIB_USEDEP}] )
@@ -312,8 +313,9 @@ src_prepare() {
 		ewarn "Wine bugzilla should explicitly state that staging was used."
 
 		local STAGING_EXCLUDE=""
-		if grep -q "0001-mshtml-Wine-Gecko-2.47-beta1-release.patch" "${STAGING_DIR}/patches/patchinstall.sh"; then
-			STAGING_EXCLUDE="${STAGING_EXCLUDE} -W mshtml-Wine_Gecko_2.47"
+		if grep -q "${GV_BETA_PATCH}" "${STAGING_DIR}/patches/patchinstall.sh"; then
+			local GV_BETA=$( "${FILESDIR}/beta_patch_conv.sh" "${GV_BETA_PATCH}" )
+			STAGING_EXCLUDE="${STAGING_EXCLUDE} -W ${GV_BETA}"
 		fi
 		use pipelight || STAGING_EXCLUDE="${STAGING_EXCLUDE} -W Pipelight"
 

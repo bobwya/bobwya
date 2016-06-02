@@ -9,7 +9,7 @@ function convert_version_list_to_regexp(version_list,
 	gsub("[[:blank:]]+", "|", version_regexp)
 	sub("^", "^(", version_regexp)
 	sub("$", ")$", version_regexp)
-	
+
 	return (version_regexp)
 }
 
@@ -49,6 +49,18 @@ function process_ebuild_phase_close(line, array_ebuild_phases, array_phase_open,
 		for (i in array_ebuild_phases)
 			array_phase_open[array_ebuild_phases[i]]=0
 	}
+}
+
+function text2regexp(text,
+		regexp)
+{
+	regexp=text
+	# Escape all control regex characters
+	gsub("\\\\", "\x5c\x5c&", regexp)
+	gsub("\\!|\\\"|\\#|\\$|\\%|\\&|\x27|\\(|\\)|\\+|\\,|\\-|\\.|\\/|\\:|\\;|\x3c|\\=|\x3e|\\?|\\@|\\[|\\]|\\{|\\|\\}|\\~", "\x5c\x5c&", regexp)
+	gsub("\x20", "[[:blank:]]+", regexp)
+	gsub("\\*", ".+", regexp)
+	return regexp
 }
 
 function setup_global_regexps(variables,		i)
