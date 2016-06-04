@@ -9,7 +9,7 @@ tidyup_pts_source()
 			-e 's:\$PTS_DIR:"\${PTS_DIR}":g' \
 			"${S}/phoronix-test-suite" \
 			|| die "sed: correcting main PTS file"
-	find "${S}/pts-core/external-test-dependencies/xml/" -type f ! -name "gentoo-packages.xml" -print0 | xargs -0 rm -f \
+	find "${S}/pts-core/external-test-dependencies/xml/" -type f ! -name "generic-packages.xml" ! -name "gentoo-packages.xml" -print0 | xargs -0 rm -f \
 			|| die "xargs-rm: non-Gentoo xml package files"
 	find "${S}/pts-core/external-test-dependencies/scripts/" -type f ! -name "install-gentoo-packages.sh" -print0 | xargs -0 rm -f \
 			|| die "xargs-rm: non-Gentoo package script files"

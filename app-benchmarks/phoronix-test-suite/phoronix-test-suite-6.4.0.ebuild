@@ -38,7 +38,7 @@ IUSE=""
 
 DEPEND=""
 RDEPEND="${DEPEND}
-		dev-lang/php[cli,curl,gd,json,posix,pcntl,truetype,zip]"
+		dev-lang/php[cli,curl,gd,json,posix,pcntl,sockets,truetype,zip]"
 
 src_prepare() {
 	source "${FILESDIR}/tidyup_pts_source_helper.sh"
