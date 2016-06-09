@@ -146,7 +146,9 @@ src_unpack() {
 	# Unpack language packs
 	mozlinguas_src_unpack
 	if use kde; then
-		if [[ ${MOZ_PV} =~ ^(10|17|24)\..*esr$ ]]; then
+		if [[ ${MOZ_PV} =~ ^47\..*$ ]]; then
+			EHG_REVISION="default"
+		elif [[ ${MOZ_PV} =~ ^(10|17|24)\..*esr$ ]]; then
 			EHG_REVISION="esr${MOZ_PV%%.*}"
 		else
 			EHG_REVISION="firefox${MOZ_PV%%.*}"
@@ -419,6 +421,27 @@ pkg_postinst() {
 	# Update mimedb for the new .desktop file
 	fdo-mime_desktop_database_update
 	gnome2_icon_cache_update
+	if [[ $(get_major_version) -ge 40 ]]; then
+		# See https://forums.gentoo.org/viewtopic-t-1028874.html
+		ewarn "If you experience problems with your cursor theme - only when mousing over ${PN}..."
+		ewarn "1) create/alter the following file: \"\${HOME}/.icons/default/index.theme\""
+		ewarn "   [icon theme]"
+		ewarn "   Inherits= ..."
+		ewarn "   ( replace \"...\" with your default icon theme name )"
+		ewarn "2) add/alter the following line in your \"\${HOME}/.config/gtk-3.0/settings.ini\""
+		ewarn "   configuration file Settings section:"
+		ewarn "   [Settings]"
+		ewarn "      ..."
+		ewarn "   gtk-cursor-theme-name=default"
+		ewarn "      ..."
+		ewarn
+	fi
+	if [[ $(get_major_version) -eq 47 ]]; then
+		einfo "To enable experimental Electrolysis (e10s) support for ${PN}..."
+		einfo "  browse to: \"about:config\" page"
+		einfo "  add entry: \"browser.tabs.remote.force-enable = true\""
+		einfo
+	fi
 }
 
 pkg_postrm() {

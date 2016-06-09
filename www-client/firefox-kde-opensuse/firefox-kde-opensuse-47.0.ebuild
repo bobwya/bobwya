@@ -5,16 +5,14 @@
 EAPI=6
 VIRTUALX_REQUIRED="pgo"
 WANT_AUTOCONF="2.1"
-MOZ_ESR=1
+MOZ_ESR=""
 
 # This list can be updated with scripts/get_langs.sh from the mozilla overlay
-# No official support as of fetch time
-# csb
-MOZ_LANGS=( af ar as ast be bg bn-BD bn-IN br bs ca cs cy da de el en
-en-GB en-US en-ZA eo es-AR es-CL es-ES es-MX et eu fa fi fr fy-NL ga-IE gd
-gl gu-IN he hi-IN hr hu hy-AM id is it ja kk km kn ko lt lv mai mk ml mr
-nb-NO nl nn-NO or pa-IN pl pt-BR pt-PT rm ro ru si sk sl son sq sr sv-SE ta te
-th tr uk vi xh zh-CN zh-TW )
+MOZ_LANGS=( ach af an ar as ast az be bg bn-BD bn-IN br bs ca cs cy da de
+el en en-GB en-US en-ZA eo es-AR es-CL es-ES es-MX et eu fa fi fr fy-NL
+ga-IE gd gl gu-IN he hi-IN hr hsb hu hy-AM id is it ja kk km kn ko lt
+lv mai mk ml mr ms nb-NO nl nn-NO or pa-IN pl pt-BR pt-PT rm ro ru si sk sl
+son sq sr sv-SE ta te th tr uk uz vi xh zh-CN zh-TW )
 
 # Convert the ebuild version to the upstream mozilla version, used by mozlinguas
 MOZ_PN="firefox"
@@ -28,17 +26,17 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${MOZ_PN}-45.0-patches-04"
+PATCH="${MOZ_PN}-47.0-patches-0.1"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
 EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 
-MOZCONFIG_OPTIONAL_GTK3="enabled"
+MOZCONFIG_OPTIONAL_GTK2ONLY=1
 MOZCONFIG_OPTIONAL_WIFI=1
 MOZCONFIG_OPTIONAL_JIT="enabled"
 
-inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-v6.45 pax-utils fdo-mime autotools virtualx mozlinguas mercurial
+inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-v6.47 pax-utils fdo-mime autotools virtualx mozlinguas mercurial
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="http://www.mozilla.com/firefox
@@ -51,41 +49,26 @@ LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist hardened +hwaccel kde pgo selinux +gmp-autoupdate test"
 RESTRICT="!bindist? ( bindist )"
 
-# More URIs appended below...
+PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCH}.tar.xz )
 SRC_URI="${SRC_URI}
-	https://dev.gentoo.org/~anarchy/mozilla/patchsets/${PATCH}.tar.xz
-	https://dev.gentoo.org/~axs/mozilla/patchsets/${PATCH}.tar.xz
-	https://dev.gentoo.org/~polynomial-c/mozilla/patchsets/${PATCH}.tar.xz"
+	${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz
+	${PATCH_URIS[@]}"
 
 ASM_DEPEND=">=dev-lang/yasm-1.1"
 
-# Mesa 7.10 needed for WebGL + bugfixes
 RDEPEND="
-	>=dev-libs/nss-3.21.1
+	>=dev-libs/nss-3.23
 	>=dev-libs/nspr-4.12
 	selinux? ( sec-policy/selinux-mozilla )
 	kde? ( kde-misc/kmozillahelper:*  )
 	!!www-client/firefox"
 
 DEPEND="${RDEPEND}
-	pgo? (
-		>=sys-devel/gcc-4.5 )
-	amd64? ( ${ASM_DEPEND}
-		virtual/opengl )
-	x86? ( ${ASM_DEPEND}
-		virtual/opengl )"
+	pgo? ( >=sys-devel/gcc-4.5 )
+	amd64? ( ${ASM_DEPEND} virtual/opengl )
+	x86? ( ${ASM_DEPEND} virtual/opengl )"
 
-# No source releases for alpha|beta
-if [[ ${PV} =~ alpha ]]; then
-	CHANGESET="8a3042764de7"
-	SRC_URI="${SRC_URI}
-		https://dev.gentoo.org/~nirbheek/mozilla/firefox/firefox-${MOZ_PV}_${CHANGESET}.source.tar.xz"
-	S="${WORKDIR}/mozilla-aurora-${CHANGESET}"
-else
-	S="${WORKDIR}/firefox-${MOZ_PV}"
-	SRC_URI="${SRC_URI}
-		${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz"
-fi
+S="${WORKDIR}/firefox-${MOZ_PV}"
 
 QA_PRESTRIPPED="usr/lib*/${MOZ_PN}/firefox"
 
@@ -139,7 +122,9 @@ src_unpack() {
 	# Unpack language packs
 	mozlinguas_src_unpack
 	if use kde; then
-		if [[ ${MOZ_PV} =~ ^(10|17|24)\..*esr$ ]]; then
+		if [[ ${MOZ_PV} =~ ^47\..*$ ]]; then
+			EHG_REVISION="default"
+		elif [[ ${MOZ_PV} =~ ^(10|17|24)\..*esr$ ]]; then
 			EHG_REVISION="esr${MOZ_PV%%.*}"
 		else
 			EHG_REVISION="firefox${MOZ_PV%%.*}"
@@ -174,12 +159,7 @@ src_prepare() {
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
 	# Apply our patches
-	eapply "${WORKDIR}/firefox" \
-		"${FILESDIR}"/arm64-4-link-chromium-mutex-based-atomics.patch \
-		"${FILESDIR}"/arm64-5-mozjemalloc-no-static-page-sizes.patch
-
-	# Allow user to apply any additional patches without modifying ebuild
-	eapply_user
+	eapply "${WORKDIR}/firefox"
 
 	# Enable gnomebreakpad
 	if use debug ; then
@@ -212,11 +192,17 @@ src_prepare() {
 	sed '/^MOZ_DEV_EDITION=1/d' \
 		-i "${S}"/browser/branding/aurora/configure.sh || die
 
-	eautoreconf
+	# Allow user to apply any additional patches without modifying ebuild
+	eapply_user
+
+	# Autotools configure is now called old-configure.in
+	# This works because there is still a configure.in that happens to be for the
+	# shell wrapper configure script
+	eautoreconf old-configure.in
 
 	# Must run autoconf in js/src
 	cd "${S}"/js/src || die
-	eautoconf
+	eautoconf old-configure.in
 
 	# Need to update jemalloc's configure
 	cd "${S}"/memory/jemalloc/src || die
@@ -224,7 +210,6 @@ src_prepare() {
 }
 
 src_configure() {
-	MOZILLA_FIVE_HOME="/usr/$(get_libdir)/${MOZ_PN}"
 	MEXTENSIONS="default"
 	# Google API keys (see http://www.chromium.org/developers/how-tos/api-keys)
 	# Note: These are for Gentoo Linux use ONLY. For your own distribution, please
@@ -240,17 +225,11 @@ src_configure() {
 	mozconfig_init
 	mozconfig_config
 
-	# We want rpath support to prevent unneeded hacks on different libc variants
-	append-ldflags -Wl,-rpath="${MOZILLA_FIVE_HOME}"
-
 	# It doesn't compile on alpha without this LDFLAGS
 	use alpha && append-ldflags "-Wl,--no-relax"
 
 	# Add full relro support for hardened
 	use hardened && append-ldflags "-Wl,-z,relro,-z,now"
-
-	# Only available on mozilla-overlay for experimentation -- Removed in Gentoo repo per bug 571180
-	#use egl && mozconfig_annotate 'Enable EGL as GL provider' --with-gl-provider=EGL
 
 	# Setup api key for location services
 	echo -n "${_google_api_key}" > "${S}"/google-api-key
@@ -258,9 +237,6 @@ src_configure() {
 
 	mozconfig_annotate '' --enable-extensions="${MEXTENSIONS}"
 	mozconfig_annotate '' --disable-mailnews
-
-	# Other ff-specific settings
-	mozconfig_annotate '' --with-default-mozilla-five-home=${MOZILLA_FIVE_HOME}
 
 	# Allow for a proper pgo build
 	if use pgo; then
@@ -277,6 +253,7 @@ src_configure() {
 	fi
 
 	# workaround for funky/broken upstream configure...
+	SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 	emake -f client.mk configure
 }
 
@@ -302,11 +279,9 @@ src_compile() {
 		shopt -u nullglob
 		addpredict "${cards}"
 
-		CC="$(tc-getCC)" CXX="$(tc-getCXX)" LD="$(tc-getLD)" \
 		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 		virtx emake -f client.mk profiledbuild || die "virtx emake failed"
 	else
-		CC="$(tc-getCC)" CXX="$(tc-getCXX)" LD="$(tc-getLD)" \
 		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 		emake -f client.mk realbuild
 	fi
@@ -314,8 +289,6 @@ src_compile() {
 }
 
 src_install() {
-	MOZILLA_FIVE_HOME="/usr/$(get_libdir)/${MOZ_PN}"
-
 	cd "${BUILD_OBJ_DIR}" || die
 
 	# Add our default prefs for firefox
@@ -420,6 +393,27 @@ pkg_postinst() {
 	# Update mimedb for the new .desktop file
 	fdo-mime_desktop_database_update
 	gnome2_icon_cache_update
+	if [[ $(get_major_version) -ge 40 ]]; then
+		# See https://forums.gentoo.org/viewtopic-t-1028874.html
+		ewarn "If you experience problems with your cursor theme - only when mousing over ${PN}..."
+		ewarn "1) create/alter the following file: \"\${HOME}/.icons/default/index.theme\""
+		ewarn "   [icon theme]"
+		ewarn "   Inherits= ..."
+		ewarn "   ( replace \"...\" with your default icon theme name )"
+		ewarn "2) add/alter the following line in your \"\${HOME}/.config/gtk-3.0/settings.ini\""
+		ewarn "   configuration file Settings section:"
+		ewarn "   [Settings]"
+		ewarn "      ..."
+		ewarn "   gtk-cursor-theme-name=default"
+		ewarn "      ..."
+		ewarn
+	fi
+	if [[ $(get_major_version) -eq 47 ]]; then
+		einfo "To enable experimental Electrolysis (e10s) support for ${PN}..."
+		einfo "  browse to: \"about:config\" page"
+		einfo "  add entry: \"browser.tabs.remote.force-enable = true\""
+		einfo
+	fi
 }
 
 pkg_postrm() {

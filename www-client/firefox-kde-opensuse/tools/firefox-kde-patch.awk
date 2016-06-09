@@ -128,7 +128,9 @@ BEGIN{
 	# Ebuild phase based post-checks
 	if ((array_phase_open["src_unpack"] ==1) && ($0 ~ /mozlinguas\_src\_unpack/)) {
 		printf("%s%s\n",	indent, "if use kde; then")
-		printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^\(10|17|24\)\\..*esr$ ]]; then")
+		printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^47\\..*$ ]]; then")
+		printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"default\"")
+		printf("%s%s%s\n",	indent, indent, "elif [[ ${MOZ_PV} =~ ^\(10|17|24\)\\..*esr$ ]]; then")
 		printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"esr${MOZ_PV%%.*}\"")
 		printf("%s%s%s\n",	indent, indent, "else")
 		printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"firefox${MOZ_PV%%.*}\"")
@@ -170,6 +172,30 @@ BEGIN{
 		printf("%s%s%s\n",  indent, indent,  "# ... _OR_ add to your user .xinitrc: \"xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true\"")
 		printf("%s%s\n", 	indent, "fi")
 		array_phase_open["src_prepare"]=2
+	}
+	else if ((array_phase_open["pkg_postinst"] == 1) && ($0 ~ "gnome2_icon_cache_update")) {
+		printf("%s%s\n", 	indent, "if [[ $(get_major_version) -ge 40 ]]; then")
+		printf("%s%s%s\n", indent, indent, "# See https://forums.gentoo.org/viewtopic-t-1028874.html")
+		printf("%s%s%s\n", indent, indent, "ewarn \"If you experience problems with your cursor theme - only when mousing over ${PN}...\"")
+		printf("%s%s%s\n", indent, indent, "ewarn \"1) create/alter the following file: \\\"\\${HOME}/.icons/default/index.theme\\\"\"")
+		printf("%s%s%s\n", indent, indent, "ewarn \"   [icon theme]\"")
+		printf("%s%s%s\n", indent, indent, "ewarn \"   Inherits= ...\"")
+		printf("%s%s%s\n", indent, indent, "ewarn \"   ( replace \\\"...\\\" with your default icon theme name )\"")
+		printf("%s%s%s\n", indent, indent, "ewarn \"2) add/alter the following line in your \\\"\\${HOME}/.config/gtk-3.0/settings.ini\\\"\"")
+		printf("%s%s%s\n", indent, indent, "ewarn \"   configuration file Settings section:\"")
+		printf("%s%s%s\n", indent, indent, "ewarn \"   [Settings]\"")
+		printf("%s%s%s\n", indent, indent, "ewarn \"      ...\"")
+		printf("%s%s%s\n", indent, indent, "ewarn \"   gtk-cursor-theme-name=default\"")
+		printf("%s%s%s\n", indent, indent, "ewarn \"      ...\"")
+		printf("%s%s%s\n", indent, indent, "ewarn")
+		printf("%s%s\n", 	indent, "fi")
+		printf("%s%s\n", 	indent, "if [[ $(get_major_version) -eq 47 ]]; then")
+		printf("%s%s%s\n",	indent, indent, "einfo \"To enable experimental Electrolysis (e10s) support for ${PN}...\"")
+		printf("%s%s%s\n",	indent, indent, "einfo \"  browse to: \\\"about:config\\\" page\"")
+		printf("%s%s%s\n",	indent, indent, "einfo \"  add entry: \\\"browser.tabs.remote.force-enable = true\\\"\"")
+		printf("%s%s%s\n",	indent, indent, "einfo")
+		printf("%s%s\n", 	indent, "fi")
+		++array_phase_open["pkg_postinst"]
 	}
 	else if ($0 ~ array_variables_regexp["BUILD_OBJ_DIR"]) {
 		printf("MAX_OBJ_DIR_LEN=\"80\"\n")
