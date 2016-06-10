@@ -62,7 +62,7 @@ fi
 
 LICENSE="LGPL-2.1"
 SLOT="0"
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test +threads +truetype +udisks v4l vaapi +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test +threads +truetype +udisks v4l vaapi +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	test? ( abi_x86_32 )
 	elibc_glibc? ( threads )
@@ -78,7 +78,6 @@ RESTRICT="test"
 
 COMMON_DEPEND="
 	truetype? ( >=media-libs/freetype-2.0.0[${MULTILIB_USEDEP}] )
-	capi? ( net-libs/libcapi[${MULTILIB_USEDEP}] )
 	ncurses? ( >=sys-libs/ncurses-5.2:0=[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
 	fontconfig? ( media-libs/fontconfig:=[${MULTILIB_USEDEP}] )
@@ -178,10 +177,17 @@ S="${WORKDIR}/${MY_P}"
 wine_build_environment_prechecks() {
 	[[ ${MERGE_TYPE} = "binary" ]] && return 0
 
-	if use abi_x86_64 && [[ $(( $(gcc-major-version) * 100 + $(gcc-minor-version) )) -lt 404 ]]; then
-		eerror "You need gcc-4.4+ to build 64-bit wine"
-		eerror
-		return 1
+	if use abi_x86_64; then
+		einfo "Checking for builtin_ms_va_list ..."
+		if ( $(tc-getCC) -O2 "${FILESDIR}"/builtin_ms_va_list.c -o "${T}"/builtin_ms_va_list >/dev/null 2>&1) ; then
+			einfo "$(tc-getCC) supports builtin_ms_va_list, enabling 64-bit wine"
+		else
+			eerror "This version of $(tc-getCC) does not support builtin_ms_va_list, can't enable 64-bit wine"
+			eerror
+			eerror "You need gcc-4.4+ or clang 3.8+ to build 64-bit wine"
+			eerror
+			return 1
+		fi
 	fi
 
 	if use abi_x86_32 && use opencl && [[ x$(eselect opencl show 2> /dev/null) = "xintel" ]]; then
@@ -363,7 +369,7 @@ multilib_src_configure() {
 	local myconf=(
 		--sysconfdir=/etc/wine
 		$(use_with alsa)
-		$(use_with capi)
+		--without-capi
 		$(use_with lcms cms)
 		$(use_with cups)
 		$(use_with ncurses curses)

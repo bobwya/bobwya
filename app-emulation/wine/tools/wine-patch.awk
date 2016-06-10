@@ -159,6 +159,7 @@ BEGIN{
 	is_wine_version_gecko_version_2_44=(wine_version ~ convert_version_list_to_regexp(wine_versions_gecko_version_2_44))
 	is_wine_version_mono_version_4_6_0=(wine_version ~ convert_version_list_to_regexp(wine_versions_mono_version_4_6_0))
 	is_wine_version_mono_version_4_6_2=(wine_version ~ convert_version_list_to_regexp(wine_versions_mono_version_4_6_2))
+	is_wine_version_mono_version_4_6_3=(wine_version ~ convert_version_list_to_regexp(wine_versions_mono_version_4_6_3))
 
 	# Wine Gecko beta versions
 	wine_gecko_beta_version="0001-mshtml-Wine-Gecko-2.47-beta1-release.patch"
@@ -208,16 +209,19 @@ BEGIN{
 
 		if (is_wine_version_gecko_version_2_44 && ($0 ~ array_variables_regexp["GV"]))
 			sub(wine_gecko_version_regexp, "2.44")
-		if (is_wine_version_mono_version_4_6_0 && ($0 ~ array_variables_regexp["MV"]))
-			sub(wine_mono_version_regexp, "4.6.0")
-		if (is_wine_version_mono_version_4_6_2 && ($0 ~ array_variables_regexp["MV"]))
-			sub(wine_mono_version_regexp, "4.6.2")
-
+		if ($0 ~ array_variables_regexp["MV"]) {
+			if (is_wine_version_mono_version_4_6_0)
+				sub(wine_mono_version_regexp, "4.6.0")
+			else if (is_wine_version_mono_version_4_6_2)
+				sub(wine_mono_version_regexp, "4.6.2")
+			else if (is_wine_version_mono_version_4_6_3)
+				sub(wine_mono_version_regexp, "4.6.3")
+		}
 		if (($0 ~ array_variables_regexp["COMMON_DEPEND"]) || ($0 ~ array_variables_regexp["RDEPEND"]) || ($0 ~ array_variables_regexp["DEPEND"]))
 			depend_assignment_open=1
 
-		if (depend_assignment_open && ($0 ~ text2regexp("^ capi?")))
-			sub(text2regexp("net-dialup/capi4k-utils"), "net-libs/libcapi[${MULTILIB_USEDEP}]")
+		if (depend_assignment_open && sub(text2regexp("^ capi? ( net-dialup/capi4k-utils )"), "") && ($0 ~ blank_line_regexp))
+			suppress_current_line=1
 
 		if ($0 ~ array_variables_regexp["KEYWORDS"])
 			suppress_current_line=1
@@ -240,7 +244,6 @@ BEGIN{
 				suppress_current_line=1
 			if ($0 ~ array_variables_regexp["IUSE"])
 				gsub((quote_or_ws_seperator_regexp staging_use_flags_regexp quote_or_ws_seperator_regexp), " ")
-
 			if (required_use_assignment_open || depend_assignment_open) {
 				if (($0 ~ (quote_or_ws_seperator_regexp staging_use_flags_regexp "\\?")) && (gsub((staging_use_flags_regexp "\\?[[:blank:]]" bracketed_expression_regexp), "") > 0) && ($0 ~ blank_line_regexp))
 					suppress_current_line=1
@@ -251,6 +254,8 @@ BEGIN{
 			printf("%s%s\n", indent, "staging? ( https://github.com/bobwya/${STAGING_HELPER%-*}/archive/${STAGING_HELPER##*-}.tar.gz -> ${STAGING_HELPER}.tar.gz )\"")
 			++staging_git_helper
 		}
+		if ($0 ~ array_variables_regexp["IUSE"])
+			sub((quote_or_ws_seperator_regexp "capi" quote_or_ws_seperator_regexp), " ")
 
 		if (required_use_assignment_open && (is_wine_version_mono_version_4_6_0 || is_wine_version_mono_version_4_6_2)) {
 			if (sub(text2regexp("mono? ( * )"), "") && ($0 ~ blank_line_regexp))
@@ -346,6 +351,7 @@ BEGIN{
 			wine_staging_check_open=(wine_staging_check_open == if_stack+1) ? 0 : wine_staging_check_open
 	}
 	else if (array_phase_open["multilib_src_configure"]) {
+		sub(text2regexp("$(use_with capi)"), "--without-capi")
 		if ($0 ~ text2regexp("^ use staging")) {
 			wine_staging_check_open=1
 			open_bracketed_expression=($0 ~ bracketed_expression_open_regexp "$")
