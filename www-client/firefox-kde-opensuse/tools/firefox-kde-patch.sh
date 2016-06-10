@@ -69,8 +69,8 @@ for old_ebuild_file in *.ebuild; do
 	awk -F '[[:blank:]]+' -vebuild_file="${ebuild_file}" \
 		--file "tools/${script_name%.*}.awk" \
 		"${ebuild_file}" 1>"${new_ebuild_file}" 2>/dev/null
-		[ -f "${new_ebuild_file}" ] || exit 1
-		mv "${new_ebuild_file}" "${ebuild_file}"
+	[ -f "${new_ebuild_file}" ] || exit 1
+	mv "${new_ebuild_file}" "${ebuild_file}"
 done
 
 # Rebuild the master package Manifest file

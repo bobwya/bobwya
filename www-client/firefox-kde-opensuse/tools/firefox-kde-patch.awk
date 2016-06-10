@@ -46,6 +46,7 @@ BEGIN{
 	}
 	else if ($0 ~ ebuild_inherit_regexp) {
 		$0=$0 " mercurial"
+		mozconfig_version=gensub("^.+mozconfig\\-v([\\.[:digit:]]+).*$", "\\1", 1, $0)
 	}
 	else if ($0 ~ array_variables_regexp["DESCRIPTION"]) {
 		sub(/\".+\"/, "\"Firefox Web Browser, with SUSE patchset, to provide better KDE integration\"")
@@ -127,6 +128,8 @@ BEGIN{
 
 	# Ebuild phase based post-checks
 	if ((array_phase_open["src_unpack"] ==1) && ($0 ~ /mozlinguas\_src\_unpack/)) {
+		if (mozconfig_version+0.0 >= 6.45)
+			printf("%s%s\n",	indent, "export MOZILLA_FIVE_HOME=\"${MOZILLA_FIVE_HOME/${PN}/${MOZ_PN}}\"")
 		printf("%s%s\n",	indent, "if use kde; then")
 		printf("%s%s%s\n",	indent, indent, "if [[ ${MOZ_PV} =~ ^47\\..*$ ]]; then")
 		printf("%s%s%s%s\n",indent, indent, indent, "EHG_REVISION=\"default\"")

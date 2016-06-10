@@ -121,6 +121,7 @@ src_unpack() {
 
 	# Unpack language packs
 	mozlinguas_src_unpack
+	export MOZILLA_FIVE_HOME="${MOZILLA_FIVE_HOME/${PN}/${MOZ_PN}}"
 	if use kde; then
 		if [[ ${MOZ_PV} =~ ^47\..*$ ]]; then
 			EHG_REVISION="default"
