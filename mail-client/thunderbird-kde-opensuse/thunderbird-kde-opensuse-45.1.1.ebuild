@@ -65,8 +65,9 @@ CDEPEND="
 	crypt?  ( || (
 		( >=app-crypt/gnupg-2.0
 			|| (
-				app-crypt/pinentry[gtk]
-				app-crypt/pinentry[qt4]
+				app-crypt/pinentry[gtk(-)]
+				app-crypt/pinentry[qt4(-)]
+				app-crypt/pinentry[qt5(-)]
 			)
 		)
 		=app-crypt/gnupg-1.4*
@@ -92,6 +93,7 @@ pkg_setup() {
 	moz_pkgsetup
 
 	export MOZILLA_DIR="${S}/mozilla"
+	export MOZILLA_FIVE_HOME="${MOZILLA_FIVE_HOME/${PN}/${MOZ_PN}}"
 
 	if ! use bindist ; then
 		elog "You are enabling official branding. You may not redistribute this build"
@@ -207,7 +209,6 @@ src_prepare() {
 }
 
 src_configure() {
-	declare MOZILLA_FIVE_HOME="/usr/$(get_libdir)/${MOZ_PN}"
 	MEXTENSIONS="default"
 
 	####################################
@@ -218,9 +219,6 @@ src_configure() {
 
 	mozconfig_init
 	mozconfig_config
-
-	# We want rpath support to prevent unneeded hacks on different libc variants
-	append-ldflags -Wl,-rpath="${MOZILLA_FIVE_HOME}"
 
 	# It doesn't compile on alpha without this LDFLAGS
 	use alpha && append-ldflags "-Wl,--no-relax"
@@ -233,7 +231,6 @@ src_configure() {
 	mozconfig_annotate '' --enable-calendar
 
 	# Other tb-specific settings
-	mozconfig_annotate '' --with-default-mozilla-five-home=${MOZILLA_FIVE_HOME}
 	mozconfig_annotate '' --with-user-appdir=.thunderbird
 
 	mozconfig_use_enable ldap
@@ -247,8 +244,8 @@ src_configure() {
 
 	# Use an objdir to keep things organized and force build of Thunderbird mail application.
 	sed -i -e "\$amk_add_options MOZ_OBJDIR=${BUILD_OBJ_DIR}" \
-		-e '1i\'"mk_add_options MOZ_CO_PROJECT=mail" \
-		-e '1i\'"ac_add_options --enable-application=mail" "${S}"/.mozconfig
+		-e '''1i\'''"mk_add_options MOZ_CO_PROJECT=mail" \
+		-e '''1i\'''"ac_add_options --enable-application=mail" "${S}"/.mozconfig
 
 	# Finalize and report settings
 	mozconfig_final
@@ -291,8 +288,6 @@ src_compile() {
 }
 
 src_install() {
-	declare MOZILLA_FIVE_HOME="/usr/$(get_libdir)/${MOZ_PN}"
-
 	declare emid
 	cd "${BUILD_OBJ_DIR}" || die
 
@@ -307,7 +302,7 @@ src_install() {
 	# dev-db/sqlite does not have FTS3_TOKENIZER support.
 	# gloda needs it to function, and bad crashes happen when its enabled and doesn't work
 	if in_iuse system-sqlite && use system-sqlite ; then
-		echo "pref(\"mailnews.database.global.indexer.enabled\", false);" \
+		echo "lockPref(\"mailnews.database.global.indexer.enabled\", false);" \
 			>>"${BUILD_OBJ_DIR}/dist/bin/defaults/pref/all-gentoo.js" || die
 	fi
 
@@ -382,6 +377,21 @@ src_install() {
 }
 
 pkg_postinst() {
+	if [[ $(get_major_version) -ge 40 ]]; then
+		# See https://forums.gentoo.org/viewtopic-t-1028874.html
+		ewarn "If you experience problems with your cursor theme - only when mousing over ${PN}..."
+		ewarn "1) create/alter the following file: \"\${HOME}/.icons/default/index.theme\""
+		ewarn "   [icon theme]"
+		ewarn "   Inherits= ..."
+		ewarn "   ( replace \"...\" with your default icon theme name )"
+		ewarn "2) add/alter the following line in your \"\${HOME}/.config/gtk-3.0/settings.ini\""
+		ewarn "   configuration file Settings section:"
+		ewarn "   [Settings]"
+		ewarn "      ..."
+		ewarn "   gtk-cursor-theme-name=default"
+		ewarn "      ..."
+		ewarn
+	fi
 	if use crypt; then
 		local peimpl=$(eselect --brief --colour=no pinentry show)
 		case "${peimpl}" in

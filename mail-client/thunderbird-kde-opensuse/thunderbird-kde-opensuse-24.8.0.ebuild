@@ -426,6 +426,21 @@ src_install() {
 }
 
 pkg_postinst() {
+	if [[ $(get_major_version) -ge 40 ]]; then
+		# See https://forums.gentoo.org/viewtopic-t-1028874.html
+		ewarn "If you experience problems with your cursor theme - only when mousing over ${PN}..."
+		ewarn "1) create/alter the following file: \"\${HOME}/.icons/default/index.theme\""
+		ewarn "   [icon theme]"
+		ewarn "   Inherits= ..."
+		ewarn "   ( replace \"...\" with your default icon theme name )"
+		ewarn "2) add/alter the following line in your \"\${HOME}/.config/gtk-3.0/settings.ini\""
+		ewarn "   configuration file Settings section:"
+		ewarn "   [Settings]"
+		ewarn "      ..."
+		ewarn "   gtk-cursor-theme-name=default"
+		ewarn "      ..."
+		ewarn
+	fi
 	elog
 	elog "If you experience problems with plugins please issue the"
 	elog "following command : rm \${HOME}/.thunderbird/*/extensions.sqlite ,"

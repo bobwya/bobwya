@@ -67,8 +67,9 @@ CDEPEND="
 	crypt?  ( || (
 		( >=app-crypt/gnupg-2.0
 			|| (
-				app-crypt/pinentry[gtk]
-				app-crypt/pinentry[qt4]
+				app-crypt/pinentry[gtk(-)]
+				app-crypt/pinentry[qt4(-)]
+				app-crypt/pinentry[qt5(-)]
 			)
 		)
 		=app-crypt/gnupg-1.4*
@@ -260,8 +261,8 @@ src_configure() {
 
 	# Use an objdir to keep things organized and force build of Thunderbird mail application.
 	sed -i -e "\$amk_add_options MOZ_OBJDIR=${BUILD_OBJ_DIR}" \
-		-e '1i\'"mk_add_options MOZ_CO_PROJECT=mail" \
-		-e '1i\'"ac_add_options --enable-application=mail" "${S}"/.mozconfig
+		-e '''1i\'''"mk_add_options MOZ_CO_PROJECT=mail" \
+		-e '''1i\'''"ac_add_options --enable-application=mail" "${S}"/.mozconfig
 
 	# Finalize and report settings
 	mozconfig_final
@@ -391,6 +392,21 @@ src_install() {
 }
 
 pkg_postinst() {
+	if [[ $(get_major_version) -ge 40 ]]; then
+		# See https://forums.gentoo.org/viewtopic-t-1028874.html
+		ewarn "If you experience problems with your cursor theme - only when mousing over ${PN}..."
+		ewarn "1) create/alter the following file: \"\${HOME}/.icons/default/index.theme\""
+		ewarn "   [icon theme]"
+		ewarn "   Inherits= ..."
+		ewarn "   ( replace \"...\" with your default icon theme name )"
+		ewarn "2) add/alter the following line in your \"\${HOME}/.config/gtk-3.0/settings.ini\""
+		ewarn "   configuration file Settings section:"
+		ewarn "   [Settings]"
+		ewarn "      ..."
+		ewarn "   gtk-cursor-theme-name=default"
+		ewarn "      ..."
+		ewarn
+	fi
 	if use crypt; then
 		local peimpl=$(eselect --brief --colour=no pinentry show)
 		case "${peimpl}" in
