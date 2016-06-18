@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI="5"
+EAPI=6
 
 inherit autotools eutils
 
@@ -11,7 +11,7 @@ HOMEPAGE="http://www.fsarchiver.org"
 
 if [[ ${PV} == "9999" ]] ; then
 	EGIT_REPO_URI="https://github.com/fdupoux/${PN}.git"
-	EGIT3_STORE_DIR="${T}"
+	EGIT3_STORE_DIR="${T:-EGIT3_STORE_DIR}"
 	inherit git-r3
 	SRC_URI=""
 	#KEYWORDS=""
