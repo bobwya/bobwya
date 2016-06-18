@@ -12,7 +12,8 @@ wine_versions_no_csmt_staging="1.9.6-r1 1.9.7-r1 1.9.8 1.9.9"
 wine_versions_legacy_gstreamer_patch_1_0="1.8_rc* 1.8-r1 1.8.1-r1 1.8.2 1.9.0-r1 1.9.1-r1 9999"
 wine_versions_updated_multilib_patch="1.8.2 1.8.3 1.9.5-r1 1.9.6-r1 1.9.7-r1 1.9.8 1.9.9 1.9.10 1.9.11 1.9.12 9999"
 wine_versions_no_sysmacros_patch="1.8.3 1.9.9 1.9.10 1.9.11 1.9.12 9999"
-wine_versions_gecko_version_2_44="1.9.3-r1 1.9.4-r1 1.9.5-r1 1.9.6-r1 1.9.7-r1 1.9.8 1.9.9 1.9.10 1.9.11 1.9.12 9999"
+wine_versions_gecko_version_2_44="1.9.3-r1 1.9.4-r1 1.9.5-r1 1.9.6-r1 1.9.7-r1 1.9.8 1.9.9 1.9.10 1.9.11 1.9.12"
+wine_versions_gecko_version_2_47="9999"
 wine_versions_mono_version_4_6_0="1.9.5-r1 1.9.6-r1 1.9.7-r1"
 wine_versions_mono_version_4_6_2="1.9.8 1.9.9 1.9.10 1.9.11"
 wine_versions_mono_version_4_6_3="1.9.12 9999"
@@ -80,6 +81,7 @@ for ebuild_file in *.ebuild; do
 			-vwine_versions_updated_multilib_patch="${wine_versions_updated_multilib_patch}" \
 			-vwine_versions_no_sysmacros_patch="${wine_versions_no_sysmacros_patch}" \
 			-vwine_versions_gecko_version_2_44="${wine_versions_gecko_version_2_44}" \
+			-vwine_versions_gecko_version_2_47="${wine_versions_gecko_version_2_47}" \
 			-vwine_versions_mono_version_4_6_0="${wine_versions_mono_version_4_6_0}" \
 			-vwine_versions_mono_version_4_6_2="${wine_versions_mono_version_4_6_2}" \
 			-vwine_versions_mono_version_4_6_3="${wine_versions_mono_version_4_6_3}" \

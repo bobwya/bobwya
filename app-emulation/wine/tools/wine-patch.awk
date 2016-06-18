@@ -157,6 +157,7 @@ BEGIN{
     is_wine_version_updated_multilib_patch=(wine_version ~ convert_version_list_to_regexp(wine_versions_updated_multilib_patch))
 	is_wine_version_no_sysmacros_patch=(wine_version ~ convert_version_list_to_regexp(wine_versions_no_sysmacros_patch))
 	is_wine_version_gecko_version_2_44=(wine_version ~ convert_version_list_to_regexp(wine_versions_gecko_version_2_44))
+	is_wine_version_gecko_version_2_47=(wine_version ~ convert_version_list_to_regexp(wine_versions_gecko_version_2_47))
 	is_wine_version_mono_version_4_6_0=(wine_version ~ convert_version_list_to_regexp(wine_versions_mono_version_4_6_0))
 	is_wine_version_mono_version_4_6_2=(wine_version ~ convert_version_list_to_regexp(wine_versions_mono_version_4_6_2))
 	is_wine_version_mono_version_4_6_3=(wine_version ~ convert_version_list_to_regexp(wine_versions_mono_version_4_6_3))
@@ -207,8 +208,12 @@ BEGIN{
 			}
 		}
 
-		if (is_wine_version_gecko_version_2_44 && ($0 ~ array_variables_regexp["GV"]))
-			sub(wine_gecko_version_regexp, "2.44")
+		if ($0 ~ array_variables_regexp["GV"]) {
+			if (is_wine_version_gecko_version_2_44)
+				sub(wine_gecko_version_regexp, "2.44")
+			else if (is_wine_version_gecko_version_2_47)
+				sub(wine_gecko_version_regexp, "2.47")
+		}
 		if ($0 ~ array_variables_regexp["MV"]) {
 			if (is_wine_version_mono_version_4_6_0)
 				sub(wine_mono_version_regexp, "4.6.0")
