@@ -104,14 +104,14 @@ pkg_pretend() {
 			ewarn ""
 		elif use kms && kernel_is le 4 1; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
-			ewarn "on kernel versions prior to 4.1:"
-			ewarn "<sys-kernel/gentoo-sources-4.1"
-			ewarn "<sys-kernel/vanilla-sources-4.1"
+			ewarn "on kernel versions prior to 4.2:"
+			ewarn "<sys-kernel/gentoo-sources-4.2"
+			ewarn "<sys-kernel/vanilla-sources-4.2"
 			ewarn
 		elif use kms; then
 			einfo "USE +kms: checking kernel for KMS CONFIG recommended by NVIDIA."
 			einfo
-			CONFIG_CHECK+="~DRM_KMS_HELPER ~DRM_KMS_FB_HELPER"
+			CONFIG_CHECK+=" ~DRM_KMS_HELPER ~DRM_KMS_FB_HELPER"
 		fi
 	fi
 

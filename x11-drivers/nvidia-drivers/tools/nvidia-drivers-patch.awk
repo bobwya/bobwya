@@ -81,15 +81,15 @@ BEGIN{
 			else {
 				printf("%s%s%s\n",		indent,	indent,	"elif use kms && kernel_is le 4 1; then")
 				printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn \"NVIDIA does not fully support kernel modesetting on\"")
-				printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn \"on kernel versions prior to 4.1:\"")
-				printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn \"<sys-kernel/gentoo-sources-4.1\"")
-				printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn \"<sys-kernel/vanilla-sources-4.1\"")
+				printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn \"on kernel versions prior to 4.2:\"")
+				printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn \"<sys-kernel/gentoo-sources-4.2\"")
+				printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn \"<sys-kernel/vanilla-sources-4.2\"")
 				printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn")
 				if (nvidia_version ~ nvidia_supported_kms_version_regexp) {
 					printf("%s%s%s\n",		indent,	indent,	"elif use kms; then")
 					printf("%s%s%s%s\n",	indent,	indent,	indent, "einfo \"USE +kms: checking kernel for KMS CONFIG recommended by NVIDIA.\"")
 					printf("%s%s%s%s\n",	indent,	indent,	indent, "einfo")
-					printf("%s%s%s%s\n",	indent,	indent,	indent, "CONFIG_CHECK+=\"~DRM_KMS_HELPER ~DRM_KMS_FB_HELPER\"")
+					printf("%s%s%s%s\n",	indent,	indent,	indent, "CONFIG_CHECK+=\" ~DRM_KMS_HELPER ~DRM_KMS_FB_HELPER\"")
 				}
 				printf("%s%s%s\n",		indent,	indent,	"fi")
 				++kernel_linux_block_open
