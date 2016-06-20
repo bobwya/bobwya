@@ -34,6 +34,7 @@ RDEPEND="${DEPEND}"
 src_prepare() {
 	sed -i -e 's/^\([a-z]*_CFLAGS.*\)-ggdb/\1/' src/Makefile.am || die "sed	failed"
 	eautoreconf
+	default
 }
 
 src_configure() {
@@ -41,4 +42,5 @@ src_configure() {
 	$(use_enable lzo) \
 	$(use_enable static) \
 	$(use_enable debug devel)
+	default
 }
