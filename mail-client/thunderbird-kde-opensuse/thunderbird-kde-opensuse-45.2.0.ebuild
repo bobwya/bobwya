@@ -5,7 +5,7 @@
 EAPI=6
 WANT_AUTOCONF="2.1"
 MOZ_ESR=""
-MOZ_LIGHTNING_VER="4.7.1"
+MOZ_LIGHTNING_VER="4.7.2"
 MOZ_LIGHTNING_GDATA_VER="2.6"
 
 # This list can be updated using scripts/get_langs.sh from the mozilla overlay
@@ -36,7 +36,7 @@ MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 
 MOZCONFIG_OPTIONAL_JIT="enabled"
-inherit flag-o-matic toolchain-funcs mozconfig-v6.45 makeedit autotools pax-utils check-reqs nsplugins mozlinguas mercurial
+inherit flag-o-matic toolchain-funcs mozconfig-v6.45 makeedit autotools pax-utils check-reqs nsplugins mozlinguas-v2 mercurial
 
 DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="http://www.mozilla.com/en-US/thunderbird/
