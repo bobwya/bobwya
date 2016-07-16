@@ -44,7 +44,7 @@ function process_ebuild_phase_open(line, array_ebuild_phases, array_phase_open, 
 function process_ebuild_phase_close(line, array_ebuild_phases, array_phase_open,
 		end_curly_bracket_regexp, i)
 {
-	end_curly_bracket_regexp="^[[:blank:]]*\}[[:blank:]]*$"
+	end_curly_bracket_regexp="^\}[[:blank:]]*$"
 	if (line ~ end_curly_bracket_regexp) {
 		for (i in array_ebuild_phases)
 			array_phase_open[array_ebuild_phases[i]]=0
@@ -72,7 +72,7 @@ function setup_global_regexps(variables,		i)
 	leading_ws_regexp="^[[:blank:]]+"
 	trailing_ws_regexp="[[:blank:]]+$"
 	comment_regexp=("^[[:blank:]]*\\#.*$")
-	end_quote_regexp="[^=]\"[[:blank:]]*$"
+	end_quote_regexp="[^=]\"[[:blank:]]*(|\\#.+)$"
 	quote_or_ws_seperator_regexp="([[:blank:]]+|\")"
 	end_curly_bracket_regexp="^[[:blank:]]*\}[[:blank:]]*$"
 	closing_bracket_regexp="\\)$"

@@ -13,82 +13,52 @@ if [[ ${PV} == "9999" ]] ; then
 	EGIT_REPO_URI="git://source.winehq.org/git/wine.git http://source.winehq.org/git/wine.git"
 	inherit git-r3
 	MY_PV="${PV}"
-	STAGING_PV="${MY_PV}"
 	MY_P="${P}"
 	SRC_URI=""
 	#KEYWORDS=""
 else
-	MAJOR_V=$(get_version_component_range 1-2)
-	MINOR_V=$(get_version_component_range 2)
-	STABLE_RELEASE=$((1-MINOR_V%2))
+	MAJOR_VERSION=$(get_version_component_range 1-2)
 	MY_PV="${PV}"
 	if [[ "$(get_version_component_range 3)" =~ ^rc ]]; then
 		MY_PV=$(replace_version_separator 2 '''-''')
-	elif [[ ${STABLE_RELEASE} == 1 ]]; then
-		KEYWORDS="-* amd64 x86 x86-fbsd"
 	else
 		KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
 	fi
-	[[ "${MY_PV}" =~ ^1\.8\.[[:digit:]]+$ ]] && STAGING_SUFFIX="-unofficial"
 	MY_P="${PN}-${MY_PV}"
-	SRC_URI="https://dl.winehq.org/wine/source/${MAJOR_V}/${MY_P}.tar.bz2 -> ${P}.tar.bz2"
+	SRC_URI="https://dl.winehq.org/wine/source/${MAJOR_VERSION}/${MY_P}.tar.bz2 -> ${P}.tar.bz2"
 fi
 
-GV="2.40"
-MV="4.5.6"
-STAGING_P="wine-staging-${MY_PV}"
-STAGING_DIR="${WORKDIR}/${STAGING_P}${STAGING_SUFFIX}"
-STAGING_HELPER="wine-staging-git-helper-0.1.2"
-GV_BETA_PATCH="0001-mshtml-Wine-Gecko-2.47-beta1-release.patch"
+VANILLA_GV="2.40"
+VANILLA_MV="4.5.6"
 WINE_GENTOO="wine-gentoo-2015.03.07"
 GST_P="wine-1.8-gstreamer-1.0"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
 HOMEPAGE="http://www.winehq.org/"
 SRC_URI="${SRC_URI}
 	gecko? (
-		abi_x86_32? ( https://dl.winehq.org/wine/wine-gecko/${GV}/wine_gecko-${GV}-x86.msi )
-		abi_x86_64? ( https://dl.winehq.org/wine/wine-gecko/${GV}/wine_gecko-${GV}-x86_64.msi )
+		abi_x86_32? ( https://dl.winehq.org/wine/wine-gecko/${VANILLA_GV}/wine_gecko-${VANILLA_GV}-x86.msi )
+		abi_x86_64? ( https://dl.winehq.org/wine/wine-gecko/${VANILLA_GV}/wine_gecko-${VANILLA_GV}-x86_64.msi )
 	)
-	mono? ( https://dl.winehq.org/wine/wine-mono/${MV}/wine-mono-${MV}.msi )
+	mono? ( https://dl.winehq.org/wine/wine-mono/${VANILLA_MV}/wine-mono-${VANILLA_MV}.msi )
 	gstreamer? ( https://dev.gentoo.org/~np-hardass/distfiles/${PN}/${GST_P}.patch.bz2 )
 	https://dev.gentoo.org/~tetromino/distfiles/${PN}/${WINE_GENTOO}.tar.bz2"
 
-if [[ ${PV} == "9999" ]] ; then
-	STAGING_EGIT_REPO_URI="git://github.com/wine-compholio/wine-staging.git"
-	SRC_URI="${SRC_URI}
-	staging? ( https://github.com/bobwya/${STAGING_HELPER%-*}/archive/${STAGING_HELPER##*-}.tar.gz -> ${STAGING_HELPER}.tar.gz )"
-else
-	SRC_URI="${SRC_URI}
-	staging? ( https://github.com/wine-compholio/wine-staging/archive/v${MY_PV}${STAGING_SUFFIX}.tar.gz -> ${STAGING_P}.tar.gz )"
-fi
-
 LICENSE="LGPL-2.1"
 SLOT="0"
-IUSE="+abi_x86_32 +abi_x86_64 +alsa cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test +threads +truetype +udisks v4l vaapi +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap +png prelink pulseaudio +realtime +run-exes samba scanner selinux +ssl test +threads +truetype +udisks v4l +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
-	test? ( abi_x86_32 )
+	X? ( truetype )
 	elibc_glibc? ( threads )
 	mono? ( abi_x86_32 )
-	pipelight? ( staging )
-	s3tc? ( staging )
-	vaapi? ( staging )
-	osmesa? ( opengl )" #286560
+	osmesa? ( opengl )
+	test? ( abi_x86_32 )
+	"
 
 # FIXME: the test suite is unsuitable for us; many tests require net access
 # or fail due to Xvfb's opengl limitations.
 RESTRICT="test"
 
 COMMON_DEPEND="
-	truetype? ( >=media-libs/freetype-2.0.0[${MULTILIB_USEDEP}] )
-	ncurses? ( >=sys-libs/ncurses-5.2:0=[${MULTILIB_USEDEP}] )
-	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
-	fontconfig? ( media-libs/fontconfig:=[${MULTILIB_USEDEP}] )
-	gphoto2? ( media-libs/libgphoto2:=[${MULTILIB_USEDEP}] )
-	openal? ( media-libs/openal:=[${MULTILIB_USEDEP}] )
-	gstreamer? (
-		media-libs/gstreamer:1.0[${MULTILIB_USEDEP}]
-		media-plugins/gst-plugins-meta:1.0[${MULTILIB_USEDEP}]
-	)
 	X? (
 		x11-libs/libXcursor[${MULTILIB_USEDEP}]
 		x11-libs/libXext[${MULTILIB_USEDEP}]
@@ -96,36 +66,45 @@ COMMON_DEPEND="
 		x11-libs/libXi[${MULTILIB_USEDEP}]
 		x11-libs/libXxf86vm[${MULTILIB_USEDEP}]
 	)
-	xinerama? ( x11-libs/libXinerama[${MULTILIB_USEDEP}] )
 	alsa? ( media-libs/alsa-lib[${MULTILIB_USEDEP}] )
+	capi? ( net-libs/libcapi[${MULTILIB_USEDEP}] )
 	cups? ( net-print/cups:=[${MULTILIB_USEDEP}] )
+	fontconfig? ( media-libs/fontconfig:=[${MULTILIB_USEDEP}] )
+	gphoto2? ( media-libs/libgphoto2:=[${MULTILIB_USEDEP}] )
+	gsm? ( media-sound/gsm:=[${MULTILIB_USEDEP}] )
+	gstreamer? (
+		media-libs/gstreamer:1.0[${MULTILIB_USEDEP}]
+		media-plugins/gst-plugins-meta:1.0[${MULTILIB_USEDEP}]
+	)
+	jpeg? ( virtual/jpeg:0=[${MULTILIB_USEDEP}] )
+	lcms? ( media-libs/lcms:2=[${MULTILIB_USEDEP}] )
+	ldap? ( net-nds/openldap:=[${MULTILIB_USEDEP}] )
+	mp3? ( >=media-sound/mpg123-1.5.0[${MULTILIB_USEDEP}] )
+	ncurses? ( >=sys-libs/ncurses-5.2:0=[${MULTILIB_USEDEP}] )
+	netapi? ( net-fs/samba[netapi(+),${MULTILIB_USEDEP}] )
+	nls? ( sys-devel/gettext[${MULTILIB_USEDEP}] )
+	odbc? ( dev-db/unixODBC:=[${MULTILIB_USEDEP}] )
+	openal? ( media-libs/openal:=[${MULTILIB_USEDEP}] )
 	opencl? ( virtual/opencl[${MULTILIB_USEDEP}] )
 	opengl? (
 		virtual/glu[${MULTILIB_USEDEP}]
 		virtual/opengl[${MULTILIB_USEDEP}]
 	)
-	gsm? ( media-sound/gsm:=[${MULTILIB_USEDEP}] )
-	jpeg? ( virtual/jpeg:0=[${MULTILIB_USEDEP}] )
-	ldap? ( net-nds/openldap:=[${MULTILIB_USEDEP}] )
-	lcms? ( media-libs/lcms:2=[${MULTILIB_USEDEP}] )
-	mp3? ( >=media-sound/mpg123-1.5.0[${MULTILIB_USEDEP}] )
-	netapi? ( net-fs/samba[netapi(+),${MULTILIB_USEDEP}] )
-	nls? ( sys-devel/gettext[${MULTILIB_USEDEP}] )
-	odbc? ( dev-db/unixODBC:=[${MULTILIB_USEDEP}] )
 	osmesa? ( media-libs/mesa[osmesa,${MULTILIB_USEDEP}] )
 	pcap? ( net-libs/libpcap[${MULTILIB_USEDEP}] )
+	png? ( media-libs/libpng:0=[${MULTILIB_USEDEP}] )
 	pulseaudio? ( media-sound/pulseaudio[${MULTILIB_USEDEP}] )
-	staging? ( sys-apps/attr[${MULTILIB_USEDEP}] )
+	scanner? ( media-gfx/sane-backends:=[${MULTILIB_USEDEP}] )
+	ssl? ( net-libs/gnutls:=[${MULTILIB_USEDEP}] )
+	truetype? ( >=media-libs/freetype-2.0.0[${MULTILIB_USEDEP}] )
+	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
+	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
+	xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
+	xinerama? ( x11-libs/libXinerama[${MULTILIB_USEDEP}] )
 	xml? (
 		dev-libs/libxml2[${MULTILIB_USEDEP}]
 		dev-libs/libxslt[${MULTILIB_USEDEP}]
 	)
-	scanner? ( media-gfx/sane-backends:=[${MULTILIB_USEDEP}] )
-	ssl? ( net-libs/gnutls:=[${MULTILIB_USEDEP}] )
-	png? ( media-libs/libpng:0=[${MULTILIB_USEDEP}] )
-	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
-	vaapi? ( x11-libs/libva[X,${MULTILIB_USEDEP}] )
-	xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
 	abi_x86_32? (
 		!app-emulation/emul-linux-x86-baselibs[-abi_x86_32(-)]
 		!<app-emulation/emul-linux-x86-baselibs-20140508-r14
@@ -144,28 +123,31 @@ COMMON_DEPEND="
 	)"
 
 RDEPEND="${COMMON_DEPEND}
-	dos? ( games-emulation/dosbox )
-	perl? ( dev-lang/perl dev-perl/XML-Simple )
-	s3tc? ( >=media-libs/libtxc_dxtn-1.0.1-r1[${MULTILIB_USEDEP}] )
+	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
+	perl? (
+		dev-lang/perl
+		dev-perl/XML-Simple
+	)
+	pulseaudio? (
+		realtime? ( sys-auth/rtkit )
+	)
 	samba? ( >=net-fs/samba-3.0.25[winbind] )
 	selinux? ( sec-policy/selinux-wine )
-	udisks? ( sys-fs/udisks:2 )
-	pulseaudio? ( realtime? ( sys-auth/rtkit ) )"
+	udisks? ( sys-fs/udisks:2 )"
 
 # tools/make_requests requires perl
 DEPEND="${COMMON_DEPEND}
-	staging? ( dev-lang/perl dev-perl/XML-Simple )
+	sys-devel/flex
+	>=sys-kernel/linux-headers-2.6
+	virtual/pkgconfig
+	virtual/yacc
 	X? (
 		x11-proto/inputproto
 		x11-proto/xextproto
 		x11-proto/xf86vidmodeproto
 	)
-	xinerama? ( x11-proto/xineramaproto )
 	prelink? ( sys-devel/prelink )
-	>=sys-kernel/linux-headers-2.6
-	virtual/pkgconfig
-	virtual/yacc
-	sys-devel/flex"
+	xinerama? ( x11-proto/xineramaproto )"
 
 # These use a non-standard "Wine" category, which is provided by
 # /etc/xdg/applications-merged/wine.menu
@@ -176,32 +158,8 @@ usr/share/applications/wine-winecfg.desktop"
 
 S="${WORKDIR}/${MY_P}"
 
-wine_build_environment_prechecks() {
-	[[ ${MERGE_TYPE} = "binary" ]] && return 0
-
-	if use abi_x86_64; then
-		einfo "Checking for builtin_ms_va_list ..."
-		if ( $(tc-getCC) -O2 "${FILESDIR}"/builtin_ms_va_list.c -o "${T}"/builtin_ms_va_list >/dev/null 2>&1) ; then
-			einfo "$(tc-getCC) supports builtin_ms_va_list, enabling 64-bit wine"
-		else
-			eerror "This version of $(tc-getCC) does not support builtin_ms_va_list, can't enable 64-bit wine"
-			eerror
-			eerror "You need gcc-4.4+ or clang 3.8+ to build 64-bit wine"
-			eerror
-			return 1
-		fi
-	fi
-
-	if use abi_x86_32 && use opencl && [[ x$(eselect opencl show 2> /dev/null) = "xintel" ]]; then
-		eerror "You cannot build wine with USE=opencl because intel-ocl-sdk is 64-bit only."
-		eerror "See https://bugs.gentoo.org/487864 for more details."
-		eerror
-		return 1
-	fi
-}
-
-wine_build_environment_pretests() {
-	[[ "${MERGE_TYPE}" == "binary" ]] && return 0
+wine_gcc_specific_pretests() {
+	( [[ "${MERGE_TYPE}" == "binary" ]] || ! tc-is-gcc ) && return 0
 
 	# bug #549768
 	if use abi_x86_64 && [[ $(gcc-major-version) -eq 5 && $(gcc-minor-version) -le 2 ]]; then
@@ -233,65 +191,68 @@ wine_build_environment_pretests() {
 	fi
 }
 
+wine_generic_compiler_pretests() {
+	[[ ${MERGE_TYPE} = "binary" ]] && return 0
+
+	# Ensure compiler support
+	if use abi_x86_64; then
+		ebegin "Checking for 64-bit compiler with builtin_ms_va_list support"
+		# Compile in subshell to prevent "Aborted" message
+		( $(tc-getCC) -O2 "${FILESDIR}"/builtin_ms_va_list.c -o "${T}"/builtin_ms_va_list >/dev/null 2>&1)
+		eend $?
+		if [[ $? -ne 0 ]]; then
+			eerror "This version of $(tc-getCC) does not support builtin_ms_va_list, can't enable 64-bit wine"
+			eerror
+			eerror "You need gcc-4.4+ or clang 3.8+ to build 64-bit wine"
+			eerror
+			return 1
+		fi
+	fi
+}
+
+wine_build_environment_prechecks() {
+	[[ ${MERGE_TYPE} = "binary" ]] && return 0
+
+	if use abi_x86_32 && use opencl && [[ x$(eselect opencl show 2> /dev/null) = "xintel" ]]; then
+		eerror "You cannot build wine with USE=opencl because intel-ocl-sdk is 64-bit only."
+		eerror "See https://bugs.gentoo.org/487864 for more details."
+		eerror
+		return 1
+	fi
+}
+
 pkg_pretend() {
+	wine_gcc_specific_pretests || die
+	wine_generic_compiler_pretests || die
 	wine_build_environment_prechecks || die
-	wine_build_environment_pretests || die
+
+	# Verify OSS support
+	if use oss && ! use kernel_FreeBSD; then
+		local oss_vers=$(best_version media-sound/oss)
+		if [[ -z ${oss_vers} ]] || ! version_is_at_least "4" ${oss_vers}; then
+			eerror "You cannot build wine with USE=oss without having support from a"
+			eerror "FreeBSD kernel or >=media-sound/oss-4 (only available through external repos)"
+			eerror
+			die
+		fi
+	fi
 }
 
 pkg_setup() {
 	wine_build_environment_prechecks || die
-	wine_build_environment_pretests || die
+
+	GV="${VANILLA_GV}"
+	MV="${VANILLA_MV}"
 }
 
 src_unpack() {
-	# Fully Mirror both git trees, Wine & Wine-Staging, so we can access commits in all branches
-	[[ ${PV} == "9999" ]] && EGIT_MIN_CLONE_TYPE="mirror"
-	if [[ ${PV} == "9999" ]] && ! use staging; then
+	if [[ ${PV} == "9999" ]]; then
+		# Fully Mirror git tree, Wine, so we can access commits in all branches
+		EGIT_MIN_CLONE_TYPE="mirror"
 		EGIT_CHECKOUT_DIR="${S}" git-r3_src_unpack
-	elif [[ ${PV} == "9999" ]] && use staging; then
-		unpack "${STAGING_HELPER}.tar.gz"
-		if [[ ! -z "${EGIT_STAGING_COMMIT}" || ! -z "${EGIT_STAGING_BRANCH}" ]]; then
-			# References are relative to Wine-Staging git tree (pre-checkout Wine-Staging git tree)
-			# Use env variables "EGIT_STAGING_COMMIT" or "EGIT_STAGING_BRANCH" to reference Wine-Staging git tree
-			ebegin "(subshell): you have specified a Wine-Staging git reference (building Wine git with USE +staging) ..."
-			(
-				source "${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh" || die
-				[[ ! -z "${EGIT_STAGING_COMMIT}" ]] && WINE_STAGING_REF="commit EGIT_STAGING_COMMIT"
-				[[   -z "${EGIT_STAGING_COMMIT}" ]] && WINE_STAGING_REF="branch EGIT_STAGING_BRANCH"
-				ewarn "Building Wine against Wine-Staging git ${WINE_STAGING_REF}=\"${EGIT_STAGING_COMMIT:-${EGIT_STAGING_BRANCH}}\" ."
-				EGIT_BRANCH="${EGIT_STAGING_BRANCH:-master}"
-				EGIT_COMMIT="${EGIT_STAGING_COMMIT:-}"
-				unset ${PN}_LIVE_{REPO,BRANCH,COMMIT};
-				EGIT_REPO_URI="${STAGING_EGIT_REPO_URI}" EGIT_CHECKOUT_DIR="${STAGING_DIR}" git-r3_src_unpack
-				WINE_STAGING_COMMIT="${EGIT_VERSION}"
-				get_upstream_wine_commit  "${STAGING_DIR}" "${WINE_STAGING_COMMIT}" "WINE_COMMIT"
-				EGIT_COMMIT="${WINE_COMMIT}"
-				EGIT_CHECKOUT_DIR="${S}" git-r3_src_unpack
-				einfo "Building Wine commit \"${WINE_COMMIT}\" referenced by Wine-Staging commit \"${WINE_STAGING_COMMIT}\" ..."
-			)
-			eend $? || die "(subshell): ... failed to determine target Wine commit."
-		else
-			# References are relative to Wine git tree (post-checkout Wine-Staging git tree)
-			ebegin "(subshell): You are using a Wine git reference (building Wine git with USE +staging) ..."
-			(
-				source "${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh" || die
-				EGIT_CHECKOUT_DIR="${S}" git-r3_src_unpack
-				WINE_COMMIT="${EGIT_VERSION}"
-				unset ${PN}_LIVE_{REPO,BRANCH,COMMIT} EGIT_COMMIT;
-				EGIT_REPO_URI="${STAGING_EGIT_REPO_URI}" EGIT_CHECKOUT_DIR="${STAGING_DIR}" git-r3_src_unpack
-				if ! walk_wine_staging_git_tree "${STAGING_DIR}" "${S}" "${WINE_COMMIT}" "WINE_STAGING_COMMIT" ; then
-					find_closest_wine_commit "${STAGING_DIR}" "${S}" "WINE_COMMIT" "WINE_STAGING_COMMIT" "WINE_COMMIT_OFFSET"
-					(($? == 0)) && display_closest_wine_commit_message "${WINE_COMMIT}" "${WINE_STAGING_COMMIT}" "${WINE_COMMIT_OFFSET}"
-					die "Failed to find Wine-Staging git commit corresponding to supplied Wine git commit \"${WINE_COMMIT}\" ."
-				fi
-				einfo "Building Wine-Staging commit \"${WINE_STAGING_COMMIT}\" corresponding to Wine commit \"${WINE_COMMIT}\" ..."
-			)
-			eend $? || die "(subshell): ... failed to determine target Wine-Staging commit."
-		fi
 	else
 		unpack ${P}.tar.bz2
 		use gstreamer && unpack "${GST_P}.patch.bz2"
-		use staging && unpack "${STAGING_P}.tar.gz"
 	fi
 
 	unpack "${WINE_GENTOO}.tar.bz2"
@@ -306,54 +267,25 @@ src_prepare() {
 		"${FILESDIR}"/${PN}-1.7.12-osmesa-check.patch #429386
 		"${FILESDIR}"/${PN}-1.6-memset-O3.patch #480508
 		"${FILESDIR}"/${PN}-sysmacros.patch #580046
+		"${FILESDIR}"/${PN}-1.8-gnutls-3.5-compat.patch #587028
 	)
 	if [[ ${PV} != "9999" ]]; then
-		if use gstreamer; then
-			# version 1.9.1 already implements partial gstreamer:1.0 support
-			[[ "${PV}" == "1.9.1" ]] && { sed -i -e '1,71d' "${WORKDIR}/${GST_P}.patch" || die "sed"; }
-			PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
-		fi
-		PATCHES+=( "${FILESDIR}"/${PN}-1.4_rc2-multilib-portage.patch ) #395615
+		use gstreamer && PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
 	else
 		# only apply gstreamer:1.0 patch to older versions of wine, using gstreamer:0.1 API/ABI
 		grep -q "gstreamer-0.10" "${S}/configure" &>/dev/null || unset GST_P
 		[[ ! -z "${GST_P}" ]] && use gstreamer && PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
-		#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
-		ebegin "(subshell) script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" ..."
-		(
-			source "${FILESDIR}/${PN}-9999-multilib-portage-sed.sh" || die
-		)
-		eend $? || die "(subshell) script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\"."
 	fi
-	if use staging; then
-		ewarn "Applying the Wine-Staging patchset. Any bug reports to the"
-		ewarn "Wine bugzilla should explicitly state that staging was used."
-
-		local STAGING_EXCLUDE=""
-		if grep -q "${GV_BETA_PATCH}" "${STAGING_DIR}/patches/patchinstall.sh"; then
-			local GV_BETA=$( "${FILESDIR}/beta_patch_conv.sh" "${GV_BETA_PATCH}" )
-			STAGING_EXCLUDE="${STAGING_EXCLUDE} -W ${GV_BETA}"
-		fi
-		use pipelight || STAGING_EXCLUDE="${STAGING_EXCLUDE} -W Pipelight"
-
-		# Launch wine-staging patcher in a subshell, using epatch as a backend, and gitapply.sh as a backend for binary patches
-		ebegin "Running Wine-Staging patch installer"
-		(
-			set -- DESTDIR="${S}" --backend=epatch --no-autoconf --all ${STAGING_EXCLUDE}
-			cd "${STAGING_DIR}/patches"
-			source "${STAGING_DIR}/patches/patchinstall.sh"
-		)
-		eend $? || die "(subshell) script: failed to apply Wine-Staging patches."
-
-		if [[ ! -z "${STAGING_SUFFIX}" ]]; then
-			sed -i -e 's/(Staging)/(Staging'"${STAGING_SUFFIX}"')/' libs/wine/Makefile.in || die "sed"
-		fi
-	fi
+	#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
+	ebegin "(subshell) script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" ..."
+	(
+		source "${FILESDIR}/${PN}-9999-multilib-portage-sed.sh" || die
+	)
+	eend $? || die "(subshell) script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\"."
 
 	default
 	eautoreconf
 
-	# Modification of the server protocol requires regenerating the server requests
 	if [[ "$(md5sum server/protocol.def)" != "${md5}" ]]; then
 		einfo "server/protocol.def was patched; running tools/make_requests"
 		tools/make_requests || die #432348
@@ -363,10 +295,9 @@ src_prepare() {
 		sed -i '/^MimeType/d' loader/wine.desktop || die #117785
 	fi
 
-	# hi-res default icon, #472990, http://bugs.winehq.org/show_bug.cgi?id=24652
 	cp "${WORKDIR}"/${WINE_GENTOO}/icons/oic_winlogo.ico dlls/user32/resources/ || die
 
-	l10n_get_locales > po/LINGUAS # otherwise wine doesn't respect LINGUAS
+	l10n_get_locales > po/LINGUAS || die # otherwise wine doesn't respect LINGUAS
 }
 
 src_configure() {
@@ -380,7 +311,7 @@ multilib_src_configure() {
 	local myconf=(
 		--sysconfdir=/etc/wine
 		$(use_with alsa)
-		--without-capi
+		$(use_with capi)
 		$(use_with lcms cms)
 		$(use_with cups)
 		$(use_with ncurses curses)
@@ -416,11 +347,6 @@ multilib_src_configure() {
 		$(use_with xinerama)
 		$(use_with xml)
 		$(use_with xml xslt)
-	)
-
-	use staging && myconf+=(
-		--with-xattr
-		$(use_with vaapi va)
 	)
 
 	local PKG_CONFIG AR RANLIB
@@ -473,15 +399,22 @@ multilib_src_install_all() {
 	emake -C "../${WINE_GENTOO}" install DESTDIR="${D}" EPREFIX="${EPREFIX}"
 	if use gecko ; then
 		insinto /usr/share/wine/gecko
-		use abi_x86_32 && doins "${DISTDIR}"/wine_gecko-${GV}-x86.msi
-		use abi_x86_64 && doins "${DISTDIR}"/wine_gecko-${GV}-x86_64.msi
+		use abi_x86_32 && doins "${DISTDIR}/wine_gecko-${GV}-x86.msi"
+		use abi_x86_64 && doins "${DISTDIR}/wine_gecko-${GV}-x86_64.msi"
 	fi
 	if use mono ; then
 		insinto /usr/share/wine/mono
-		doins "${DISTDIR}"/wine-mono-${MV}.msi
+		doins "${DISTDIR}/wine-mono-${MV}.msi"
 	fi
 	if ! use perl ; then # winedump calls function_grep.pl, and winemaker is a perl script
 		rm "${D}"usr/bin/{wine{dump,maker},function_grep.pl} "${D}"usr/share/man/man1/wine{dump,maker}.1 || die
+	fi
+
+	# Remove wineconsole if neither backend is installed #551124
+	if ! use X && ! use ncurses; then
+		rm	"${D}"/usr/{bin/,man/man1/}wineconsole* || die
+		use abi_x86_32 && rm "${D}"/usr/lib32/wine/{,fakedlls/}wineconsole.exe* || die
+		use abi_x86_64 && rm "${D}"/usr/lib64/wine/{,fakedlls/}wineconsole.exe* || die
 	fi
 
 	use abi_x86_32 && pax-mark psmr "${D}"usr/bin/wine{,-preloader} #255055
