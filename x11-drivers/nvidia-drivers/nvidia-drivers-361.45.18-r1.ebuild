@@ -10,7 +10,6 @@ inherit eutils flag-o-matic linux-info linux-mod multilib nvidia-driver \
 NV_URI="http://us.download.nvidia.com/XFree86/"
 X86_NV_PACKAGE="NVIDIA-Linux-x86-${PV}"
 AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
-ARM_NV_PACKAGE="NVIDIA-Linux-armv7l-gnueabihf-${PV}"
 X86_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86-${PV}"
 AMD64_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86_64-${PV}"
 
@@ -19,7 +18,6 @@ HOMEPAGE="http://www.nvidia.com/ http://www.nvidia.com/Download/Find.aspx"
 SRC_URI="
 	amd64-fbsd? ( ${NV_URI}FreeBSD-x86_64/${PV}/${AMD64_FBSD_NV_PACKAGE}.tar.gz )
 	amd64? ( ${NV_URI}Linux-x86_64/${PV}/${AMD64_NV_PACKAGE}.run )
-	arm? ( ${NV_URI}Linux-x86-ARM/${PV}/${ARM_NV_PACKAGE}.run )
 	x86-fbsd? ( ${NV_URI}FreeBSD-x86/${PV}/${X86_FBSD_NV_PACKAGE}.tar.gz )
 	x86? ( ${NV_URI}Linux-x86/${PV}/${X86_NV_PACKAGE}.run )
 	tools? ( ftp://download.nvidia.com/XFree86/nvidia-settings/nvidia-settings-${PV}.tar.bz2 )
@@ -31,7 +29,7 @@ KEYWORDS="-* ~amd64 ~x86 ~amd64-fbsd ~x86-fbsd"
 RESTRICT="bindist mirror"
 EMULTILIB_PKG="true"
 
-IUSE="acpi compat +driver gtk3 kernel_FreeBSD kernel_linux +kms multilib pax_kernel static-libs +tools uvm wayland +X"
+IUSE="acpi compat +driver gtk3 kernel_FreeBSD kernel_linux +kms multilib pax_kernel static-libs +tools uvm +X"
 REQUIRED_USE="
 	tools? ( X )
 	static-libs? ( tools )
@@ -68,7 +66,6 @@ RDEPEND="
 	${COMMON}
 	acpi? ( sys-power/acpid )
 	tools? ( !media-video/nvidia-settings )
-	wayland? ( dev-libs/wayland )
 	X? (
 		>=x11-base/xorg-server-1.16.4-r6
 		>=x11-libs/libvdpau-1.0
@@ -90,13 +87,12 @@ pkg_pretend() {
 		die "Unexpected \${DEFAULT_ABI} = ${DEFAULT_ABI}"
 	fi
 
-	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if  kernel_is ge 4 7; then
+		if  kernel_is ge 4 5; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.7"
-			ewarn "<sys-kernel/vanilla-sources-4.7"
+			ewarn "<sys-kernel/gentoo-sources-4.5"
+			ewarn "<sys-kernel/vanilla-sources-4.5"
 			ewarn ""
 			ewarn "You are free to utilize epatch_user to provide whatever"
 			ewarn "support you feel is appropriate, but will not receive"
@@ -110,10 +106,6 @@ pkg_pretend() {
 			ewarn "<sys-kernel/gentoo-sources-4.2"
 			ewarn "<sys-kernel/vanilla-sources-4.2"
 			ewarn
-		elif use kms; then
-			einfo "USE +kms: checking kernel for KMS CONFIG recommended by NVIDIA."
-			einfo
-			CONFIG_CHECK+=" ~DRM_KMS_HELPER ~DRM_KMS_FB_HELPER"
 		fi
 	fi
 
@@ -124,7 +116,7 @@ pkg_pretend() {
 	nvidia-driver-check-warning
 
 	# Kernel features/options to check for
-	CONFIG_CHECK+=" ~ZONE_DMA ~MTRR ~SYSVIPC ~!LOCKDEP"
+	CONFIG_CHECK="~ZONE_DMA ~MTRR ~SYSVIPC ~!LOCKDEP"
 	use x86 && CONFIG_CHECK+=" ~HIGHMEM"
 
 	# Now do the above checks
@@ -139,10 +131,7 @@ pkg_setup() {
 	if use driver && use kernel_linux; then
 		MODULE_NAMES="nvidia(video:${S}/kernel)"
 		use uvm && MODULE_NAMES+=" nvidia-uvm(video:${S}/kernel)"
-		if use kms; then
-			MODULE_NAMES+=" nvidia-modeset(video:${S}/kernel)"
-			MODULE_NAMES+=" nvidia-drm(video:${S}/kernel)"
-		fi
+		use kms && MODULE_NAMES+=" nvidia-modeset(video:${S}/kernel)"
 
 		# This needs to run after MODULE_NAMES (so that the eclass checks
 		# whether the kernel supports loadable modules) but before BUILD_PARAMS
@@ -190,7 +179,7 @@ src_prepare() {
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
 		ewarn "need support with these patches, contact the PaX team."
-		epatch "${FILESDIR}"/${PN}-364.12-pax.patch
+		epatch "${FILESDIR}"/${PN}-361.28-pax.patch
 	fi
 
 	# Allow user patches so they can support RC kernels and whatever else
@@ -215,9 +204,7 @@ src_compile() {
 			AR="$(tc-getAR)" \
 			CC="$(tc-getCC)" \
 			LIBDIR="$(get_libdir)" \
-			NV_VERBOSE=1 \
 			RANLIB="$(tc-getRANLIB)" \
-			DO_STRIP= \
 			build-xnvctrl
 
 		emake -C "${S}"/nvidia-settings-${PV}/src \
@@ -228,7 +215,7 @@ src_compile() {
 			NVML_ENABLED=0 \
 			NV_USE_BUNDLED_LIBJANSSON=0 \
 			NV_VERBOSE=1 \
-			DO_STRIP=
+			STRIP_CMD=true
 	fi
 }
 
@@ -377,10 +364,8 @@ src_install() {
 			DESTDIR="${D}" \
 			GTK3_AVAILABLE=$(usex gtk3 1 0) \
 			LIBDIR="${D}/usr/$(get_libdir)" \
-			NV_USE_BUNDLED_LIBJANSSON=0 \
-			NV_VERBOSE=1 \
 			PREFIX=/usr \
-			DO_STRIP= \
+			NV_USE_BUNDLED_LIBJANSSON=0 \
 			install
 
 		if use static-libs; then
@@ -405,9 +390,6 @@ src_install() {
 
 		exeinto /etc/X11/xinit/xinitrc.d
 		newexe "${FILESDIR}"/95-nvidia-settings-r1 95-nvidia-settings
-
-		insinto /etc/vulkan/icd.d
-		doins nvidia_icd.json
 	fi
 
 	dobin ${NV_OBJ}/nvidia-bug-report.sh
@@ -467,24 +449,13 @@ src_install-libs() {
 			"libvdpau_nvidia.so.${NV_SOVER}"
 		)
 
-		if use wayland && has_multilib_profile && [[ ${ABI} == "amd64" ]];
-		then
-			NV_GLX_LIBRARIES+=(
-				"libnvidia-egl-wayland.so.${NV_SOVER}"
-			)
-		fi
-
 		if use kernel_linux && has_multilib_profile && [[ ${ABI} == "amd64" ]];
 		then
-			NV_GLX_LIBRARIES+=(
-				"libnvidia-wfb.so.${NV_SOVER}"
-			)
+			NV_GLX_LIBRARIES+=( "libnvidia-wfb.so.${NV_SOVER}" )
 		fi
 
 		if use kernel_FreeBSD; then
-			NV_GLX_LIBRARIES+=(
-				"libnvidia-tls.so.${NV_SOVER}"
-			)
+			NV_GLX_LIBRARIES+=( "libnvidia-tls.so.${NV_SOVER}" )
 		fi
 
 		if use kernel_linux; then
