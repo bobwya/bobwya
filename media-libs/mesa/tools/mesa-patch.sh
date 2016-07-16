@@ -44,24 +44,24 @@ for ebuild_file in *.ebuild; do
 	if grep -q "${patched_file_comment}" "${ebuild_file}" ; then
 		continue
 	fi
-	
+
 	if [[ $(compare_ebuild_versions "mesa-${package_supported_version}" "${ebuild_file}") -eq 1 ]] ; then
 		echo "removing ebuild file: \"${ebuild_file}\" (unsupported)"
 		rm "${ebuild_file}"
 		continue
 	fi
-	
+
 	remove_obsolete_ebuild_revisions "${ebuild_file}"
 done
 
-	
+
 # Process all remaining ebuild files
 for old_ebuild_file in *.ebuild; do
 	# Don't process ebuild files twice!
 	if grep -q "${patched_file_comment}" "${old_ebuild_file}" ; then
 		continue
 	fi
-	
+
 	ebuild_file=$(increment_ebuild_revision "${old_ebuild_file}")
 	new_ebuild_file="${ebuild_file}.new"
 	echo "Processing ebuild file: \"${old_ebuild_file}\" -> \"${ebuild_file}\""

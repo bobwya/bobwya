@@ -38,12 +38,24 @@ function process_ebuild_phase_close(line, array_ebuild_phases, array_phase_open,
 	}
 }
 
+function text2regexp(text,
+		regexp)
+{
+	regexp=text
+	# Escape all control regex characters
+	gsub("\\\\", "\x5c\x5c&", regexp)
+	gsub("\\!|\\\"|\\#|\\$|\\%|\\&|\x27|\\(|\\)|\\+|\\,|\\-|\\.|\\/|\\:|\\;|\x3c|\\=|\x3e|\\?|\\@|\\[|\\]|\\{|\\|\\}|\\~", "\x5c\x5c&", regexp)
+	gsub("\x20", "[[:blank:]]+", regexp)
+	gsub("\\*", ".+", regexp)
+	return regexp
+}
+
 function setup_global_regexps(variables,		i)
 {
 	split(variables, array_variables)
 	for (i in array_variables)
 		array_variables_regexp[array_variables[i]]=("^" gensub(/\_/, "\\_", "g", array_variables[i]) "\=\".*(\"|$)")
-		
+
 	blank_line_regexp="^[[:blank:]]*$"
 	leading_ws_regexp="^[[:blank:]]+"
 	trailing_ws_regexp="[[:blank:]]+$"
