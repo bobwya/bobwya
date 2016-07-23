@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=5
+EAPI=6
 
 inherit eutils bash-completion-r1 versionator
 
@@ -44,6 +44,7 @@ src_prepare() {
 	source "${FILESDIR}/tidyup_pts_source_helper.sh"
 	tidyup_pts_source "${S}" || die
 	[[ $(get_major_version) -lt 6 ]] && { tidyup_pts_source_pre_6.0.0 "${S}" || die; }
+	eapply_user
 }
 
 src_install() {
