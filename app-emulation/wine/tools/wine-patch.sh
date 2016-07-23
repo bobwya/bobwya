@@ -5,14 +5,14 @@ script_folder=$( dirname "${script_path}" )
 script_name=$( basename "${script_path}" )
 
 # Global variables
-wine_versions_new="1.8_rc1-r2 1.8_rc2-r2 1.8_rc3-r2 1.8_rc4-r2 1.8-r2 1.8.1-r2 1.8.2-r1 1.8.3-r1 1.9.0-r2 1.9.1-r2 1.9.2-r2 1.9.3-r2 1.9.4-r2 1.9.5-r2 1.9.6-r2 1.9.7-r2 1.9.8-r1 1.9.9-r1 1.9.10-r1 1.9.11-r1 1.9.12-r1 1.9.13-r1 1.9.14-r1 9999"
+wine_versions_new="1.8_rc1-r2 1.8_rc2-r2 1.8_rc3-r2 1.8_rc4-r2 1.8-r2 1.8.1-r2 1.8.2-r1 1.8.3-r1 1.9.0-r2 1.9.1-r2 1.9.2-r2 1.9.3-r2 1.9.4-r2 1.9.5-r2 1.9.6-r2 1.9.7-r2 1.9.8-r1 1.9.9-r1 1.9.10-r1 1.9.11-r1 1.9.12-r1 1.9.13-r1 1.9.14-r1 1.9.15 9999"
 #wine_versions_staging_supported="${wine_versions_new}"
 
 wine_versions_staging_supported="1.8_rc* 1.8.1 1.8.2 1.8.3 1.9.0 1.9.1 1.9.2 1.9.3 1.9.4 1.9.5 1.9.6 1.9.7 1.9.8 1.9.9 1.9.10 1.9.11 1.9.12 1.9.13 1.9.14 9999"
 wine_versions_no_csmt_staging="1.9.6 1.9.7 1.9.8 1.9.9"
 wine_versions_legacy_gstreamer_patch_1_0="1.8_rc* 1.8 1.8.1 1.8.2 1.8.3 1.9.0 1.9.1 9999"
-wine_versions_no_sysmacros_patch="1.8.3 1.9.9 1.9.10 1.9.11 1.9.12 1.9.13 1.9.14 9999"
-wine_versions_no_gnutls_patch="1.9.13 1.9.14 9999"
+wine_versions_no_sysmacros_patch="1.8.3 1.9.9 1.9.10 1.9.11 1.9.12 1.9.13 1.9.14 1.9.15 9999"
+wine_versions_no_gnutls_patch="1.9.13 1.9.14 1.9.15 9999"
 
 # Rename and patch all the stock mesa ebuild files
 cd "${script_folder%/tools}"
