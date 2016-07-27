@@ -52,14 +52,16 @@ function process_ebuild_phase_close(line, array_ebuild_phases, array_phase_open,
 }
 
 function text2regexp(text,
-		regexp)
+		endmarker, regexp)
 {
 	regexp=text
+	endmarker=sub("\\$$", "", regexp)
 	# Escape all control regex characters
 	gsub("\\\\", "\x5c\x5c&", regexp)
 	gsub("\\!|\\\"|\\#|\\$|\\%|\\&|\x27|\\(|\\)|\\+|\\,|\\-|\\.|\\/|\\:|\\;|\x3c|\\=|\x3e|\\?|\\@|\\[|\\]|\\{|\\|\\}|\\~", "\x5c\x5c&", regexp)
 	gsub("\x20", "[[:blank:]]+", regexp)
 	gsub("\\*", ".+", regexp)
+	regexp=(endmarker) ? regexp "$" : regexp
 	return regexp
 }
 

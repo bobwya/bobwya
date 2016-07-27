@@ -9,7 +9,7 @@ PLOCALE_BACKUP="en"
 
 inherit autotools eutils fdo-mime flag-o-matic gnome2-utils l10n multilib multilib-minimal pax-utils toolchain-funcs virtualx versionator
 
-if [[ ${PV} == "9999" ]] ; then
+if [[ ${PV} == "9999" ]]; then
 	EGIT_REPO_URI="git://source.winehq.org/git/wine.git http://source.winehq.org/git/wine.git"
 	inherit git-r3
 	MY_PV="${PV}"
@@ -159,15 +159,17 @@ usr/share/applications/wine-winecfg.desktop"
 S="${WORKDIR}/${MY_P}"
 
 wine_gcc_specific_pretests() {
-	( [[ "${MERGE_TYPE}" == "binary" ]] || ! tc-is-gcc ) && return 0
+	( [[ "${MERGE_TYPE}" = "binary" ]] || ! tc-is-gcc ) && return 0
 
 	# bug #549768
 	if use abi_x86_64 && [[ $(gcc-major-version) -eq 5 && $(gcc-minor-version) -le 2 ]]; then
-		einfo "Checking for gcc-5.1/gcc-5.2 MS X86_64 ABI compiler bug ..."
-		$(tc-getCC) -O2 "${FILESDIR}/pr66838.c" -o "${T}/pr66838" || die "cc compilation failed: pr66838 test"
-		# Run in subshell to prevent "Aborted" message
-		if ! ( "${T}/pr66838" || false )&>/dev/null; then
-			eerror "gcc-5.1/5.2 MS X86_64 ABI compiler bug detected."
+		ebegin "(subshell): checking for gcc-5.1/gcc-5.2 MS X86_64 ABI compiler bug ..."
+		( # Run in a subshell to prevent "Aborted" message
+			$(tc-getCC) -O2 "${FILESDIR}/pr66838.c" -o "${T}/pr66838" || die "cc compilation failed: pr66838 test"
+			"${T}"/pr66838 &>/dev/null || die "pr66838 test failed"
+		)
+		if ! eend $?; then
+			eerror "(subshell): gcc-5.1/5.2 MS X86_64 ABI compiler bug detected."
 			eerror "64-bit wine cannot be built with affected versions of gcc."
 			eerror "Please re-emerge wine using an unaffected version of gcc or apply"
 			eerror "Upstream (backport) patch to your current version of gcc-5.1/5.2."
@@ -179,10 +181,12 @@ wine_gcc_specific_pretests() {
 
 	# bug #574044
 	if use abi_x86_64 && [[ $(gcc-major-version) -eq 5 && $(gcc-minor-version) -eq 3 ]]; then
-		einfo "Checking for gcc-5.3.0 X86_64 misaligned stack compiler bug ..."
-		# Compile in subshell to prevent "Aborted" message
-		if ! ( $(tc-getCC) -O2 -mincoming-stack-boundary=3 "${FILESDIR}"/pr69140.c -o "${T}"/pr69140 || false )&>/dev/null; then
-			eerror "gcc-5.3.0 X86_64 misaligned stack compiler bug detected."
+		ebegin "(subshell): checking for gcc-5.3.0 X86_64 misaligned stack compiler bug ..."
+		( # Compile in a subshell to prevent "Aborted" message
+			$(tc-getCC) -O2 -mincoming-stack-boundary=3 "${FILESDIR}"/pr69140.c -o "${T}"/pr69140 &>/dev/null || die "pr69140 test failed"
+		)
+		if ! eend $?; then
+			eerror "(subshell): gcc-5.3.0 X86_64 misaligned stack compiler bug detected."
 			eerror "Please re-emerge the latest gcc-5.3.0 ebuild, or use gcc-config to select a different compiler version."
 			eerror "See https://bugs.gentoo.org/574044"
 			eerror
@@ -194,16 +198,15 @@ wine_gcc_specific_pretests() {
 wine_generic_compiler_pretests() {
 	[[ ${MERGE_TYPE} = "binary" ]] && return 0
 
-	# Ensure compiler support
 	if use abi_x86_64; then
-		ebegin "Checking for 64-bit compiler with builtin_ms_va_list support"
-		# Compile in subshell to prevent "Aborted" message
-		( $(tc-getCC) -O2 "${FILESDIR}"/builtin_ms_va_list.c -o "${T}"/builtin_ms_va_list >/dev/null 2>&1)
-		eend $?
-		if [[ $? -ne 0 ]]; then
-			eerror "This version of $(tc-getCC) does not support builtin_ms_va_list, can't enable 64-bit wine"
-			eerror
-			eerror "You need gcc-4.4+ or clang 3.8+ to build 64-bit wine"
+		ebegin "(subshell): checking compiler support for (64-bit) builtin_ms_va_list ..."
+		( # Compile in a subshell to prevent "Aborted" message
+			$(tc-getCC) -O2 "${FILESDIR}"/builtin_ms_va_list.c -o "${T}"/builtin_ms_va_list &>/dev/null || die "test for builtin_ms_va_list support failed"
+		)
+		if ! eend $?; then
+			eerror "(subshell): $(tc-getCC) does not support builtin_ms_va_list."
+			eerror "Please re-emerge using a compiler (version) that supports building 64-bit Wine."
+			eerror "Use >=sys-devel/gcc-4.4 or >=sys-devel/clang-3.8 to build ${CATEGORY}/${PN}."
 			eerror
 			return 1
 		fi
@@ -213,9 +216,9 @@ wine_generic_compiler_pretests() {
 wine_build_environment_prechecks() {
 	[[ ${MERGE_TYPE} = "binary" ]] && return 0
 
-	if use abi_x86_32 && use opencl && [[ x$(eselect opencl show 2> /dev/null) = "xintel" ]]; then
-		eerror "You cannot build wine with USE=opencl because intel-ocl-sdk is 64-bit only."
-		eerror "See https://bugs.gentoo.org/487864 for more details."
+	if use abi_x86_32 && use opencl && [[ $(eselect opencl show 2>/dev/null) = "intel" ]]; then
+		eerror "You cannot build wine with USE=+opencl because intel-ocl-sdk is 64-bit only."
+		eerror "See https://bugs.gentoo.org/487864"
 		eerror
 		return 1
 	fi
@@ -227,14 +230,10 @@ pkg_pretend() {
 	wine_build_environment_prechecks || die
 
 	# Verify OSS support
-	if use oss && ! use kernel_FreeBSD; then
-		local oss_vers=$(best_version media-sound/oss)
-		if [[ -z ${oss_vers} ]] || ! version_is_at_least "4" ${oss_vers}; then
-			eerror "You cannot build wine with USE=oss without having support from a"
-			eerror "FreeBSD kernel or >=media-sound/oss-4 (only available through external repos)"
-			eerror
-			die
-		fi
+	if use oss && ! use kernel_FreeBSD && ! has_version '>=media-sound/oss-4'; then
+		eerror "You cannot build wine with USE=+oss without having support from a FreeBSD kernel"
+		eerror "or >=media-sound/oss-4 (only available through an Overlay)."
+		die "USE=+oss currently unsupported on this system."
 	fi
 }
 
@@ -246,22 +245,19 @@ pkg_setup() {
 }
 
 src_unpack() {
+	default
 	if [[ ${PV} == "9999" ]]; then
 		# Fully Mirror git tree, Wine, so we can access commits in all branches
 		EGIT_MIN_CLONE_TYPE="mirror"
-		EGIT_CHECKOUT_DIR="${S}" git-r3_src_unpack
-	else
-		unpack ${P}.tar.bz2
-		use gstreamer && unpack "${GST_P}.patch.bz2"
+		EGIT_CHECKOUT_DIR="${S}"
+		git-r3_src_unpack
 	fi
-
-	unpack "${WINE_GENTOO}.tar.bz2"
 
 	l10n_find_plocales_changes "${S}/po" "" ".po"
 }
 
 src_prepare() {
-	local md5="$(md5sum server/protocol.def)"
+	local md5hash="$(md5sum server/protocol.def || die "md5sum")"
 	local PATCHES=(
 		"${FILESDIR}"/${PN}-1.5.26-winegcc.patch #260726
 		"${FILESDIR}"/${PN}-1.7.12-osmesa-check.patch #429386
@@ -286,18 +282,18 @@ src_prepare() {
 	default
 	eautoreconf
 
-	if [[ "$(md5sum server/protocol.def)" != "${md5}" ]]; then
+	if ! $(md5sum -c - <<<"${md5hash}" &>/dev/null); then
 		einfo "server/protocol.def was patched; running tools/make_requests"
-		tools/make_requests || die #432348
+		tools/make_requests || die "tools/make_requests"  #432348
 	fi
-	sed -i '/^UPDATE_DESKTOP_DATABASE/s:=.*:=true:' tools/Makefile.in || die
+	sed -i '/^UPDATE_DESKTOP_DATABASE/s:=.*:=true:' tools/Makefile.in || die "sed"
 	if ! use run-exes; then
-		sed -i '/^MimeType/d' loader/wine.desktop || die #117785
+		sed -i '/^MimeType/d' loader/wine.desktop || die "sed"  #117785
 	fi
 
-	cp "${WORKDIR}"/${WINE_GENTOO}/icons/oic_winlogo.ico dlls/user32/resources/ || die
+	cp "${WORKDIR}"/${WINE_GENTOO}/icons/oic_winlogo.ico dlls/user32/resources/ || die "cp"
 
-	l10n_get_locales > po/LINGUAS || die # otherwise wine doesn't respect LINGUAS
+	l10n_get_locales > po/LINGUAS || die "l10n_get_locales"  # otherwise wine doesn't respect LINGUAS
 }
 
 src_configure() {
@@ -397,24 +393,24 @@ multilib_src_install_all() {
 	prune_libtool_files --all
 
 	emake -C "../${WINE_GENTOO}" install DESTDIR="${D}" EPREFIX="${EPREFIX}"
-	if use gecko ; then
+	if use gecko; then
 		insinto /usr/share/wine/gecko
 		use abi_x86_32 && doins "${DISTDIR}/wine_gecko-${GV}-x86.msi"
 		use abi_x86_64 && doins "${DISTDIR}/wine_gecko-${GV}-x86_64.msi"
 	fi
-	if use mono ; then
+	if use mono; then
 		insinto /usr/share/wine/mono
 		doins "${DISTDIR}/wine-mono-${MV}.msi"
 	fi
-	if ! use perl ; then # winedump calls function_grep.pl, and winemaker is a perl script
-		rm "${D}"usr/bin/{wine{dump,maker},function_grep.pl} "${D}"usr/share/man/man1/wine{dump,maker}.1 || die
+	if ! use perl; then  # winedump calls function_grep.pl, and winemaker is a perl script
+		rm "${D}"usr/bin/{wine{dump,maker},function_grep.pl} "${D}"usr/share/man/man1/wine{dump,maker}.1 || die "rm"
 	fi
 
 	# Remove wineconsole if neither backend is installed #551124
 	if ! use X && ! use ncurses; then
-		rm	"${D}"/usr/{bin/,man/man1/}wineconsole* || die
-		use abi_x86_32 && rm "${D}"/usr/lib32/wine/{,fakedlls/}wineconsole.exe* || die
-		use abi_x86_64 && rm "${D}"/usr/lib64/wine/{,fakedlls/}wineconsole.exe* || die
+		rm	"${D}"/usr/{bin/,man/man1/}wineconsole* || die "rm"
+		use abi_x86_32 && rm "${D}"/usr/lib32/wine/{,fakedlls/}wineconsole.exe* || die "rm"
+		use abi_x86_64 && rm "${D}"/usr/lib64/wine/{,fakedlls/}wineconsole.exe* || die "rm"
 	fi
 
 	use abi_x86_32 && pax-mark psmr "${D}"usr/bin/wine{,-preloader} #255055

@@ -1,16 +1,18 @@
 #!/bin/awk
 
-function wine_gcc_specific_pretests(indent)
+function print_gcc_specific_pretests(indent)
 {
 	printf("%s\n",		"wine_gcc_specific_pretests() {")
-	printf("%s%s\n\n",	indent, "( [[ \"${MERGE_TYPE}\" == \"binary\" ]] || ! tc-is-gcc ) && return 0")
+	printf("%s%s\n\n",	indent, "( [[ \"${MERGE_TYPE}\" = \"binary\" ]] || ! tc-is-gcc ) && return 0")
 	printf("%s%s\n",	indent, "# bug #549768")
 	printf("%s%s\n",	indent, "if use abi_x86_64 && [[ $(gcc-major-version) -eq 5 && $(gcc-minor-version) -le 2 ]]; then")
-	printf("%s%s%s\n",	indent, indent, "einfo \"Checking for gcc-5.1/gcc-5.2 MS X86_64 ABI compiler bug ...\"")
-	printf("%s%s%s\n",	indent, indent, "$(tc-getCC) -O2 \"${FILESDIR}/pr66838.c\" -o \"${T}/pr66838\" || die \"cc compilation failed: pr66838 test\"")
-	printf("%s%s%s\n",	indent, indent, "# Run in subshell to prevent \"Aborted\" message")
-	printf("%s%s%s\n",	indent, indent, "if ! ( \"${T}/pr66838\" || false )&>/dev/null; then")
-	printf("%s%s%s%s\n",indent, indent, indent, "eerror \"gcc-5.1/5.2 MS X86_64 ABI compiler bug detected.\"")
+	printf("%s%s%s\n",	indent, indent, "ebegin \"(subshell): checking for gcc-5.1/gcc-5.2 MS X86_64 ABI compiler bug ...\"")
+	printf("%s%s%s\n",	indent, indent, "( # Run in a subshell to prevent \"Aborted\" message")
+	printf("%s%s%s%s\n",indent, indent, indent, "$(tc-getCC) -O2 \"${FILESDIR}/pr66838.c\" -o \"${T}/pr66838\" || die \"cc compilation failed: pr66838 test\"")
+	printf("%s%s%s%s\n",indent, indent, indent, "\"${T}\"/pr66838 &>/dev/null || die \"pr66838 test failed\"")
+	printf("%s%s%s\n",	indent, indent, ")")
+	printf("%s%s%s\n",	indent, indent, "if ! eend $?; then")
+	printf("%s%s%s%s\n",indent, indent, indent, "eerror \"(subshell): gcc-5.1/5.2 MS X86_64 ABI compiler bug detected.\"")
 	printf("%s%s%s%s\n",indent, indent, indent, "eerror \"64-bit wine cannot be built with affected versions of gcc.\"")
 	printf("%s%s%s%s\n",indent, indent, indent, "eerror \"Please re-emerge wine using an unaffected version of gcc or apply\"")
 	printf("%s%s%s%s\n",indent, indent, indent, "eerror \"Upstream (backport) patch to your current version of gcc-5.1/5.2.\"")
@@ -21,10 +23,12 @@ function wine_gcc_specific_pretests(indent)
 	printf("%s%s\n\n",	indent, "fi")
 	printf("%s%s\n",	indent, "# bug #574044")
 	printf("%s%s\n",	indent, "if use abi_x86_64 && [[ $(gcc-major-version) -eq 5 && $(gcc-minor-version) -eq 3 ]]; then")
-	printf("%s%s%s\n",	indent, indent, "einfo \"Checking for gcc-5.3.0 X86_64 misaligned stack compiler bug ...\"")
-	printf("%s%s%s\n",	indent, indent, "# Compile in subshell to prevent \"Aborted\" message")
-	printf("%s%s%s\n",	indent, indent, "if ! ( $(tc-getCC) -O2 -mincoming-stack-boundary=3 \"${FILESDIR}\"/pr69140.c -o \"${T}\"/pr69140 || false )&>/dev/null; then")
-	printf("%s%s%s%s\n",indent, indent, indent, "eerror \"gcc-5.3.0 X86_64 misaligned stack compiler bug detected.\"")
+	printf("%s%s%s\n",	indent, indent, "ebegin \"(subshell): checking for gcc-5.3.0 X86_64 misaligned stack compiler bug ...\"")
+	printf("%s%s%s\n",	indent, indent, "( # Compile in a subshell to prevent \"Aborted\" message")
+	printf("%s%s%s%s\n",indent, indent, indent, "$(tc-getCC) -O2 -mincoming-stack-boundary=3 \"${FILESDIR}\"/pr69140.c -o \"${T}\"/pr69140 &>/dev/null || die \"pr69140 test failed\"")
+	printf("%s%s%s\n",	indent, indent, ")")
+	printf("%s%s%s\n",	indent, indent, "if ! eend $?; then")
+	printf("%s%s%s%s\n",indent, indent, indent, "eerror \"(subshell): gcc-5.3.0 X86_64 misaligned stack compiler bug detected.\"")
 	printf("%s%s%s%s\n",indent, indent, indent, "eerror \"Please re-emerge the latest gcc-5.3.0 ebuild, or use gcc-config to select a different compiler version.\"")
 	printf("%s%s%s%s\n",indent, indent, indent, "eerror \"See https://bugs.gentoo.org/574044\"")
 	printf("%s%s%s%s\n",indent, indent, indent, "eerror")
@@ -32,6 +36,32 @@ function wine_gcc_specific_pretests(indent)
 	printf("%s%s%s\n",	indent, indent, "fi")
 	printf("%s%s\n",	indent, "fi")
 	printf("}\n\n")
+}
+
+function print_builtin_ms_va_list_pretest(indent)
+{
+	printf("\n%s%s\n",	indent, "if use abi_x86_64; then")
+	printf("%s%s%s\n",	indent, indent, "ebegin \"(subshell): checking compiler support for (64-bit) builtin_ms_va_list ...\"")
+	printf("%s%s%s\n",	indent, indent, "( # Compile in a subshell to prevent \"Aborted\" message")
+	printf("%s%s%s%s\n",indent, indent, indent, "$(tc-getCC) -O2 \"${FILESDIR}\"/builtin_ms_va_list.c -o \"${T}\"/builtin_ms_va_list &>/dev/null || die \"test for builtin_ms_va_list support failed\"")
+	printf("%s%s%s\n",	indent, indent, ")")
+	printf("%s%s%s\n",	indent, indent, "if ! eend $?; then")
+	printf("%s%s%s%s\n",indent, indent, indent, "eerror \"(subshell): $(tc-getCC) does not support builtin_ms_va_list.\"")
+	printf("%s%s%s%s\n",indent, indent, indent, "eerror \"Please re-emerge using a compiler (version) that supports building 64-bit Wine.\"")
+	printf("%s%s%s%s\n",indent, indent, indent, "eerror \"Use >=sys-devel/gcc-4.4 or >=sys-devel/clang-3.8 to build ${CATEGORY}/${PN}.\"")
+	printf("%s%s%s%s\n",indent, indent, indent, "eerror")
+	printf("%s%s%s%s\n",indent, indent, indent, "return 1")
+	printf("%s%s%s\n",	indent, indent, "fi")
+	printf("%s%s\n",	indent, "fi")
+}
+
+function print_pkg_pretend_oss_check(indent)
+{
+	printf("%s%s\n",	indent, "if use oss && ! use kernel_FreeBSD && ! has_version '>=media-sound/oss-4'; then")
+	printf("%s%s%s\n",	indent, indent, "eerror \"You cannot build wine with USE=+oss without having support from a FreeBSD kernel\"")
+	printf("%s%s%s\n",	indent, indent, "eerror \"or >=media-sound/oss-4 (only available through an Overlay).\"")
+	printf("%s%s%s\n",	indent, indent, "die \"USE=+oss currently unsupported on this system.\"")
+	printf("%s%s\n",	indent, "fi")
 }
 
 function print_src_prepare_live_build_patch_support(indent, is_legacy_gstreamer_patch)
@@ -65,36 +95,33 @@ function print_src_prepare_live_build_patch_support(indent, is_legacy_gstreamer_
 
 function print_src_unpack_live_ebuild_support(indent, is_staging_supported)
 {
-	if (!is_staging_supported) {
-		printf("%s%s\n", 	indent, "if [[ ${PV} == \"9999\" ]]; then")
-		printf("%s%s%s\n",	indent, indent, "# Fully Mirror git tree, Wine, so we can access commits in all branches")
-		printf("%s%s%s\n",	indent, indent, "EGIT_MIN_CLONE_TYPE=\"mirror\"")
-		printf("%s%s%s\n",	indent, indent, "EGIT_CHECKOUT_DIR=\"${S}\" git-r3_src_unpack")
-	}
-	else {
-		printf("%s%s\n",	indent, "# Fully Mirror both git trees, Wine & Wine-Staging, so we can access commits in all branches")
-		printf("%s%s\n",	indent, "[[ ${PV} == \"9999\" ]] && EGIT_MIN_CLONE_TYPE=\"mirror\"")
-		printf("%s%s\n",	indent, "if [[ ${PV} == \"9999\" ]] && ! use staging; then")
-		printf("%s%s%s\n",	indent, indent, "EGIT_CHECKOUT_DIR=\"${S}\" git-r3_src_unpack")
-		printf("%s%s\n",	indent, "elif [[ ${PV} == \"9999\" ]] && use staging; then")
-		printf("%s%s%s\n",	indent, indent, "unpack \"${STAGING_HELPER}.tar.gz\"")
-		printf("%s%s%s\n", indent, indent, "if [[ ! -z \"${EGIT_STAGING_COMMIT}\" || ! -z \"${EGIT_STAGING_BRANCH}\" ]]; then")
-		printf("%s%s%s%s\n", indent, indent, indent, "# References are relative to Wine-Staging git tree (pre-checkout Wine-Staging git tree)")
+	printf("%s%s\n", 	indent, "default")
+	printf("%s%s\n", 	indent, "if [[ ${PV} == \"9999\" ]]; then")
+	printf("%s%s%s\n",	indent, indent, "# Fully Mirror git tree, Wine, so we can access commits in all branches")
+	printf("%s%s%s\n",	indent, indent, "EGIT_MIN_CLONE_TYPE=\"mirror\"")
+	printf("%s%s%s\n",	indent, indent, "EGIT_CHECKOUT_DIR=\"${S}\"")
+	if (is_staging_supported) {
+		printf("%s%s%s\n",	 indent, indent, "if ! use staging; then")
+		printf("%s%s%s%s\n", indent, indent, indent, "git-r3_src_unpack")
+		printf("%s%s%s\n", indent, indent, "elif [[ ! -z \"${EGIT_STAGING_COMMIT:-${EGIT_STAGING_BRANCH}}\" ]]; then")
+		printf("%s%s%s%s\n", indent, indent, indent, "# References are relative to Wine-Staging git tree (checkout Wine-Staging git tree first)")
 		printf("%s%s%s%s\n", indent, indent, indent, "# Use env variables \"EGIT_STAGING_COMMIT\" or \"EGIT_STAGING_BRANCH\" to reference Wine-Staging git tree")
 		printf("%s%s%s%s\n", indent, indent, indent, "ebegin \"(subshell): you have specified a Wine-Staging git reference (building Wine git with USE +staging) ...\"")
 		printf("%s%s%s%s\n", indent, indent, indent, "(")
 		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "source \"${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh\" || die")
-		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "[[ ! -z \"${EGIT_STAGING_COMMIT}\" ]] && WINE_STAGING_REF=\"commit EGIT_STAGING_COMMIT\"")
-		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "[[   -z \"${EGIT_STAGING_COMMIT}\" ]] && WINE_STAGING_REF=\"branch EGIT_STAGING_BRANCH\"")
-		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "ewarn \"Building Wine against Wine-Staging git ${WINE_STAGING_REF}=\\\"${EGIT_STAGING_COMMIT:-${EGIT_STAGING_BRANCH}}\\\" .\"")
-		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "EGIT_BRANCH=\"${EGIT_STAGING_BRANCH:-master}\"")
-		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "EGIT_COMMIT=\"${EGIT_STAGING_COMMIT:-}\"")
-		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "unset ${PN}_LIVE_{REPO,BRANCH,COMMIT};")
-		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "EGIT_REPO_URI=\"${STAGING_EGIT_REPO_URI}\" EGIT_CHECKOUT_DIR=\"${STAGING_DIR}\" git-r3_src_unpack")
+		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "if [[ ! -z \"${EGIT_STAGING_COMMIT}\" ]]; then")
+		printf("%s%s%s%s%s%s\n",indent, indent, indent, indent, indent, "local staging_remote_ref=\"${EGIT_STAGING_COMMIT}\"")
+		printf("%s%s%s%s%s%s\n",indent, indent, indent, indent, indent, "ewarn \"Building Wine against Wine-Staging git commit EGIT_STAGING_COMMIT=\\\"${EGIT_STAGING_COMMIT}\\\" .\"")
+		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "else")
+		printf("%s%s%s%s%s%s\n",indent, indent, indent, indent, indent, "local staging_remote_ref=\"refs/heads/${EGIT_STAGING_BRANCH}\"")
+		printf("%s%s%s%s%s%s\n",indent, indent, indent, indent, indent, "ewarn \"Building Wine against Wine-Staging git commit EGIT_STAGING_BRANCH=\\\"${EGIT_STAGING_BRANCH}\\\" .\"")
+		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "fi")
+		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "# Use git-r3 internal functions for secondary Wine-Staging repostiory. See #588604")
+		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "git-r3_fetch \"${STAGING_EGIT_REPO_URI}\" \"${staging_remote_ref}\"")
+		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "git-r3_checkout \"${STAGING_EGIT_REPO_URI}\" \"${STAGING_DIR}\"")
 		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "WINE_STAGING_COMMIT=\"${EGIT_VERSION}\"")
 		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "get_upstream_wine_commit  \"${STAGING_DIR}\" \"${WINE_STAGING_COMMIT}\" \"WINE_COMMIT\"")
-		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "EGIT_COMMIT=\"${WINE_COMMIT}\"")
-		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "EGIT_CHECKOUT_DIR=\"${S}\" git-r3_src_unpack")
+		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "EGIT_COMMIT=\"${WINE_COMMIT}\" git-r3_src_unpack")
 		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "einfo \"Building Wine commit \\\"${WINE_COMMIT}\\\" referenced by Wine-Staging commit \\\"${WINE_STAGING_COMMIT}\\\" ...\"")
 		printf("%s%s%s%s\n", indent, indent, indent, ")")
 		printf("%s%s%s%s\n", indent, indent, indent, "eend $? || die \"(subshell): ... failed to determine target Wine commit.\"")
@@ -103,10 +130,11 @@ function print_src_unpack_live_ebuild_support(indent, is_staging_supported)
 		printf("%s%s%s%s\n", indent, indent, indent, "ebegin \"(subshell): You are using a Wine git reference (building Wine git with USE +staging) ...\"")
 		printf("%s%s%s%s\n", indent, indent, indent, "(")
 		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "source \"${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh\" || die")
-		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "EGIT_CHECKOUT_DIR=\"${S}\" git-r3_src_unpack")
+		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "git-r3_src_unpack")
 		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "WINE_COMMIT=\"${EGIT_VERSION}\"")
-		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "unset ${PN}_LIVE_{REPO,BRANCH,COMMIT} EGIT_COMMIT;")
-		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "EGIT_REPO_URI=\"${STAGING_EGIT_REPO_URI}\" EGIT_CHECKOUT_DIR=\"${STAGING_DIR}\" git-r3_src_unpack")
+		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "# Use git-r3 internal functions for secondary Wine-Staging repostiory. See #588604")
+		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "git-r3_fetch \"${STAGING_EGIT_REPO_URI}\" \"HEAD\"")
+		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "git-r3_checkout \"${STAGING_EGIT_REPO_URI}\" \"${STAGING_DIR}\"")
 		printf("%s%s%s%s%s\n", indent, indent, indent, indent, "if ! walk_wine_staging_git_tree \"${STAGING_DIR}\" \"${S}\" \"${WINE_COMMIT}\" \"WINE_STAGING_COMMIT\" ; then")
 		printf("%s%s%s%s%s%s\n", indent, indent, indent, indent, indent, "find_closest_wine_commit \"${STAGING_DIR}\" \"${S}\" \"WINE_COMMIT\" \"WINE_STAGING_COMMIT\" \"WINE_COMMIT_OFFSET\"")
 		printf("%s%s%s%s%s%s\n", indent, indent, indent, indent, indent, "(($? == 0)) && display_closest_wine_commit_message \"${WINE_COMMIT}\" \"${WINE_STAGING_COMMIT}\" \"${WINE_COMMIT_OFFSET}\"")
@@ -117,6 +145,10 @@ function print_src_unpack_live_ebuild_support(indent, is_staging_supported)
 		printf("%s%s%s%s\n", indent, indent, indent, "eend $? || die \"(subshell): ... failed to determine target Wine-Staging commit.\"")
 		printf("%s%s%s\n",	 indent, indent, "fi")
 	}
+	else {
+		printf("%s%s%s\n", indent, indent, "git-r3_src_unpack")
+	}
+	printf("%s%s\n",	 indent, "fi")
 }
 
 function print_pkg_postinst_csmt_warning(indent)
@@ -164,12 +196,37 @@ BEGIN{
 }
 
 {
+	# Make ebuild's use consistent spacing/layout throughout...
+	if (($0 ~ text2regexp("^if")) || ($0 ~ text2regexp("^ if"))) {
+		sub(text2regexp(" ; then$"), "; then")
+		if ($0 ~ text2regexp(" ; then #*$"))
+			sub(text2regexp(" ; then"), "; then ")
+	}
+
+	# Comment trailing die commands...
+	if (($0 ~ text2regexp(" die$")) || ($0 ~ text2regexp(" die #*$"))) {
+		i=NF-1
+		if ($0 !~ text2regexp(" die$")) {
+			while (--i) {
+				if (($(i+1) == "die") && ($(i+2) ~ "^\\#"))
+					break
+			}
+		}
+		while (--i) {
+			if (($i == "||") || ($i == "&&"))
+				break
+		}
+		while ($(++i) == "")
+			;
+		if (($i ~ "[[:alpha:]]+") && !sub(text2regexp(" die$"), (" die \"" $i "\""))) sub(text2regexp(" die #"), (" die \"" $i "\"  #"))
+	}
+
 	suppress_current_line=0
 
 	if_stack+=($0 ~ if_open_regexp) ? 1 : 0
 	if_stack+=($0 ~ if_close_regexp) ? -1 : 0
 
-	if (!if_check_pv9999_open && ($0 ~ text2regexp("if [[ ${PV} == \"9999\" ]]*; then"))) {
+	if (!if_check_pv9999_open && ($0 ~ text2regexp("if [[ ${PV} == \"9999\" ]]; then"))) {
 		if_check_pv9999_open=if_stack
 		++if_check_pv9999_count
 	}
@@ -199,7 +256,7 @@ BEGIN{
 		if (src_uri_assignment_open) {
 			if ($0 ~ "\"https\:.+\"") {
 				sub(text2regexp("${MAJOR_V}"), "${MAJOR_VERSION}")
-				sub((text2regexp("${P}.tar.bz2\"") "$"), "${MY_P}.tar.bz2 -> ${P}.tar.bz2\"")
+				sub(text2regexp("${P}.tar.bz2\"$"), "${MY_P}.tar.bz2 -> ${P}.tar.bz2\"")
 			}
 
 			if ($0 ~ text2regexp("^ staging? (")) {
@@ -340,20 +397,26 @@ BEGIN{
 		suppress_current_line=suppress_current_line || suppress_bug_check_open
 		if (($0 ~ if_close_regexp) && (if_stack == 0) && suppress_bug_check_open)
 			suppress_bug_check_open=0
+		if ((if_stack == 1) && ($0 ~ if_open_regexp) && ($0 ~ text2regexp("use abi_x86_32"))) {
+			sub(" x", " ")
+			sub("\"x", "\"")
+			sub(text2regexp(" /dev/null"), "/dev/null")
+		}
+		if (if_stack == 1) {
+			if ($0 ~ text2regexp("^ eerror*\"*https://bugs.gentoo.org*\""))
+				sub(text2regexp(" for more details."), "")
+			sub(text2regexp("USE=opencl"), "USE=+opencl")
+		}
 	}
 	else if (array_phase_open["wine_compiler_check"]) {
 		if (!gcc_specific_pretests) {
 			gcc_specific_pretests=1
-			wine_gcc_specific_pretests(indent)
+			print_gcc_specific_pretests(indent)
 			sub(text2regexp("^wine_compiler_check"), "wine_generic_compiler_pretests")
 		}
-
-		if ($0 ~ text2regexp("^ # GCC-specific bugs"))
-			gcc_specific_tests_open=1
-		if (gcc_specific_tests_open)
+		wine_compiler_check_tests_open=wine_compiler_check_tests_open && ($0 !~ text2regexp("^}"))
+		if (wine_compiler_check_tests_open)
 			suppress_current_line=1
-		if (($0 ~ if_close_regexp) && (if_stack == 0) && gcc_specific_tests_open)
-			gcc_specific_tests_open=0
 	}
 	else if (array_phase_open["pkg_pretend"]) {
 		if ($0 ~ text2regexp("^ wine_build_environment_check")) {
@@ -362,6 +425,14 @@ BEGIN{
 		}
 		else if ($0 ~ text2regexp("^ wine_compiler_check")) {
 			suppress_current_line=1
+		}
+		if ((if_stack == 1) && ($0 ~ if_open_regexp) && ($0 ~ text2regexp(" use oss * kernel_FreeBSD"))) {
+			print_pkg_pretend_oss_check(indent)
+			oss_support_check_open=1
+		}
+		if (oss_support_check_open) {
+			suppress_current_line=1
+			oss_support_check_open=((if_stack == 0) && ($0 ~ if_close_regexp)) ? 0 : 1
 		}
 	}
 	else if (array_phase_open["pkg_setup"]) {
@@ -392,22 +463,26 @@ BEGIN{
 		sub(text2regexp("${*}"), "\"&\"")
 	}
 	else if (array_phase_open["src_unpack"]) {
-		if (if_check_pv9999_open && !else_check_pv9999_open)
+		if (if_check_pv9999_open) {
 			suppress_current_line=1
-		if (if_check_pv9999_open && !do_git_unpack_replaced) {
-			print_src_unpack_live_ebuild_support(indent, is_wine_version_staging_supported)
-			++do_git_unpack_replaced
+			if (!do_git_unpack_replaced) {
+				print_src_unpack_live_ebuild_support(indent, is_wine_version_staging_supported)
+				do_git_unpack_replaced=1
+			}
 		}
-		if (if_check_pv9999_open && else_check_pv9999_open && ($0 ~ text2regexp("^ use staging"))) {
-			if (is_wine_version_legacy_gstreamer_patch)
-				printf("%s%s%s\n",	indent, indent, "use gstreamer && unpack \"${GST_P}.patch.bz2\"")
-			if (!is_wine_version_staging_supported)
-				suppress_current_line=1
-		}
-		if (($0 ~ text2regexp("use gstreamer")) || ($0 ~ text2regexp("^ unpack \"${GST_P}.patch.bz2\"")))
+		if (!if_check_pv9999_open && (($0 ~ text2regexp("^ unpack ")) || ($0 ~ text2regexp("^ use * && unpack "))))
 			suppress_current_line=1
 	}
 	else if (array_phase_open["src_prepare"]) {
+		if ($0 ~ text2regexp("md5sum*server/protocol.def")) {
+			suppress_current_line=1
+			if (!md5sum_count)
+				printf("%s%s\n", indent, "local md5hash=\"$(md5sum server/protocol.def || die \"md5sum\")\"")
+			else
+				printf("%s%s\n", indent, "if ! $(md5sum -c - <<<\"${md5hash}\" &>/dev/null); then")
+			++md5sum_count
+		}
+
 		if ($0 ~ text2regexp("^ local PATCHES=("))
 			patch_set_define_open=1
 		if (patch_set_define_open) {
@@ -456,7 +531,7 @@ BEGIN{
 			gv_or_mv_if_open=1
 		if (gv_or_mv_if_open) {
 			sub(text2regexp("\"${DISTDIR}\""), "${DISTDIR}")
-			sub((text2regexp("${DISTDIR}*") "$"), "\"&\"")
+			sub(text2regexp("${DISTDIR}*$"), "\"&\"")
 			if ($0 ~ if_close_regexp)
 				gv_or_mv_if_open=0
 		}
@@ -520,7 +595,14 @@ BEGIN{
 	}
 
 	# Ebuild phase based post-checks
-	if (array_phase_open["pkg_pretend"] && wine_build_environment_prechecks) {
+	if (array_phase_open["wine_compiler_check"] && ($0 ~ text2regexp("^ [[ ${MERGE_TYPE} = \"binary\" ]]"))) {
+		wine_compiler_check_tests_open=1
+		if (!builtin_ms_va_list_pretest) {
+			builtin_ms_va_list_pretest=1
+			print_builtin_ms_va_list_pretest(indent)
+		}
+	}
+	else if (array_phase_open["pkg_pretend"] && wine_build_environment_prechecks) {
 		printf("%s%s\n", indent, "wine_gcc_specific_pretests || die")
 		printf("%s%s\n", indent, "wine_generic_compiler_pretests || die")
 		printf("%s%s\n", indent, "wine_build_environment_prechecks || die")
