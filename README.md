@@ -27,7 +27,7 @@ Testing and updating of these ebuild package build scripts is irregular. So YMMV
 	sys-apps/uksmstat : Simple tool to monitor and control UKSM.
 	sys-auth/pam_kwallet : PAM integration to automatically unlock kwallet when logging into a KDE4 Desktop Session.
 	sys-auth/polkit-explorer : Polkit Explorer reads in a Polkit .policy file, parses its XML contents, and presents the information it contains, on a more human-readable GUI window.
-	x11-apps/starfield : Reminiscence to the screensaver that shipped until WinXP... When MS Windows was still the dominant computing platform.
+	x11-apps/starfield : Reminiscence to the screensaver that shipped, with Windows, until WinXP...
 	www-client/firefox-kde-opensuse : Firefox web browser, with OpenSUSE Patchset, for better KDE Desktop integration.
 
 Custom GL lib switcher implementation (these packages are masked and are NOT extensively tested) - loosely based off the Arch-Linux GL lib switcher.
@@ -37,5 +37,10 @@ Custom GL lib switcher implementation (these packages are masked and are NOT ext
 	x11-base/xorg-server : X.Org X servers (patched version - to work with custom eselect-opengl switcher)
 	x11-drivers/nvidia-drivers : NVIDIA Accelerated Graphics Driver (patched version - to work with custom eselect-opengl switcher)
 
+Updated Infinality Fonts (font rendering enhancements patchset for freetype2 and associated packages) package set. These three packages are designed to be used in conjunction with the (in-Portage-tree ) package media-libs/fontconfig-infinality package.
+
+	media-libs/fontconfig : A library for configuring and customizing font access - with updated infinality support.
+	media-libs/fontconfig-ultimate : A set of font rendering and replacement rules for fontconfig-infinality.
+	media-libs/freetype : A high-quality font engine - with updated infinality support.
 
 Credit to the Arch AUR firefox-kde-opensuse PKGBUILD script used as the main basis for the  www-client/firefox-kde-opensuse (OpenSUSE KDE patchset) ebuild.
