@@ -41,7 +41,7 @@ Custom GL lib switcher implementation (these packages are masked and are NOT ext
 
 ***
 
-Updated Infinality Fonts (subpixel font rendering enhancements patchset for freetype2 and associated packages) package set. These three packages are designed to be used in conjunction with each other. The __media-libs/fontconfig-infinality__ package is in the main __Gentoo__ Portage tree.
+Package Set to provide updated Infinality Fonts (subpixel font rendering enhancements patchset for freetype2 and associated packages). These three packages are designed to be used in conjunction with each other. The __media-libs/fontconfig-infinality__ package is in the main __Gentoo__ Portage tree.
 
 	media-libs/fontconfig-infinality : Provides configuration to be used in conjunction with the freetype-infinality subpixel hinting.
 	media-libs/fontconfig : A library for configuring and customizing font access - with updated infinality support.
