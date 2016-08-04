@@ -4,7 +4,7 @@
 
 EAPI=6
 
-PLOCALES="be bg cs de el en es eu fr hu it pl pt_BR ru sk sr sr@latin sv_SE tr uk vi zh_CN"
+PLOCALES="be bg cs de el en es eu fr hu it pl pt_BR ru sk sr sr@latin sv_SE uk vi zh_CN"
 
 inherit cmake-utils l10n fdo-mime gnome2-utils
 [[ "${PV}" = *9999 ]] && inherit git-r3

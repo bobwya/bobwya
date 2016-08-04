@@ -1,0 +1,39 @@
+diff -urN1 a/eiskaltdcpp-qt/CMakeLists.txt b/eiskaltdcpp-qt/CMakeLists.txt
+--- a/eiskaltdcpp-qt/CMakeLists.txt	2016-08-03 18:21:48.265716486 +0100
++++ b/eiskaltdcpp-qt/CMakeLists.txt	2016-08-03 18:37:58.958976778 +0100
+@@ -32,3 +32,3 @@
+     elseif (USE_QT5)
+-        find_package (Qt5Declarative 5.0.2 REQUIRED)
++        find_package (Qt5QuickWidgets 5.3.2 REQUIRED)
+         find_package (Qt5XmlPatterns 5.0.2 REQUIRED)
+@@ -233,3 +233,3 @@
+         ${Qt5Concurrent_INCLUDE_DIRS}
+-        ${Qt5Declarative_INCLUDE_DIRS}
++        ${Qt5QuickWidgets_INCLUDE_DIRS}
+         ${Qt5XmlPatterns_INCLUDE_DIRS}
+@@ -247,3 +247,3 @@
+         ${Qt5Concurrent_LIBRARIES}
+-        ${Qt5Declarative_LIBRARIES}
++        ${Qt5QuickWidgets_LIBRARIES}
+         ${Qt5XmlPatterns_LIBRARIES}
+diff -urN1 a/eiskaltdcpp-qt/src/ArenaWidget.h b/eiskaltdcpp-qt/src/ArenaWidget.h
+--- a/eiskaltdcpp-qt/src/ArenaWidget.h	2016-08-03 18:21:48.273716628 +0100
++++ b/eiskaltdcpp-qt/src/ArenaWidget.h	2016-08-03 18:39:09.652235376 +0100
+@@ -19,3 +19,3 @@
+ #include <QCloseEvent>
+-#include <QtDeclarative>
++#include <QtQuickWidgets>
+ #endif
+@@ -160,3 +160,3 @@
+ private:
+-    QDeclarativeView *view;
++    QQuickWidget *view;
+ };
+diff -urN1 a/eiskaltdcpp-qt/src/ArenaWidget.cpp b/eiskaltdcpp-qt/src/ArenaWidget.cpp
+--- a/eiskaltdcpp-qt/src/ArenaWidget.cpp	2016-08-03 19:23:15.613054120 +0100
++++ b/eiskaltdcpp-qt/src/ArenaWidget.cpp	2016-08-03 19:24:21.741387111 +0100
+@@ -63,3 +63,3 @@
+ DeclarativeWidget::DeclarativeWidget(const QString &file) : QWidget(NULL) {
+-    view = new QDeclarativeView();
++    view = new QQuickWidget();
+     view->setSource(QUrl::fromLocalFile(file));
