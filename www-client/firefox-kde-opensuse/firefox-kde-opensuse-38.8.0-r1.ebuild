@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI="5"
+EAPI=6
 VIRTUALX_REQUIRED="pgo"
 WANT_AUTOCONF="2.1"
 MOZ_ESR=1
@@ -37,7 +37,7 @@ EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 MOZCONFIG_OPTIONAL_WIFI=1
 MOZCONFIG_OPTIONAL_JIT="enabled"
 
-inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-v6.38 multilib pax-utils fdo-mime autotools virtualx mozlinguas mercurial
+inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-kde-v6.38 multilib pax-utils fdo-mime autotools virtualx mozlinguas mercurial
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="http://www.mozilla.com/firefox
@@ -94,7 +94,7 @@ else
 	fi
 fi
 
-QA_PRESTRIPPED="usr/$(get_libdir)/${MOZ_PN}/firefox"
+QA_PRESTRIPPED="usr/lib*/${MOZ_PN}/firefox"
 
 BUILD_OBJ_DIR="${S}/ff"
 MAX_OBJ_DIR_LEN="80"
@@ -132,7 +132,7 @@ pkg_pretend() {
 		ewarn " ... \"${BUILD_OBJ_DIR}\""
 	fi
 	# Ensure we have enough disk space to compile
-	if use pgo || use debug || use test ; then
+	if use pgo || use debug || use test; then
 		CHECKREQS_DISK_BUILD="8G"
 	else
 		CHECKREQS_DISK_BUILD="4G"
@@ -141,7 +141,7 @@ pkg_pretend() {
 }
 
 src_unpack() {
-	unpack ${A}
+	default
 
 	# Unpack language packs
 	mozlinguas_src_unpack
@@ -158,40 +158,40 @@ src_unpack() {
 }
 
 src_prepare() {
+	ebegin "(subshell): correct EAPI 6 firefox patchset compliance (hack)"
+	(
+		source "${FILESDIR}/${PN}-fix-patch-eapi6-support.sh" "${PV}" "${WORKDIR}/firefox" || die
+	)
+	eend $? || die "(subshell): failed to correct EAPI 6 firefox patchset compliance"
+	# Default to our patchset
+	local PATCHES=( "${WORKDIR}/firefox" )
 	if use kde; then
 		# Gecko/toolkit OpenSUSE KDE integration patchset
 		if [[ $(get_major_version) -lt 42 ]]; then
-			epatch "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch"
+			PATCHES+=( "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch" )
 		fi
-		epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
-		epatch "${EHG_CHECKOUT_DIR}/mozilla-language.patch"
-		epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
+		PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-kde.patch" )
+		PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-language.patch" )
+		PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch" )
 		if [[ $(get_major_version) -lt 39 ]]; then
-			epatch "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch"
+			PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch" )
 		fi
 		# Firefox OpenSUSE KDE integration patchset
-		epatch "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
-		epatch "${EHG_CHECKOUT_DIR}/firefox-kde.patch"
-		epatch "${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
+		PATCHES+=( "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch" )
+		PATCHES+=( "${EHG_CHECKOUT_DIR}/firefox-kde.patch" )
+		PATCHES+=( "${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch" )
 		# Uncomment the next line to enable KDE support debugging (additional console output)...
-		#epatch "${FILESDIR}/firefox-kde-opensuse-kde-debug.patch"
-		# Uncomment the following patch line to force KDE/Qt4 file dialog for Firefox...
-		#epatch "${FILESDIR}/firefox-kde-opensuse-force-qt-dialog.patch"
+		#PATCHES+=( "${FILESDIR}/firefox-kde-opensuse-kde-debug.patch" )
+		# Uncomment the following patch line to force Plasma/Qt file dialog for Firefox...
+		#PATCHES+=( "${FILESDIR}/firefox-kde-opensuse-force-qt-dialog.patch" )
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox-kde-opensuse/)
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
-	# Apply our patches
-	EPATCH_SUFFIX="patch" \
-	EPATCH_FORCE="yes" \
-	EPATCH_EXCLUDE="8011_bug1194520-freetype261_until_moz43.patch
-			8010_bug114311-freetype26.patch" \
-	epatch "${WORKDIR}/firefox"
 
-	# Allow user to apply any additional patches without modifying ebuild
-	epatch_user
+	default
 
 	# Enable gnomebreakpad
-	if use debug ; then
+	if use debug; then
 		sed -i -e "s:GNOME_DISABLE_CRASH_DIALOG=1:GNOME_DISABLE_CRASH_DIALOG=0:g" \
 			"${S}"/build/unix/run-mozilla.sh || die "sed failed!"
 	fi
@@ -206,25 +206,25 @@ src_prepare() {
 	sed -e "s:\(/no-such-file\):${T}\1:g" \
 		-i "${S}"/config/rules.mk \
 		-i "${S}"/nsprpub/configure{.in,} \
-		|| die
+		|| die "sed failed"
 
 	# Don't exit with error when some libs are missing which we have in
 	# system.
 	sed '/^MOZ_PKG_FATAL_WARNINGS/s@= 1@= 0@' \
-		-i "${S}"/browser/installer/Makefile.in || die
+		-i "${S}"/browser/installer/Makefile.in || die "sed failed"
 
 	# Don't error out when there's no files to be removed:
 	sed 's@\(xargs rm\)$@\1 -f@' \
-		-i "${S}"/toolkit/mozapps/installer/packager.mk || die
+		-i "${S}"/toolkit/mozapps/installer/packager.mk || die "sed failed"
 
 	eautoreconf
 
 	# Must run autoconf in js/src
-	cd "${S}"/js/src || die
+	cd "${S}"/js/src || die "cd failed"
 	eautoconf
 
 	# Need to update jemalloc's configure
-	cd "${S}"/memory/jemalloc/src || die
+	cd "${S}"/memory/jemalloc/src || die "cd failed"
 	WANT_AUTOCONF= eautoconf
 }
 
@@ -318,7 +318,7 @@ src_install() {
 	MOZILLA_FIVE_HOME="/usr/$(get_libdir)/${MOZ_PN}"
 	DICTPATH="\"${EPREFIX}/usr/share/myspell\""
 
-	cd "${BUILD_OBJ_DIR}" || die
+	cd "${BUILD_OBJ_DIR}" || die "cd failed"
 
 	# Pax mark xpcshell for hardened support, only used for startupcache creation.
 	pax-mark m "${BUILD_OBJ_DIR}"/dist/bin/xpcshell
@@ -326,23 +326,23 @@ src_install() {
 	# Add our default prefs for firefox
 	cp "${FILESDIR}"/gentoo-default-prefs.js-1 \
 		"${BUILD_OBJ_DIR}/dist/bin/browser/defaults/preferences/all-gentoo.js" \
-		|| die
+		|| die "cp failed"
 
 	# Set default path to search for dictionaries.
 	echo "pref(\"spellchecker.dictionary_path\", ${DICTPATH});" \
 		>> "${BUILD_OBJ_DIR}/dist/bin/browser/defaults/preferences/all-gentoo.js" \
-		|| die
+		|| die "echo failed"
 
 	echo "pref(\"extensions.autoDisableScopes\", 3);" >> \
 		"${BUILD_OBJ_DIR}/dist/bin/browser/defaults/preferences/all-gentoo.js" \
-		|| die
+		|| die "echo failed"
 
 	local plugin
 	use gmp-autoupdate || for plugin in \
 	gmp-gmpopenh264 ; do
 		echo "pref(\"media.${plugin}.autoupdate\", false);" >> \
 			"${BUILD_OBJ_DIR}/dist/bin/browser/defaults/preferences/all-gentoo.js" \
-			|| die
+			|| die "echo failed"
 	done
 
 	MOZ_MAKE_FLAGS="${MAKEOPTS}" \
@@ -378,13 +378,13 @@ src_install() {
 	newicon "${icon_path}/content/icon48.png" "${icon}.png"
 	newmenu "${FILESDIR}/icon/${MOZ_PN}.desktop" "${MOZ_PN}.desktop"
 	sed -i -e "s:@NAME@:${name}:" -e "s:@ICON@:${icon}:" \
-		"${ED}/usr/share/applications/${MOZ_PN}.desktop" || die
+		"${ED}/usr/share/applications/${MOZ_PN}.desktop" || die "sed failed"
 
 	# Add StartupNotify=true bug 237317
-	if use startup-notification ; then
+	if use startup-notification; then
 		echo "StartupNotify=true"\
 			 >> "${ED}/usr/share/applications/${MOZ_PN}.desktop" \
-			|| die
+			|| die "echo failed"
 	fi
 
 	# Required in order to use plugins and even run firefox on hardened.
@@ -408,7 +408,7 @@ src_install() {
 	# revdep-rebuild entry
 	insinto /etc/revdep-rebuild
 	echo "SEARCH_DIRS_MASK=${MOZILLA_FIVE_HOME}" >> ${T}/10firefox
-	doins "${T}"/10${MOZ_PN} || die
+	doins "${T}"/10${MOZ_PN} || die "doins failed"
 }
 
 pkg_preinst() {
@@ -421,20 +421,14 @@ pkg_postinst() {
 	gnome2_icon_cache_update
 	if [[ $(get_major_version) -ge 40 ]]; then
 		# See https://forums.gentoo.org/viewtopic-t-1028874.html
-		ewarn "If you experience problems with your cursor theme - only when mousing over ${PN}..."
-		ewarn "1) create/alter the following file: \"\${HOME}/.icons/default/index.theme\""
-		ewarn "   [icon theme]"
-		ewarn "   Inherits= ..."
-		ewarn "   ( replace \"...\" with your default icon theme name )"
-		ewarn "2) add/alter the following line in your \"\${HOME}/.config/gtk-3.0/settings.ini\""
-		ewarn "   configuration file Settings section:"
-		ewarn "   [Settings]"
-		ewarn "      ..."
-		ewarn "   gtk-cursor-theme-name=default"
-		ewarn "      ..."
+		ewarn "If you experience problems with your cursor theme - only when mousing over ${PN}."
+		ewarn "See:"
+		ewarn "  https://forums.gentoo.org/viewtopic-t-1028874.html"
+		ewarn "  https://wiki.gentoo.org/wiki/Cursor_themes"
+		ewarn "  https://wiki.archlinux.org/index.php/Cursor_themes"
 		ewarn
 	fi
-	if [[ $(get_major_version) -eq 47 ]]; then
+	if [[ $(get_major_version) -ge 47 ]]; then
 		einfo "To enable experimental Electrolysis (e10s) support for ${PN}..."
 		einfo "  browse to: \"about:config\" page"
 		einfo "  add entry: \"browser.tabs.remote.force-enable = true\""
