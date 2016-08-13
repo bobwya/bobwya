@@ -188,6 +188,7 @@ BEGIN{
 	is_wine_version_no_csmt_staging=(wine_version ~ convert_version_list_to_regexp(wine_versions_no_csmt_staging))
 	is_wine_version_no_sysmacros_patch=(wine_version ~ convert_version_list_to_regexp(wine_versions_no_sysmacros_patch))
 	is_wine_version_no_gnutls_patch=(wine_version ~ convert_version_list_to_regexp(wine_versions_no_gnutls_patch))
+	is_wine_version_staging_eapply_supported=(wine_version ~ convert_version_list_to_regexp(wine_versions_staging_eapply_supported))
 
 	# My utility for parsing Wine & Wine-Staging Git trees (pull from Github)
 	wine_staging_helper="wine-staging-git-helper-0.1.2"
@@ -495,8 +496,12 @@ BEGIN{
 		}
 		if (($0 ~ if_open_regexp) && ($0 ~ text2regexp("use staging")))
 			wine_staging_check_open=if_stack
-		if ((wine_staging_check_open == 1) && ($0 ~ text2regexp("eend $?")))
-			sub("$", " || die \"(subshell) script: failed to apply Wine-Staging patches.\"")
+		if (wine_staging_check_open == 1) {
+			if ($0 ~ text2regexp("eend $?"))
+				sub("$", " || die \"(subshell) script: failed to apply Wine-Staging patches.\"")
+			if (is_wine_version_staging_eapply_supported)
+				gsub("epatch", "eapply")
+		}
 		if (is_wine_version_staging_supported) {
 			if ((wine_staging_check_open == 1) && ($0 ~ if_close_regexp) && (wine_version !~ wine_staging_official_regexp)) {
 				printf("\n%s%s%s\n", indent, indent, "if [[ ! -z \"${STAGING_SUFFIX}\" ]]; then")

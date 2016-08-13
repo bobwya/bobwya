@@ -13,6 +13,7 @@ wine_versions_no_csmt_staging="1.9.6 1.9.7 1.9.8 1.9.9"
 wine_versions_legacy_gstreamer_patch_1_0="1.8_rc* 1.8 1.8.1 1.8.2 1.8.3 1.9.0 1.9.1 9999"
 wine_versions_no_sysmacros_patch="1.8.3 1.9.9 1.9.10 1.9.11 1.9.12 1.9.13 1.9.14 1.9.15 1.9.16 9999"
 wine_versions_no_gnutls_patch="1.9.13 1.9.14 1.9.15 1.9.16 9999"
+wine_versions_staging_eapply_supported="9999"
 
 # Rename and patch all the stock mesa ebuild files
 cd "${script_folder%/tools}"
@@ -39,6 +40,39 @@ rm wine-1.{6,7}*.ebuild 2>/dev/null
 # Remove ChangeLog files...
 rm ChangeLog* 2>/dev/null
 
+# Patch metadata.xml file
+metadata_file="metadata.xml"
+mv "${metadata_file}" "${metadata_file}.bak"
+gawk 'BEGIN{
+        flag_open_regexp="^[[:blank:]]+\<flag name\=\"([\-[:alnum:]]+)\"\>.+$"
+        flag_close_regexp="\<\/flag\>"
+        use_close_regexp="\<\/use\>"
+        d3d9_use_flag="d3d9"
+        maintainer_open_regexp="^[[:blank:]]*\<maintainer.+\>"
+		maintainer_close_regexp="^[[:blank:]]*\<\/maintainer\>"
+        upstream_open_regexp="^[[:blank:]]*\<upstream.+\>"
+		upstream_close_regexp="^[[:blank:]]*\<\/upstream\>"
+    }
+    {
+		maintainer_open=maintainer_open || ($0 ~ maintainer_open_regexp)
+		if (maintainer_open) {
+			maintainer_open=($0 !~ maintainer_close_regexp)
+			next
+		}
+        flag_name=($0 ~ flag_open_regexp) ? gensub(flag_open_regexp, "\\1", "g") : ""
+		d3d9_block_open=(flag_name == d3d9_use_flag) ? 1 : d3d9_block_open
+		if (d3d9_block_open) {
+			d3d9_block_open=($0 ~ flag_close_regexp) ? 0 : 1
+			next
+		}
+		upstream_open=upstream_open || ($0 ~ upstream_open_regexp)
+		if (upstream_open) {
+			sub("sourceforge", "github") && sub("wine","wine-mirror/wine")
+			upstream_open=($0 !~ upstream_close_regexp)
+		}
+        printf("%s\n", $0)
+    }' "${metadata_file}.bak" >"${metadata_file}" 2>/dev/null
+rm "${metadata_file}.bak"
 
 # Create all new wine versions from base version 1.8
 for ebuild_file in *.ebuild; do
@@ -102,6 +136,7 @@ for ebuild_file in *.ebuild; do
 			-vwine_versions_legacy_gstreamer_patch_1_0="${wine_versions_legacy_gstreamer_patch_1_0}" \
 			-vwine_versions_no_sysmacros_patch="${wine_versions_no_sysmacros_patch}" \
 			-vwine_versions_no_gnutls_patch="${wine_versions_no_gnutls_patch}" \
+			-vwine_versions_staging_eapply_supported="${wine_versions_staging_eapply_supported}" \
 			-vwine_gecko_version="${wine_gecko_version}" -vwine_staging_gecko_version="${wine_staging_gecko_version}" \
 			-vwine_mono_version="${wine_mono_version}"   -vwine_staging_mono_version="${wine_staging_mono_version}" \
 			--file "tools/common-functions.awk" \
