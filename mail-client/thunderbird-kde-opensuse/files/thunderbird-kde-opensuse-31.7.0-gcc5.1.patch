@@ -6,9 +6,9 @@ Origin:                  Upstream, self
 URL:                     URL=https://bug1024492.bugzilla.mozilla.org/attachment.cgi?id=8439834&action=diff&context=patch&format=raw&headers=1
 Description:             Fix building with gcc5
 
-diff -Nur comm-esr31.orig/mozilla/js/src/builtin/TypedObject.cpp comm-esr31/mozilla/js/src/builtin/TypedObject.cpp
---- comm-esr31.orig/mozilla/js/src/builtin/TypedObject.cpp	2015-05-07 15:53:49.000000000 -0300
-+++ comm-esr31/mozilla/js/src/builtin/TypedObject.cpp	2015-05-17 09:38:36.550714030 -0300
+diff -Nur a/mozilla/js/src/builtin/TypedObject.cpp b/mozilla/js/src/builtin/TypedObject.cpp
+--- a/mozilla/js/src/builtin/TypedObject.cpp	2015-05-07 15:53:49.000000000 -0300
++++ b/mozilla/js/src/builtin/TypedObject.cpp	2015-05-17 09:38:36.550714030 -0300
 @@ -710,12 +710,12 @@
      contents.append(")");
      RootedAtom stringRepr(cx, contents.finishAtom());
@@ -147,9 +147,9 @@ diff -Nur comm-esr31.orig/mozilla/js/src/builtin/TypedObject.cpp comm-esr31/mozi
          }
          Rooted<TypedObject*> obj(cx, createZeroed(cx, callee, length));
          if (!obj)
-diff -Nur comm-esr31.orig/mozilla/js/src/frontend/BytecodeCompiler.cpp comm-esr31/mozilla/js/src/frontend/BytecodeCompiler.cpp
---- comm-esr31.orig/mozilla/js/src/frontend/BytecodeCompiler.cpp	2015-05-07 15:53:49.000000000 -0300
-+++ comm-esr31/mozilla/js/src/frontend/BytecodeCompiler.cpp	2015-05-17 09:39:00.183186652 -0300
+diff -Nur a/mozilla/js/src/frontend/BytecodeCompiler.cpp b/mozilla/js/src/frontend/BytecodeCompiler.cpp
+--- a/mozilla/js/src/frontend/BytecodeCompiler.cpp	2015-05-07 15:53:49.000000000 -0300
++++ b/mozilla/js/src/frontend/BytecodeCompiler.cpp	2015-05-17 09:39:00.183186652 -0300
 @@ -544,7 +544,7 @@
  
      RootedScriptSource sourceObject(cx, CreateScriptSourceObject(cx, options));
@@ -159,9 +159,9 @@ diff -Nur comm-esr31.orig/mozilla/js/src/frontend/BytecodeCompiler.cpp comm-esr3
      ScriptSource* ss = sourceObject->source();
  
      SourceCompressionTask sct(cx);
-diff -Nur comm-esr31.orig/mozilla/js/src/vm/ScopeObject.h comm-esr31/mozilla/js/src/vm/ScopeObject.h
---- comm-esr31.orig/mozilla/js/src/vm/ScopeObject.h	2015-05-07 15:53:56.000000000 -0300
-+++ comm-esr31/mozilla/js/src/vm/ScopeObject.h	2015-05-17 09:53:20.202966820 -0300
+diff -Nur a/mozilla/js/src/vm/ScopeObject.h b/mozilla/js/src/vm/ScopeObject.h
+--- a/mozilla/js/src/vm/ScopeObject.h	2015-05-07 15:53:56.000000000 -0300
++++ b/mozilla/js/src/vm/ScopeObject.h	2015-05-17 09:53:20.202966820 -0300
 @@ -63,21 +63,9 @@
      bool onNamedLambda;
  
@@ -186,9 +186,9 @@ diff -Nur comm-esr31.orig/mozilla/js/src/vm/ScopeObject.h comm-esr31/mozilla/js/
  
      bool done() const;
      void operator++(int);
-diff -Nur comm-esr31.orig/mozilla/js/src/vm/ScopeObject-inl.h comm-esr31/mozilla/js/src/vm/ScopeObject-inl.h
---- comm-esr31.orig/mozilla/js/src/vm/ScopeObject-inl.h	2015-05-07 15:53:56.000000000 -0300
-+++ comm-esr31/mozilla/js/src/vm/ScopeObject-inl.h	2015-05-17 09:51:33.939344362 -0300
+diff -Nur a/mozilla/js/src/vm/ScopeObject-inl.h b/mozilla/js/src/vm/ScopeObject-inl.h
+--- a/mozilla/js/src/vm/ScopeObject-inl.h	2015-05-07 15:53:56.000000000 -0300
++++ b/mozilla/js/src/vm/ScopeObject-inl.h	2015-05-17 09:51:33.939344362 -0300
 @@ -13,6 +13,26 @@
  
  namespace js {
@@ -216,9 +216,9 @@ diff -Nur comm-esr31.orig/mozilla/js/src/vm/ScopeObject-inl.h comm-esr31/mozilla
  inline void
  ScopeObject::setAliasedVar(JSContext* cx, ScopeCoordinate sc, PropertyName* name, const Value& v)
  {
-diff -Naur comm-esr31.orig/mozilla/netwerk/ipc/NeckoParent.cpp porg-build-2015.05.17-10h30m39s/comm-esr31/mozilla/netwerk/ipc/NeckoParent.cpp
---- comm-esr31.orig/mozilla/netwerk/ipc/NeckoParent.cpp	2015-05-07 15:53:46.000000000 -0300
-+++ porg-build-2015.05.17-10h30m39s/comm-esr31/mozilla/netwerk/ipc/NeckoParent.cpp	2015-05-17 10:51:24.013181648 -0300
+diff -Naur a/mozilla/netwerk/ipc/NeckoParent.cpp b/mozilla/netwerk/ipc/NeckoParent.cpp
+--- a/mozilla/netwerk/ipc/NeckoParent.cpp	2015-05-07 15:53:46.000000000 -0300
++++ b/mozilla/netwerk/ipc/NeckoParent.cpp	2015-05-17 10:51:24.013181648 -0300
 @@ -359,7 +359,7 @@
    RtspChannelParent* p = static_cast<RtspChannelParent*>(aActor);
    return p->Init(aConnectArgs);
@@ -228,9 +228,9 @@ diff -Naur comm-esr31.orig/mozilla/netwerk/ipc/NeckoParent.cpp porg-build-2015.0
  #endif
  }
 
-diff -Naur comm-esr31.orig/mozilla/js/xpconnect/wrappers/XrayWrapper.cpp comm-esr31/mozilla/js/xpconnect/wrappers/XrayWrapper.cpp
---- comm-esr31.orig/mozilla/js/xpconnect/wrappers/XrayWrapper.cpp	2015-05-07 15:53:42.000000000 -0300
-+++ comm-esr31/mozilla/js/xpconnect/wrappers/XrayWrapper.cpp	2015-05-17 11:22:59.442942469 -0300
+diff -Naur a/mozilla/js/xpconnect/wrappers/XrayWrapper.cpp b/mozilla/js/xpconnect/wrappers/XrayWrapper.cpp
+--- a/mozilla/js/xpconnect/wrappers/XrayWrapper.cpp	2015-05-07 15:53:42.000000000 -0300
++++ b/mozilla/js/xpconnect/wrappers/XrayWrapper.cpp	2015-05-17 11:22:59.442942469 -0300
 @@ -351,7 +351,7 @@
          {
              JSAutoCompartment ac(cx, target);

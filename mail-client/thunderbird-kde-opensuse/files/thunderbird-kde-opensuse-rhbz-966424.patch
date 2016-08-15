@@ -1,5 +1,5 @@
---- a/toolkit/modules/CertUtils.jsm
-+++ b/toolkit/modules/CertUtils.jsm
+--- a/mozilla/toolkit/modules/CertUtils.jsm
++++ b/mozilla/toolkit/modules/CertUtils.jsm
 @@ -170,17 +170,19 @@ this.checkCert =
    issuerCert = issuerCert.QueryInterface(Ci.nsIX509Cert3);
    var tokenNames = issuerCert.getAllTokenNames({});

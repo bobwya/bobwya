@@ -4,10 +4,10 @@ Date:   Sun Nov 24 19:06:23 2013 +0100
 
     fixed broken parallel full build of TB (patch by Fabio Rossi)
 
-diff --git a/lang/Makefile.in b/lang/Makefile.in
+diff --git a/mailnews/extensions/enigmail/lang/Makefile.in b/mailnews/extensions/enigmail/lang/Makefile.in
 index 2334d4f..38688e0 100644
---- a/lang/Makefile.in
-+++ b/lang/Makefile.in
+--- a/mailnews/extensions/enigmail/lang/Makefile.in
++++ b/mailnews/extensions/enigmail/lang/Makefile.in
 @@ -16,12 +16,12 @@ include $(topsrcdir)/config/config.mk
  
  include $(srcdir)/../util/build.mk
@@ -23,10 +23,10 @@ index 2334d4f..38688e0 100644
  	$(MAKEJAR)
  
  clean:
-diff --git a/ui/Makefile.in b/ui/Makefile.in
+diff --git a/mailnews/extensions/enigmail/ui/Makefile.in b/mailnews/extensions/enigmail/ui/Makefile.in
 index 6309525..13c98ee 100644
---- a/ui/Makefile.in
-+++ b/ui/Makefile.in
+--- a/mailnews/extensions/enigmail/ui/Makefile.in
++++ b/mailnews/extensions/enigmail/ui/Makefile.in
 @@ -28,7 +28,7 @@ include $(topsrcdir)/config/config.mk
  
  include $(srcdir)/../util/build.mk

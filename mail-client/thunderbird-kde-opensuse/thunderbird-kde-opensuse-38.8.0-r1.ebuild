@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=5
+EAPI=6
 WANT_AUTOCONF="2.1"
 MOZ_ESR=""
 MOZ_LIGHTNING_VER="4.0.8"
@@ -36,10 +36,10 @@ MOZ_HTTP_URI="http://ftp.mozilla.org/pub/${MOZ_PN}/releases"
 EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 
 MOZCONFIG_OPTIONAL_JIT="enabled"
-inherit flag-o-matic toolchain-funcs mozconfig-v6.38 makeedit multilib autotools pax-utils check-reqs nsplugins mozlinguas mercurial
+inherit flag-o-matic toolchain-funcs mozconfig-kde-v6.38 makeedit multilib autotools pax-utils check-reqs nsplugins mozlinguas-kde mercurial
 
 DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration"
-HOMEPAGE="http://www.mozilla.com/en-US/thunderbird/
+HOMEPAGE="http://www.mozilla.com/en-US/thunderbird
 	${EHG_REPO_URI}"
 
 KEYWORDS="amd64 x86 ~x86-fbsd ~amd64-linux ~x86-linux"
@@ -100,7 +100,7 @@ pkg_setup() {
 
 	export MOZILLA_DIR="${S}/mozilla"
 
-	if ! use bindist ; then
+	if ! use bindist; then
 		elog "You are enabling official branding. You may not redistribute this build"
 		elog "to any users on your network or the internet. Doing so puts yourself into"
 		elog "a legal problem with Mozilla Foundation"
@@ -127,7 +127,7 @@ pkg_pretend() {
 }
 
 src_unpack() {
-	unpack ${A}
+	default
 
 	# Unpack language packs
 	mozlinguas_src_unpack
@@ -150,33 +150,30 @@ src_unpack() {
 }
 
 src_prepare() {
-	# Apply our Thunderbird patchset
-	EPATCH_SUFFIX="patch" \
-	EPATCH_FORCE="yes" \
-	epatch "${WORKDIR}/thunderbird"
+	# Default to our patchset
+	local PATCHES=( "${WORKDIR}/thunderbird" )
+	# Add patch for https://bugzilla.redhat.com/show_bug.cgi?id=966424
+	PATCHES+=( "${FILESDIR}/${PN}-rhbz-966424.patch" )
 
-	# Apply our patchset from firefox to thunderbird as well
-	pushd "${S}"/mozilla &>/dev/null || die
-	# Patch for https://bugzilla.redhat.com/show_bug.cgi?id=966424
-	epatch "${FILESDIR}"/${PN}-rhbz-966424.patch
+	pushd "${S}"/mozilla &>/dev/null || die "pushd failed"
 	if use kde; then
 		# Gecko/toolkit OpenSUSE KDE integration patchset
-		epatch "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
-		epatch "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
+		eapply "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
+		eapply "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
 		# Uncomment the next line to enable KDE support debugging (additional console output)...
-		#epatch "${FILESDIR}/${PN}-kde-debug.patch"
-		# Uncomment the following patch line to force KDE/Qt4 file dialog for Thunderbird...
-		#epatch "${FILESDIR}/${PN}-force-qt-dialog.patch"
+		#PATCHES+=( "${FILESDIR}/${PN}-kde-debug.patch" )
+		# Uncomment the following patch line to force Plasma/Qt file dialog for Thunderbird...
+		#PATCHES+=( "${FILESDIR}/${PN}-force-qt-dialog.patch" )
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/mail-client/thunderbird-kde-opensuse/)
 	fi
-	EPATCH_SUFFIX="patch" \
-	EPATCH_FORCE="yes" \
-	EPATCH_EXCLUDE="8010_bug114311-freetype26.patch
-			8011_bug1194520-freetype261_until_moz43.patch" \
-	epatch "${WORKDIR}/firefox"
-	# Patch for https://bugzilla.mozilla.org/show_bug.cgi?id=1143411
-	[[ $(get_major_version) -le 31 ]] && epatch "${FILESDIR}/${PN}-31.8.0-buildfix-ft-master.patch"
-	popd &>/dev/null || die
+	# Apply our patchset from firefox to thunderbird as well
+	ebegin "(subshell): correct EAPI 6 firefox patchset compliance (hack)"
+	(
+		source "${FILESDIR}/${PN}-fix-patch-eapi6-support.sh" "${PV}" "${WORKDIR}/firefox" || die
+	)
+	eend $? || die "(subshell): failed to correct EAPI 6 firefox patchset compliance"
+	eapply "${WORKDIR}/firefox"
+	popd &>/dev/null || die "popd failed"
 
 	# Ensure that are plugins dir is enabled as default
 	sed -i -e "s:/usr/lib/mozilla/plugins:/usr/lib/nsbrowser/plugins:" \
@@ -187,11 +184,11 @@ src_prepare() {
 	# Don't exit with error when some libs are missing which we have in
 	# system.
 	sed '/^MOZ_PKG_FATAL_WARNINGS/s@= 1@= 0@' \
-		-i "${S}"/mail/installer/Makefile.in || die
+		-i "${S}"/mail/installer/Makefile.in || die "sed failed"
 
 	# Don't error out when there's no files to be removed:
 	sed 's@\(xargs rm\)$@\1 -f@' \
-		-i "${S}"/mozilla/toolkit/mozapps/installer/packager.mk || die
+		-i "${S}"/mozilla/toolkit/mozapps/installer/packager.mk || die "sed failed"
 
 	# Shell scripts sometimes contain DOS line endings; bug 391889
 	grep -rlZ --include="*.sh" $'\r$' . |
@@ -200,8 +197,7 @@ src_prepare() {
 		edos2unix "${file}"
 	done
 
-	# Allow user to apply any additional patches without modifying ebuild
-	epatch_user
+	default
 
 	# Confirm the version of lightning being grabbed for langpacks is the same
 	# as that used in thunderbird
@@ -214,9 +210,9 @@ src_prepare() {
 
 	eautoreconf
 	# Ensure we run eautoreconf in mozilla to regenerate configure
-	cd "${S}"/mozilla || die
+	cd "${S}"/mozilla || die "cd failed"
 	eautoconf
-	cd "${S}"/mozilla/js/src || die
+	cd "${S}"/mozilla/js/src || die "cd failed"
 	eautoconf
 }
 
@@ -259,10 +255,8 @@ src_configure() {
 		MEXTENSIONS="${MEXTENSIONS},inspector"
 	fi
 
-	# Use an objdir to keep things organized and force build of Thunderbird mail application.
-	sed -i -e "\$amk_add_options MOZ_OBJDIR=${BUILD_OBJ_DIR}" \
-		-e '''1i\'''"mk_add_options MOZ_CO_PROJECT=mail" \
-		-e '''1i\'''"ac_add_options --enable-application=mail" "${S}"/.mozconfig
+	# Use an objdir to keep things organized.
+	echo "mk_add_options MOZ_OBJDIR=${BUILD_OBJ_DIR}" >> "${S}"/.mozconfig
 
 	# Finalize and report settings
 	mozconfig_final
@@ -281,26 +275,26 @@ src_configure() {
 	fi
 
 	if use crypt; then
-		pushd "${WORKDIR}"/enigmail &>/dev/null ||die
+		pushd "${WORKDIR}"/enigmail &>/dev/null || die "pushd failed"
 		econf
-		popd &>/dev/null ||die
+		popd &>/dev/null || die "popd failed"
 	fi
 }
 
 src_compile() {
-	mkdir -p "${BUILD_OBJ_DIR}" && cd "${BUILD_OBJ_DIR}" || die
+	mkdir -p "${BUILD_OBJ_DIR}" && cd "${BUILD_OBJ_DIR}" || die "cd failed"
 
 	CC="$(tc-getCC)" CXX="$(tc-getCXX)" LD="$(tc-getLD)" \
 	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 	emake -f "${S}"/client.mk
 
 	# Only build enigmail extension if crypt enabled.
-	if use crypt ; then
+	if use crypt; then
 		einfo "Building enigmail"
-		pushd "${WORKDIR}"/enigmail &>/dev/null || die
+		pushd "${WORKDIR}"/enigmail &>/dev/null || die "pushd failed"
 		emake -j1
 		emake -j1 xpi
-		popd &>/dev/null || die
+		popd &>/dev/null || die "popd failed"
 	fi
 }
 
@@ -309,17 +303,17 @@ src_install() {
 	DICTPATH="\"${EPREFIX}/usr/share/myspell\""
 
 	declare emid
-	cd "${BUILD_OBJ_DIR}" || die
+	cd "${BUILD_OBJ_DIR}" || die "cd failed"
 
 	# Copy our preference before omnijar is created.
 	cp "${FILESDIR}"/thunderbird-gentoo-default-prefs-1.js-1 \
 		"${BUILD_OBJ_DIR}/dist/bin/defaults/pref/all-gentoo.js" \
-		|| die
+		|| die "cp failed"
 
 	# Set default path to search for dictionaries.
 	echo "pref(\"spellchecker.dictionary_path\", ${DICTPATH});" \
 		>> "${BUILD_OBJ_DIR}/dist/bin/defaults/pref/all-gentoo.js" \
-		|| die
+		|| die "echo failed"
 
 	# Pax mark xpcshell for hardened support, only used for startupcache creation.
 	pax-mark m "${BUILD_OBJ_DIR}"/dist/bin/xpcshell
@@ -348,34 +342,34 @@ src_install() {
 		"${WORKDIR}"/lightning-${MOZ_LIGHTNING_VER} lightning calendar
 
 	emid='{e2fda1a4-762b-4020-b5ad-a41df1933103}'
-	mkdir -p "${T}/${emid}" || die
-	cp -RLp -t "${T}/${emid}" "${BUILD_OBJ_DIR}"/dist/xpi-stage/lightning/* || die
+	mkdir -p "${T}/${emid}" || die "mkdir failed"
+	cp -RLp -t "${T}/${emid}" "${BUILD_OBJ_DIR}"/dist/xpi-stage/lightning/* || die "cp failed"
 	insinto ${MOZILLA_FIVE_HOME}/distribution/extensions
 	doins -r "${T}/${emid}"
 
 	if use lightning; then
 		# move lightning out of distribution/extensions and into extensions for app-global install
-		mv "${ED}"/${MOZILLA_FIVE_HOME}/{distribution,}/extensions/${emid} || die
+		mv "${ED}"/${MOZILLA_FIVE_HOME}/{distribution,}/extensions/${emid} || die "mv failed"
 
 		# stage extra locales for gdata-provider and install app-global
 		mozlinguas_xpistage_langpacks "${BUILD_OBJ_DIR}"/dist/xpi-stage/gdata-provider \
 			"${WORKDIR}"/gdata-provider-${MOZ_LIGHTNING_GDATA_VER}
 		emid='{a62ef8ec-5fdc-40c2-873c-223b8a6925cc}'
-		mkdir -p "${T}/${emid}" || die
-		cp -RLp -t "${T}/${emid}" "${BUILD_OBJ_DIR}"/dist/xpi-stage/gdata-provider/* || die
+		mkdir -p "${T}/${emid}" || die "mkdir failed"
+		cp -RLp -t "${T}/${emid}" "${BUILD_OBJ_DIR}"/dist/xpi-stage/gdata-provider/* || die "cp failed"
 		insinto ${MOZILLA_FIVE_HOME}/extensions
 		doins -r "${T}/${emid}"
 	fi
 
-	if use crypt ; then
+	if use crypt; then
 		local enigmail_xpipath="${WORKDIR}/enigmail/build"
-		cd "${T}" || die
-		unzip "${enigmail_xpipath}"/enigmail*.xpi install.rdf || die
+		cd "${T}" || die "cd failed"
+		unzip "${enigmail_xpipath}"/enigmail*.xpi install.rdf || die "unzip failed"
 		emid=$(sed -n '/<em:id>/!d; s/.*\({.*}\).*/\1/; p; q' install.rdf)
 
-		dodir ${MOZILLA_FIVE_HOME}/extensions/${emid} || die
-		cd "${ED}"${MOZILLA_FIVE_HOME}/extensions/${emid} || die
-		unzip "${enigmail_xpipath}"/enigmail*.xpi || die
+		dodir ${MOZILLA_FIVE_HOME}/extensions/${emid} || die "dodir failed"
+		cd "${ED}"${MOZILLA_FIVE_HOME}/extensions/${emid} || die "cd failed"
+		unzip "${enigmail_xpipath}"/enigmail*.xpi || die "unzip failed"
 	fi
 
 	# Required in order for jit to work on hardened, for mozilla-31 and above
@@ -394,17 +388,11 @@ src_install() {
 pkg_postinst() {
 	if [[ $(get_major_version) -ge 40 ]]; then
 		# See https://forums.gentoo.org/viewtopic-t-1028874.html
-		ewarn "If you experience problems with your cursor theme - only when mousing over ${PN}..."
-		ewarn "1) create/alter the following file: \"\${HOME}/.icons/default/index.theme\""
-		ewarn "   [icon theme]"
-		ewarn "   Inherits= ..."
-		ewarn "   ( replace \"...\" with your default icon theme name )"
-		ewarn "2) add/alter the following line in your \"\${HOME}/.config/gtk-3.0/settings.ini\""
-		ewarn "   configuration file Settings section:"
-		ewarn "   [Settings]"
-		ewarn "      ..."
-		ewarn "   gtk-cursor-theme-name=default"
-		ewarn "      ..."
+		ewarn "If you experience problems with your cursor theme - only when mousing over ${PN}."
+		ewarn "See:"
+		ewarn "  https://forums.gentoo.org/viewtopic-t-1028874.html"
+		ewarn "  https://wiki.gentoo.org/wiki/Cursor_themes"
+		ewarn "  https://wiki.archlinux.org/index.php/Cursor_themes"
 		ewarn
 	fi
 	if use crypt; then
