@@ -151,7 +151,7 @@ BEGIN{
 		if ($0 ~ text2regexp("^inherit ")) {
 			$0=($0 " mercurial")
 			mozconfig_version=gensub(mozconfig_version_regexp, "\\1", 1, $0)
-			gsub("(\"| )moz(config|coreconf)", "&-kde")
+			gsub("(\"| )moz(config|coreconf|linguas)", "&-kde")
 		}
 
 		# Process initial variables
