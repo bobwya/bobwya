@@ -1,24 +1,25 @@
-# Copyright 1999-2015 Gentoo Foundation
+# Copyright 1999-2016 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 #
-# @ECLASS: mozconfig-v5.31.eclass
+# @ECLASS: mozconfig-kde-v5.31.eclass
 # @MAINTAINER:
 # mozilla team <mozilla@gentoo.org>
 # @BLURB: the new mozilla common configuration eclass for FF31 and newer, v5
 # @DESCRIPTION:
-# This eclass is used in mozilla ebuilds (firefox, thunderbird, seamonkey)
-# to provide a single common place for the common mozilla engine compoments.
+# This eclass is used in mozilla ebuilds (firefox-kde-opensuse, thunderbird-kde-opensuse),
+# patched with the unofficial OpenSUSE KDE patchset.
+# Providing a single location for common mozilla engine components.
 #
 # The eclass provides all common dependencies as well as common use flags.
 #
 # Some use flags which may be optional in particular mozilla packages can be
 # supported through setting eclass variables.
 #
-# This eclass inherits mozconfig helper functions as defined in mozcoreconf-v3,
+# This eclass inherits mozconfig helper functions as defined in mozcoreconf-kde-v3,
 # and so ebuilds inheriting this eclass do not need to inherit that.
 
-inherit multilib flag-o-matic toolchain-funcs mozcoreconf-v3
+inherit multilib flag-o-matic toolchain-funcs mozcoreconf-kde-v3
 
 case ${EAPI} in
 	0|1|2|3|4) die "EAPI=${EAPI} not supported"
@@ -28,7 +29,7 @@ esac
 # @DESCRIPTION:
 # Set this variable before the inherit line, when an ebuild needs to provide
 # optional necko-wifi support via IUSE="wifi".  Currently this would include
-# ebuilds for firefox, and potentially seamonkey.
+# ebuilds for firefox.
 #
 # Leave the variable UNSET if necko-wifi support should not be available.
 # Set the variable to "enabled" if the use flag should be enabled by default.
@@ -38,7 +39,7 @@ esac
 # @DESCRIPTION:
 # Set this variable before the inherit line, when an ebuild needs to provide
 # optional necko-wifi support via IUSE="jit".  Currently this would include
-# ebuilds for firefox, and potentially seamonkey.
+# ebuilds for firefox.
 #
 # Leave the variable UNSET if optional jit support should not be available.
 # Set the variable to "enabled" if the use flag should be enabled by default.
@@ -120,7 +121,7 @@ DEPEND="app-arch/zip
 #
 # Example:
 #
-# inherit mozconfig-v5.31
+# inherit mozconfig-kde-v5.31
 #
 # src_configure() {
 # 	mozconfig_init
@@ -141,7 +142,7 @@ mozconfig_config() {
 
 	if has bindist ${IUSE}; then
 		mozconfig_use_enable !bindist official-branding
-		if [[ ${PN} == firefox ]] && use bindist ; then
+		if [[ ${MOZ_PN} == firefox ]] && use bindist; then
 			mozconfig_annotate '' --with-branding=browser/branding/aurora
 		fi
 	fi
@@ -149,13 +150,13 @@ mozconfig_config() {
 	mozconfig_use_enable debug
 	mozconfig_use_enable debug tests
 
-	if ! use debug ; then
+	if ! use debug; then
 		mozconfig_annotate 'disabled by Gentoo' --disable-debug-symbols
 	fi
 
 	mozconfig_use_enable startup-notification
 
-	if [[ -n ${MOZCONFIG_OPTIONAL_WIFI} ]] ; then
+	if [[ -n ${MOZCONFIG_OPTIONAL_WIFI} ]]; then
 		# wifi pulls in dbus so manage both here
 		mozconfig_use_enable wifi necko-wifi
 		if use wifi && ! use dbus; then

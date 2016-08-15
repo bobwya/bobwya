@@ -1,26 +1,30 @@
-# Copyright 1999-2014 Gentoo Foundation
+# Copyright 1999-2016 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 #
-# mozcoreconf.eclass : core options for mozilla
-# inherit mozconfig-2 if you need USE flags
+# @ECLASS: mozcoreconf-kde-v3.eclass
+# @MAINTAINER:
+# Mozilla team <mozilla@gentoo.org>
+# @BLURB: core options and configuration functions for mozilla
+# @DESCRIPTION:
+#
+# inherit mozconfig-kde-v5.* or above for mozilla configuration support
+
+if [[ ! ${_MOZCORECONF_V3} ]]; then
 
 PYTHON_COMPAT=( python2_7 )
-PYTHON_REQ_USE='threads,sqlite'
+PYTHON_REQ_USE='ncurses,sqlite,ssl,threads'
 
 inherit multilib flag-o-matic python-any-r1 versionator
 
 IUSE="${IUSE} custom-cflags custom-optimization"
 
-RDEPEND="x11-libs/libXrender
-	x11-libs/libXt
-	>=sys-libs/zlib-1.1.4"
-
-DEPEND="${RDEPEND}
-	virtual/pkgconfig
+DEPEND="virtual/pkgconfig
 	${PYTHON_DEPS}"
 
-# mozconfig_annotate: add an annotated line to .mozconfig
+# @FUNCTION: mozconfig_annotate
+# @DESCRIPTION:
+# add an annotated line to .mozconfig
 #
 # Example:
 # mozconfig_annotate "building on ultrasparc" --enable-js-ultrasparc
@@ -33,7 +37,9 @@ mozconfig_annotate() {
 	done
 }
 
-# mozconfig_use_enable: add a line to .mozconfig based on a USE-flag
+# @FUNCTION: mozconfig_use_enable
+# @DESCRIPTION:
+# add a line to .mozconfig based on a USE-flag
 #
 # Example:
 # mozconfig_use_enable truetype freetype2
@@ -43,7 +49,9 @@ mozconfig_use_enable() {
 	mozconfig_annotate "$(use $1 && echo +$1 || echo -$1)" "${flag}"
 }
 
-# mozconfig_use_with: add a line to .mozconfig based on a USE-flag
+# @FUNCTION mozconfig_use_with
+# @DESCRIPTION
+# add a line to .mozconfig based on a USE-flag
 #
 # Example:
 # mozconfig_use_with kerberos gss-api /usr/$(get_libdir)
@@ -53,7 +61,9 @@ mozconfig_use_with() {
 	mozconfig_annotate "$(use $1 && echo +$1 || echo -$1)" "${flag}"
 }
 
-# mozconfig_use_extension: enable or disable an extension based on a USE-flag
+# @FUNCTION mozconfig_use_extension
+# @DESCRIPTION
+# enable or disable an extension based on a USE-flag
 #
 # Example:
 # mozconfig_use_extension gnome gnomevfs
@@ -61,23 +71,6 @@ mozconfig_use_with() {
 mozconfig_use_extension() {
 	declare minus=$(use $1 || echo -)
 	mozconfig_annotate "${minus:-+}$1" --enable-extensions=${minus}${2}
-}
-
-mozversion_is_new_enough() {
-	case ${PN} in
-		firefox|thunderbird)
-			if [[ $(get_version_component_range 1) -ge 17 ]] ; then
-				return 0
-			fi
-		;;
-		seamonkey)
-			if [[ $(get_version_component_range 1) -eq 2 ]] && [[ $(get_version_component_range 2) -ge 14 ]] ; then
-				return 0
-			fi
-		;;
-	esac
-
-	return 1
 }
 
 moz_pkgsetup() {
@@ -109,12 +102,16 @@ moz_pkgsetup() {
 	python-any-r1_pkg_setup
 }
 
+# @FUNCTION: mozconfig_init
+# @DESCRIPTION:
+# Initialize mozilla configuration and populate with core settings.
+# This should be called in src_configure before any other mozconfig_* functions.
 mozconfig_init() {
 	declare enable_optimize pango_version myext x
-	declare XUL=$([[ ${PN} == xulrunner ]] && echo true || echo false)
-	declare FF=$([[ ${PN} == firefox ]] && echo true || echo false)
-	declare SM=$([[ ${PN} == seamonkey ]] && echo true || echo false)
-	declare TB=$([[ ${PN} == thunderbird ]] && echo true || echo false)
+	ewarn "Package name \"${MOZ_PN}\""
+	declare XUL=$([[ ${MOZ_PN} == xulrunner ]] && echo true || echo false)
+	declare FF=$([[ ${MOZ_PN} == firefox ]] && echo true || echo false)
+	declare TB=$([[ ${MOZ_PN} == thunderbird ]] && echo true || echo false)
 
 	####################################
 	#
@@ -123,17 +120,13 @@ mozconfig_init() {
 	#
 	####################################
 
-	case ${PN} in
+	case ${MOZ_PN} in
 		*xulrunner)
 			cp xulrunner/config/mozconfig .mozconfig \
 				|| die "cp xulrunner/config/mozconfig failed" ;;
 		*firefox)
 			cp browser/config/mozconfig .mozconfig \
 				|| die "cp browser/config/mozconfig failed" ;;
-		seamonkey)
-			# Must create the initial mozconfig to enable application
-			: >.mozconfig || die "initial mozconfig creation failed"
-			mozconfig_annotate "" --enable-application=suite ;;
 		*thunderbird)
 			# Must create the initial mozconfig to enable application
 			: >.mozconfig || die "initial mozconfig creation failed"
@@ -205,35 +198,18 @@ mozconfig_init() {
 	#
 	####################################
 
-	mozconfig_annotate system_libs \
-		--with-system-jpeg \
-		--with-system-zlib \
-		--enable-pango \
-		--enable-system-cairo
-		if ! $(mozversion_is_new_enough) ; then
-			mozconfig_annotate system-libs --enable-svg
-		fi
-
 	mozconfig_annotate disable_update_strip \
 		--disable-pedantic \
 		--disable-updater \
 		--disable-strip \
-		--disable-install-strip
-		if ! $(mozversion_is_new_enough) ; then
-			mozconfig_annotate disable_update_strip \
-				--disable-installer \
-				--disable-strip-libs
-		fi
+		--disable-install-strip \
+		--disable-installer \
+		--disable-strip-libs
 
-	if [[ ${PN} != seamonkey ]]; then
-		mozconfig_annotate basic_profile \
-			--disable-profilelocking
-			if ! $(mozversion_is_new_enough) ; then
-				mozconfig_annotate basic_profile \
-					--enable-single-profile \
-					--disable-profilesharing
-			fi
-	fi
+	mozconfig_annotate basic_profile \
+		--disable-profilelocking \
+	--enable-single-profile \
+		--disable-profilesharing
 
 	# Here is a strange one...
 	if is-flag '-mcpu=ultrasparc*' || is-flag '-mtune=ultrasparc*'; then
@@ -250,8 +226,11 @@ mozconfig_init() {
 	! has_version ">=sys-libs/glibc-2.4" && mozconfig_annotate "we have old glibc" --disable-jemalloc
 }
 
-# mozconfig_final: display a table describing all configuration options paired
-# with reasons, then clean up extensions list
+# @FUNCTION: mozconfig_final
+# @DESCRIPTION:
+# Display a table describing all configuration options paired
+# with reasons, then clean up extensions list.
+# This should be called in src_configure at the end of all other mozconfig_* functions.
 mozconfig_final() {
 	declare ac opt hash reason
 	echo
@@ -272,3 +251,5 @@ mozconfig_final() {
 	echo "ac_add_options --enable-extensions=${exts// /,}" >> .mozconfig
 }
 
+_MOZCORECONF_V3=1
+fi

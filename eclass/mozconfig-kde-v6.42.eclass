@@ -1,24 +1,25 @@
-# Copyright 1999-2015 Gentoo Foundation
+# Copyright 1999-2016 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 #
-# @ECLASS: mozconfig-v6.40.eclass
+# @ECLASS: mozconfig-kde-v6.42.eclass
 # @MAINTAINER:
 # mozilla team <mozilla@gentoo.org>
 # @BLURB: the new mozilla common configuration eclass for FF33 and newer, v6
 # @DESCRIPTION:
-# This eclass is used in mozilla ebuilds (firefox, thunderbird, seamonkey)
-# to provide a single common place for the common mozilla engine compoments.
+# This eclass is used in mozilla ebuilds (firefox-kde-opensuse, thunderbird-kde-opensuse),
+# patched with the unofficial OpenSUSE KDE patchset.
+# Providing a single location for common mozilla engine components.
 #
 # The eclass provides all common dependencies as well as common use flags.
 #
 # Some use flags which may be optional in particular mozilla packages can be
 # supported through setting eclass variables.
 #
-# This eclass inherits mozconfig helper functions as defined in mozcoreconf-v3,
+# This eclass inherits mozconfig helper functions as defined in mozcoreconf-kde-v3,
 # and so ebuilds inheriting this eclass do not need to inherit that.
 
-inherit multilib flag-o-matic toolchain-funcs mozcoreconf-v3
+inherit multilib flag-o-matic toolchain-funcs mozcoreconf-kde-v3
 
 case ${EAPI} in
 	0|1|2|3|4) die "EAPI=${EAPI} not supported"
@@ -28,7 +29,7 @@ esac
 # @DESCRIPTION:
 # Set this variable before the inherit line, when an ebuild needs to provide
 # optional necko-wifi support via IUSE="wifi".  Currently this would include
-# ebuilds for firefox, and potentially seamonkey.
+# ebuilds for firefox.
 #
 # Leave the variable UNSET if necko-wifi support should not be available.
 # Set the variable to "enabled" if the use flag should be enabled by default.
@@ -38,7 +39,7 @@ esac
 # @DESCRIPTION:
 # Set this variable before the inherit line, when an ebuild needs to provide
 # optional necko-wifi support via IUSE="jit".  Currently this would include
-# ebuilds for firefox, and potentially seamonkey.
+# ebuilds for firefox.
 #
 # Leave the variable UNSET if optional jit support should not be available.
 # Set the variable to "enabled" if the use flag should be enabled by default.
@@ -48,14 +49,14 @@ esac
 # @DESCRIPTION:
 # Set this variable before the inherit line, when an ebuild can provide
 # optional gtk3 support via IUSE="gtk3".  Currently this would include
-# ebuilds for firefox, but thunderbird and seamonkey could follow in the future.
+# ebuilds for firefox, but thunderbird could follow in the future.
 #
 # Leave the variable UNSET if gtk3 support should not be available.
 # Set the variable to "enabled" if the use flag should be enabled by default.
 # Set the variable to any value if the use flag should exist but not be default-enabled.
 
 # use-flags common among all mozilla ebuilds
-IUSE="${IUSE} dbus debug +gstreamer gstreamer-0 +jemalloc3 neon pulseaudio selinux startup-notification system-cairo system-icu system-jpeg system-sqlite system-libvpx"
+IUSE="${IUSE} dbus debug +gstreamer +jemalloc3 neon pulseaudio selinux startup-notification system-cairo system-icu system-jpeg system-sqlite system-libvpx"
 
 # some notes on deps:
 # gtk:2 minimum is technically 2.10 but gio support (enabled by default) needs 2.14
@@ -87,10 +88,6 @@ RDEPEND=">=app-text/hunspell-1.2
 		>=media-libs/gst-plugins-base-1.4.5:1.0
 		>=media-libs/gst-plugins-good-1.4.5:1.0
 		>=media-plugins/gst-plugins-libav-1.4.5:1.0
-	)
-	gstreamer-0? (
-		>=media-libs/gstreamer-0.10.25:0.10
-		media-plugins/gst-plugins-meta:0.10[ffmpeg]
 	)
 	x11-libs/libX11
 	x11-libs/libXcomposite
@@ -144,8 +141,7 @@ DEPEND="app-arch/zip
 RDEPEND+="
 	selinux? ( sec-policy/selinux-mozilla )"
 
-# only one of gstreamer and gstreamer-0 can be enabled at a time, so set REQUIRED_USE to signify this
-REQUIRED_USE="?? ( gstreamer gstreamer-0 )"
+REQUIRED_USE=""
 
 # @FUNCTION: mozconfig_config
 # @DESCRIPTION:
@@ -154,7 +150,7 @@ REQUIRED_USE="?? ( gstreamer gstreamer-0 )"
 #
 # Example:
 #
-# inherit mozconfig-v5.33
+# inherit mozconfig-kde-v5.33
 #
 # src_configure() {
 # 	mozconfig_init
@@ -180,7 +176,7 @@ mozconfig_config() {
 
 	if has bindist ${IUSE}; then
 		mozconfig_use_enable !bindist official-branding
-		if [[ ${PN} == firefox ]] && use bindist ; then
+		if [[ ${MOZ_PN} == firefox ]] && use bindist; then
 			mozconfig_annotate '' --with-branding=browser/branding/aurora
 		fi
 	fi
@@ -188,7 +184,7 @@ mozconfig_config() {
 	mozconfig_use_enable debug
 	mozconfig_use_enable debug tests
 
-	if ! use debug ; then
+	if ! use debug; then
 		mozconfig_annotate 'disabled by Gentoo' --disable-debug-symbols
 	else
 		mozconfig_annotate 'enabled by Gentoo' --enable-debug-symbols
@@ -196,7 +192,7 @@ mozconfig_config() {
 
 	mozconfig_use_enable startup-notification
 
-	if [[ -n ${MOZCONFIG_OPTIONAL_WIFI} ]] ; then
+	if [[ -n ${MOZCONFIG_OPTIONAL_WIFI} ]]; then
 		# wifi pulls in dbus so manage both here
 		mozconfig_use_enable wifi necko-wifi
 		if use kernel_linux && use wifi && ! use dbus; then
@@ -249,10 +245,8 @@ mozconfig_config() {
 	mozconfig_annotate '' --target="${CTARGET:-${CHOST}}"
 	mozconfig_annotate '' --build="${CTARGET:-${CHOST}}"
 
-	if use gstreamer ; then
+	if use gstreamer; then
 		mozconfig_annotate '+gstreamer' --enable-gstreamer=1.0
-	elif use gstreamer-0 ; then
-		mozconfig_annotate '+gstreamer-0' --enable-gstreamer=0.10
 	else
 		mozconfig_annotate '' --disable-gstreamer
 	fi
@@ -265,16 +259,16 @@ mozconfig_config() {
 	mozconfig_use_with system-libvpx
 
 	# Modifications to better support ARM, bug 553364
-	if use neon ; then
+	if use neon; then
 		mozconfig_annotate '' --with-fpu=neon
 		mozconfig_annotate '' --with-thumb=yes
 		mozconfig_annotate '' --with-thumb-interwork=no
 	fi
-	if [[ ${CHOST} == armv* ]] ; then
+	if [[ ${CHOST} == armv* ]]; then
 		mozconfig_annotate '' --with-float-abi=hard
 		mozconfig_annotate '' --enable-skia
 
-		if ! use system-libvpx ; then
+		if ! use system-libvpx; then
 			sed -i -e "s|softfp|hard|" \
 				"${S}"/media/libvpx/moz.build
 		fi
