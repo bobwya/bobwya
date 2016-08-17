@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=5
+EAPI=6
 
 inherit eutils flag-o-matic linux-info linux-mod multilib nvidia-driver \
 	portability toolchain-funcs unpacker user udev
@@ -83,28 +83,25 @@ S=${WORKDIR}/
 
 pkg_pretend() {
 	if use amd64 && has_multilib_profile && \
-		[ "${DEFAULT_ABI}" != "amd64" ]; then
+		[[ "${DEFAULT_ABI}" != "amd64" ]]; then
 		eerror "This ebuild doesn't currently support changing your default ABI"
 		die "Unexpected \${DEFAULT_ABI} = ${DEFAULT_ABI}"
 	fi
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if  kernel_is ge 4 5; then
+		if kernel_is ge 4 5; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
 			ewarn "<sys-kernel/gentoo-sources-4.5"
 			ewarn "<sys-kernel/vanilla-sources-4.5"
-			ewarn ""
-			ewarn "You are free to utilize epatch_user to provide whatever"
-			ewarn "support you feel is appropriate, but will not receive"
-			ewarn "support as a result of those changes."
-			ewarn ""
-			ewarn "Do not file a bug report about this."
-			ewarn ""
+			ewarn "This version of ${CATEGORY}/${PN} has an unofficial patch"
+			ewarn "applied to enable support for the following kernels:"
+			ewarn "=sys-kernel/gentoo-sources-4.5"
+			ewarn "=sys-kernel/vanilla-sources-4.5"
 		elif use kms && kernel_is le 4 1; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
-			ewarn "on kernel versions prior to 4.2:"
+			ewarn "on the following kernels:"
 			ewarn "<sys-kernel/gentoo-sources-4.2"
 			ewarn "<sys-kernel/vanilla-sources-4.2"
 			ewarn
@@ -184,15 +181,16 @@ pkg_setup() {
 }
 
 src_prepare() {
+	local PATCHES
 	if use pax_kernel; then
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
 		ewarn "need support with these patches, contact the PaX team."
-		epatch "${FILESDIR}"/${PN}-364.12-pax.patch
+		PATCHES+=( "${FILESDIR}"/${PN}-364.12-pax-r1.patch )
 	fi
 
 	# Allow user patches so they can support RC kernels and whatever else
-	epatch_user
+	default
 }
 
 src_compile() {
@@ -435,14 +433,14 @@ src_install-libs() {
 	if use X; then
 		NV_GLX_LIBRARIES=(
 			"libEGL.so.1 ${GL_ROOT}"
-			"libEGL_nvidia.so.${NV_SOVER}"
+			"libEGL_nvidia.so.${NV_SOVER} ${GL_ROOT}"
 			"libGL.so.$(usex compat ${NV_SOVER} 1.0.0) ${GL_ROOT}"
 			"libGLESv1_CM.so.1 ${GL_ROOT}"
-			"libGLESv1_CM_nvidia.so.${NV_SOVER}"
+			"libGLESv1_CM_nvidia.so.${NV_SOVER} ${GL_ROOT}"
 			"libGLESv2.so.2 ${GL_ROOT}"
-			"libGLESv2_nvidia.so.${NV_SOVER}"
+			"libGLESv2_nvidia.so.${NV_SOVER} ${GL_ROOT}"
 			"libGLX.so.0 ${GL_ROOT}"
-			"libGLX_nvidia.so.${NV_SOVER}"
+			"libGLX_nvidia.so.${NV_SOVER} ${GL_ROOT}"
 			"libGLdispatch.so.0 ${GL_ROOT}"
 			"libOpenCL.so.1.0.0 ${CL_ROOT}"
 			"libOpenGL.so.0 ${GL_ROOT}"

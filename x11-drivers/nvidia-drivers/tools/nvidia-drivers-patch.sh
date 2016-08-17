@@ -18,10 +18,31 @@ patched_file_comment='experimental version of ${CATEGORY}/${PN}'
 
 
 # Global section
-cd "${script_folder%/tools}"
-
 # Import function declarations
-. "tools/common-functions.sh"
+. "${script_folder}/common-functions.sh"
+
+cd "${script_folder%/tools}/files"
+
+echo "Processing full patchset to ensure EAPI=6 patch -p1 support"
+sed -i  -e "/^Binary files.*differ$/d" \
+		-e "/^\(\-\-\-\|diff \)/{s/ NVIDIA\-Linux\-x86\_64\-355\.06\.orig\// a\//g;s/ work\.orig\// a\//g;s/ kernel\.orig\// a\/kernel\//g;s/ NVIDIA\_GLX\-1\.0\-4191\// a\//g;s/ usr\// a\/usr\//g;s/gl\.g\.orig./gl\.h /g}" \
+		-e "/^\(+++\|diff \)/{s/ NVIDIA\-Linux\-x86\_64\-355\.06\// b\//g;s/ work\// b\//g;s/ kernel\// b\/kernel\//g;s/ NVIDIA\_GLX\-1\.0\-4191\.new\// b\//g;s/ usr\// b\/usr\//g}" \
+	*.patch
+echo "Processing full patchset to revision bump patches that have been modified"
+while read patch_file; do
+	[[ -f "${patch_file}" ]] || continue
+	patch_file="${patch_file#${PWD%/}/}"
+	revision=$(get_patch_revision "${patch_file}")
+	new_patch_file=$(increment_patch_revision "${patch_file}")
+	echo "Creating new revision (${new_patch_file}) of patch file: ${patch_file}"
+	mv "${patch_file}" "${new_patch_file}"
+	term1="$(echo "${patch_file}"		| sed -e '{s/^nvidia\-drivers/${PN}/;s/[-\.\$]/\\&/g}' )"
+	term2="$(echo "${new_patch_file}"	| sed -e '{s/^nvidia\-drivers/${PN}/;s/[-\.\$]/\\&/g}' )"
+	echo "Update all ebuild files from: ${patch_file} -> ${new_patch_file}"
+	sed -i -e 's:'"${term1}"':'"${term2}"':g' "${script_folder%/tools}"/*.ebuild
+done <<<"$(diff -qr "${script_folder%/tools}/files/" "/usr/portage/x11-drivers/nvidia-drivers/files/" | gawk '{ if ($1 == "Files") printf("%s\n\n", $2) }')"
+
+cd "${script_folder%/tools}"
 
 # Remove Changelogs - as this is an unofficial package
 rm ChangeLog* 2>/dev/null

@@ -1,6 +1,6 @@
-diff -urp NVIDIA-Linux-x86_64-355.06.orig/kernel/common/inc/nv-linux.h NVIDIA-Linux-x86_64-355.06/kernel/common/inc/nv-linux.h
---- NVIDIA-Linux-x86_64-355.06.orig/kernel/common/inc/nv-linux.h	2015-07-29 05:13:57.000000000 +0200
-+++ NVIDIA-Linux-x86_64-355.06/kernel/common/inc/nv-linux.h	2015-08-21 16:45:55.624336728 +0200
+diff -urp a/kernel/common/inc/nv-linux.h b/kernel/common/inc/nv-linux.h
+--- a/kernel/common/inc/nv-linux.h	2015-07-29 05:13:57.000000000 +0200
++++ b/kernel/common/inc/nv-linux.h	2015-08-21 16:45:55.624336728 +0200
 @@ -1408,11 +1408,11 @@ extern void *nvidia_stack_t_cache;
  
  #if !defined(NV_VMWARE)
@@ -17,9 +17,9 @@ diff -urp NVIDIA-Linux-x86_64-355.06.orig/kernel/common/inc/nv-linux.h NVIDIA-Li
                        NULL)
  #endif
  #define NV_KMEM_CACHE_DESTROY(kmem_cache)   \
-diff -urp NVIDIA-Linux-x86_64-355.06.orig/kernel/nvidia/nv.c NVIDIA-Linux-x86_64-355.06/kernel/nvidia/nv.c
---- NVIDIA-Linux-x86_64-355.06.orig/kernel/nvidia/nv.c	2015-07-29 05:13:57.000000000 +0200
-+++ NVIDIA-Linux-x86_64-355.06/kernel/nvidia/nv.c	2015-08-21 16:44:51.008340178 +0200
+diff -urp a/kernel/nvidia/nv.c b/kernel/nvidia/nv.c
+--- a/kernel/nvidia/nv.c	2015-07-29 05:13:57.000000000 +0200
++++ b/kernel/nvidia/nv.c	2015-08-21 16:44:51.008340178 +0200
 @@ -719,7 +719,7 @@ int __init nvidia_init_module(void)
  #endif
  
@@ -47,9 +47,9 @@ diff -urp NVIDIA-Linux-x86_64-355.06.orig/kernel/nvidia/nv.c NVIDIA-Linux-x86_64
          if (nvidia_p2p_page_t_cache == NULL)
          {
              rc = -ENOMEM;
-diff -urp NVIDIA-Linux-x86_64-355.06.orig/kernel/nvidia/nv-mmap.c NVIDIA-Linux-x86_64-355.06/kernel/nvidia/nv-mmap.c
---- NVIDIA-Linux-x86_64-355.06.orig/kernel/nvidia/nv-mmap.c	2015-07-29 05:13:57.000000000 +0200
-+++ NVIDIA-Linux-x86_64-355.06/kernel/nvidia/nv-mmap.c	2015-08-21 16:58:15.968297199 +0200
+diff -urp a/kernel/nvidia/nv-mmap.c b/kernel/nvidia/nv-mmap.c
+--- a/kernel/nvidia/nv-mmap.c	2015-07-29 05:13:57.000000000 +0200
++++ b/kernel/nvidia/nv-mmap.c	2015-08-21 16:58:15.968297199 +0200
 @@ -113,12 +113,12 @@ nvidia_vma_release(struct vm_area_struct
  }
  
@@ -65,9 +65,9 @@ diff -urp NVIDIA-Linux-x86_64-355.06.orig/kernel/nvidia/nv-mmap.c NVIDIA-Linux-x
      int write
  )
  {
-diff -urp NVIDIA-Linux-x86_64-355.06.orig/kernel/nvidia-uvm/uvm_common.c NVIDIA-Linux-x86_64-355.06/kernel/nvidia-uvm/uvm_common.c
---- NVIDIA-Linux-x86_64-355.06.orig/kernel/nvidia-uvm/uvm_common.c	2015-07-29 05:10:08.000000000 +0200
-+++ NVIDIA-Linux-x86_64-355.06/kernel/nvidia-uvm/uvm_common.c	2015-08-21 17:00:33.788289841 +0200
+diff -urp a/kernel/nvidia-uvm/uvm_common.c b/kernel/nvidia-uvm/uvm_common.c
+--- a/kernel/nvidia-uvm/uvm_common.c	2015-07-29 05:10:08.000000000 +0200
++++ b/kernel/nvidia-uvm/uvm_common.c	2015-08-21 17:00:33.788289841 +0200
 @@ -60,7 +60,7 @@ static void uvmnext_exit(void)
  {
  

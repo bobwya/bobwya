@@ -1,7 +1,6 @@
-Binary files kernel.orig/.nv-procfs.c.swp and kernel/.nv-procfs.c.swp differ
-diff -urp kernel.orig/nv-procfs.c kernel/nv-procfs.c
---- kernel.orig/nv-procfs.c	2011-07-13 03:29:30.000000000 +0200
-+++ kernel/nv-procfs.c	2011-07-19 15:45:27.982993911 +0200
+diff -urp a/kernel/nv-procfs.c b/kernel/nv-procfs.c
+--- a/kernel/nv-procfs.c	2011-07-13 03:29:30.000000000 +0200
++++ b/kernel/nv-procfs.c	2011-07-19 15:45:27.982993911 +0200
 @@ -707,8 +707,10 @@ int nv_register_procfs(void)
       * However, in preparation for this, we need to preserve
       * the procfs read() and write() operations.

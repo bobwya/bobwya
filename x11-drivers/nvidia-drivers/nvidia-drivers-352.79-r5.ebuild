@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=5
+EAPI=6
 
 inherit eutils flag-o-matic linux-info linux-mod multilib nvidia-driver \
 	portability toolchain-funcs unpacker user udev
@@ -83,27 +83,24 @@ S=${WORKDIR}/
 
 pkg_pretend() {
 	if use amd64 && has_multilib_profile && \
-		[ "${DEFAULT_ABI}" != "amd64" ]; then
+		[[ "${DEFAULT_ABI}" != "amd64" ]]; then
 		eerror "This ebuild doesn't currently support changing your default ABI"
 		die "Unexpected \${DEFAULT_ABI} = ${DEFAULT_ABI}"
 	fi
 
 	if use kernel_linux; then
-		if  kernel_is ge 4 4; then
+		if kernel_is ge 4 4; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
 			ewarn "<sys-kernel/gentoo-sources-4.4"
 			ewarn "<sys-kernel/vanilla-sources-4.4"
-			ewarn ""
-			ewarn "You are free to utilize epatch_user to provide whatever"
-			ewarn "support you feel is appropriate, but will not receive"
-			ewarn "support as a result of those changes."
-			ewarn ""
-			ewarn "Do not file a bug report about this."
-			ewarn ""
+			ewarn "This version of ${CATEGORY}/${PN} has an unofficial patch"
+			ewarn "applied to enable support for the following kernels:"
+			ewarn "=sys-kernel/gentoo-sources-4.4"
+			ewarn "=sys-kernel/vanilla-sources-4.4"
 		elif use kms && kernel_is le 4 1; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
-			ewarn "on kernel versions prior to 4.2:"
+			ewarn "on the following kernels:"
 			ewarn "<sys-kernel/gentoo-sources-4.2"
 			ewarn "<sys-kernel/vanilla-sources-4.2"
 			ewarn
@@ -173,6 +170,7 @@ pkg_setup() {
 src_prepare() {
 	# Please add a brief description for every added patch
 
+	local PATCHES
 	if use kernel_linux; then
 		if kernel_is lt 2 6 9 ; then
 			eerror "You must build this against 2.6.9 or higher kernels."
@@ -186,12 +184,12 @@ src_prepare() {
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
 		ewarn "need support with these patches, contact the PaX team."
-		epatch "${FILESDIR}"/${PN}-346.16-pax-usercopy.patch
-		epatch "${FILESDIR}"/${PN}-346.16-pax-constify.patch
+		PATCHES+=( "${FILESDIR}"/${PN}-346.16-pax-usercopy.patch )
+		PATCHES+=( "${FILESDIR}"/${PN}-346.16-pax-constify.patch )
 	fi
 
 	# Allow user patches so they can support RC kernels and whatever else
-	epatch_user
+	default
 }
 
 src_compile() {

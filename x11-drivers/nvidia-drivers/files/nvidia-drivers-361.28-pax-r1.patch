@@ -1,6 +1,6 @@
-diff -urp work.orig/kernel/common/inc/nv-linux.h work/kernel/common/inc/nv-linux.h
---- work.orig/kernel/common/inc/nv-linux.h	2016-02-03 23:31:51.000000000 +0100
-+++ work/kernel/common/inc/nv-linux.h	2016-02-10 11:49:15.309410457 +0100
+diff -urp a/kernel/common/inc/nv-linux.h b/kernel/common/inc/nv-linux.h
+--- a/kernel/common/inc/nv-linux.h	2016-02-03 23:31:51.000000000 +0100
++++ b/kernel/common/inc/nv-linux.h	2016-02-10 11:49:15.309410457 +0100
 @@ -1351,6 +1351,9 @@ extern void *nvidia_stack_t_cache;
  #define NV_KMEM_CACHE_CREATE(name, type)    \
      NV_KMEM_CACHE_CREATE_FULL(name, sizeof(type), 0, 0, NULL)
@@ -11,9 +11,9 @@ diff -urp work.orig/kernel/common/inc/nv-linux.h work/kernel/common/inc/nv-linux
  #define NV_KMEM_CACHE_DESTROY(kmem_cache)   \
      kmem_cache_destroy(kmem_cache)
  
-diff -urp work.orig/kernel/common/inc/nv-modeset-interface.h work/kernel/common/inc/nv-modeset-interface.h
---- work.orig/kernel/common/inc/nv-modeset-interface.h	2016-02-03 23:31:51.000000000 +0100
-+++ work/kernel/common/inc/nv-modeset-interface.h	2016-02-10 11:49:54.970985152 +0100
+diff -urp a/kernel/common/inc/nv-modeset-interface.h b/kernel/common/inc/nv-modeset-interface.h
+--- a/kernel/common/inc/nv-modeset-interface.h	2016-02-03 23:31:51.000000000 +0100
++++ b/kernel/common/inc/nv-modeset-interface.h	2016-02-10 11:49:54.970985152 +0100
 @@ -70,7 +70,7 @@ typedef struct {
       * mix nvidia and nvidia-modeset kernel modules from different
       * releases.
@@ -31,9 +31,9 @@ diff -urp work.orig/kernel/common/inc/nv-modeset-interface.h work/kernel/common/
 +NV_STATUS nvidia_get_rm_ops(const nvidia_modeset_rm_ops_t **rm_ops, const char **version_string);
  
  #endif /* _NV_MODESET_INTERFACE_H_ */
-diff -urp work.orig/kernel/common/inc/nv-register-module.h work/kernel/common/inc/nv-register-module.h
---- work.orig/kernel/common/inc/nv-register-module.h	2016-02-03 23:31:51.000000000 +0100
-+++ work/kernel/common/inc/nv-register-module.h	2016-02-10 11:50:18.941376865 +0100
+diff -urp a/kernel/common/inc/nv-register-module.h b/kernel/common/inc/nv-register-module.h
+--- a/kernel/common/inc/nv-register-module.h	2016-02-03 23:31:51.000000000 +0100
++++ b/kernel/common/inc/nv-register-module.h	2016-02-10 11:50:18.941376865 +0100
 @@ -34,7 +34,7 @@ typedef struct nvidia_module_s {
      int (*ioctl)(struct inode *, struct file * file, unsigned int cmd, unsigned long arg);
      unsigned int (*poll)(struct file * file, poll_table *wait);
@@ -43,9 +43,9 @@ diff -urp work.orig/kernel/common/inc/nv-register-module.h work/kernel/common/in
  
  int nvidia_register_module(nvidia_module_t *);
  int nvidia_unregister_module(nvidia_module_t *);
-diff -urp work.orig/kernel/nvidia/nv.c work/kernel/nvidia/nv.c
---- work.orig/kernel/nvidia/nv.c	2016-02-03 23:31:51.000000000 +0100
-+++ work/kernel/nvidia/nv.c	2016-02-10 11:50:40.191828792 +0100
+diff -urp a/kernel/nvidia/nv.c b/kernel/nvidia/nv.c
+--- a/kernel/nvidia/nv.c	2016-02-03 23:31:51.000000000 +0100
++++ b/kernel/nvidia/nv.c	2016-02-10 11:50:40.191828792 +0100
 @@ -704,7 +704,7 @@ int __init nvidia_init_module(void)
      NV_SPIN_LOCK_INIT(&km_lock);
  #endif
@@ -55,9 +55,9 @@ diff -urp work.orig/kernel/nvidia/nv.c work/kernel/nvidia/nv.c
                                                  nvidia_stack_t);
      if (nvidia_stack_t_cache == NULL)
      {
-diff -urp work.orig/kernel/nvidia/nv-chrdev.c work/kernel/nvidia/nv-chrdev.c
---- work.orig/kernel/nvidia/nv-chrdev.c	2016-02-03 23:31:51.000000000 +0100
-+++ work/kernel/nvidia/nv-chrdev.c	2016-02-10 11:50:57.201126955 +0100
+diff -urp a/kernel/nvidia/nv-chrdev.c b/kernel/nvidia/nv-chrdev.c
+--- a/kernel/nvidia/nv-chrdev.c	2016-02-03 23:31:51.000000000 +0100
++++ b/kernel/nvidia/nv-chrdev.c	2016-02-10 11:50:57.201126955 +0100
 @@ -20,8 +20,6 @@ int nv_register_chrdev(void *param)
  {
      nvidia_module_t *module = (nvidia_module_t *)param;
@@ -67,9 +67,9 @@ diff -urp work.orig/kernel/nvidia/nv-chrdev.c work/kernel/nvidia/nv-chrdev.c
      return (nvidia_register_module(module));
  }
  
-diff -urp work.orig/kernel/nvidia/nv-instance.c work/kernel/nvidia/nv-instance.c
---- work.orig/kernel/nvidia/nv-instance.c	2016-02-03 23:31:51.000000000 +0100
-+++ work/kernel/nvidia/nv-instance.c	2016-02-10 11:51:35.418977554 +0100
+diff -urp a/kernel/nvidia/nv-instance.c b/kernel/nvidia/nv-instance.c
+--- a/kernel/nvidia/nv-instance.c	2016-02-03 23:31:51.000000000 +0100
++++ b/kernel/nvidia/nv-instance.c	2016-02-10 11:51:35.418977554 +0100
 @@ -54,6 +54,7 @@ struct pci_driver nv_pci_driver = {
  nvidia_module_t nv_fops = {
      .owner       = THIS_MODULE,
@@ -78,9 +78,9 @@ diff -urp work.orig/kernel/nvidia/nv-instance.c work/kernel/nvidia/nv-instance.c
      .open        = nvidia_open,
      .close       = nvidia_close,
      .ioctl       = nvidia_ioctl,
-diff -urp work.orig/kernel/nvidia/nv-mmap.c work/kernel/nvidia/nv-mmap.c
---- work.orig/kernel/nvidia/nv-mmap.c	2016-02-03 23:31:51.000000000 +0100
-+++ work/kernel/nvidia/nv-mmap.c	2016-02-10 11:14:27.996577127 +0100
+diff -urp a/kernel/nvidia/nv-mmap.c b/kernel/nvidia/nv-mmap.c
+--- a/kernel/nvidia/nv-mmap.c	2016-02-03 23:31:51.000000000 +0100
++++ b/kernel/nvidia/nv-mmap.c	2016-02-10 11:14:27.996577127 +0100
 @@ -113,12 +113,12 @@ nvidia_vma_release(struct vm_area_struct
  }
  
@@ -96,9 +96,9 @@ diff -urp work.orig/kernel/nvidia/nv-mmap.c work/kernel/nvidia/nv-mmap.c
      int write
  )
  {
-diff -urp work.orig/kernel/nvidia/nv-modeset-interface.c work/kernel/nvidia/nv-modeset-interface.c
---- work.orig/kernel/nvidia/nv-modeset-interface.c	2016-02-03 23:31:51.000000000 +0100
-+++ work/kernel/nvidia/nv-modeset-interface.c	2016-02-10 12:05:23.822391866 +0100
+diff -urp a/kernel/nvidia/nv-modeset-interface.c b/kernel/nvidia/nv-modeset-interface.c
+--- a/kernel/nvidia/nv-modeset-interface.c	2016-02-03 23:31:51.000000000 +0100
++++ b/kernel/nvidia/nv-modeset-interface.c	2016-02-10 12:05:23.822391866 +0100
 @@ -59,10 +59,9 @@ void nvidia_modeset_resume(NvU32 gpuId)
      }
  }
@@ -129,9 +129,9 @@ diff -urp work.orig/kernel/nvidia/nv-modeset-interface.c work/kernel/nvidia/nv-m
  
      return NV_OK;
  }
-diff -urp work.orig/kernel/nvidia-modeset/nvidia-modeset-linux.c work/kernel/nvidia-modeset/nvidia-modeset-linux.c
---- work.orig/kernel/nvidia-modeset/nvidia-modeset-linux.c	2016-02-03 23:32:20.000000000 +0100
-+++ work/kernel/nvidia-modeset/nvidia-modeset-linux.c	2016-02-10 12:08:02.275059160 +0100
+diff -urp a/kernel/nvidia-modeset/nvidia-modeset-linux.c b/kernel/nvidia-modeset/nvidia-modeset-linux.c
+--- a/kernel/nvidia-modeset/nvidia-modeset-linux.c	2016-02-03 23:32:20.000000000 +0100
++++ b/kernel/nvidia-modeset/nvidia-modeset-linux.c	2016-02-10 12:08:02.275059160 +0100
 @@ -320,49 +320,48 @@ static void nvkms_resume(NvU32 gpuId)
   * so we can use a single nvidia_modeset_stack_ptr for calling RM.
   *************************************************************************/
@@ -215,9 +215,9 @@ diff -urp work.orig/kernel/nvidia-modeset/nvidia-modeset-linux.c work/kernel/nvi
  }
  
  /*************************************************************************
-diff -urp work.orig/kernel/nvidia-uvm/uvm8_channel.c work/kernel/nvidia-uvm/uvm8_channel.c
---- work.orig/kernel/nvidia-uvm/uvm8_channel.c	2016-02-03 23:32:32.000000000 +0100
-+++ work/kernel/nvidia-uvm/uvm8_channel.c	2016-02-10 11:39:16.735603941 +0100
+diff -urp a/kernel/nvidia-uvm/uvm8_channel.c b/kernel/nvidia-uvm/uvm8_channel.c
+--- a/kernel/nvidia-uvm/uvm8_channel.c	2016-02-03 23:32:32.000000000 +0100
++++ b/kernel/nvidia-uvm/uvm8_channel.c	2016-02-10 11:39:16.735603941 +0100
 @@ -268,7 +268,7 @@ void uvm_channel_end_push(uvm_push_t *pu
      mb();
  
@@ -227,9 +227,9 @@ diff -urp work.orig/kernel/nvidia-uvm/uvm8_channel.c work/kernel/nvidia-uvm/uvm8
  
      uvm_spin_unlock(&channel->pool->lock);
  
-diff -urp work.orig/kernel/nvidia-uvm/uvm8_global.c work/kernel/nvidia-uvm/uvm8_global.c
---- work.orig/kernel/nvidia-uvm/uvm8_global.c	2016-02-03 23:32:32.000000000 +0100
-+++ work/kernel/nvidia-uvm/uvm8_global.c	2016-02-10 11:28:23.142115625 +0100
+diff -urp a/kernel/nvidia-uvm/uvm8_global.c b/kernel/nvidia-uvm/uvm8_global.c
+--- a/kernel/nvidia-uvm/uvm8_global.c	2016-02-03 23:32:32.000000000 +0100
++++ b/kernel/nvidia-uvm/uvm8_global.c	2016-02-10 11:28:23.142115625 +0100
 @@ -32,16 +32,16 @@
  #include "nv_uvm_interface.h"
  
@@ -252,9 +252,9 @@ diff -urp work.orig/kernel/nvidia-uvm/uvm8_global.c work/kernel/nvidia-uvm/uvm8_
      // Register the UVM callbacks with the main GPU driver:
      status = uvm_rm_locked_call(nvUvmInterfaceRegisterUvmCallbacks(&g_exported_uvm8_ops));
      return status;
-diff -urp work.orig/kernel/nvidia-uvm/uvm8_gpu_semaphore.c work/kernel/nvidia-uvm/uvm8_gpu_semaphore.c
---- work.orig/kernel/nvidia-uvm/uvm8_gpu_semaphore.c	2016-02-03 23:32:32.000000000 +0100
-+++ work/kernel/nvidia-uvm/uvm8_gpu_semaphore.c	2016-02-10 11:38:57.478030852 +0100
+diff -urp a/kernel/nvidia-uvm/uvm8_gpu_semaphore.c b/kernel/nvidia-uvm/uvm8_gpu_semaphore.c
+--- a/kernel/nvidia-uvm/uvm8_gpu_semaphore.c	2016-02-03 23:32:32.000000000 +0100
++++ b/kernel/nvidia-uvm/uvm8_gpu_semaphore.c	2016-02-10 11:38:57.478030852 +0100
 @@ -288,7 +288,7 @@ NvU64 uvm_gpu_semaphore_get_gpu_va(uvm_g
  
  NvU32 uvm_gpu_semaphore_get_payload(uvm_gpu_semaphore_t *semaphore)
@@ -273,9 +273,9 @@ diff -urp work.orig/kernel/nvidia-uvm/uvm8_gpu_semaphore.c work/kernel/nvidia-uv
  }
  
  NV_STATUS uvm_gpu_tracking_semaphore_alloc(uvm_gpu_semaphore_pool_t *pool, uvm_gpu_tracking_semaphore_t *tracking_sem)
-diff -urp work.orig/kernel/nvidia-uvm/uvm8_hal.c work/kernel/nvidia-uvm/uvm8_hal.c
---- work.orig/kernel/nvidia-uvm/uvm8_hal.c	2016-02-03 23:32:32.000000000 +0100
-+++ work/kernel/nvidia-uvm/uvm8_hal.c	2016-02-10 11:47:13.377356162 +0100
+diff -urp a/kernel/nvidia-uvm/uvm8_hal.c b/kernel/nvidia-uvm/uvm8_hal.c
+--- a/kernel/nvidia-uvm/uvm8_hal.c	2016-02-03 23:32:32.000000000 +0100
++++ b/kernel/nvidia-uvm/uvm8_hal.c	2016-02-10 11:47:13.377356162 +0100
 @@ -58,7 +58,7 @@ typedef struct
          // arch_ops: id is an architecture
          uvm_arch_hal_t arch_ops;
@@ -285,9 +285,9 @@ diff -urp work.orig/kernel/nvidia-uvm/uvm8_hal.c work/kernel/nvidia-uvm/uvm8_hal
  
  // Table for copy engine functions.
  // Each entry is associated with a copy engine class through the 'class' field.
-diff -urp work.orig/kernel/nvidia-uvm/uvm8_mmu.h work/kernel/nvidia-uvm/uvm8_mmu.h
---- work.orig/kernel/nvidia-uvm/uvm8_mmu.h	2016-02-03 23:32:32.000000000 +0100
-+++ work/kernel/nvidia-uvm/uvm8_mmu.h	2016-02-10 12:09:05.463637996 +0100
+diff -urp a/kernel/nvidia-uvm/uvm8_mmu.h b/kernel/nvidia-uvm/uvm8_mmu.h
+--- a/kernel/nvidia-uvm/uvm8_mmu.h	2016-02-03 23:32:32.000000000 +0100
++++ b/kernel/nvidia-uvm/uvm8_mmu.h	2016-02-10 12:09:05.463637996 +0100
 @@ -24,7 +24,6 @@
  #ifndef __UVM8_MMU_H__
  #define __UVM8_MMU_H__
@@ -296,9 +296,9 @@ diff -urp work.orig/kernel/nvidia-uvm/uvm8_mmu.h work/kernel/nvidia-uvm/uvm8_mmu
  #include "uvm8_pmm_gpu.h"
  #include "uvmtypes.h"
  #include "uvm_common.h"
-diff -urp work.orig/kernel/nvidia-uvm/uvm_common.c work/kernel/nvidia-uvm/uvm_common.c
---- work.orig/kernel/nvidia-uvm/uvm_common.c	2016-02-03 23:32:32.000000000 +0100
-+++ work/kernel/nvidia-uvm/uvm_common.c	2016-02-10 11:45:58.008501609 +0100
+diff -urp a/kernel/nvidia-uvm/uvm_common.c b/kernel/nvidia-uvm/uvm_common.c
+--- a/kernel/nvidia-uvm/uvm_common.c	2016-02-03 23:32:32.000000000 +0100
++++ b/kernel/nvidia-uvm/uvm_common.c	2016-02-10 11:45:58.008501609 +0100
 @@ -74,7 +74,6 @@ static int uvmnext_activated(void)
  #endif
  
@@ -329,9 +329,9 @@ diff -urp work.orig/kernel/nvidia-uvm/uvm_common.c work/kernel/nvidia-uvm/uvm_co
  
      // call RM to exchange the function pointers.
      status = nvUvmInterfaceRegisterUvmCallbacks(&g_exportedUvmOps);
-diff -urp work.orig/kernel/nvidia-uvm/uvm_full_fault_buffer.h work/kernel/nvidia-uvm/uvm_full_fault_buffer.h
---- work.orig/kernel/nvidia-uvm/uvm_full_fault_buffer.h	2016-02-03 23:32:32.000000000 +0100
-+++ work/kernel/nvidia-uvm/uvm_full_fault_buffer.h	2016-02-10 11:26:28.143422741 +0100
+diff -urp a/kernel/nvidia-uvm/uvm_full_fault_buffer.h b/kernel/nvidia-uvm/uvm_full_fault_buffer.h
+--- a/kernel/nvidia-uvm/uvm_full_fault_buffer.h	2016-02-03 23:32:32.000000000 +0100
++++ b/kernel/nvidia-uvm/uvm_full_fault_buffer.h	2016-02-10 11:26:28.143422741 +0100
 @@ -31,6 +31,7 @@
  #define _UVM_FULL_FAULT_BUFFER_H_
  

@@ -1,6 +1,41 @@
 #!/bin/bash
 
 # Function Definitions
+increment_patch_revision ()
+{
+	echo "${1}" | awk -F'[\-\_\.]' \
+		'{
+			if (NF < 3)
+				exit 1
+			if ($NF != "patch")
+				exit 2
+
+			patch=$0
+			revision=$(NF-1)
+			if (sub("^r", "", revision) == 1)
+				sub("\\-r[[:digit:]]+\\.patch$", ("-r" revision+1 ".patch"), patch)
+			else
+				sub("\\.patch$", "-r1.patch", patch)
+			print patch
+		}' 2>/dev/null
+}
+
+get_patch_revision ()
+{
+	echo "${1}" | awk -F'[\-\_\.]' \
+		'{
+			if (NF < 3)
+				exit 1
+			if ($NF != "patch")
+				exit 2
+
+			revision=$(NF-1)
+			if (sub("^r", "", revision) == 0)
+				revision=0
+			print revision
+		}' 2>/dev/null
+}
+
 increment_ebuild_revision ()
 {
 	echo "${1}" | awk -F'[\-\_\.]' \
@@ -9,7 +44,7 @@ increment_ebuild_revision ()
 				exit 1
 			if ($NF != "ebuild")
 				exit 2
-			
+
 			ebuild=$0
 			revision=$(NF-1)
 			if (sub("^r", "", revision) == 1)
