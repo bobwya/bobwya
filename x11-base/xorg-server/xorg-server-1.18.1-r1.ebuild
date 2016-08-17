@@ -13,7 +13,7 @@ SLOT="0/${PV}"
 KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~arm-linux ~x86-linux"
 
 IUSE_SERVERS="dmx kdrive xephyr xnest xorg xvfb"
-IUSE="${IUSE_SERVERS} glamor ipv6 libressl minimal selinux +suid systemd tslib +udev unwind wayland"
+IUSE="${IUSE_SERVERS} fop glamor ipv6 libressl minimal selinux +suid systemd tslib +udev unwind wayland"
 
 CDEPEND="=app-eselect/eselect-opengl-1.3.2
 	!libressl? ( dev-libs/openssl:0 )
@@ -47,6 +47,7 @@ CDEPEND="=app-eselect/eselect-opengl-1.3.2
 		>=x11-libs/libXres-1.0.3
 		>=x11-libs/libXtst-1.0.99.2
 	)
+	fop? ( dev-java/fop )
 	glamor? (
 		media-libs/libepoxy
 		>=media-libs/mesa-11.0.6-r1[egl,gbm]
@@ -183,6 +184,7 @@ src_configure() {
 		$(use_enable udev config-udev)
 		$(use_with doc doxygen)
 		$(use_with doc xmlto)
+		$(use_with fop)
 		$(use_with systemd systemd-daemon)
 		$(use_enable systemd systemd-logind)
 		--enable-libdrm
@@ -193,7 +195,6 @@ src_configure() {
 		--disable-config-hal
 		--disable-linux-acpi
 		--without-dtrace
-		--without-fop
 		--with-os-vendor=Gentoo
 		--with-sha1=libcrypto
 	)

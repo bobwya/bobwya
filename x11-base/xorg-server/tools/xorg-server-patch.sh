@@ -9,7 +9,7 @@ script_name=$( basename "${script_path}" )
 # Global version constants
 eselect_opengl_supported_version="1.3.2"
 mesa_supported_version="11.0.6-r1"
-package_unsupported_versions="1.12 1.15 1.18.2"
+package_unsupported_versions="1.12 1.15"
 
 # Global constants
 patched_file_comment='experimental version of ${CATEGORY}/${PN}'
@@ -42,7 +42,7 @@ for ebuild_file in *.ebuild; do
 	if grep -q "${patched_file_comment}" "${ebuild_file}" ; then
 		continue
 	fi
-	
+
 	for package_unsupported_version in ${package_unsupported_versions}; do
 		test_ebuild_version=$(compare_ebuild_versions "xorg-server-${package_unsupported_version}" "${ebuild_file}")
 		if (( test_ebuild_version == 0)) ; then
@@ -51,7 +51,7 @@ for ebuild_file in *.ebuild; do
 			continue 2
 		fi
 	done
-	
+
 	# Look for older revisions - of identical ebuild versions - remove these...
 	remove_obsolete_ebuild_revisions "${ebuild_file}"
 done
@@ -62,7 +62,7 @@ for old_ebuild_file in *.ebuild; do
 	if grep -q "${patched_file_comment}" "${old_ebuild_file}" ; then
 		continue
 	fi
-	
+
 	ebuild_file=$(increment_ebuild_revision "${old_ebuild_file}")
 	new_ebuild_file="${ebuild_file}.new"
 	echo "Processing ebuild file: \"${old_ebuild_file}\" -> \"${ebuild_file}\""

@@ -6,23 +6,24 @@ EAPI=5
 
 XORG_DOC=doc
 inherit xorg-2 multilib versionator flag-o-matic
-EGIT_REPO_URI="git://anongit.freedesktop.org/git/xorg/xserver"
+EGIT_REPO_URI="git://anongit.freedesktop.org/xorg/xserver"
 
 DESCRIPTION="X.Org X servers"
-SLOT="0/1.16.1"
-KEYWORDS="~alpha amd64 arm hppa ~ia64 ~mips ppc ppc64 ~s390 ~sh ~sparc x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~arm-linux ~x86-linux"
+SLOT="0/${PV}"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~arm-linux ~x86-linux"
 
-IUSE_SERVERS="dmx kdrive xnest xorg xvfb"
-IUSE="${IUSE_SERVERS} fop glamor ipv6 minimal nptl selinux +suid systemd tslib +udev unwind wayland"
+IUSE_SERVERS="dmx kdrive xephyr xnest xorg xvfb"
+IUSE="${IUSE_SERVERS} fop glamor ipv6 libressl minimal selinux +suid systemd tslib +udev unwind wayland"
 
 CDEPEND="=app-eselect/eselect-opengl-1.3.2
-	dev-libs/openssl:0
+	!libressl? ( dev-libs/openssl:0 )
+	libressl? ( dev-libs/libressl )
 	media-libs/freetype
 	>=x11-apps/iceauth-1.0.2
 	>=x11-apps/rgb-1.0.3
 	>=x11-apps/xauth-1.0.3
 	x11-apps/xkbcomp
-	>=x11-libs/libdrm-2.4.20
+	>=x11-libs/libdrm-2.4.46
 	>=x11-libs/libpciaccess-0.12.901
 	>=x11-libs/libXau-1.0.4
 	>=x11-libs/libXdmcp-1.0.2
@@ -30,7 +31,7 @@ CDEPEND="=app-eselect/eselect-opengl-1.3.2
 	>=x11-libs/libxkbfile-1.0.4
 	>=x11-libs/libxshmfence-1.1
 	>=x11-libs/pixman-0.27.2
-	>=x11-libs/xtrans-1.3.3
+	>=x11-libs/xtrans-1.3.5
 	>=x11-misc/xbitmaps-1.0.1
 	>=x11-misc/xkeyboard-config-2.4.1-r3
 	dmx? (
@@ -56,10 +57,18 @@ CDEPEND="=app-eselect/eselect-opengl-1.3.2
 		>=x11-libs/libXext-1.0.5
 		x11-libs/libXv
 	)
+	xephyr? (
+		x11-libs/libxcb
+		x11-libs/xcb-util
+		x11-libs/xcb-util-image
+		x11-libs/xcb-util-keysyms
+		x11-libs/xcb-util-renderutil
+		x11-libs/xcb-util-wm
+	)
 	!minimal? (
 		>=x11-libs/libX11-1.1.5
 		>=x11-libs/libXext-1.0.5
-		>=media-libs/mesa-11.0.6-r1[nptl=]
+		>=media-libs/mesa-11.0.6-r1
 	)
 	tslib? ( >=x11-libs/tslib-1.0 )
 	udev? ( >=virtual/udev-150 )
@@ -68,10 +77,10 @@ CDEPEND="=app-eselect/eselect-opengl-1.3.2
 		>=dev-libs/wayland-1.3.0
 		media-libs/libepoxy
 	)
-	>=x11-apps/xinit-1.3
+	>=x11-apps/xinit-1.3.3-r1
 	systemd? (
 		sys-apps/dbus
-		<sys-apps/systemd-230
+		sys-apps/systemd
 	)"
 
 DEPEND="${CDEPEND}
@@ -82,9 +91,9 @@ DEPEND="${CDEPEND}
 	>=x11-proto/fixesproto-5.0
 	>=x11-proto/fontsproto-2.1.3
 	>=x11-proto/glproto-1.4.17-r1
-	>=x11-proto/inputproto-2.2.99.1
+	>=x11-proto/inputproto-2.3
 	>=x11-proto/kbproto-1.0.3
-	>=x11-proto/randrproto-1.4.0
+	>=x11-proto/randrproto-1.5.0
 	>=x11-proto/recordproto-1.13.99.1
 	>=x11-proto/renderproto-0.11
 	>=x11-proto/resourceproto-1.2.0
@@ -97,7 +106,7 @@ DEPEND="${CDEPEND}
 	>=x11-proto/xf86rushproto-1.1.2
 	>=x11-proto/xf86vidmodeproto-2.2.99.1
 	>=x11-proto/xineramaproto-1.1.3
-	>=x11-proto/xproto-7.0.26
+	>=x11-proto/xproto-7.0.28
 	>=x11-proto/presentproto-1.0
 	>=x11-proto/dri3proto-1.0
 	dmx? (
@@ -117,6 +126,7 @@ DEPEND="${CDEPEND}
 
 RDEPEND="${CDEPEND}
 	selinux? ( sec-policy/selinux-xserver )
+	!x11-drivers/xf86-video-modesetting
 "
 
 PDEPEND="
@@ -124,7 +134,8 @@ PDEPEND="
 
 REQUIRED_USE="!minimal? (
 		|| ( ${IUSE_SERVERS} )
-	)"
+	)
+	xephyr? ( kdrive )"
 
 #UPSTREAMED_PATCHES=(
 #	"${WORKDIR}/patches/"
@@ -132,14 +143,9 @@ REQUIRED_USE="!minimal? (
 
 PATCHES=(
 	"${UPSTREAMED_PATCHES[@]}"
-	"${FILESDIR}"/${PN}-1.12-ia64-fix_inx_outx.patch
 	"${FILESDIR}"/${PN}-1.12-unloadsubmodule.patch
 	# needed for new eselect-opengl, bug #541232
-	"${FILESDIR}"/${PN}-1.17-support-multiple-Files-sections.patch
-	"${FILESDIR}"/${PN}-1.17-cve-2015-3164-1.patch
-	"${FILESDIR}"/${PN}-1.17-cve-2015-3164-2.patch
-	"${FILESDIR}"/${PN}-1.17-cve-2015-3164-3.patch
-	"${FILESDIR}"/${PN}-1.17.2-uninit-clientsWritable.patch
+	"${FILESDIR}"/${PN}-1.18-support-multiple-Files-sections.patch
 )
 
 pkg_pretend() {
@@ -152,7 +158,7 @@ src_configure() {
 	# localstatedir is used for the log location; we need to override the default
 	#	from ebuild.sh
 	# sysconfdir is used for the xorg.conf location; same applies
-	# NOTE: fop is used for doc generating ; and i have no idea if gentoo
+	# NOTE: fop is used for doc generating; and I have no idea if Gentoo
 	#	package it somewhere
 	XORG_CONFIGURE_OPTIONS=(
 		$(use_enable ipv6)
@@ -168,14 +174,13 @@ src_configure() {
 		$(use_enable wayland xwayland)
 		$(use_enable !minimal record)
 		$(use_enable !minimal xfree86-utils)
-		$(use_enable !minimal install-libxf86config)
 		$(use_enable !minimal dri)
 		$(use_enable !minimal dri2)
 		$(use_enable !minimal glx)
+		$(use_enable xephyr)
 		$(use_enable xnest)
 		$(use_enable xorg)
 		$(use_enable xvfb)
-		$(use_enable nptl glx-tls)
 		$(use_enable udev config-udev)
 		$(use_with doc doxygen)
 		$(use_with doc xmlto)
@@ -202,7 +207,7 @@ src_install() {
 
 	server_based_install
 
-	if ! use minimal &&	use xorg; then
+	if ! use minimal && use xorg; then
 		# Install xorg.conf.example into docs
 		dodoc "${AUTOTOOLS_BUILD_DIR}"/hw/xfree86/xorg.conf.example
 	fi
