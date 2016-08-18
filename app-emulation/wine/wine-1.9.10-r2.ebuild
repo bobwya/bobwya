@@ -9,29 +9,32 @@ PLOCALE_BACKUP="en"
 
 inherit autotools eutils fdo-mime flag-o-matic gnome2-utils l10n multilib multilib-minimal pax-utils toolchain-funcs virtualx versionator
 
+MY_PV="${PV}"
+MY_P="${P}"
+STAGING_SUFFIX=""
 if [[ ${PV} == "9999" ]]; then
 	EGIT_REPO_URI="git://source.winehq.org/git/wine.git http://source.winehq.org/git/wine.git"
 	inherit git-r3
-	MY_PV="${PV}"
-	STAGING_PV="${MY_PV}"
-	MY_P="${P}"
 	SRC_URI=""
 	#KEYWORDS=""
 else
 	MAJOR_VERSION=$(get_version_component_range 1-2)
-	MY_PV="${PV}"
-	if [[ "$(get_version_component_range 3)" =~ ^rc ]]; then
-		MY_PV=$(replace_version_separator 2 '''-''')
+	if [[ "$(get_version_component_range $(get_version_component_count))" =~ ^rc ]]; then
+		MY_PV=$(replace_version_separator $(get_last_version_component_index) '''-''')
+		# Pull Wine stable revision control (RC) versions from alternate github repostiory...
+		STABLE_PREFIX="wine-stable"
+		SRC_URI="https://github.com/mstefani/wine-stable/archive/${PN}-${MY_PV}.tar.gz -> ${STABLE_PREFIX}-${P}.tar.gz"
+		MY_P="${STABLE_PREFIX}-${PN}-${MY_PV}"
 	else
 		KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
+		SRC_URI="https://dl.winehq.org/wine/source/${MAJOR_VERSION}/${MY_P}.tar.bz2 -> ${P}.tar.bz2"
 	fi
 	[[ "${MAJOR_VERSION}" == "1.8" ]] && STAGING_SUFFIX="-unofficial"
-	MY_P="${PN}-${MY_PV}"
-	SRC_URI="https://dl.winehq.org/wine/source/${MAJOR_VERSION}/${MY_P}.tar.bz2 -> ${P}.tar.bz2"
 fi
 
-VANILLA_GV="2.47"
-VANILLA_MV="4.6.3"
+VANILLA_GV="2.44"
+VANILLA_MV="4.6.2"
+STAGING_GV="2.47-beta1"
 STAGING_P="wine-staging-${MY_PV}"
 STAGING_DIR="${WORKDIR}/${STAGING_P}${STAGING_SUFFIX}"
 STAGING_HELPER="wine-staging-git-helper-0.1.2"
@@ -66,7 +69,7 @@ fi
 
 LICENSE="LGPL-2.1"
 SLOT="0"
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test +threads +truetype +udisks v4l vaapi +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test themes +threads +truetype +udisks v4l vaapi +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
@@ -74,6 +77,7 @@ REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	pipelight? ( staging )
 	s3tc? ( staging )
 	test? ( abi_x86_32 )
+	themes? ( staging )
 	vaapi? ( staging )" # osmesa-opengl #286560 # X-truetype #551124
 
 # FIXME: the test suite is unsuitable for us; many tests require net access
@@ -119,6 +123,7 @@ COMMON_DEPEND="
 	scanner? ( media-gfx/sane-backends:=[${MULTILIB_USEDEP}] )
 	ssl? ( net-libs/gnutls:=[${MULTILIB_USEDEP}] )
 	staging? ( sys-apps/attr[${MULTILIB_USEDEP}] )
+	themes? ( x11-libs/gtk+:3[X?,${MULTILIB_USEDEP}] )
 	truetype? ( >=media-libs/freetype-2.0.0[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
@@ -245,7 +250,7 @@ wine_generic_compiler_pretests() {
 wine_build_environment_prechecks() {
 	[[ ${MERGE_TYPE} = "binary" ]] && return 0
 
-	if use abi_x86_32 && use opencl && [[ $(eselect opencl show 2>/dev/null) = "intel" ]]; then
+	if use abi_x86_32 && use opencl && [[ "$(eselect opencl show 2>/dev/null)" == "intel" ]]; then
 		eerror "You cannot build wine with USE=+opencl because intel-ocl-sdk is 64-bit only."
 		eerror "See https://bugs.gentoo.org/487864"
 		eerror
@@ -329,6 +334,8 @@ src_unpack() {
 		fi
 	fi
 
+	default
+
 	l10n_find_plocales_changes "${S}/po" "" ".po"
 }
 
@@ -338,6 +345,7 @@ src_prepare() {
 		"${FILESDIR}"/${PN}-1.5.26-winegcc.patch #260726
 		"${FILESDIR}"/${PN}-1.7.12-osmesa-check.patch #429386
 		"${FILESDIR}"/${PN}-1.6-memset-O3.patch #480508
+		"${FILESDIR}"/${PN}-1.8-gnutls-3.5-compat.patch #587028
 	)
 	#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
 	ebegin "(subshell) script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" ..."
@@ -436,6 +444,7 @@ multilib_src_configure() {
 
 	use staging && myconf+=(
 		--with-xattr
+		$(use_with themes gtk3)
 		$(use_with vaapi va)
 	)
 

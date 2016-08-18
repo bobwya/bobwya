@@ -1,5 +1,33 @@
 #!/bin/awk
 
+function print_wine_version_handler_block(indent)
+{
+	printf("%s\n",	"MY_PV=\"${PV}\"")
+	printf("%s\n",	"MY_P=\"${P}\"")
+	if (wine_version !~ wine_staging_official_regexp)
+		printf("%s\n", "STAGING_SUFFIX=\"\"")
+	printf("%s\n",	"if [[ ${PV} == \"9999\" ]]; then")
+	printf("%s%s\n",	indent, "EGIT_REPO_URI=\"git://source.winehq.org/git/wine.git http://source.winehq.org/git/wine.git\"")
+	printf("%s%s\n",	indent, "inherit git-r3")
+	printf("%s%s\n",	indent, "SRC_URI=\"\"")
+	printf("%s%s\n",	indent, "#KEYWORDS=\"\"")
+	printf("%s\n",	"else")
+	printf("%s%s\n",	indent, "MAJOR_VERSION=$(get_version_component_range 1-2)")
+	printf("%s%s\n",	indent, "if [[ \"$(get_version_component_range $(get_version_component_count))\" =~ ^rc ]]; then")
+	printf("%s%s%s\n",	indent, indent, "MY_PV=$(replace_version_separator $(get_last_version_component_index) '''-''')")
+	printf("%s%s%s\n",	indent, indent, "# Pull Wine stable revision control (RC) versions from alternate github repostiory...")
+	printf("%s%s%s\n",	indent, indent, "STABLE_PREFIX=\"wine-stable\"")
+	printf("%s%s%s\n",	indent, indent, "SRC_URI=\"https://github.com/mstefani/wine-stable/archive/${PN}-${MY_PV}.tar.gz -> ${STABLE_PREFIX}-${P}.tar.gz\"")
+	printf("%s%s%s\n",	indent, indent, "MY_P=\"${STABLE_PREFIX}-${PN}-${MY_PV}\"")
+	printf("%s%s\n",	indent, "else")
+	printf("%s%s%s\n",	indent, indent, "KEYWORDS=\"-* ~amd64 ~x86 ~x86-fbsd\"")
+	printf("%s%s%s\n",	indent, indent, "SRC_URI=\"https://dl.winehq.org/wine/source/${MAJOR_VERSION}/${MY_P}.tar.bz2 -> ${P}.tar.bz2\"")
+	printf("%s%s\n",	indent, "fi")
+	if (wine_version !~ wine_staging_official_regexp)
+		printf("%s%s\n",indent, "[[ \"${MAJOR_VERSION}\" == \"1.8\" ]] && STAGING_SUFFIX=\"-unofficial\"")
+	printf("%s\n\n","fi")
+}
+
 function print_gcc_specific_pretests(indent)
 {
 	printf("%s\n",		"wine_gcc_specific_pretests() {")
@@ -176,7 +204,7 @@ BEGIN{
 	ebuild_inherit_regexp="^inherit "
 	variables="COMMON_DEPEND RDEPEND DEPEND IUSE GST_P KEYWORDS STAGING_P STAGING_DIR STAGING_EGIT_REPO_URI REQUIRED_USE SRC_URI STAGING_GV STAGING_MV VANILLA_GV VANILLA_MV"
 	setup_global_regexps(variables)
-	staging_use_flags_regexp="[\+]{0,1}(pipelight|s3tc|staging|vaapi)"
+	staging_use_flags_regexp="[\+]{0,1}(pipelight|s3tc|staging|themes|vaapi)"
 	gstreamer_patch_uri="https://dev.gentoo.org/~np-hardass/distfiles/${PN}/${GST_P}.patch.bz2"
 	wine_mono_version_regexp="[[:digit:]]+\\.[[:digit:]]+\\.[[:digit:]]+"
 	wine_gecko_version_regexp="[[:digit:]]+\\.[[:digit:]]+"
@@ -236,11 +264,15 @@ BEGIN{
 	}
 
 	if (!preamble_over) {
-		if (($0 ~ if_open_regexp) && (if_check_pv9999_count == 1)) then
-			sub(text2regexp("MAJOR_V"), "MAJOR_VERSION")
-
-		if ((if_check_pv9999_open == 1) && ($0 ~ "EGIT_BRANCH=\"master\""))
+		if ((if_check_pv9999_open == 1) && (if_check_pv9999_count == 1)) {
+			if (match($0, leading_ws_regexp))
+				indent=(indent == 0) ? substr($0, RSTART, RLENGTH) : indent
+			if ((indent != 0) && !display_version_handler_block) {
+				print_wine_version_handler_block(indent)
+				display_version_handler_block=1
+			}
 			suppress_current_line=1
+		}
 
 		if ($0 ~ array_variables_regexp["SRC_URI"])
 			src_uri_assignment_open=1
@@ -255,11 +287,6 @@ BEGIN{
 		}
 
 		if (src_uri_assignment_open) {
-			if ($0 ~ "\"https\:.+\"") {
-				sub(text2regexp("${MAJOR_V}"), "${MAJOR_VERSION}")
-				sub(text2regexp("${P}.tar.bz2\"$"), "${MY_P}.tar.bz2 -> ${P}.tar.bz2\"")
-			}
-
 			if ($0 ~ text2regexp("^ staging? (")) {
 				uri_staging_test_open=1
 				#printf("staging?  uri_staging_test_open=%s\n", (uri_staging_test_open ? "true" : "false"))
@@ -353,10 +380,18 @@ BEGIN{
 			if (required_use_assignment_open && ($0 ~ "^[[:blank:]]+\"[[:blank:]]+\\#.+$"))
 				sub("[[:blank:]]+\\#.+$", "")
 		}
-		else if (else_check_pv9999_open && (if_check_pv9999_count == 2) && !staging_git_helper) {
-			printf("%s%s\n", indent, "SRC_URI=\"${SRC_URI}")
-			printf("%s%s\n", indent, "staging? ( https://github.com/bobwya/${STAGING_HELPER%-*}/archive/${STAGING_HELPER##*-}.tar.gz -> ${STAGING_HELPER}.tar.gz )\"")
-			++staging_git_helper
+		else {
+			if (depend_assignment_open) {
+				if (sub(text2regexp("themes? ($"), "themes? ( x11-libs/gtk+:3[X?,${MULTILIB_USEDEP}] )"))
+					depend_bracket_depth=(depend_bracket_depth == -1) ? bracket_depth-1 : depend_bracket_depth
+				else if ((depend_bracket_depth != -1) && (bracket_depth >= depend_bracket_depth))
+					suppress_current_line=1
+			}
+			if (else_check_pv9999_open && (if_check_pv9999_count == 2) && !staging_git_helper) {
+				printf("%s%s\n", indent, "SRC_URI=\"${SRC_URI}")
+				printf("%s%s\n", indent, "staging? ( https://github.com/bobwya/${STAGING_HELPER%-*}/archive/${STAGING_HELPER##*-}.tar.gz -> ${STAGING_HELPER}.tar.gz )\"")
+				++staging_git_helper
+			}
 		}
 		if (src_uri_assignment_open || required_use_assignment_open || depend_assignment_open)
 			bracket_depth -= $0 ~ "(^|[[:blank:]]+)\\)([[:blank:]]+|$)"
@@ -498,7 +533,7 @@ BEGIN{
 			wine_staging_check_open=if_stack
 		if (wine_staging_check_open == 1) {
 			if ($0 ~ text2regexp("eend $?"))
-				sub("$", " || die \"(subshell) script: failed to apply Wine-Staging patches.\"")
+				sub(text2regexp("die \"*\"$"), "die \"(subshell) script: failed to apply Wine-Staging patches.\"")
 			if (is_wine_version_staging_eapply_supported)
 				gsub("epatch", "eapply")
 		}
@@ -574,28 +609,9 @@ BEGIN{
 		indent=(indent == 0) ? substr($0, RSTART, RLENGTH) : indent
 
 	if (!preamble_over) {
-		if (if_check_pv9999_open) {
-			if ($0 ~ "inherit git-r3") {
-				printf("%s%s\n", indent, "MY_PV=\"${PV}\"")
-				if (is_wine_version_staging_supported)
-					printf("%s%s\n", indent, "STAGING_PV=\"${MY_PV}\"")
-				printf("%s%s\n", indent, "MY_P=\"${P}\"")
-			}
-
-			if ($0 ~ "[[:blank:]]*MAJOR_VERSION\=") {
-				printf("%s%s\n", indent, "MY_PV=\"${PV}\"")
-				printf("%s%s\n", indent, "if [[ \"$(get_version_component_range 3)\" =~ ^rc ]]; then")
-				printf("%s%s%s\n", indent, indent, "MY_PV=$(replace_version_separator 2 '\''-'\'')")
-				printf("%s%s\n", indent, "else")
-				printf("%s%s%s\n", indent, indent, "KEYWORDS=\"-* ~amd64 ~x86 ~x86-fbsd\"")
-				printf("%s%s\n", indent, "fi")
-				if (is_wine_version_staging_supported && (wine_version !~ wine_staging_official_regexp))
-					printf("%s%s\n", indent, "[[ \"${MAJOR_VERSION}\" == \"1.8\" ]] && STAGING_SUFFIX=\"-unofficial\"")
-				printf("%s%s\n", indent, "MY_P=\"${PN}-${MY_PV}\"")
-			}
-		}
 		if (($0 ~ array_variables_regexp["STAGING_DIR"]) && is_wine_version_staging_supported)
 			printf("%s\n", ("STAGING_HELPER=\"" wine_staging_helper "\""))
+
 		depend_assignment_open=depend_assignment_open && ($0 !~ end_quote_regexp)
 	}
 

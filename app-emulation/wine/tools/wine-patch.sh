@@ -5,14 +5,14 @@ script_folder=$( dirname "${script_path}" )
 script_name=$( basename "${script_path}" )
 
 # Global variables
-wine_versions_new="1.8_rc1-r2 1.8_rc2-r2 1.8_rc3-r2 1.8_rc4-r2 1.8-r2 1.8.1-r2 1.8.2-r1 1.8.3-r1 1.9.0-r2 1.9.1-r2 1.9.2-r2 1.9.3-r2 1.9.4-r2 1.9.5-r2 1.9.6-r2 1.9.7-r2 1.9.8-r1 1.9.9-r1 1.9.10-r1 1.9.11-r1 1.9.12-r1 1.9.13-r1 1.9.14-r1 1.9.15-r1 1.9.16-r1 9999"
+wine_versions_new="1.8-r3 1.8.1-r3 1.8.2-r2 1.8.3-r2 1.8.4_rc1 1.8.4_rc2 1.8.4_rc3 1.9.0-r3 1.9.1-r3 1.9.2-r3 1.9.3-r3 1.9.4-r3 1.9.5-r3 1.9.6-r3 1.9.7-r3 1.9.8-r2 1.9.9-r2 1.9.10-r2 1.9.11-r2 1.9.12-r2 1.9.13-r2 1.9.14-r2 1.9.15-r2 1.9.16-r2 9999"
 #wine_versions_staging_supported="${wine_versions_new}"
 
-wine_versions_staging_supported="1.8_rc* 1.8.1 1.8.2 1.8.3 1.9.0 1.9.1 1.9.2 1.9.3 1.9.4 1.9.5 1.9.6 1.9.7 1.9.8 1.9.9 1.9.10 1.9.11 1.9.12 1.9.13 1.9.14 1.9.15 1.9.16 9999"
+wine_versions_staging_supported="1.8 1.8.1 1.8.2 1.8.3 1.9.0 1.9.1 1.9.2 1.9.3 1.9.4 1.9.5 1.9.6 1.9.7 1.9.8 1.9.9 1.9.10 1.9.11 1.9.12 1.9.13 1.9.14 1.9.15 1.9.16 9999"
 wine_versions_no_csmt_staging="1.9.6 1.9.7 1.9.8 1.9.9"
-wine_versions_legacy_gstreamer_patch_1_0="1.8_rc* 1.8 1.8.1 1.8.2 1.8.3 1.9.0 1.9.1 9999"
-wine_versions_no_sysmacros_patch="1.8.3 1.9.9 1.9.10 1.9.11 1.9.12 1.9.13 1.9.14 1.9.15 1.9.16 9999"
-wine_versions_no_gnutls_patch="1.9.13 1.9.14 1.9.15 1.9.16 9999"
+wine_versions_legacy_gstreamer_patch_1_0="1.8_rc* 1.8 1.8.1 1.8.2 1.8.3 1.8.4_rc* 1.9.0 1.9.1 9999"
+wine_versions_no_sysmacros_patch="1.8.3 11.8.4_rc1 1.8.4_rc2 1.8.4_rc3 1.9.9 1.9.10 1.9.11 1.9.12 1.9.13 1.9.14 1.9.15 1.9.16 9999"
+wine_versions_no_gnutls_patch="1.8.4_rc3 1.9.13 1.9.14 1.9.15 1.9.16 9999"
 wine_versions_staging_eapply_supported="9999"
 
 # Rename and patch all the stock mesa ebuild files
@@ -44,14 +44,13 @@ rm ChangeLog* 2>/dev/null
 metadata_file="metadata.xml"
 mv "${metadata_file}" "${metadata_file}.bak"
 gawk 'BEGIN{
-        flag_open_regexp="^[[:blank:]]+\<flag name\=\"([\-[:alnum:]]+)\"\>.+$"
-        flag_close_regexp="\<\/flag\>"
-        use_close_regexp="\<\/use\>"
-        d3d9_use_flag="d3d9"
-        maintainer_open_regexp="^[[:blank:]]*\<maintainer.+\>"
-		maintainer_close_regexp="^[[:blank:]]*\<\/maintainer\>"
-        upstream_open_regexp="^[[:blank:]]*\<upstream.+\>"
-		upstream_close_regexp="^[[:blank:]]*\<\/upstream\>"
+        flag_open_regexp="^[[:blank:]]+<flag name\=\"([\-[:alnum:]]+)\">.+$"
+        flag_close_regexp="<\/flag>"
+        use_close_regexp="<\/use>"
+        maintainer_open_regexp="^[[:blank:]]*<maintainer.*>"
+		maintainer_close_regexp="^[[:blank:]]*<\/maintainer>"
+        upstream_open_regexp="^[[:blank:]]*<upstream.*>"
+		upstream_close_regexp="^[[:blank:]]*<\/upstream>"
     }
     {
 		maintainer_open=maintainer_open || ($0 ~ maintainer_open_regexp)
@@ -60,17 +59,33 @@ gawk 'BEGIN{
 			next
 		}
         flag_name=($0 ~ flag_open_regexp) ? gensub(flag_open_regexp, "\\1", "g") : ""
-		d3d9_block_open=(flag_name == d3d9_use_flag) ? 1 : d3d9_block_open
+		d3d9_block_open=(flag_name == "d3d9") ? 1 : d3d9_block_open
 		if (d3d9_block_open) {
 			d3d9_block_open=($0 ~ flag_close_regexp) ? 0 : 1
 			next
 		}
+		gstreamer_block_open=(flag_name == "gstreamer") ? 1 : gstreamer_block_open
+		if (gstreamer_block_open)
+			sub(flag_close_regexp, "")
 		upstream_open=upstream_open || ($0 ~ upstream_open_regexp)
 		if (upstream_open) {
 			sub("sourceforge", "github") && sub("wine","wine-mirror/wine")
-			upstream_open=($0 !~ upstream_close_regexp)
+			if ($0 ~ upstream_close_regexp) {
+				printf("\t\t%s\n", "<remote-id type=\"github\">mstefani/wine-stable</remote-id>")
+				upstream_open=0
+			}
+		}
+		prelink_block_open=(flag_name == "prelink") ? 1 : prelink_block_open
+		if (prelink_block_open) {
+			sub("versions before wine\-1\.7\.55 or", "Gentoo")
+			prelink_block_open=($0 ~ flag_close_regexp) ? 0 : 1
 		}
         printf("%s\n", $0)
+        if (gstreamer_block_open) {
+			printf("\t\t\t%s\n", "for versions: wine-1.9.0, wine-1.9.1 ; a stable branch patch is applied in an unofficial capacity</flag>")
+			gstreamer_block_open=0
+        }
+
     }' "${metadata_file}.bak" >"${metadata_file}" 2>/dev/null
 rm "${metadata_file}.bak"
 
@@ -100,7 +115,7 @@ for ebuild_file in *.ebuild; do
 
 	# Wine-Gecko
 	case "${ebuild_version}" in
-		1.8_rc* | 1.8 | 1.8.[1-3] | 1.9.[0-2] )
+		1.8_rc* | 1.8 | 1.8.[1-4] | 1.9.[0-2] )
 			wine_gecko_version="2.40";;
 		1.9.[3-9] | 1.9.1[0-2] )
 			wine_gecko_version="2.44";;
@@ -116,7 +131,7 @@ for ebuild_file in *.ebuild; do
 
 	# Wine-Mono
 	case "${ebuild_version}" in
-		1.8_rc* | 1.8 | 1.8.[1-3] | 1.9.[0-4] )
+		1.8_rc* | 1.8 | 1.8.[1-4] | 1.9.[0-4] )
 			wine_mono_version="4.5.6";;
 		1.9.[5-7] )
 			wine_mono_version="4.6.0";;
