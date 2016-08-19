@@ -11,7 +11,6 @@ inherit autotools eutils fdo-mime flag-o-matic gnome2-utils l10n multilib multil
 
 MY_PV="${PV}"
 MY_P="${P}"
-STAGING_SUFFIX=""
 if [[ ${PV} == "9999" ]]; then
 	EGIT_REPO_URI="git://source.winehq.org/git/wine.git http://source.winehq.org/git/wine.git"
 	inherit git-r3
@@ -29,7 +28,6 @@ else
 		KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
 		SRC_URI="https://dl.winehq.org/wine/source/${MAJOR_VERSION}/${MY_P}.tar.bz2 -> ${P}.tar.bz2"
 	fi
-	[[ "${MAJOR_VERSION}" == "1.8" ]] && STAGING_SUFFIX="-unofficial"
 fi
 
 VANILLA_GV="2.47"

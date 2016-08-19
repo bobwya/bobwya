@@ -5,15 +5,15 @@ script_folder=$( dirname "${script_path}" )
 script_name=$( basename "${script_path}" )
 
 # Global variables
-wine_versions_new="1.8-r3 1.8.1-r3 1.8.2-r2 1.8.3-r2 1.8.4_rc1 1.8.4_rc2 1.8.4_rc3 1.9.0-r3 1.9.1-r3 1.9.2-r3 1.9.3-r3 1.9.4-r3 1.9.5-r3 1.9.6-r3 1.9.7-r3 1.9.8-r2 1.9.9-r2 1.9.10-r2 1.9.11-r2 1.9.12-r2 1.9.13-r2 1.9.14-r2 1.9.15-r2 1.9.16-r2 9999"
+wine_versions_new="1.8-r3 1.8.1-r3 1.8.2-r2 1.8.3-r2 1.8.4_rc1 1.8.4_rc2 1.8.4_rc3 1.9.0-r3 1.9.1-r3 1.9.2-r3 1.9.3-r3 1.9.4-r3 1.9.5-r3 1.9.6-r3 1.9.7-r3 1.9.8-r2 1.9.9-r2 1.9.10-r2 1.9.11-r2 1.9.12-r2 1.9.13-r2 1.9.14-r2 1.9.15-r2 1.9.16-r2 1.9.17 9999"
 #wine_versions_staging_supported="${wine_versions_new}"
 
 wine_versions_staging_supported="1.8 1.8.1 1.8.2 1.8.3 1.9.0 1.9.1 1.9.2 1.9.3 1.9.4 1.9.5 1.9.6 1.9.7 1.9.8 1.9.9 1.9.10 1.9.11 1.9.12 1.9.13 1.9.14 1.9.15 1.9.16 9999"
 wine_versions_no_csmt_staging="1.9.6 1.9.7 1.9.8 1.9.9"
 wine_versions_legacy_gstreamer_patch_1_0="1.8_rc* 1.8 1.8.1 1.8.2 1.8.3 1.8.4_rc* 1.9.0 1.9.1 9999"
-wine_versions_no_sysmacros_patch="1.8.3 11.8.4_rc1 1.8.4_rc2 1.8.4_rc3 1.9.9 1.9.10 1.9.11 1.9.12 1.9.13 1.9.14 1.9.15 1.9.16 9999"
-wine_versions_no_gnutls_patch="1.8.4_rc3 1.9.13 1.9.14 1.9.15 1.9.16 9999"
-wine_versions_staging_eapply_supported="9999"
+wine_versions_no_sysmacros_patch="1.8.3 11.8.4_rc1 1.8.4_rc2 1.8.4_rc3 1.9.9 1.9.10 1.9.11 1.9.12 1.9.13 1.9.14 1.9.15 1.9.16 1.9.17 9999"
+wine_versions_no_gnutls_patch="1.8.4_rc3 1.9.13 1.9.14 1.9.15 1.9.16 1.9.17 9999"
+wine_versions_staging_eapply_supported="1.9.17 9999"
 
 # Rename and patch all the stock mesa ebuild files
 cd "${script_folder%/tools}"
@@ -33,6 +33,8 @@ rm "files/wine-1.7.55-gstreamer-v5-staging-post.patch" 2>/dev/null
 rm "files/wine-1.7.55-gstreamer-v5-staging-pre.patch" 2>/dev/null
 rm "files/wine-1.7.45-libunwind-osx-only.patch" 2>/dev/null
 rm "files/wine-1.7.47-critical-security-cookie-fix.patch" 2>/dev/null
+rm "files/wine-1.4_rc2-multilib-portage.patch" 2>/dev/null
+rm "files/wine-1.9.5-multilib-portage.patch" 2>/dev/null
 
 # Remove obsolete ebuild files...
 rm wine-1.{6,7}*.ebuild 2>/dev/null
@@ -43,7 +45,7 @@ rm ChangeLog* 2>/dev/null
 # Patch metadata.xml file
 metadata_file="metadata.xml"
 mv "${metadata_file}" "${metadata_file}.bak"
-gawk 'BEGIN{
+awk 'BEGIN{
         flag_open_regexp="^[[:blank:]]+<flag name\=\"([\-[:alnum:]]+)\">.+$"
         flag_close_regexp="<\/flag>"
         use_close_regexp="<\/use>"
@@ -51,6 +53,9 @@ gawk 'BEGIN{
 		maintainer_close_regexp="^[[:blank:]]*<\/maintainer>"
         upstream_open_regexp="^[[:blank:]]*<upstream.*>"
 		upstream_close_regexp="^[[:blank:]]*<\/upstream>"
+		gstreamer_block_open=0
+		prelink_block_open=0
+		upstream_open=0
     }
     {
 		maintainer_open=maintainer_open || ($0 ~ maintainer_open_regexp)
@@ -58,7 +63,12 @@ gawk 'BEGIN{
 			maintainer_open=($0 !~ maintainer_close_regexp)
 			next
 		}
-        flag_name=($0 ~ flag_open_regexp) ? gensub(flag_open_regexp, "\\1", "g") : ""
+		flag_name=""
+		if ($0 ~ flag_open_regexp) {
+			flag_name=$0
+			sub("^[[:blank:]]+<flag name\=\"", "", flag_name)
+			sub("\">.+$", "", flag_name)
+		}
 		d3d9_block_open=(flag_name == "d3d9") ? 1 : d3d9_block_open
 		if (d3d9_block_open) {
 			d3d9_block_open=($0 ~ flag_close_regexp) ? 0 : 1
@@ -154,9 +164,9 @@ for ebuild_file in *.ebuild; do
 			-vwine_versions_staging_eapply_supported="${wine_versions_staging_eapply_supported}" \
 			-vwine_gecko_version="${wine_gecko_version}" -vwine_staging_gecko_version="${wine_staging_gecko_version}" \
 			-vwine_mono_version="${wine_mono_version}"   -vwine_staging_mono_version="${wine_staging_mono_version}" \
-			--file "tools/common-functions.awk" \
-			--file "tools/${script_name%.*}.awk" \
-			"${ebuild_file}" 1>"${new_ebuild_file}" 2>/dev/null
+			-f "tools/common-functions.awk" \
+			-f "tools/${script_name%.*}.awk" \
+			"${ebuild_file}" 1>"${new_ebuild_file}" #2>/dev/null
 		[ -f "${new_ebuild_file}" ] || exit 1
 		mv "${new_ebuild_file}" "${ebuild_file}"
 		new_ebuild_file="${new_ebuild_file%.new}"

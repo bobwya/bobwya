@@ -18,7 +18,9 @@ function setup_ebuild_phases(ebuild_phases, array_ebuild_phases, array_phase_ope
 {
 	split(ebuild_phases, array_ebuild_phases)
 	for (i in array_ebuild_phases) {
-		array_ebuild_phases_regexp[array_ebuild_phases[i]]="^" gensub(/\_/, "\\_", "g", array_ebuild_phases[i]) "\\(\\)[[:blank:]]+"
+		array_ebuild_phases_regexp[array_ebuild_phases[i]]=array_ebuild_phases[i]
+		gsub("\\_", "\\_", array_ebuild_phases_regexp[array_ebuild_phases[i]])
+		array_ebuild_phases_regexp[array_ebuild_phases[i]]=("^" array_ebuild_phases_regexp[array_ebuild_phases[i]] "\\(\\)[[:blank:]]+")
 		array_phase_open[array_ebuild_phases[i]]=0
 	}
 }
@@ -51,17 +53,22 @@ function process_ebuild_phase_close(line, array_ebuild_phases, array_phase_open,
 	}
 }
 
-function text2regexp(text,
-		endmarker, regexp)
+function text2regexp(text, multi,
+		endmarker,regexp,startmarker)
 {
 	regexp=text
+	startmarker=sub("^\\^", "", regexp)
 	endmarker=sub("\\$$", "", regexp)
 	# Escape all control regex characters
 	gsub("\\\\", "\x5c\x5c&", regexp)
 	gsub("\\!|\\\"|\\#|\\$|\\%|\\&|\x27|\\(|\\)|\\+|\\,|\\-|\\.|\\/|\\:|\\;|\x3c|\\=|\x3e|\\?|\\@|\\[|\\]|\\{|\\|\\}|\\~", "\x5c\x5c&", regexp)
 	gsub("\x20", "[[:blank:]]+", regexp)
 	gsub("\\*", ".+", regexp)
-	regexp=(endmarker) ? regexp "$" : regexp
+	regexp=((startmarker ? "^" : "") regexp (endmarker ? "$" : ""))
+	if (multi) {
+		gsub("\\\\\(", "(", regexp)
+		gsub("\\\\\)", ")", regexp)
+	}
 	return regexp
 }
 
@@ -75,7 +82,6 @@ function setup_global_regexps(variables,		i)
 	trailing_ws_regexp="[[:blank:]]+$"
 	comment_regexp=("^[[:blank:]]*\\#.*$")
 	end_quote_regexp="[^=]\"[[:blank:]]*(|\\#.+)$"
-	quote_or_ws_seperator_regexp="([[:blank:]]+|\")"
 	end_curly_bracket_regexp="^[[:blank:]]*\}[[:blank:]]*$"
 	closing_bracket_regexp="\\)$"
 	if_open_regexp="^[[:blank:]]*if.+then$"
@@ -89,6 +95,9 @@ function setup_global_regexps(variables,		i)
 	gentoo_copyright_header_regexp="^# Copyright.+Gentoo Foundation$"
 
 	split(variables, array_variables)
-	for (i in array_variables)
-		array_variables_regexp[array_variables[i]]=("^[[:blank:]]*" gensub(/\_/, "\\_", "g", array_variables[i]) "\=\".*(\"|$)")
+	for (i in array_variables) {
+		array_variables_regexp[array_variables[i]]=array_variables[i]
+		gsub("\\_", "\\_", array_variables_regexp[array_variables[i]])
+		array_variables_regexp[array_variables[i]]=("^[[:blank:]]*" array_variables_regexp[array_variables[i]] "\=\".*(\"|$)")
+	}
 }

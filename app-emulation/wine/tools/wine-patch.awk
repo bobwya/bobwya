@@ -4,7 +4,7 @@ function print_wine_version_handler_block(indent)
 {
 	printf("%s\n",	"MY_PV=\"${PV}\"")
 	printf("%s\n",	"MY_P=\"${P}\"")
-	if (wine_version !~ wine_staging_official_regexp)
+	if (is_wine_version_staging_supported && (wine_version !~ wine_staging_official_regexp))
 		printf("%s\n", "STAGING_SUFFIX=\"\"")
 	printf("%s\n",	"if [[ ${PV} == \"9999\" ]]; then")
 	printf("%s%s\n",	indent, "EGIT_REPO_URI=\"git://source.winehq.org/git/wine.git http://source.winehq.org/git/wine.git\"")
@@ -23,7 +23,7 @@ function print_wine_version_handler_block(indent)
 	printf("%s%s%s\n",	indent, indent, "KEYWORDS=\"-* ~amd64 ~x86 ~x86-fbsd\"")
 	printf("%s%s%s\n",	indent, indent, "SRC_URI=\"https://dl.winehq.org/wine/source/${MAJOR_VERSION}/${MY_P}.tar.bz2 -> ${P}.tar.bz2\"")
 	printf("%s%s\n",	indent, "fi")
-	if (wine_version !~ wine_staging_official_regexp)
+	if (is_wine_version_staging_supported && (wine_version !~ wine_staging_official_regexp))
 		printf("%s%s\n",indent, "[[ \"${MAJOR_VERSION}\" == \"1.8\" ]] && STAGING_SUFFIX=\"-unofficial\"")
 	printf("%s\n\n","fi")
 }
@@ -204,7 +204,7 @@ BEGIN{
 	ebuild_inherit_regexp="^inherit "
 	variables="COMMON_DEPEND RDEPEND DEPEND IUSE GST_P KEYWORDS STAGING_P STAGING_DIR STAGING_EGIT_REPO_URI REQUIRED_USE SRC_URI STAGING_GV STAGING_MV VANILLA_GV VANILLA_MV"
 	setup_global_regexps(variables)
-	staging_use_flags_regexp="[\+]{0,1}(pipelight|s3tc|staging|themes|vaapi)"
+	staging_use_flags_regexp="(pipelight|s3tc|staging|themes|vaapi)"
 	gstreamer_patch_uri="https://dev.gentoo.org/~np-hardass/distfiles/${PN}/${GST_P}.patch.bz2"
 	wine_mono_version_regexp="[[:digit:]]+\\.[[:digit:]]+\\.[[:digit:]]+"
 	wine_gecko_version_regexp="[[:digit:]]+\\.[[:digit:]]+"
@@ -218,6 +218,9 @@ BEGIN{
 	is_wine_version_no_gnutls_patch=(wine_version ~ convert_version_list_to_regexp(wine_versions_no_gnutls_patch))
 	is_wine_version_staging_eapply_supported=(wine_version ~ convert_version_list_to_regexp(wine_versions_staging_eapply_supported))
 
+	print "Wine version=" wine_version >"/dev/stderr"
+	print "Wine versions with Staging support: " convert_version_list_to_regexp(wine_versions_staging_supported) >"/dev/stderr"
+	print "Wine is Wine-Staging supported=" is_wine_version_staging_supported >"/dev/stderr"
 	# My utility for parsing Wine & Wine-Staging Git trees (pull from Github)
 	wine_staging_helper="wine-staging-git-helper-0.1.2"
 
@@ -362,11 +365,13 @@ BEGIN{
 				suppress_current_line=1
 			if (if_check_pv9999_open && (if_check_pv9999_count == 2))
 				suppress_current_line=1
-			if ($0 ~ array_variables_regexp["IUSE"])
-				gsub((quote_or_ws_seperator_regexp staging_use_flags_regexp quote_or_ws_seperator_regexp), " ")
+			if ($0 ~ array_variables_regexp["IUSE"]) {
+				print text2regexp(("( |\")" staging_use_flags_regexp "( |\")"),1) >"/dev/stderr"
+				gsub(text2regexp(("( |\")" staging_use_flags_regexp "( |\")"),1), " ")
+			}
 
 			if (required_use_assignment_open || depend_assignment_open) {
-				if ($0 ~ (staging_use_flags_regexp "\\?"))
+				if ($0 ~ text2regexp((" (+|)" staging_use_flags_regexp "?"),1))
 					depend_bracket_depth=(depend_bracket_depth == -1) ? bracket_depth : depend_bracket_depth
 				if ((depend_bracket_depth != -1) && (bracket_depth >= depend_bracket_depth)) {
 					#printf("suppress current line (%d):\n", depend_bracket_depth)
@@ -377,8 +382,8 @@ BEGIN{
 				}
 			}
 
-			if (required_use_assignment_open && ($0 ~ "^[[:blank:]]+\"[[:blank:]]+\\#.+$"))
-				sub("[[:blank:]]+\\#.+$", "")
+			if (required_use_assignment_open && ($0 ~ text2regexp("^ \" #*$")))
+				sub(text2regexp(" #*$"), "")
 		}
 		else {
 			if (depend_assignment_open) {
