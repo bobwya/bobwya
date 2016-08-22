@@ -218,9 +218,6 @@ BEGIN{
 	is_wine_version_no_gnutls_patch=(wine_version ~ convert_version_list_to_regexp(wine_versions_no_gnutls_patch))
 	is_wine_version_staging_eapply_supported=(wine_version ~ convert_version_list_to_regexp(wine_versions_staging_eapply_supported))
 
-	print "Wine version=" wine_version >"/dev/stderr"
-	print "Wine versions with Staging support: " convert_version_list_to_regexp(wine_versions_staging_supported) >"/dev/stderr"
-	print "Wine is Wine-Staging supported=" is_wine_version_staging_supported >"/dev/stderr"
 	# My utility for parsing Wine & Wine-Staging Git trees (pull from Github)
 	wine_staging_helper="wine-staging-git-helper-0.1.2"
 
@@ -229,29 +226,19 @@ BEGIN{
 
 {
 	# Make ebuild's use consistent spacing/layout throughout...
-	if (($0 ~ text2regexp("^if")) || ($0 ~ text2regexp("^ if"))) {
-		sub(text2regexp(" ; then$"), "; then")
+	if ($0 ~ text2regexp("^( |)if",1)) {
 		if ($0 ~ text2regexp(" ; then #*$"))
 			sub(text2regexp(" ; then"), "; then ")
+		else
+			sub(text2regexp(" ; then$"), "; then")
 	}
 
 	# Comment trailing die commands...
-	if (($0 ~ text2regexp(" die$")) || ($0 ~ text2regexp(" die #*$"))) {
-		i=NF-1
-		if ($0 !~ text2regexp(" die$")) {
-			while (--i) {
-				if (($(i+1) == "die") && ($(i+2) ~ "^\\#"))
-					break
-			}
-		}
-		while (--i) {
-			if (($i == "||") || ($i == "&&"))
-				break
-		}
-		while ($(++i) == "")
-			;
-		if (($i ~ "[[:alpha:]]+") && !sub(text2regexp(" die$"), (" die \"" $i "\""))) sub(text2regexp(" die #"), (" die \"" $i "\"  #"))
-	}
+	sub(text2regexp("||die"), "|| die")
+	# Add current line to array of lines - so get_associated_command() function can access it!!
+	array_ebuild_file[ebuild_line+1]=$0
+	if (($0 ~ text2regexp(" die( #*|)$",1)) && ((command=get_associated_command(array_ebuild_file, ebuild_line+1)) != ""))
+		sub(text2regexp(" die$"), (" die \"" command "\"")) || sub(text2regexp(" die #"), (" die \"" command "\" #"))
 
 	suppress_current_line=0
 
@@ -365,10 +352,8 @@ BEGIN{
 				suppress_current_line=1
 			if (if_check_pv9999_open && (if_check_pv9999_count == 2))
 				suppress_current_line=1
-			if ($0 ~ array_variables_regexp["IUSE"]) {
-				print text2regexp(("( |\")" staging_use_flags_regexp "( |\")"),1) >"/dev/stderr"
+			if ($0 ~ array_variables_regexp["IUSE"])
 				gsub(text2regexp(("( |\")" staging_use_flags_regexp "( |\")"),1), " ")
-			}
 
 			if (required_use_assignment_open || depend_assignment_open) {
 				if ($0 ~ text2regexp((" (+|)" staging_use_flags_regexp "?"),1))
@@ -511,7 +496,7 @@ BEGIN{
 				do_git_unpack_replaced=1
 			}
 		}
-		if (!if_check_pv9999_open && (($0 ~ text2regexp("^ unpack ")) || ($0 ~ text2regexp("^ use * && unpack "))))
+		if (!if_check_pv9999_open && ($0 ~ text2regexp("^( * &&|) unpack ",1)))
 			suppress_current_line=1
 	}
 	else if (array_phase_open["src_prepare"]) {
@@ -527,7 +512,7 @@ BEGIN{
 		if ($0 ~ text2regexp("^ local PATCHES=("))
 			patch_set_define_open=1
 		if (patch_set_define_open) {
-			if (($0 ~ text2regexp("multilib-portage.patch")) || ($0 ~ text2regexp("${WORKDIR}/${GST_P}.patch")))
+			if ($0 ~ text2regexp("(multilib-portage|${WORKDIR}/${GST_P}).patch", 1))
 				suppress_current_line=1
 			if (is_wine_version_no_sysmacros_patch && ($0 ~ text2regexp("sysmacros.patch")))
 				suppress_current_line=1
@@ -572,7 +557,7 @@ BEGIN{
 		wine_staging_check_open=wine_staging_check_open && open_bracketed_expression
 	}
 	else if (array_phase_open["multilib_src_install_all"]) {
-		if (($0 ~ if_open_regexp) && (($0 ~ text2regexp("use gecko") || ($0 ~ text2regexp("use mono")))))
+		if (($0 ~ if_open_regexp) && ($0 ~ text2regexp("use (gecko|mono)",1)))
 			gv_or_mv_if_open=1
 		if (gv_or_mv_if_open) {
 			sub(text2regexp("\"${DISTDIR}\""), "${DISTDIR}")
@@ -605,8 +590,10 @@ BEGIN{
 	if (!suppress_current_line) {
 		# Eat more than 1 empty line
 		blank_lines=($0 ~ blank_line_regexp) ? blank_lines+1 : 0
-		if (blank_lines <= 1)
+		if (blank_lines <= 1) {
 			print $0
+			array_ebuild_file[++ebuild_line]=$0
+		}
 	}
 
 	# Extract whitespace type and indent level for current line in the ebuild - so we step lightly!

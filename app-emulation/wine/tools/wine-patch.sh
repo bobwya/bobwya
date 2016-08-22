@@ -5,18 +5,24 @@ script_folder=$( dirname "${script_path}" )
 script_name=$( basename "${script_path}" )
 
 # Global variables
-wine_versions_new="1.8-r3 1.8.1-r3 1.8.2-r2 1.8.3-r2 1.8.4_rc1 1.8.4_rc2 1.8.4_rc3 1.9.0-r3 1.9.1-r3 1.9.2-r3 1.9.3-r3 1.9.4-r3 1.9.5-r3 1.9.6-r3 1.9.7-r3 1.9.8-r2 1.9.9-r2 1.9.10-r2 1.9.11-r2 1.9.12-r2 1.9.13-r2 1.9.14-r2 1.9.15-r2 1.9.16-r2 1.9.17 9999"
+wine_versions_new="1.8-r3 1.8.1-r3 1.8.2-r2 1.8.3-r2 1.8.4 1.9.0-r3 1.9.1-r3 1.9.2-r3 1.9.3-r3 1.9.4-r3 1.9.5-r3 1.9.6-r3 1.9.7-r3 1.9.8-r2 1.9.9-r2 1.9.10-r2 1.9.11-r2 1.9.12-r2 1.9.13-r2 1.9.14-r2 1.9.15-r2 1.9.16-r2 1.9.17-r1 9999"
 #wine_versions_staging_supported="${wine_versions_new}"
 
-wine_versions_staging_supported="1.8 1.8.1 1.8.2 1.8.3 1.9.0 1.9.1 1.9.2 1.9.3 1.9.4 1.9.5 1.9.6 1.9.7 1.9.8 1.9.9 1.9.10 1.9.11 1.9.12 1.9.13 1.9.14 1.9.15 1.9.16 9999"
+wine_versions_staging_supported="1.8 1.8.1 1.8.2 1.8.3 1.9.0 1.9.1 1.9.2 1.9.3 1.9.4 1.9.5 1.9.6 1.9.7 1.9.8 1.9.9 1.9.10 1.9.11 1.9.12 1.9.13 1.9.14 1.9.15 1.9.16 1.9.17 9999"
 wine_versions_no_csmt_staging="1.9.6 1.9.7 1.9.8 1.9.9"
-wine_versions_legacy_gstreamer_patch_1_0="1.8_rc* 1.8 1.8.1 1.8.2 1.8.3 1.8.4_rc* 1.9.0 1.9.1 9999"
-wine_versions_no_sysmacros_patch="1.8.3 11.8.4_rc1 1.8.4_rc2 1.8.4_rc3 1.9.9 1.9.10 1.9.11 1.9.12 1.9.13 1.9.14 1.9.15 1.9.16 1.9.17 9999"
-wine_versions_no_gnutls_patch="1.8.4_rc3 1.9.13 1.9.14 1.9.15 1.9.16 1.9.17 9999"
+wine_versions_legacy_gstreamer_patch_1_0="1.8 1.8.1 1.8.2 1.8.3 1.8.4 1.9.0 1.9.1 9999"
+wine_versions_no_sysmacros_patch="1.8.3 1.8.4 1.9.9 1.9.10 1.9.11 1.9.12 1.9.13 1.9.14 1.9.15 1.9.16 1.9.17 9999"
+wine_versions_no_gnutls_patch="1.8.4 1.9.13 1.9.14 1.9.15 1.9.16 1.9.17 9999"
 wine_versions_staging_eapply_supported="1.9.17 9999"
 
-# Rename and patch all the stock mesa ebuild files
+
+# Move to main package directory
 cd "${script_folder%/tools}"
+
+# Clean existing ebuilds and rebase off the main (base) Gentoo stable release version (1.8)
+rm *.ebuild
+rsync -achv --progress "/usr/portage/app-emulation/wine"/wine-1.8-r*.ebuild .
+rsync -achv --progress "/usr/portage/app-emulation/wine"/metadata.xml .
 
 # Remove unneeded patch files...
 rm "files/wine-1.1.15-winegcc.patch" 2>/dev/null
@@ -166,7 +172,7 @@ for ebuild_file in *.ebuild; do
 			-vwine_mono_version="${wine_mono_version}"   -vwine_staging_mono_version="${wine_staging_mono_version}" \
 			-f "tools/common-functions.awk" \
 			-f "tools/${script_name%.*}.awk" \
-			"${ebuild_file}" 1>"${new_ebuild_file}" #2>/dev/null
+			"${ebuild_file}" 1>"${new_ebuild_file}" 2>/dev/null
 		[ -f "${new_ebuild_file}" ] || exit 1
 		mv "${new_ebuild_file}" "${ebuild_file}"
 		new_ebuild_file="${new_ebuild_file%.new}"

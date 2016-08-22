@@ -394,17 +394,17 @@ src_prepare() {
 	# Modification of the server protocol requires regenerating the server requests
 	if ! $(md5sum -c - <<<"${md5hash}" &>/dev/null); then
 		einfo "server/protocol.def was patched; running tools/make_requests"
-		tools/make_requests || die "tools/make_requests"  #432348
+		tools/make_requests || die "tools/make_requests" #432348
 	fi
 	sed -i '/^UPDATE_DESKTOP_DATABASE/s:=.*:=true:' tools/Makefile.in || die "sed"
 	if ! use run-exes; then
-		sed -i '/^MimeType/d' loader/wine.desktop || die "sed"  #117785
+		sed -i '/^MimeType/d' loader/wine.desktop || die "sed" #117785
 	fi
 
 	# hi-res default icon, #472990, http://bugs.winehq.org/show_bug.cgi?id=24652
 	cp "${WORKDIR}"/${WINE_GENTOO}/icons/oic_winlogo.ico dlls/user32/resources/ || die "cp"
 
-	l10n_get_locales > po/LINGUAS || die "l10n_get_locales"  # otherwise wine doesn't respect LINGUAS
+	l10n_get_locales > po/LINGUAS || die "l10n_get_locales" # otherwise wine doesn't respect LINGUAS
 }
 
 src_configure() {

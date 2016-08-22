@@ -69,7 +69,38 @@ function text2regexp(text, multi,
 		gsub("\\\\\(", "(", regexp)
 		gsub("\\\\\)", ")", regexp)
 	}
+	else {
+		gsub("\\|", "\x5c\x5c&", regexp)
+	}
+
 	return regexp
+}
+
+function get_associated_command(array_ebuild_file, line,
+                array_line,command,ifield,offset)
+{
+	for (offset=0; (line-offset) >= 1; ++offset) {
+		if (((line-offset) >= 2) && (array_ebuild_file[line-offset-1] ~ "\\\\([[:blank:]]*|[[:blank:]]+\\#.+)$"))
+			continue
+
+		ifield=split(array_ebuild_file[line-offset], array_line)-1
+		if (!offset && (array_ebuild_file[line-offset] !~ text2regexp(" die$"))) {
+			while (--ifield >= 1) {
+				if ((array_line[ifield+1] == "die") && (array_line[ifield+2] ~ "^\\#"))
+					break
+			}
+		}
+		while (--ifield >= 1) {
+			if ((array_line[ifield] == "||") || (array_line[ifield] == "&&"))
+				break
+		}
+		while (++ifield && (array_line[ifield] ~ "^[[:blank:]]*$"))
+			;
+		if (ifield && (array_line[ifield] ~ "^(cat|cd|cp|doins|echo|l10n_get_locales|rm|sed|tools\\/make_requests)$"))
+			command=array_line[ifield]
+		break
+	}
+	return (command)
 }
 
 function setup_global_regexps(variables,		i)

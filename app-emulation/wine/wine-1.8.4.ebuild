@@ -30,8 +30,8 @@ else
 	fi
 fi
 
-VANILLA_GV="2.47"
-VANILLA_MV="4.6.3"
+VANILLA_GV="2.40"
+VANILLA_MV="4.5.6"
 WINE_GENTOO="wine-gentoo-2015.03.07"
 GST_P="wine-1.8-gstreamer-1.0"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
@@ -51,6 +51,7 @@ IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fon
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
+	mono? ( abi_x86_32 )
 	osmesa? ( opengl )
 	test? ( abi_x86_32 )
 	"
@@ -265,7 +266,6 @@ src_prepare() {
 		"${FILESDIR}"/${PN}-1.5.26-winegcc.patch #260726
 		"${FILESDIR}"/${PN}-1.7.12-osmesa-check.patch #429386
 		"${FILESDIR}"/${PN}-1.6-memset-O3.patch #480508
-		"${FILESDIR}"/${PN}-1.8-gnutls-3.5-compat.patch #587028
 	)
 	if [[ ${PV} != "9999" ]]; then
 		use gstreamer && PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
@@ -286,16 +286,16 @@ src_prepare() {
 
 	if ! $(md5sum -c - <<<"${md5hash}" &>/dev/null); then
 		einfo "server/protocol.def was patched; running tools/make_requests"
-		tools/make_requests || die "tools/make_requests"  #432348
+		tools/make_requests || die "tools/make_requests" #432348
 	fi
 	sed -i '/^UPDATE_DESKTOP_DATABASE/s:=.*:=true:' tools/Makefile.in || die "sed"
 	if ! use run-exes; then
-		sed -i '/^MimeType/d' loader/wine.desktop || die "sed"  #117785
+		sed -i '/^MimeType/d' loader/wine.desktop || die "sed" #117785
 	fi
 
 	cp "${WORKDIR}"/${WINE_GENTOO}/icons/oic_winlogo.ico dlls/user32/resources/ || die "cp"
 
-	l10n_get_locales > po/LINGUAS || die "l10n_get_locales"  # otherwise wine doesn't respect LINGUAS
+	l10n_get_locales > po/LINGUAS || die "l10n_get_locales" # otherwise wine doesn't respect LINGUAS
 }
 
 src_configure() {
