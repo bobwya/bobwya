@@ -18,7 +18,9 @@ function setup_ebuild_phases(ebuild_phases, array_ebuild_phases, array_phase_ope
 {
 	split(ebuild_phases, array_ebuild_phases)
 	for (i in array_ebuild_phases) {
-		array_ebuild_phases_regexp[array_ebuild_phases[i]]="^" gensub(/\_/, "\\_", "g", array_ebuild_phases[i]) "\\(\\)[[:blank:]]+"
+		array_ebuild_phases_regexp[array_ebuild_phases[i]]=array_ebuild_phases[i]
+		gsub("\\_", "\\_", array_ebuild_phases_regexp[array_ebuild_phases[i]])
+		array_ebuild_phases_regexp[array_ebuild_phases[i]]=("^" array_ebuild_phases_regexp[array_ebuild_phases[i]] "\\(\\)[[:blank:]]+")
 		array_phase_open[array_ebuild_phases[i]]=0
 	}
 }
@@ -61,41 +63,47 @@ function text2regexp(text, multi,
 	gsub("\\\\", "\x5c\x5c&", regexp)
 	gsub("\\!|\\\"|\\#|\\$|\\%|\\&|\x27|\\(|\\)|\\+|\\,|\\-|\\.|\\/|\\:|\\;|\x3c|\\=|\x3e|\\?|\\@|\\[|\\]|\\{|\\|\\}|\\~", "\x5c\x5c&", regexp)
 	gsub("\x20", "[[:blank:]]+", regexp)
-	gsub("\\*", ".+", regexp)
+	gsub("\\*", ".*", regexp)
 	regexp=((startmarker ? "^" : "") regexp (endmarker ? "$" : ""))
-	if (multi == 1) {
-		regexp=gensub("(^[^\\(]*)\\\\\\\(", "\\1(", 1, regexp)
-		regexp=gensub("\\\\\\\)([^\\)]*$)", ")\\1", 1, regexp)
+	if (multi) {
+		gsub("\\\\\(", "(", regexp)
+		gsub("\\\\\)", ")", regexp)
 	}
-	else if (multi == 2) {
-		regexp=gensub("\\\\\(\\(|\\))", "\\1", "g", regexp)
+	else {
+		gsub("\\|", "\x5c\x5c&", regexp)
 	}
+
 	return regexp
 }
 
 function get_associated_command(array_ebuild_file, line,
-		array_line,command,ifield,offset)
+                array_line,command,ifield,offset,total_fields)
 {
-	for (offset=0; (line-offset) >= 1; ++offset) {
+	for (offset=0; ((line-offset)>=1) && (command==""); ++offset) {
 		if (((line-offset) >= 2) && (array_ebuild_file[line-offset-1] ~ "\\\\([[:blank:]]*|[[:blank:]]+\\#.+)$"))
 			continue
 
-		ifield=split(array_ebuild_file[line-offset], array_line)-1
+		total_fields=split(array_ebuild_file[line-offset], array_line)
+		ifield=total_fields-1
 		if (!offset && (array_ebuild_file[line-offset] !~ text2regexp(" die$"))) {
 			while (--ifield >= 1) {
-				if ((array_line[ifield+1] == "die") && (array_line[ifield+2] ~ "^\\#"))
+				if ((array_line[ifield+1] == "die") && (array_line[ifield+2] ~ "^\\#")) {
+					total_fields=ifield
 					break
+				}
 			}
 		}
 		while (--ifield >= 1) {
 			if ((array_line[ifield] == "||") || (array_line[ifield] == "&&"))
 				break
 		}
-		while (++ifield && (array_line[ifield] ~ "^[[:blank:]]*$"))
-			;
-		if (ifield && (array_line[ifield] ~ "^(cat|cd|cp|doins|echo|rm|sed)$"))
+		while (++ifield<=total_fields) {
+			if (!ifield || (array_line[ifield] !~ "^(cat|cd|cp|doins|echo|emake|l10n_get_locales|rm|sed|tools\\/make_requests)$"))
+				continue
+
 			command=array_line[ifield]
-		break
+			break
+		}
 	}
 	return (command)
 }
@@ -118,12 +126,14 @@ function setup_global_regexps(variables,		i)
 	if_close_regexp="^[[:blank:]]*fi"
 	ebuild_version_comparision_regexp="[\\<\\=\\>\\!]+"
 	package_version_regexp="\\-[\\.[:digit:]]+(\\-r[[:digit:]]+|)$"
-	keywords_regexp="^[[:blank:]]+KEYWORDS=\".+\""
-	keyword_regexp="\\~{0,1}(alpha|amd64|arm|arm64|hppa|ia64|mips|ppc|ppc64|s390|sh|sparc|x86|amd64\\-fbsd|x86\\-fbsd|x86\\-freebsd|amd64\\-linux|arm\\-linux|ia64\\-linux|x86\\-linux|sparc\\-solaris|x64\\-solaris|x86\\-solaris)"
+	keyword_regexp=text2regexp("(alpha|amd64|arm|arm64|hppa|ia64|mips|ppc|ppc64|s390|sh|sparc|x86|amd64-fbsd|x86-fbsd|x86-freebsd|amd64-linux|arm-linux|ia64-linux|x86-linux|sparc-solaris|x64-solaris|x86-solaris)",1)
 	ebuild_message_regexp="^[[:blank:]]+(einfo|elog|ewarn)"
 	gentoo_copyright_header_regexp="^# Copyright.+Gentoo Foundation$"
 
 	split(variables, array_variables)
-	for (i in array_variables)
-		array_variables_regexp[array_variables[i]]=("^[[:blank:]]*" gensub(/\_/, "\\_", "g", array_variables[i]) "\=\".*(\"|$)")
+	for (i in array_variables) {
+		array_variables_regexp[array_variables[i]]=array_variables[i]
+		gsub("\\_", "\\_", array_variables_regexp[array_variables[i]])
+		array_variables_regexp[array_variables[i]]=("^[[:blank:]]*" array_variables_regexp[array_variables[i]] "\=\".*(\"|$)")
+	}
 }

@@ -8,7 +8,7 @@ function print_nvidia_kernel_warning_message(indent)
 	printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn \"<sys-kernel/gentoo-sources-4.2\"")
 	printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn \"<sys-kernel/vanilla-sources-4.2\"")
 	printf("%s%s%s%s\n",	indent,	indent,	indent, "ewarn")
-	if (nvidia_version ~ nvidia_supported_kms_version_regexp) {
+	if (is_nvidia_supported_kms) {
 		printf("%s%s%s\n",		indent,	indent,	"elif use kms; then")
 		printf("%s%s%s%s\n",	indent,	indent,	indent, "einfo \"USE +kms: checking kernel for KMS CONFIG recommended by NVIDIA.\"")
 		printf("%s%s%s%s\n",	indent,	indent,	indent, "einfo")
@@ -56,58 +56,42 @@ BEGIN{
 						array_ebuild_phases, array_phase_open, array_ebuild_phases_regexp)
 
 	# Setup some regular expression constants - to hopefully make the script more readable!
-	variables="CONFIG_CHECK QA_TEXTRELS_x86 QA_TEXTRELS_x86_fbsd QA_TEXTRELS_amd64 QA_EXECSTACK_x86 QA_EXECSTACK_amd64 QA_WX_LOAD_x86 QA_WX_LOAD_amd64 QA_FLAGS_IGNORED_amd64 QA_FLAGS_IGNORED_x86"
+	variables="CONFIG_CHECK KEYWORDS QA_TEXTRELS_x86 QA_TEXTRELS_x86_fbsd QA_TEXTRELS_amd64 QA_EXECSTACK_x86 QA_EXECSTACK_amd64 QA_WX_LOAD_x86 QA_WX_LOAD_amd64 QA_FLAGS_IGNORED_amd64 QA_FLAGS_IGNORED_x86"
 	setup_global_regexps(variables)
-	nvidia_glx_libraries_variable_regexp=(leading_ws_regexp "NV\\_GLX\\_LIBRARIES[+]{0,1}\\=\\(")
-	eselect_opengl_check_regexp="app\\-eselect\\\/eselect\\-opengl"
-	x11_base_xorg_server_regexp="x11\\-base\\\/xorg\\-server"
-	X_use_test_regexp="use[[:blank:]]+X"
-	use_kernel_linux_regexp="use[[:blank:]]+kernel\\_linux"
-	use_kms_regexp="use[[:blank:]]+kms"
-	has_version_test_regexp="has\\_version"
-	gl_root_regexp="[[:blank:]]+\\$\\{GL\\_ROOT\\}"
-	nvidia_xorg_lib_extension_dir_regexp="\\\/opengl\\\/nvidia\\\/extensions"
-	nvidia_opengl_lib_dir_regexp="\\\/opengl\\\/nvidia\\\/lib"
-	nvidia_xorg_lib_extension_dir="\/xorg\/nvidia\/extensions"
 	nvidia_specific_lib_regexp="lib[\\-\\_[:alnum:]]*nvidia[\\-\\_[:alpha:]]*\\.so"
-	nvidia_supported_kms_version_regexp=convert_version_list_to_regexp(nvidia_supported_kms_versions)
+	syskernel_regexp="sys\\-kernel\\/[\\-[:alpha:]]+[\\.[:digit:]]+(|\\-r[[:digit:]]+)"
+	is_nvidia_supported_kms=(nvidia_version ~ convert_version_list_to_regexp(nvidia_supported_kms_versions))
+	is_nvidia_unofficial_linux_kernel_patch=(nvidia_version ~ convert_version_list_to_regexp(nvidia_unofficial_linux_kernel_patch_versions))
 }
 {
 	suppress_current_line=0
 	if_stack+=($0 ~ if_open_regexp) ? 1 : 0
 	if_stack+=($0 ~ if_close_regexp) ? -1 : 0
 
+	# Comment trailing die commands...
+	sub(text2regexp("||die"), "|| die")
+	# Add current line to array of lines - so get_associated_command() function can access it!!
+	array_ebuild_file[ebuild_line+1]=$0
+	if (($0 ~ text2regexp(" die( #*|)$",1)) && ((command=get_associated_command(array_ebuild_file, ebuild_line+1)) != ""))
+		sub(text2regexp(" die$"), (" die \"" command "\"")) || sub(text2regexp(" die #"), (" die \"" command "\" #"))
+
 	if (!preamble_over) {
 		if ($0 ~ gentoo_copyright_header_regexp)
 			sub("[[:digit:]]{4}\\-[[:digit:]]{4}", "1999-2016")
 		if ($0 ~ array_variables_regexp["EAPI"])
-			sub("[\"]{0,1}5[\"]{0,1}", 6)
+			sub("5", "6") || sub("\"5\"", "6")
 
-		for (i_variable_regexp in array_variables_regexp) {
-			if ($0 ~ array_variables_regexp[i_variable_regexp]) {
-				variable_declaration_open=1
-				break
-			}
-		}
-		if (variable_declaration_open == 1) {
-			gsub(nvidia_xorg_lib_extension_dir_regexp, nvidia_xorg_lib_extension_dir)
-		}
-		if ($0 ~ end_quote_regexp)
-			variable_declaration_open=0
+		sub(text2regexp("/usr/$(get_libdir)/opengl/nvidia/extensions"), "/usr/$(get_libdir)/xorg/nvidia/extensions")
 
 		# Change dependency on app-eselect/eselect_opengl to an out-of-tree, patched version
-		if ($0 ~ (leading_ws_regexp ebuild_version_comparision_regexp eselect_opengl_check_regexp)) {
+		if ($0 ~ text2regexp("^ (<|<=|=|>=|>)app-eselect/eselect-opengl",1)) {
 			sub(package_version_regexp, ("-" eselect_opengl_supported_version))
 			sub(/>=/, "=")
 		}
-		if ($0 ~ (leading_ws_regexp ebuild_version_comparision_regexp x11_base_xorg_server_regexp)) {
-			printf("%s%s>=x11-base/xorg-server-%s\n", indent, indent, xorg_server_supported_version)
-			suppress_current_line=1
-		}
 
 		# Mark all converted ebuilds as unstable
-		if ($0 ~ keywords_regexp)
-			$0=gensub(keyword_regexp, "~\\1", "g")
+		if ($0 ~ array_variables_regexp["KEYWORDS"])
+			gsub(keyword_regexp, "~&") && gsub(text2regexp("~~"), "~")
 	}
 
 	# Ebuild phase process opening stanzas for functions
@@ -121,7 +105,7 @@ BEGIN{
 		sub(text2regexp("[ \"${DEFAULT_ABI}\" != \"amd64\" ]"), "[&]")
 		if (!kernel_linux_block_open && ($0 ~ if_open_regexp) && ($0 ~ text2regexp("use kernel_linux")) && (if_stack == 1)) {
 			kernel_linux_block_open=1
-			if (nvidia_version ~ nvidia_supported_kms_version_regexp)
+			if (is_nvidia_supported_kms)
 				printf("%s%s\n", indent, "CONFIG_CHECK=\"\"")
 			printf("%s%s\n", indent, "if use kernel_linux; then")
 			sub(text2regexp("use kernel_linux && "), "")
@@ -132,15 +116,15 @@ BEGIN{
 				++kernel_linux_block_open
 			else {
 				sub(("^" indent), (indent indent))
-				match($0, "<sys\\-kernel\\/[\\-[:alpha:]]+[\\.[:digit:]]+(|\\-r[[:digit:]]+)" )
+				match($0, ("<" syskernel_regexp))
 				if (RSTART)
 					array_supported_kernels[++array_supported_kernels[0]]=substr($0, RSTART, RLENGTH)
 			}
 		}
 		if (kernel_linux_block_open == 2) {
 			if ($0 !~ text2regexp("^ ewarn")) {
-				#if (is_unofficial_linux_kernel_patch)
-				print_unofficial_linux_patch_warning_message(indent, array_supported_kernels)
+				if (is_nvidia_unofficial_linux_kernel_patch)
+					print_unofficial_linux_patch_warning_message(indent, array_supported_kernels)
 				++kernel_linux_block_open
 			}
 			else
@@ -150,12 +134,12 @@ BEGIN{
 			print_nvidia_kernel_warning_message(indent)
 			++kernel_linux_block_open
 		}
-		if ((nvidia_version ~ nvidia_supported_kms_version_regexp) && (kernel_linux_block_open == 4) && ($0 ~ array_variables_regexp["CONFIG_CHECK"])) {
+		if (is_nvidia_supported_kms && (kernel_linux_block_open == 4) && ($0 ~ array_variables_regexp["CONFIG_CHECK"])) {
 			sub("=\"", "+=\" ")
 			#++kernel_linux_block_open
 		}
 	}
-	else if ((array_phase_open["pkg_setup"] == 1) && (nvidia_version ~ nvidia_supported_kms_version_regexp) && ($0 ~ (leading_ws_regexp use_kms_regexp))) {
+	else if (is_nvidia_supported_kms && (array_phase_open["pkg_setup"] == 1) && ($0 ~ text2regexp("^ use kms"))) {
 		# keep repoman happy!
 		print_nvidia_kms_kernel_modules(indent)
 		suppress_current_line=1
@@ -163,22 +147,24 @@ BEGIN{
 	}
 	else if (array_phase_open["src_prepare"]) {
 		if (local_patches_declared) {
-			if ($0 ~ text2regexp("^ (epatch|eapply) *.patch",1))
-				$0=gensub(text2regexp("(epatch|eapply) (*.patch)",2), "PATCHES+=( \\2 )", 1)
+			if ($0 ~ text2regexp("^ (epatch|eapply) *.patch",1)) {
+				patch=$0
+				gsub(text2regexp("(^ (epatch|eapply) |.patch*)",1), "", patch) && sub(text2regexp("(epatch|eapply) (*.patch)",1), ("PATCHES+=( " patch ".patch )"))
+			}
 		}
 		else if ($0 ~ if_open_regexp) {
 			printf("%s%s\n", indent,	"local PATCHES")
 			local_patches_declared=1
 		}
 		else if ($0 ~ text2regexp("^ (epatch|eapply) *.patch",1)) {
-			$0=gensub(text2regexp("(epatch|eapply) (*.patch)",2), "local PATCHES=( \\2 )", 1)
+			patch=$0
+			gsub(text2regexp("(^ (epatch|eapply) |.patch*)",1), "", patch) && sub(text2regexp("(epatch|eapply) (*.patch)",1), ("local PATCHES=( " patch ".patch )"))
 			local_patches_declared=1
 		}
 		sub(text2regexp("(eapply_user|epatch_user)",1), "default")
 	}
 	else if (array_phase_open["src_install"]) {
-
-		gsub(nvidia_xorg_lib_extension_dir_regexp, nvidia_xorg_lib_extension_dir)
+		sub(text2regexp("/usr/$(get_libdir)/opengl/nvidia/extensions"), "/usr/$(get_libdir)/xorg/nvidia/extensions")
 		if (($0 ~ if_open_regexp) && ($0 ~ text2regexp("has_version *x11-base/xorg-server")) && (if_stack == 2)) {
 			has_version_xorg_server_open=1
 			suppress_current_line=1
@@ -192,10 +178,9 @@ BEGIN{
 		}
 	}
 	else if (array_phase_open["src_install-libs"]) {
-		if (($0 ~ (if_open_regexp X_use_test_regexp)) && (if_stack == 1))
-			if_use_X_open=1
+		if_use_X_open=if_use_X_open || (($0 ~ (if_open_regexp text2regexp("use X"))) && (if_stack == 1))
 		if (if_use_X_open) {
-			if ($0 ~ nvidia_glx_libraries_variable_regexp)
+			if ($0 ~ text2regexp("^ NV_GLX_LIBRARIES(+|)=",1))
 				nvidia_glx_libraries_variable_open=1
 			donvidia_call_open=donvidia_call_open || ($0 ~ text2regexp("^ donvidia"))
 		}
@@ -218,8 +203,14 @@ BEGIN{
 	}
 
 	# Print current line in ebuild
-	if (!suppress_current_line)
-		print $0
+	if (!suppress_current_line) {
+		# Eat more than 1 empty line
+		blank_lines=($0 ~ blank_line_regexp) ? blank_lines+1 : 0
+		if (blank_lines <= 1) {
+			print $0
+			array_ebuild_file[++ebuild_line]=$0
+		}
+	}
 
 	# Extract whitespace type and indent level for current line in the ebuild - so we step lightly!
 	if (match($0, leading_ws_regexp))
@@ -227,9 +218,9 @@ BEGIN{
 
 
 	# Ebuild phase based post-checks
-	if (array_phase_open["src_prepare"]) {
-		if (!nvidia_kernel_patch && (nvidia_version ~ text2regexp("^367.35"))) {
-			printf("%s%s\n", indent,	"local PATCHES=( \"${FILESDIR}/${PN}-367.35-kernel-4.7.0.patch\" )")
+	if (array_phase_open["src_prepare"] && !nvidia_kernel_patch && is_nvidia_unofficial_linux_kernel_patch) {
+		if (nvidia_version ~ text2regexp("367.*")) {
+			printf("%s%s\n", indent,	"local PATCHES=( \"${FILESDIR}/${PN}-367.18-kernel-4.7.0.patch\" )")
 			nvidia_kernel_patch=1
 			local_patches_declared=1
 		}

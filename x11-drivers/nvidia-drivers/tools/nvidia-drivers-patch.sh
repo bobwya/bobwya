@@ -9,7 +9,8 @@ script_name=$( basename "${script_path}" )
 # Global version constants
 eselect_opengl_supported_version="1.3.2"
 xorg_server_supported_version="1.16.4-r6"
-nvidia_supported_kms_versions="364.* 367.*"
+nvidia_supported_kms_versions="364.* 367.* 370.*"
+nvidia_unofficial_linux_kernel_patch_versions="367.*"
 package_unsupported_versions="96 173"
 package_name="${script_name%-patch.sh}"
 
@@ -20,6 +21,11 @@ patched_file_comment='experimental version of ${CATEGORY}/${PN}'
 # Global section
 # Import function declarations
 . "${script_folder}/common-functions.sh"
+
+cd "${script_folder%/tools}"
+#  Copy main Gentoo build of package over, to local Overlay package directory
+rm *.ebuild tools/*.patch
+rsync -achvu --progress "/usr/portage/x11-drivers/nvidia-drivers/" .
 
 cd "${script_folder%/tools}/files"
 
@@ -47,6 +53,24 @@ cd "${script_folder%/tools}"
 # Remove Changelogs - as this is an unofficial package
 rm ChangeLog* 2>/dev/null
 
+# Patch metadata.xml file
+metadata_file="metadata.xml"
+mv "${metadata_file}" "${metadata_file}.bak"
+awk 'BEGIN{
+        flag_open_regexp="^[[:blank:]]+<flag name\=\"([\-[:alnum:]]+)\">.+$"
+        flag_close_regexp="<\/flag>"
+        use_close_regexp="<\/use>"
+        maintainer_open_regexp="^[[:blank:]]*<maintainer.*>"
+		maintainer_close_regexp="^[[:blank:]]*<\/maintainer>"
+    }
+    {
+		maintainer_open=maintainer_open || ($0 ~ maintainer_open_regexp)
+		if (maintainer_open)
+			maintainer_open=($0 !~ maintainer_close_regexp)
+		else
+			print $0
+    }' "${metadata_file}.bak" >"${metadata_file}" 2>/dev/null
+rm "${metadata_file}.bak"
 
 # Remove all obsolete ebuild files
 declare -a array_ebuilds
@@ -92,9 +116,10 @@ for old_ebuild_file in *.ebuild; do
 			-veselect_opengl_supported_version="${eselect_opengl_supported_version}" \
 			-vxorg_server_supported_version="${xorg_server_supported_version}" \
 			-vnvidia_supported_kms_versions="${nvidia_supported_kms_versions}" \
+			-vnvidia_unofficial_linux_kernel_patch_versions="${nvidia_unofficial_linux_kernel_patch_versions}" \
 			-vnvidia_version="${nvidia_version}" \
-			--file "tools/common-functions.awk" \
-			--file "tools/${script_name%.*}.awk" \
+			-f "tools/common-functions.awk" \
+			-f "tools/${script_name%.*}.awk" \
 			"${ebuild_file}" 1>"${new_ebuild_file}" 2>/dev/null
 		[ -f "${new_ebuild_file}" ] || exit 1
 		mv "${new_ebuild_file}" "${ebuild_file}"

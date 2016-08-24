@@ -24,7 +24,7 @@ SRC_URI="
 
 LICENSE="GPL-2 NVIDIA-r2"
 SLOT="0/340"
-KEYWORDS="-* amd64 x86 ~amd64-fbsd ~x86-fbsd"
+KEYWORDS="-* ~amd64 ~x86 ~amd64-fbsd ~x86-fbsd"
 IUSE="acpi multilib kernel_FreeBSD kernel_linux pax_kernel +tools +X uvm"
 RESTRICT="bindist mirror strip"
 EMULTILIB_PKG="true"
@@ -54,7 +54,7 @@ RDEPEND="
 		x11-libs/pango[X]
 	)
 	X? (
-		>=x11-base/xorg-server-1.16.4-r6
+		<x11-base/xorg-server-1.17.99:=
 		>=x11-libs/libvdpau-0.3-r1
 		multilib? (
 			>=x11-libs/libX11-1.6.2[abi_x86_32]
@@ -83,10 +83,6 @@ pkg_pretend() {
 			ewarn "which are limited to the following kernels:"
 			ewarn "<sys-kernel/gentoo-sources-4.3"
 			ewarn "<sys-kernel/vanilla-sources-4.3"
-			ewarn "This version of ${CATEGORY}/${PN} has an unofficial patch"
-			ewarn "applied to enable support for the following kernels:"
-			ewarn "=sys-kernel/gentoo-sources-4.3"
-			ewarn "=sys-kernel/vanilla-sources-4.3"
 		elif use kms && kernel_is le 4 1; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -189,7 +185,7 @@ src_compile() {
 	cd "${NV_SRC}"
 	if use kernel_FreeBSD; then
 		MAKE="$(get_bmake)" CFLAGS="-Wno-sign-compare" emake CC="$(tc-getCC)" \
-			LD="$(tc-getLD)" LDFLAGS="$(raw-ldflags)" || die
+			LD="$(tc-getLD)" LDFLAGS="$(raw-ldflags)" || die "emake"
 	elif use kernel_linux; then
 		use uvm && MAKEOPTS=-j1
 		linux-mod_src_compile
@@ -434,7 +430,7 @@ pkg_preinst() {
 			sed -i \
 				-e "s:PACKAGE:${PF}:g" \
 				-e "s:VIDEOGID:${videogroup}:" \
-				"${D}"/etc/modprobe.d/nvidia.conf || die
+				"${D}"/etc/modprobe.d/nvidia.conf || die "sed"
 		fi
 	fi
 

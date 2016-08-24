@@ -68,7 +68,7 @@ RDEPEND="
 	tools? ( !media-video/nvidia-settings )
 	wayland? ( dev-libs/wayland )
 	X? (
-		>=x11-base/xorg-server-1.16.4-r6
+		<x11-base/xorg-server-1.18.99:=
 		>=x11-libs/libvdpau-1.0
 		multilib? (
 			>=x11-libs/libX11-1.6.2[abi_x86_32]
@@ -181,7 +181,7 @@ pkg_setup() {
 }
 
 src_prepare() {
-	local PATCHES
+	local PATCHES=( "${FILESDIR}/${PN}-367.18-kernel-4.7.0.patch" )
 	if use pax_kernel; then
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
@@ -201,7 +201,7 @@ src_compile() {
 	cd "${NV_SRC}"
 	if use kernel_FreeBSD; then
 		MAKE="$(get_bmake)" CFLAGS="-Wno-sign-compare" emake CC="$(tc-getCC)" \
-			LD="$(tc-getLD)" LDFLAGS="$(raw-ldflags)" || die
+			LD="$(tc-getLD)" LDFLAGS="$(raw-ldflags)" || die "emake"
 	elif use driver && use kernel_linux; then
 		MAKEOPTS=-j1 linux-mod_src_compile
 	fi
@@ -508,7 +508,7 @@ pkg_preinst() {
 			sed -i \
 				-e "s:PACKAGE:${PF}:g" \
 				-e "s:VIDEOGID:${videogroup}:" \
-				"${D}"/etc/modprobe.d/nvidia.conf || die
+				"${D}"/etc/modprobe.d/nvidia.conf || die "sed"
 		fi
 	fi
 
