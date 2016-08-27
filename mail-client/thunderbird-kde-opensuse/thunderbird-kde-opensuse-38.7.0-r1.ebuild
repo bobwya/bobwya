@@ -36,7 +36,7 @@ MOZ_HTTP_URI="http://ftp.mozilla.org/pub/${MOZ_PN}/releases"
 EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 
 MOZCONFIG_OPTIONAL_JIT="enabled"
-inherit flag-o-matic toolchain-funcs mozconfig-kde-v6.38 makeedit multilib autotools pax-utils check-reqs nsplugins mozlinguas-kde mercurial
+inherit flag-o-matic toolchain-funcs mozconfig-kde-v6.38 makeedit multilib autotools pax-utils check-reqs nsplugins mozlinguas-kde-v1 mercurial
 
 DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="http://www.mozilla.com/en-US/thunderbird
@@ -129,9 +129,9 @@ src_unpack() {
 	default
 
 	# Unpack language packs
-	mozlinguas_src_unpack
+	mozlinguas_kde_src_unpack
 	if use kde; then
-		if [[ ${MOZ_PV} =~ ^(10|17|24)\..*esr$ ]]; then
+		if [[ ${MOZ_PV} =~ ^\(10|17|24\)\..*esr$ ]]; then
 			EHG_REVISION="esr${MOZ_PV%%.*}"
 		else
 			EHG_REVISION="firefox${MOZ_PV%%.*}"
@@ -247,7 +247,7 @@ src_configure() {
 
 	mozconfig_use_enable ldap
 
-	mozlinguas_mozconfig
+	mozlinguas_kde_mozconfig
 
 	# Bug #72667
 	if use mozdom; then
@@ -321,7 +321,7 @@ src_install() {
 	emake DESTDIR="${D}" install
 
 	# Install language packs
-	mozlinguas_src_install
+	mozlinguas_kde_src_install
 
 	if ! use bindist; then
 		newicon "${S}"/other-licenses/branding/thunderbird/content/icon48.png thunderbird-icon.png
@@ -337,24 +337,24 @@ src_install() {
 
 	local emid
 	# stage extra locales for lightning and install over existing
-	mozlinguas_xpistage_langpacks "${BUILD_OBJ_DIR}"/dist/xpi-stage/lightning \
+	mozlinguas_kde_xpistage_langpacks "${BUILD_OBJ_DIR}"/dist/xpi-stage/lightning \
 		"${WORKDIR}"/lightning-${MOZ_LIGHTNING_VER} lightning calendar
 
 	emid='{e2fda1a4-762b-4020-b5ad-a41df1933103}'
-	mkdir -p "${T}/${emid}" || die "mkdir failed"
+	mkdir -p "${T}/${emid}" || die "sed failed"
 	cp -RLp -t "${T}/${emid}" "${BUILD_OBJ_DIR}"/dist/xpi-stage/lightning/* || die "cp failed"
 	insinto ${MOZILLA_FIVE_HOME}/distribution/extensions
 	doins -r "${T}/${emid}"
 
 	if use lightning; then
 		# move lightning out of distribution/extensions and into extensions for app-global install
-		mv "${ED}"/${MOZILLA_FIVE_HOME}/{distribution,}/extensions/${emid} || die "mv failed"
+		mv "${ED}"/${MOZILLA_FIVE_HOME}/{distribution,}/extensions/${emid} || die "doins failed"
 
 		# stage extra locales for gdata-provider and install app-global
-		mozlinguas_xpistage_langpacks "${BUILD_OBJ_DIR}"/dist/xpi-stage/gdata-provider \
+		mozlinguas_kde_xpistage_langpacks "${BUILD_OBJ_DIR}"/dist/xpi-stage/gdata-provider \
 			"${WORKDIR}"/gdata-provider-${MOZ_LIGHTNING_GDATA_VER}
 		emid='{a62ef8ec-5fdc-40c2-873c-223b8a6925cc}'
-		mkdir -p "${T}/${emid}" || die "mkdir failed"
+		mkdir -p "${T}/${emid}" || die "doins failed"
 		cp -RLp -t "${T}/${emid}" "${BUILD_OBJ_DIR}"/dist/xpi-stage/gdata-provider/* || die "cp failed"
 		insinto ${MOZILLA_FIVE_HOME}/extensions
 		doins -r "${T}/${emid}"
@@ -363,12 +363,12 @@ src_install() {
 	if use crypt; then
 		local enigmail_xpipath="${WORKDIR}/enigmail/build"
 		cd "${T}" || die "cd failed"
-		unzip "${enigmail_xpipath}"/enigmail*.xpi install.rdf || die "unzip failed"
+		unzip "${enigmail_xpipath}"/enigmail*.xpi install.rdf || die "doins failed"
 		emid=$(sed -n '/<em:id>/!d; s/.*\({.*}\).*/\1/; p; q' install.rdf)
 
-		dodir ${MOZILLA_FIVE_HOME}/extensions/${emid} || die "dodir failed"
+		dodir ${MOZILLA_FIVE_HOME}/extensions/${emid} || die "doins failed"
 		cd "${ED}"${MOZILLA_FIVE_HOME}/extensions/${emid} || die "cd failed"
-		unzip "${enigmail_xpipath}"/enigmail*.xpi || die "unzip failed"
+		unzip "${enigmail_xpipath}"/enigmail*.xpi || die "doins failed"
 	fi
 
 	# Required in order for jit to work on hardened, for mozilla-31 and above

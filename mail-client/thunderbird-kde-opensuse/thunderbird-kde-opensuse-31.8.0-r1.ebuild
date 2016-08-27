@@ -40,7 +40,7 @@ MOZ_HTTP_URI="http://ftp.mozilla.org/pub/${MOZ_PN}/releases/"
 EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 
 MOZCONFIG_OPTIONAL_JIT="enabled"
-inherit flag-o-matic toolchain-funcs mozconfig-kde-v5.31 makeedit multilib autotools pax-utils check-reqs nsplugins mozlinguas-kde mercurial
+inherit flag-o-matic toolchain-funcs mozconfig-kde-v5.31 makeedit multilib autotools pax-utils check-reqs nsplugins mozlinguas-kde-v1 mercurial
 
 DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="http://www.mozilla.com/en-US/thunderbird
@@ -137,9 +137,9 @@ src_unpack() {
 	default
 
 	# Unpack language packs
-	mozlinguas_src_unpack
+	mozlinguas_kde_src_unpack
 	if use kde; then
-		if [[ ${MOZ_PV} =~ ^(10|17|24)\..*esr$ ]]; then
+		if [[ ${MOZ_PV} =~ ^\(10|17|24\)\..*esr$ ]]; then
 			EHG_REVISION="esr${MOZ_PV%%.*}"
 		else
 			EHG_REVISION="firefox${MOZ_PV%%.*}"
@@ -330,7 +330,7 @@ src_install() {
 	emake DESTDIR="${D}" install
 
 	# Install language packs
-	mozlinguas_src_install
+	mozlinguas_kde_src_install
 
 	if ! use bindist; then
 		newicon "${S}"/other-licenses/branding/thunderbird/content/icon48.png thunderbird-icon.png
@@ -347,12 +347,12 @@ src_install() {
 	if use crypt; then
 		local enigmail_xpipath="${WORKDIR}/enigmail/build"
 		cd "${T}" || die "cd failed"
-		unzip "${enigmail_xpipath}"/enigmail*.xpi install.rdf || die "unzip failed"
+		unzip "${enigmail_xpipath}"/enigmail*.xpi install.rdf || die "sed failed"
 		emid=$(sed -n '/<em:id>/!d; s/.*\({.*}\).*/\1/; p; q' install.rdf)
 
-		dodir ${MOZILLA_FIVE_HOME}/extensions/${emid} || die "dodir failed"
+		dodir ${MOZILLA_FIVE_HOME}/extensions/${emid} || die "sed failed"
 		cd "${D}"${MOZILLA_FIVE_HOME}/extensions/${emid} || die "cd failed"
-		unzip "${enigmail_xpipath}"/enigmail*.xpi || die "unzip failed"
+		unzip "${enigmail_xpipath}"/enigmail*.xpi || die "sed failed"
 	fi
 
 	if use lightning; then
@@ -383,7 +383,7 @@ src_install() {
 		emid="{e2fda1a4-762b-4020-b5ad-a41df1933103}"
 		dodir ${MOZILLA_FIVE_HOME}/extensions/${emid}
 		cd "${ED}"${MOZILLA_FIVE_HOME}/extensions/${emid} || die "cd failed"
-		unzip "${BUILD_OBJ_DIR}"/mozilla/dist/xpi-stage/lightning-*.xpi || die "unzip failed"
+		unzip "${BUILD_OBJ_DIR}"/mozilla/dist/xpi-stage/lightning-*.xpi || die "echo failed"
 		# Install locales for lightning - each locale is a jar file
 		insinto ${MOZILLA_FIVE_HOME}/extensions/${emid}/chrome
 		cd "${WORKDIR}"/lightning-${MOZ_LIGHTNING_VER}/chrome || die "cd failed"
