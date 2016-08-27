@@ -11,6 +11,7 @@ dev-cpp
 dev-dotnet
 dev-java
 dev-qt
+eclass
 games-fps
 games-strategy
 kde-misc

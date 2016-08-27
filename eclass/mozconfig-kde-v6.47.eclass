@@ -10,6 +10,8 @@
 # This eclass is used in mozilla ebuilds (firefox-kde-opensuse, thunderbird-kde-opensuse),
 # patched with the unofficial OpenSUSE KDE patchset.
 # Providing a single location for common mozilla engine components.
+# patched with the unofficial OpenSUSE KDE patchset.
+# Providing a single location for common mozilla engine components.
 #
 # The eclass provides all common dependencies as well as common use flags.
 #

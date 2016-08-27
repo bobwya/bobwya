@@ -108,7 +108,6 @@ moz_pkgsetup() {
 # This should be called in src_configure before any other mozconfig_* functions.
 mozconfig_init() {
 	declare enable_optimize pango_version myext x
-	ewarn "Package name \"${MOZ_PN}\""
 	declare XUL=$([[ ${MOZ_PN} == xulrunner ]] && echo true || echo false)
 	declare FF=$([[ ${MOZ_PN} == firefox ]] && echo true || echo false)
 	declare TB=$([[ ${MOZ_PN} == thunderbird ]] && echo true || echo false)

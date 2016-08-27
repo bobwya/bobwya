@@ -179,12 +179,12 @@ else
 fi
 unset x xflag
 
-# @FUNCTION: mozlinguas-kde_export
+# @FUNCTION: mozlinguas_kde_export
 # @INTERNAL
 # @DESCRIPTION:
 # Generate the list of language packs called "mozlinguas"
 # This list is used to unpack and install the xpi language packs
-mozlinguas-kde_export() {
+mozlinguas_kde_export() {
 	if [[ ${PN} == seamonkey ]]; then
 		[[ ${PV} =~ alpha ]] && ! [[ -n ${MOZ_GENERATE_LANGPACKS} ]] && return
 	else
@@ -226,13 +226,13 @@ mozlinguas-kde_export() {
 	done
 }
 
-# @FUNCTION: mozlinguas-kde_src_unpack
+# @FUNCTION: mozlinguas_kde_src_unpack
 # @DESCRIPTION:
 # Unpack xpi language packs according to the user's LINGUAS settings
-mozlinguas-kde_src_unpack() {
+mozlinguas_kde_src_unpack() {
 	local x
 	if ! [[ -n ${MOZ_GENERATE_LANGPACKS} ]]; then
-		mozlinguas-kde_export
+		mozlinguas_kde_export
 		for x in "${mozlinguas[@]}"; do
 			# FIXME: Add support for unpacking xpis to portage
 			xpi_unpack "${MOZ_P}-${x}${MOZ_LANGPACK_UNOFFICIAL:+.unofficial}.xpi"
@@ -244,16 +244,16 @@ mozlinguas-kde_src_unpack() {
 }
 # For the phase function export
 mozlinguas-kde-v2_src_unpack() {
-	mozlinguas-kde_src_unpack
+	mozlinguas_kde_src_unpack
 }
 
-# @FUNCTION: mozlinguas-kde_mozconfig
+# @FUNCTION: mozlinguas_kde_mozconfig
 # @DESCRIPTION:
 # if applicable, add the necessary flag to .mozconfig to support
 # the generation of locales.  Note that this function requires
 # mozconfig_annontate to already be declared via an inherit of
-# mozconfig or mozcoreconf-kde.
-mozlinguas-kde_mozconfig() {
+# mozconfig or mozcoreconf.
+mozlinguas_kde_mozconfig() {
 	if [[ -n ${MOZ_GENERATE_LANGPACKS} ]]; then
 		if declare -f mozconfig_annotate >/dev/null; then
 			mozconfig_annotate 'for building locales' --with-l10n-base=${MOZ_L10N_SOURCEDIR}
@@ -263,10 +263,10 @@ mozlinguas-kde_mozconfig() {
 	fi
 }
 
-# @FUNCTION: mozlinguas-kde_src_compile
+# @FUNCTION: mozlinguas_kde_src_compile
 # @DESCRIPTION:
 # if applicable, build the selected locales.
-mozlinguas-kde_src_compile() {
+mozlinguas_kde_src_compile() {
 	if [[ -n ${MOZ_GENERATE_LANGPACKS} ]]; then
 		# leverage BUILD_OBJ_DIR if set otherwise assume PWD.
 		local x y targets=( "langpack" ) localedir="${BUILD_OBJ_DIR:-.}"
@@ -284,7 +284,7 @@ mozlinguas-kde_src_compile() {
 			*) die "Building locales for ${PN} is not supported."
 		esac
 		pushd "${localedir}" > /dev/null || die
-		mozlinguas-kde_export
+		mozlinguas_kde_export
 		for x in "${mozlinguas[@]}"; do for y in "${targets[@]}"; do
 			emake ${y}-${x} LOCALE_MERGEDIR="./${y}-${x}"
 		done; done
@@ -294,10 +294,10 @@ mozlinguas-kde_src_compile() {
 
 # For the phase function export
 mozlinguas-kde-v2_src_compile() {
-	mozlinguas-kde_src_compile
+	mozlinguas_kde_src_compile
 }
 
-# @FUNCTION: mozlinguas-kde_xpistage_langpacks
+# @FUNCTION: mozlinguas_kde_xpistage_langpacks
 # @DESCRIPTION:
 # Add extra langpacks to the xpi-stage dir for prebuilt plugins
 #
@@ -309,20 +309,20 @@ mozlinguas-kde-v2_src_compile() {
 # Example - installing extra langpacks for lightning:
 # src_install() {
 # 	... # general installation steps
-# 	mozlinguas-kde_xpistage_langpacks \
+# 	mozlinguas_kde_xpistage_langpacks \
 #		"${BUILD_OBJ_DIR}"/dist/xpi-stage/lightning \
 #		"${WORKDIR}"/lightning \
 #		lightning calendar
 #	... # proceed with installation from the xpi-stage dir
 # }
 
-mozlinguas-kde_xpistage_langpacks() {
+mozlinguas_kde_xpistage_langpacks() {
 	local l c modpath="${1}" srcprefix="${1}" modules=( "${1##*/}" )
 	shift
-	if [[ -n ${1} ]]; then srcprefix="${1}" ; shift ; fi
-	if [[ -n ${1} ]]; then modules=( $@ ) ; fi
+	if [[ -n ${1} ]] ; then srcprefix="${1}" ; shift ; fi
+	if [[ -n ${1} ]] ; then modules=( $@ ) ; fi
 
-	mozlinguas-kde_export
+	mozlinguas_kde_export
 	mkdir -p "${modpath}/chrome" || die
 	for l in "${mozlinguas[@]}"; do	for c in "${modules[@]}" ; do
 		if [[ -e "${srcprefix}-${l}/chrome/${c}-${l}" ]]; then
@@ -343,9 +343,9 @@ mozlinguas-kde_xpistage_langpacks() {
 # @DESCRIPTION:
 # Install xpi language packs according to the user's L10N settings
 # NOTE - uses ${BUILD_OBJ_DIR} or PWD if unset, for source-generated langpacks
-mozlinguas-kde_src_install() {
+mozlinguas_kde_src_install() {
 	local x
-	mozlinguas-kde_export
+	mozlinguas_kde_export
 	if [[ -n ${MOZ_GENERATE_LANGPACKS} ]] && [[ -n ${mozlinguas[*]} ]]; then
 		local repopath="${WORKDIR}/${PN}-generated-langpacks"
 		mkdir -p "${repopath}" || die
@@ -364,5 +364,5 @@ mozlinguas-kde_src_install() {
 
 # For the phase function export
 mozlinguas-kde-v2_src_install() {
-	mozlinguas-kde_src_install
+	mozlinguas_kde_src_install
 }

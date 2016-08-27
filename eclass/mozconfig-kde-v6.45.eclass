@@ -16,7 +16,7 @@
 # Some use flags which may be optional in particular mozilla packages can be
 # supported through setting eclass variables.
 #
-# This eclass inherits mozconfig helper functions as defined in mozcoreconf-kde-v4,
+# This eclass inherits mozconfig helper functions as defined in mozcoreconf-v4,
 # and so ebuilds inheriting this eclass do not need to inherit that.
 
 case ${EAPI} in
@@ -373,7 +373,7 @@ mozconfig_config() {
 #
 # Example:
 #
-# inherit mozconfig-kde-v6.46
+# inherit mozconfig-v6.46
 #
 # src_install() {
 # 	cp "${FILESDIR}"/gentoo-default-prefs.js \
