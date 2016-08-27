@@ -43,7 +43,7 @@ DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE inte
 HOMEPAGE="http://www.mozilla.com/firefox
 	${EHG_REPO_URI}"
 
-KEYWORDS="~amd64 ~ia64 ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 ~x86 ~amd64-linux ~x86-linux"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
@@ -136,10 +136,9 @@ src_unpack() {
 	default
 
 	# Unpack language packs
-	mozlinguas_src_unpack
-	export MOZILLA_FIVE_HOME="${MOZILLA_FIVE_HOME/${PN}/${MOZ_PN}}"
+	mozlinguas_kde_src_unpack
 	if use kde; then
-		if [[ ${MOZ_PV} =~ ^(10|17|24)\..*esr$ ]]; then
+		if [[ ${MOZ_PV} =~ ^\(10|17|24\)\..*esr$ ]]; then
 			EHG_REVISION="esr${MOZ_PV%%.*}"
 		else
 			EHG_REVISION="firefox${MOZ_PV%%.*}"
@@ -334,7 +333,7 @@ src_install() {
 	emake DESTDIR="${D}" install
 
 	# Install language packs
-	mozlinguas_src_install
+	mozlinguas_kde_src_install
 
 	local size sizes icon_path icon name
 	if use bindist; then
