@@ -1,9 +1,0 @@
---- a/main.cpp	2016-08-29 22:26:53.280246719 +0100
-+++ b/main.cpp	2016-08-30 00:22:24.079748597 +0100
-@@ -68,6 +68,3 @@
-     KAboutData about( "kmozillahelper", "kdelibs4", ki18n( "KMozillaHelper" ), APP_HELPER_VERSION );
-     about.setBugAddress( "https://bugzilla.novell.com/enter_bug.cgi");
--#if KDE_IS_VERSION( 4, 1, 0 )
--    about.setProgramIconName( "firefox" ); // TODO what about other mozilla apps?
--#endif
-     KCmdLineArgs::init( argc, argv, &about );
