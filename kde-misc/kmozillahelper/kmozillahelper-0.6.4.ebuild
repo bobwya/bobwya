@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI="6"
+EAPI=6
 
 inherit kde4-base
 
@@ -18,8 +18,20 @@ LICENSE="MIT"
 SLOT="4"
 IUSE=""
 
-DEPEND=""
+DEPEND="
+	!kde-misc/kmozillahelper:5"
 RDEPEND="${DEPEND}"
+
+src_prepare() {
+	# Don't allow running as root: may break sandboxing during Portage-based
+	# install of Mozilla applications (Firefox)
+	# See https://github.com/bobwya/bobwya/issues/7#issuecomment-243017441
+	local PATCHES=(
+		"${FILESDIR}/${PN}-0.6.4-dont_run_as_root.patch"
+		"${FILESDIR}/${PN}-0.6.4-use-x-icon.patch"
+	)
+	default
+}
 
 pkg_postinst() {
 	kde4-base_pkg_postinst

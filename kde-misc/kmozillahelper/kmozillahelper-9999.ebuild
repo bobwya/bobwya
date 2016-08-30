@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI="6"
+EAPI=6
 
 inherit kde5
 
@@ -43,17 +43,17 @@ DEPEND="${COMMON_DEPEND}
 	$(add_frameworks_dep kinit)
 	dev-libs/mpfr:0
 	sys-devel/gettext
-	!kde-misc/kmozillahelper
+	!kde-misc/kmozillahelper:4
 "
 RDEPEND="${COMMON_DEPEND}"
 
 src_prepare() {
-	default
 	# Use a stock X icon for kdialog window - suppress display of this icon using the supplied kwin rule
-	eapply "${FILESDIR}/${PN}-0.6.5-use-x-icon.patch"
+	local PATCHES=( "${FILESDIR}/${PN}"-0.6.5-use-x-icon.patch )
+	default
 }
 
 pkg_postinst() {
 	ewarn "To suppress the taskbar icon for ${PN} file dialog window - install Kwin rule"
-	ewarn "${FILESDIR}/kwinrulesrc to \${HOME}/.config/"
+	ewarn "${FILESDIR}/kwinrulesrc to \"\${HOME}/.config/\""
 }
