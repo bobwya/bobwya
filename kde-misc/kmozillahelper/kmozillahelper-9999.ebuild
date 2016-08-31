@@ -48,8 +48,13 @@ DEPEND="${COMMON_DEPEND}
 RDEPEND="${COMMON_DEPEND}"
 
 src_prepare() {
-	# Use a stock X icon for kdialog window - suppress display of this icon using the supplied kwin rule
-	local PATCHES=( "${FILESDIR}/${PN}"-0.6.5-use-x-icon.patch )
+	# Don't allow running as root: may break sandboxing during Portage-based
+	# install of Mozilla applications (Firefox)
+	# See https://github.com/bobwya/bobwya/issues/7#issuecomment-243017441
+	local PATCHES=(
+		"${FILESDIR}/${PN}-0.6.5-dont_run_as_root.patch"
+		"${FILESDIR}/${PN}-0.6.5-use-x-icon.patch"
+	)
 	default
 }
 

@@ -1,0 +1,17 @@
+--- a/main.cpp	2016-08-31 03:46:33.711349317 +0100
++++ b/main.cpp	2016-08-31 03:51:13.959434273 +0100
+@@ -27,2 +27,3 @@
+ #include <unistd.h>
++#include <sys/types.h>
+ 
+@@ -55,2 +56,10 @@
+     {
++    int user_id=getuid();
++    if ( user_id == 0 ) {
++#ifdef DEBUG_KDE
++        QTextStream( stderr ) << "User ID=" << QString::number(user_id) << endl;
++#endif
++        return 1;
++    }
++
+     QApplication app(argc, argv);
