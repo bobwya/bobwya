@@ -27,7 +27,7 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${MOZ_PN}-47.0-patches-0.1"
+PATCH="${MOZ_PN}-48.0-patches-01"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
@@ -38,7 +38,7 @@ MOZCONFIG_OPTIONAL_GTK2ONLY=1
 MOZCONFIG_OPTIONAL_WIFI=1
 MOZCONFIG_OPTIONAL_JIT="enabled"
 
-inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-kde-v6.47 pax-utils fdo-mime autotools virtualx mozlinguas-kde-v1 mercurial
+inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-kde-v6.48 pax-utils fdo-mime autotools virtualx mozlinguas-kde-v2 mercurial
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="http://www.mozilla.com/firefox
@@ -59,7 +59,7 @@ SRC_URI="${SRC_URI}
 ASM_DEPEND=">=dev-lang/yasm-1.1"
 
 RDEPEND="
-	>=dev-libs/nss-3.23
+	>=dev-libs/nss-3.24
 	>=dev-libs/nspr-4.12
 	selinux? ( sec-policy/selinux-mozilla )
 	kde? ( kde-misc/kmozillahelper:*  )
@@ -139,6 +139,8 @@ src_prepare() {
 	# Default to our patchset
 	local PATCHES=( "${WORKDIR}/firefox" )
 	if use kde; then
+		sed -i -e 's:@BINPATH@/defaults/pref/kde.js:@RESPATH@/browser/@PREF_DIR@/kde.js:' \
+			"${EHG_CHECKOUT_DIR}/firefox-kde.patch" || die "sed failed"
 		# Gecko/toolkit OpenSUSE KDE integration patchset
 		if [[ $(get_major_version) -lt 42 ]]; then
 			PATCHES+=( "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch" )
@@ -160,6 +162,7 @@ src_prepare() {
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox-kde-opensuse/)
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
+	PATCHES+=( "${FILESDIR}/${PN}-48.0-pgo.patch" )
 
 	if ! tc-ld-is-gold && has_version ">=sys-devel/binutils-2.26"; then
 		PATCHES+=( "${FILESDIR}/xpcom-components-binutils-26.patch" )
@@ -242,7 +245,6 @@ src_configure() {
 	mozconfig_annotate '' --with-google-api-keyfile="${S}/google-api-key"
 
 	mozconfig_annotate '' --enable-extensions="${MEXTENSIONS}"
-	mozconfig_annotate '' --disable-mailnews
 
 	# Allow for a proper pgo build
 	if use pgo; then
@@ -302,29 +304,37 @@ src_install() {
 	pax-mark m "${BUILD_OBJ_DIR}"/dist/bin/xpcshell
 
 	# Add our default prefs for firefox
+	local pkg_default_pref_dir="dist/bin/browser/defaults/preferences"
 	cp "${FILESDIR}"/gentoo-default-prefs.js-1 \
-		"${BUILD_OBJ_DIR}/dist/bin/browser/defaults/preferences/all-gentoo.js" \
+		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
 		|| die "cp failed"
 
 	mozconfig_install_prefs \
-		"${BUILD_OBJ_DIR}/dist/bin/browser/defaults/preferences/all-gentoo.js"
+		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js"
 
 	# Augment this with hwaccel prefs
 	if use hwaccel; then
 		cat "${FILESDIR}"/gentoo-hwaccel-prefs.js-1 >> \
-		"${BUILD_OBJ_DIR}/dist/bin/browser/defaults/preferences/all-gentoo.js" \
+		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
 		|| die "cat failed"
 	fi
 
 	echo "pref(\"extensions.autoDisableScopes\", 3);" >> \
-		"${BUILD_OBJ_DIR}/dist/bin/browser/defaults/preferences/all-gentoo.js" \
+		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
 		|| die "echo failed"
+
+	if use kde; then
+		# Add our kde prefs for firefox
+		cp "${EHG_CHECKOUT_DIR}/MozillaFirefox/kde.js" \
+			"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/kde.js" \
+			|| die "cp failed"
+	fi
 
 	local plugin
 	use gmp-autoupdate || for plugin in \
 	gmp-gmpopenh264 ; do
 		echo "pref(\"media.${plugin}.autoupdate\", false);" >> \
-			"${BUILD_OBJ_DIR}/dist/bin/browser/defaults/preferences/all-gentoo.js" \
+			"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
 			|| die "echo failed"
 	done
 
@@ -346,7 +356,7 @@ src_install() {
 		# Override preferences to set the MOZ_DEV_EDITION defaults, since we
 		# don't define MOZ_DEV_EDITION to avoid profile debaucles.
 		# (source: browser/app/profile/firefox.js)
-		cat >>"${BUILD_OBJ_DIR}/dist/bin/browser/defaults/preferences/all-gentoo.js" <<PROFILE_EOF
+		cat >>"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" <<PROFILE_EOF
 pref("app.feedback.baseURL", "https://input.mozilla.org/%LOCALE%/feedback/firefoxdev/%VERSION%/");
 sticky_pref("lightweightThemes.selectedThemeID", "firefox-devedition@mozilla.org");
 sticky_pref("browser.devedition.theme.enabled", true);
@@ -405,8 +415,8 @@ pkg_postinst() {
 	gnome2_icon_cache_update
 	if [[ $(get_major_version) -ge 40 ]]; then
 		# See https://forums.gentoo.org/viewtopic-t-1028874.html
-		ewarn "If you experience problems with your cursor theme - only when mousing over ${PN}."
-		ewarn "See:"
+		ewarn "If your set Desktop Environment cursor theme - randomly changes to"
+		ewarn "\"adwaita\" when mousing over ${PN}, see:"
 		ewarn "  https://forums.gentoo.org/viewtopic-t-1028874.html"
 		ewarn "  https://wiki.gentoo.org/wiki/Cursor_themes"
 		ewarn "  https://wiki.archlinux.org/index.php/Cursor_themes"
