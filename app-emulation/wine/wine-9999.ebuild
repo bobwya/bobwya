@@ -259,6 +259,27 @@ wine_build_environment_prechecks() {
 	fi
 }
 
+wine_env_vcs_vars() {
+	local pn_live_var="${PN//[-+]/_}_LIVE_COMMIT"
+	local pn_live_val="${pn_live_var}"
+	eval pn_live_val='$'${pn_live_val}
+	if [[ ! -z ${pn_live_val} ]]; then
+		if use staging || use d3d9; then
+			eerror "Because of the multi-repo nature of ${PN}, ${pn_live_var}"
+			eerror "cannot be used to set the commit. Instead, you may use the"
+			eerror "environmental variables WINE_COMMIT, STAGING_COMMIT, and D3D9_COMMIT."
+			eerror
+			return 1
+		fi
+	fi
+	if [[ ! -z ${EGIT_COMMIT} ]]; then
+		eerror "Commits must now be specified using the environmental variables"
+		eerror "WINE_COMMIT, STAGING_COMMIT, and D3D9_COMMIT"
+		eerror
+		return 1
+	fi
+}
+
 pkg_pretend() {
 	wine_gcc_specific_pretests || die
 	wine_generic_compiler_pretests || die
@@ -275,6 +296,7 @@ pkg_pretend() {
 pkg_setup() {
 	wine_build_environment_prechecks || die
 
+	wine_env_vcs_vars || die "tools/make_requests"
 	if ! use staging; then
 		GV="${VANILLA_GV}"
 		MV="${VANILLA_MV}"
