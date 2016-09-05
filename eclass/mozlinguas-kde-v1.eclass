@@ -161,11 +161,7 @@ unset x
 # Generate the list of language packs called "mozlinguas"
 # This list is used to unpack and install the xpi language packs
 mozlinguas_kde_export() {
-	if [[ ${PN} == seamonkey ]]; then
-		[[ ${PV} =~ alpha ]] && ! [[ -n ${MOZ_GENERATE_LANGPACKS} ]] && return
-	else
-		[[ ${PV} =~ alpha|beta ]] && ! [[ -n ${MOZ_GENERATE_LANGPACKS} ]] && return
-	fi
+	[[ ${PV} =~ alpha|beta ]] && ! [[ -n ${MOZ_GENERATE_LANGPACKS} ]] && return
 	local lingua
 	mozlinguas=()
 	for lingua in ${LINGUAS}; do
@@ -232,18 +228,15 @@ mozlinguas_kde_src_compile() {
 	if [[ -n ${MOZ_GENERATE_LANGPACKS} ]]; then
 		# leverage BUILD_OBJ_DIR if set otherwise assume PWD.
 		local x y targets=( "langpack" ) localedir="${BUILD_OBJ_DIR:-.}"
-		case ${PN} in
+		case ${MOZ_PN} in
 			*firefox)
 				localedir+="/browser/locales"
-				;;
-			seamonkey)
-				localedir+="/suite/locales"
 				;;
 			*thunderbird)
 				localedir+="/mail/locales"
 				targets+=( "calendar-langpack" )
 				;;
-			*) die "Building locales for ${PN} is not supported."
+			*) die "Building locales for ${MOZ_PN} is not supported."
 		esac
 		pushd "${localedir}" > /dev/null || die
 		mozlinguas_kde_export
