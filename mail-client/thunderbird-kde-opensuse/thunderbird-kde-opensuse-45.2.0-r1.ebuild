@@ -373,8 +373,8 @@ src_install() {
 pkg_postinst() {
 	if [[ $(get_major_version) -ge 40 ]]; then
 		# See https://forums.gentoo.org/viewtopic-t-1028874.html
-		ewarn "If you experience problems with your cursor theme - only when mousing over ${PN}."
-		ewarn "See:"
+		ewarn "If your set Desktop Environment cursor theme - randomly changes to"
+		ewarn "\"adwaita\" when mousing over ${PN}, see:"
 		ewarn "  https://forums.gentoo.org/viewtopic-t-1028874.html"
 		ewarn "  https://wiki.gentoo.org/wiki/Cursor_themes"
 		ewarn "  https://wiki.archlinux.org/index.php/Cursor_themes"
