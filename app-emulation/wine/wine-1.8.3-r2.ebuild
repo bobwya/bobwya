@@ -36,7 +36,7 @@ VANILLA_GV="2.40"
 VANILLA_MV="4.5.6"
 STAGING_P="wine-staging-${MY_PV}"
 STAGING_DIR="${WORKDIR}/${STAGING_P}${STAGING_SUFFIX}"
-STAGING_HELPER="wine-staging-git-helper-0.1.2"
+STAGING_HELPER="wine-staging-git-helper-0.1.3"
 WINE_GENTOO="wine-gentoo-2015.03.07"
 GST_P="wine-1.8-gstreamer-1.0"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
@@ -260,24 +260,37 @@ wine_build_environment_prechecks() {
 	fi
 }
 
-wine_env_vcs_vars() {
-	local pn_live_var="${PN//[-+]/_}_LIVE_COMMIT"
-	local pn_live_val="${pn_live_var}"
-	eval pn_live_val='$'${pn_live_val}
-	if [[ ! -z ${pn_live_val} ]]; then
-		if use staging || use d3d9; then
-			eerror "Because of the multi-repo nature of ${PN}, ${pn_live_var}"
-			eerror "cannot be used to set the commit. Instead, you may use the"
-			eerror "environmental variables WINE_COMMIT, STAGING_COMMIT, and D3D9_COMMIT."
-			eerror
-			return 1
-		fi
+wine_env_vcs_variable_prechecks() {
+	local pn_live_variable="${PN//[-+]/_}_LIVE_COMMIT"
+	local pn_live_value="${!pn_live_variable}"
+	local env_error=false
+
+	if [[ ! -z "${pn_live_value}" ]] && use staging; then
+		eerror "Because ${PN} is multi-repository based, ${pn_live_variable}"
+		eerror "cannot be used to set the commit."
+		env_error=true
 	fi
-	if [[ ! -z ${EGIT_COMMIT} ]]; then
-		eerror "Commits must now be specified using the environmental variables"
-		eerror "WINE_COMMIT, STAGING_COMMIT, and D3D9_COMMIT"
+	[[ ! -z ${EGIT_COMMIT} || ! -z ${EGIT_BRANCH} ]] && \
+		env_error=true
+	if [[ ${env_error} == true ]]; then
+		eerror "Git commit (and branch) overrides must now be specified"
+		eerror "using ONE of following the environmental variables:"
+		eerror "  EGIT_WINE_COMMIT or EGIT_WINE_BRANCH (Wine)"
+		eerror "  EGIT_STAGING_COMMIT or EGIT_STAGING_BRANCH (Wine-Staging)."
 		eerror
 		return 1
+	fi
+}
+
+wine_git_unpack() {
+	if [[ ! -z "${EGIT_WINE_COMMIT}" ]]; then
+		ewarn "Building Wine against Wine git commit EGIT_WINE_COMMIT=\"${EGIT_WINE_COMMIT}\" ."
+		EGIT_COMMIT="${EGIT_WINE_COMMIT}" git-r3_src_unpack
+	elif [[ ! -z "${EGIT_WINE_BRANCH}" ]]; then
+		ewarn "Building Wine against Wine git branch EGIT_WINE_BRANCH=\"${EGIT_WINE_BRANCH}\" ."
+		EGIT_BRANCH="${EGIT_WINE_BRANCH}" git-r3_src_unpack
+	else
+		EGIT_BRANCH="master" git-r3_src_unpack
 	fi
 }
 
@@ -296,8 +309,8 @@ pkg_pretend() {
 
 pkg_setup() {
 	wine_build_environment_prechecks || die
+	wine_env_vcs_variable_prechecks || die
 
-	wine_env_vcs_vars || die "tools/make_requests"
 	if ! use staging; then
 		GV="${VANILLA_GV}"
 		MV="${VANILLA_MV}"
@@ -314,51 +327,49 @@ src_unpack() {
 		EGIT_MIN_CLONE_TYPE="mirror"
 		EGIT_CHECKOUT_DIR="${S}"
 		if ! use staging; then
-			git-r3_src_unpack
+			wine_git_unpack
 		elif [[ ! -z "${EGIT_STAGING_COMMIT:-${EGIT_STAGING_BRANCH}}" ]]; then
 			# References are relative to Wine-Staging git tree (checkout Wine-Staging git tree first)
 			# Use env variables "EGIT_STAGING_COMMIT" or "EGIT_STAGING_BRANCH" to reference Wine-Staging git tree
+			# Use git-r3 internal functions for secondary Wine-Staging repository. See #588604
 			ebegin "(subshell): you have specified a Wine-Staging git reference (building Wine git with USE +staging) ..."
 			(
 				source "${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh" || die
 				if [[ ! -z "${EGIT_STAGING_COMMIT}" ]]; then
-					local staging_remote_ref="${EGIT_STAGING_COMMIT}"
 					ewarn "Building Wine against Wine-Staging git commit EGIT_STAGING_COMMIT=\"${EGIT_STAGING_COMMIT}\" ."
+					git-r3_fetch "${STAGING_EGIT_REPO_URI}" "${EGIT_STAGING_COMMIT}"
 				else
-					local staging_remote_ref="refs/heads/${EGIT_STAGING_BRANCH}"
-					ewarn "Building Wine against Wine-Staging git commit EGIT_STAGING_BRANCH=\"${EGIT_STAGING_BRANCH}\" ."
+					ewarn "Building Wine against Wine-Staging git branch EGIT_STAGING_BRANCH=\"${EGIT_STAGING_BRANCH}\" ."
+					git-r3_fetch "${STAGING_EGIT_REPO_URI}" "refs/heads/${EGIT_STAGING_BRANCH}"
 				fi
-				# Use git-r3 internal functions for secondary Wine-Staging repostiory. See #588604
-				git-r3_fetch "${STAGING_EGIT_REPO_URI}" "${staging_remote_ref}"
 				git-r3_checkout "${STAGING_EGIT_REPO_URI}" "${STAGING_DIR}"
-				WINE_STAGING_COMMIT="${EGIT_VERSION}"
-				get_upstream_wine_commit  "${STAGING_DIR}" "${WINE_STAGING_COMMIT}" "WINE_COMMIT"
-				EGIT_COMMIT="${WINE_COMMIT}" git-r3_src_unpack
-				einfo "Building Wine commit \"${WINE_COMMIT}\" referenced by Wine-Staging commit \"${WINE_STAGING_COMMIT}\" ..."
+				wine_staging_commit="${EGIT_VERSION}"
+				get_upstream_wine_commit  "${STAGING_DIR}" "${wine_staging_commit}" "wine_commit"
+				EGIT_COMMIT="${wine_commit}" git-r3_src_unpack
+				einfo "Building Wine commit \"${wine_commit}\" referenced by Wine-Staging commit \"${wine_staging_commit}\" ..."
 			)
 			eend $? || die "(subshell): ... failed to determine target Wine commit."
 		else
 			# References are relative to Wine git tree (post-checkout Wine-Staging git tree)
+			# Use env variables "EGIT_WINE_COMMIT" or "EGIT_WINE_BRANCH" to reference Wine git tree
+			# Use git-r3 internal functions for secondary Wine-Staging repository. See #588604
 			ebegin "(subshell): You are using a Wine git reference (building Wine git with USE +staging) ..."
 			(
 				source "${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh" || die
-				git-r3_src_unpack
-				WINE_COMMIT="${EGIT_VERSION}"
-				# Use git-r3 internal functions for secondary Wine-Staging repostiory. See #588604
+				wine_git_unpack
+				wine_commit="${EGIT_VERSION}"
 				git-r3_fetch "${STAGING_EGIT_REPO_URI}" "HEAD"
 				git-r3_checkout "${STAGING_EGIT_REPO_URI}" "${STAGING_DIR}"
-				if ! walk_wine_staging_git_tree "${STAGING_DIR}" "${S}" "${WINE_COMMIT}" "WINE_STAGING_COMMIT" ; then
-					find_closest_wine_commit "${STAGING_DIR}" "${S}" "WINE_COMMIT" "WINE_STAGING_COMMIT" "WINE_COMMIT_OFFSET"
-					(($? == 0)) && display_closest_wine_commit_message "${WINE_COMMIT}" "${WINE_STAGING_COMMIT}" "${WINE_COMMIT_OFFSET}"
-					die "Failed to find Wine-Staging git commit corresponding to supplied Wine git commit \"${WINE_COMMIT}\" ."
+				if ! walk_wine_staging_git_tree "${STAGING_DIR}" "${S}" "${wine_commit}" "wine_staging_commit" ; then
+					find_closest_wine_commit "${STAGING_DIR}" "${S}" "wine_commit" "wine_staging_commit" "wine_commit_offset"
+					(($? == 0)) && display_closest_wine_commit_message "${wine_commit}" "${wine_staging_commit}" "${wine_commit_offset}"
+					die "Failed to find Wine-Staging git commit corresponding to supplied Wine git commit \"${wine_commit}\" ."
 				fi
-				einfo "Building Wine-Staging commit \"${WINE_STAGING_COMMIT}\" corresponding to Wine commit \"${WINE_COMMIT}\" ..."
+				einfo "Building Wine-Staging commit \"${wine_staging_commit}\" corresponding to Wine commit \"${wine_commit}\" ..."
 			)
 			eend $? || die "(subshell): ... failed to determine target Wine-Staging commit."
 		fi
 	fi
-
-	default
 
 	l10n_find_plocales_changes "${S}/po" "" ".po"
 }
