@@ -2,15 +2,13 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=5
-
-inherit eutils
+EAPI=6
 
 DESCRIPTION="Java-based tools to rename TV shows, download subtitles, and validate checksums"
 HOMEPAGE="http://filebot.sourceforge.net/"
 
-PACKAGE_NAME="FileBot"
-SRC_URI="http://downloads.sourceforge.net/project/${PN}/${PN}/${PACKAGE_NAME}_${PV}/${PACKAGE_NAME}_${PV}-portable.zip"
+MY_PN="FileBot"
+SRC_URI="http://downloads.sourceforge.net/project/${PN}/${PN}/${MY_PN}_${PV}/${MY_PN}_${PV}-portable.zip"
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -27,7 +25,7 @@ QA_PREBUILT="/opt/${PN}/"
 src_install() {
 	exeopts -m644
 	exeinto "/opt/${PN}"
-	doexe "${PACKAGE_NAME}.jar"
+	doexe "${MY_PN}.jar"
 	exeopts -m755
 	exeinto "/usr/bin"
 	newexe "${FILESDIR}/${PN}.sh" "${PN}"
