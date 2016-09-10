@@ -155,7 +155,7 @@ src_prepare() {
 
 	local PATCHES
 	if use kernel_linux; then
-		if kernel_is lt 2 6 9 ; then
+		if kernel_is lt 2 6 9; then
 			eerror "You must build this against 2.6.9 or higher kernels."
 		fi
 
@@ -334,7 +334,7 @@ src_install() {
 		doexe ${NV_OBJ}/nvidia-xconfig
 	fi
 
-	if use kernel_linux ; then
+	if use kernel_linux; then
 		doexe ${NV_OBJ}/nvidia-debugdump
 		doexe ${NV_OBJ}/nvidia-cuda-proxy-control
 		doexe ${NV_OBJ}/nvidia-cuda-proxy-server
@@ -345,7 +345,7 @@ src_install() {
 	dobin ${NV_OBJ}/nvidia-bug-report.sh
 
 	# Desktop entries for nvidia-settings
-	if use tools ; then
+	if use tools; then
 		emake -C "${S}"/nvidia-settings-${PV}/src/ \
 			DESTDIR="${D}" \
 			LIBDIR="${D}/usr/$(get_libdir)" \
@@ -372,7 +372,7 @@ src_install() {
 
 	#doenvd "${FILESDIR}"/50nvidia-prelink-blacklist
 
-	if has_multilib_profile && use multilib ; then
+	if has_multilib_profile && use multilib; then
 		local OABI=${ABI}
 		for ABI in $(get_install_abis) ; do
 			src_install-libs
@@ -414,7 +414,7 @@ src_install-libs() {
 	fi
 
 	# NVIDIA monitoring library
-	if use kernel_linux ; then
+	if use kernel_linux; then
 		donvidia ${libdir}/libnvidia-ml.so ${NV_SOVER}
 	fi
 
@@ -444,11 +444,11 @@ pkg_preinst() {
 
 	# Clean the dynamic libGL stuff's home to ensure
 	# we dont have stale libs floating around
-	if [ -d "${ROOT}"/usr/lib/opengl/nvidia ] ; then
+	if [ -d "${ROOT}"/usr/lib/opengl/nvidia ]; then
 		rm -rf "${ROOT}"/usr/lib/opengl/nvidia/*
 	fi
 	# Make sure we nuke the old nvidia-glx's env.d file
-	if [ -e "${ROOT}"/etc/env.d/09nvidia ] ; then
+	if [ -e "${ROOT}"/etc/env.d/09nvidia ]; then
 		rm -f "${ROOT}"/etc/env.d/09nvidia
 	fi
 }

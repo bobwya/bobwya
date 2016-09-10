@@ -72,9 +72,9 @@ S=${WORKDIR}/
 pkg_nofetch() {
 	einfo "Download from https://developer.nvidia.com/vulkan-driver :"
 	if use x86; then
-		echo "https://developer.nvidia.com/linux32bit -> NVIDIA-Linux-x86-365.00.27.run"
+		echo "https://developer.nvidia.com/linux32bit -> NVIDIA-Linux-x86-355.00.27.run"
 	elif use amd64; then
-		echo "https://developer.nvidia.com/linux64bit -> NVIDIA-Linux-x86_64-365.00.27.run"
+		echo "https://developer.nvidia.com/linux64bit -> NVIDIA-Linux-x86_64-355.00.27.run"
 	fi
 }
 
