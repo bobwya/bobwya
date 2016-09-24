@@ -33,7 +33,6 @@ MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
 EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 
-#MOZCONFIG_OPTIONAL_QT5=1 -- fails to build so leave it off until the code can be patched
 MOZCONFIG_OPTIONAL_GTK2ONLY=1
 MOZCONFIG_OPTIONAL_WIFI=1
 MOZCONFIG_OPTIONAL_JIT="enabled"
@@ -142,15 +141,9 @@ src_prepare() {
 		sed -i -e 's:@BINPATH@/defaults/pref/kde.js:@RESPATH@/browser/@PREF_DIR@/kde.js:' \
 			"${EHG_CHECKOUT_DIR}/firefox-kde.patch" || die "sed failed"
 		# Gecko/toolkit OpenSUSE KDE integration patchset
-		if [[ $(get_major_version) -lt 42 ]]; then
-			PATCHES+=( "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch" )
-		fi
 		PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-kde.patch" )
 		PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-language.patch" )
 		PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch" )
-		if [[ $(get_major_version) -lt 39 ]]; then
-			PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch" )
-		fi
 		# Firefox OpenSUSE KDE integration patchset
 		PATCHES+=( "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch" )
 		PATCHES+=( "${EHG_CHECKOUT_DIR}/firefox-kde.patch" )

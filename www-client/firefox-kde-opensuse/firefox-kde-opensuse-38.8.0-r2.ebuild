@@ -169,15 +169,11 @@ src_prepare() {
 		sed -i -e 's:@BINPATH@/defaults/pref/kde.js:@RESPATH@/browser/@PREF_DIR@/kde.js:' \
 			"${EHG_CHECKOUT_DIR}/firefox-kde.patch" || die "sed failed"
 		# Gecko/toolkit OpenSUSE KDE integration patchset
-		if [[ $(get_major_version) -lt 42 ]]; then
-			PATCHES+=( "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch" )
-		fi
+		PATCHES+=( "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch" )
 		PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-kde.patch" )
 		PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-language.patch" )
 		PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch" )
-		if [[ $(get_major_version) -lt 39 ]]; then
-			PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch" )
-		fi
+		PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch" )
 		# Firefox OpenSUSE KDE integration patchset
 		PATCHES+=( "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch" )
 		PATCHES+=( "${EHG_CHECKOUT_DIR}/firefox-kde.patch" )
