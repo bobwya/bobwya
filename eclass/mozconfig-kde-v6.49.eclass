@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 #
-# @ECLASS: mozconfig-kde-v6.48.eclass
+# @ECLASS: mozconfig-kde-v6.49.eclass
 # @MAINTAINER:
 # mozilla team <mozilla@gentoo.org>
 # @BLURB: the new mozilla common configuration eclass for FF33 and newer, v6
@@ -84,7 +84,7 @@ inherit flag-o-matic toolchain-funcs mozcoreconf-kde-v4
 # Set the variable to any value if the use flag should exist but not be default-enabled.
 
 # use-flags common among all mozilla ebuilds
-IUSE="${IUSE} dbus debug +jemalloc3 neon pulseaudio selinux +skia startup-notification system-cairo
+IUSE="${IUSE} dbus debug +jemalloc neon pulseaudio selinux +skia startup-notification system-cairo
 	system-harfbuzz system-icu system-jpeg system-libevent system-sqlite system-libvpx"
 
 # some notes on deps:
@@ -120,10 +120,10 @@ RDEPEND=">=app-text/hunspell-1.2
 	x11-libs/libXrender
 	x11-libs/libXt
 	system-cairo? ( >=x11-libs/cairo-1.12[X,xcb] >=x11-libs/pixman-0.19.2 )
-	system-icu? ( >=dev-libs/icu-51.1:= )
+	system-icu? ( >=dev-libs/icu-56.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
 	system-libevent? ( =dev-libs/libevent-2.0*:0= )
-	system-sqlite? ( >=dev-db/sqlite-3.12.2:3[secure-delete,debug=] )
+	system-sqlite? ( >=dev-db/sqlite-3.13.0:3[secure-delete,debug=] )
 	system-libvpx? ( >=media-libs/libvpx-1.5.0:0=[postproc] )
 	system-harfbuzz? ( >=media-libs/harfbuzz-1.2.6:0=[graphite,icu] >=media-gfx/graphite2-1.3.8 )
 "
@@ -320,21 +320,18 @@ mozconfig_config() {
 
 	# Use jemalloc unless libc is not glibc >= 2.4
 	# at this time the minimum glibc in the tree is 2.9 so we should be safe.
-	if use elibc_glibc && use jemalloc3; then
-		# We must force-enable jemalloc 3 via .mozconfig
-		echo "export MOZ_JEMALLOC3=1" >> "${S}"/.mozconfig || die
-		mozconfig_annotate '' --enable-jemalloc
+	if use elibc_glibc && use jemalloc; then
+		# We must force-enable jemalloc 4 via .mozconfig
+		echo "export MOZ_JEMALLOC4=1" >> "${S}"/.mozconfig || die
 		mozconfig_annotate '' --enable-replace-malloc
 	fi
 
 	# Instead of the standard --build= and --host=, mozilla uses --host instead
 	# of --build, and --target intstead of --host.
 	# Note, mozilla also has --build but it does not do what you think it does.
+	# Set both --target and --host as mozilla uses python to guess values otherwise
 	mozconfig_annotate '' --target="${CHOST}"
-	if [[ "${CBUILD:-${CHOST}}" != "${CHOST}" ]]; then
-		# set --host only when cross-compiling
-		mozconfig_annotate '' --host="${CBUILD:-${CHOST}}"
-	fi
+	mozconfig_annotate '' --host="${CBUILD:-${CHOST}}"
 
 	mozconfig_use_enable pulseaudio
 
