@@ -125,7 +125,7 @@ src_unpack() {
 	if use kde; then
 		if [[ ${MOZ_PV} =~ ^\(10|17|24\)\..*esr$ ]]; then
 			EHG_REVISION="esr${MOZ_PV%%.*}"
-		elif [[ ${MOZ_PV} == 49.0 ]]; then
+		elif [[ ${MOZ_PV} =~ 49\.* ]]; then
 			EHG_REVISION="tip"
 		else
 			EHG_REVISION="firefox${MOZ_PV%%.*}"
