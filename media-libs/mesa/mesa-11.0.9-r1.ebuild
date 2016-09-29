@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=5
+EAPI=6
 
 EGIT_REPO_URI="git://anongit.freedesktop.org/mesa/mesa"
 
@@ -25,7 +25,7 @@ HOMEPAGE="http://mesa3d.sourceforge.net/"
 
 if [[ $PV == 9999 ]]; then
 	SRC_URI=""
-	KEYWORDS=""
+	KEYWORDS="~arm"
 else
 	SRC_URI="ftp://ftp.freedesktop.org/pub/mesa/${FOLDER}/${MY_P}.tar.xz"
 	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~x86-freebsd ~amd64-linux ~arm-linux ~ia64-linux ~x86-linux ~sparc-solaris ~x64-solaris ~x86-solaris"
@@ -79,12 +79,12 @@ LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.64"
 # keep correct libdrm and dri2proto dep
 # keep blocks in rdepend for binpkg
 RDEPEND="
-	!<x11-base/xorg-server-1.16.4-r6
+	!<x11-base/xorg-server-1.7
 	!<=x11-proto/xf86driproto-2.0.3
 	abi_x86_32? ( !app-emulation/emul-linux-x86-opengl[-abi_x86_32(-)] )
 	classic? ( app-eselect/eselect-mesa )
 	gallium? ( app-eselect/eselect-mesa )
-	=app-eselect/eselect-opengl-1.3.2
+	>=app-eselect/eselect-opengl-1.3.0
 	udev? ( kernel_linux? ( >=virtual/libudev-215:=[${MULTILIB_USEDEP}] ) )
 	>=dev-libs/expat-2.1.0-r3:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libX11-1.6.2:=[${MULTILIB_USEDEP}]
@@ -183,6 +183,7 @@ pkg_setup() {
 
 src_prepare() {
 	[[ ${PV} == 9999 ]] && eautoreconf
+	default
 }
 
 multilib_src_configure() {
@@ -296,19 +297,22 @@ multilib_src_install() {
 	emake install DESTDIR="${D}"
 
 	# Move lib{EGL*,GL*,OpenVG,OpenGL}.{la,a,so*} files from /usr/lib to /usr/lib/opengl/mesa/lib
-	ebegin "Moving lib{EGL*,GL*,OpenGL}.{la,a,so*} in order to implement dynamic GL switching support"
-	local gl_dir="/usr/$(get_libdir)/opengl/${OPENGL_DIR}"
-	dodir ${gl_dir}/lib
-	for x in "${ED}"/usr/$(get_libdir)/lib{EGL*,GL*,OpenGL}.{la,a,so*} ; do
-		if [ -f ${x} -o -L ${x} ]; then
-			mv -f "${x}" "${ED}${gl_dir}"/lib \
-				|| die "Failed to move ${x}"
-		fi
-	done
-	eend $?
+	ebegin "(subshell): moving lib{EGL*,GL*,OpenGL}.{la,a,so*} in order to implement dynamic GL switching support"
+	(
+		local gl_dir="/usr/$(get_libdir)/opengl/${OPENGL_DIR}"
+		dodir ${gl_dir}/lib
+		for x in "${ED}"/usr/$(get_libdir)/lib{EGL*,GL*,OpenGL}.{la,a,so*} ; do
+			if [[ -f ${x} || -L ${x} ]]; then
+				mv -f "${x}" "${ED}${gl_dir}"/lib \
+					|| die "Failed to move ${x}"
+			fi
+		done
+	)
+	eend $? || die "(subshell): failed to move lib{EGL*,GL*,OpenGL}.{la,a,so*}"
 
 	if use classic || use gallium; then
-			ebegin "Moving DRI/Gallium drivers for dynamic switching"
+		ebegin "(subshell): moving DRI/Gallium drivers for dynamic switching"
+		(
 			local gallium_drivers=( i915_dri.so i965_dri.so r300_dri.so r600_dri.so swrast_dri.so )
 			keepdir /usr/$(get_libdir)/dri
 			dodir /usr/$(get_libdir)/mesa
@@ -322,7 +326,7 @@ multilib_src_install() {
 				emake -C "${BUILD_DIR}/src/mesa/drivers/dri" DESTDIR="${D}" install
 			fi
 			for x in "${ED}"/usr/$(get_libdir)/dri/*.so; do
-				if [ -f ${x} -o -L ${x} ]; then
+				if [[ -f ${x} || -L ${x} ]]; then
 					mv -f "${x}" "${x/dri/mesa}" \
 						|| die "Failed to move ${x}"
 				fi
@@ -331,26 +335,29 @@ multilib_src_install() {
 			ln -s ../mesa/*.so . || die "Creating symlink failed"
 			# remove symlinks to drivers known to eselect
 			for x in ${gallium_drivers[@]}; do
-				if [ -f ${x} -o -L ${x} ]; then
+				if [[ -f ${x} || -L ${x} ]]; then
 					rm "${x}" || die "Failed to remove ${x}"
 				fi
 			done
 			popd
-		eend $?
+		)
+		eend $? || die "(subshell): moving DRI/Gallium drivers failed"
 	fi
 	if use opencl; then
-		ebegin "Moving Gallium/Clover OpenCL implementation for dynamic switching"
-		local cl_dir="/usr/$(get_libdir)/OpenCL/vendors/mesa"
-		dodir ${cl_dir}/{lib,include}
-		if [ -f "${ED}/usr/$(get_libdir)/libOpenCL.so" ]; then
-			mv -f "${ED}"/usr/$(get_libdir)/libOpenCL.so* \
-			"${ED}"${cl_dir}
-		fi
-		if [ -f "${ED}/usr/include/CL/opencl.h" ]; then
-			mv -f "${ED}"/usr/include/CL \
-			"${ED}"${cl_dir}/include
-		fi
-		eend $?
+		ebegin "(subshell): moving Gallium/Clover OpenCL implementation for dynamic switching"
+		(
+			local cl_dir="/usr/$(get_libdir)/OpenCL/vendors/mesa"
+			dodir ${cl_dir}/{lib,include}
+			if [ -f "${ED}/usr/$(get_libdir)/libOpenCL.so" ]; then
+				mv -f "${ED}"/usr/$(get_libdir)/libOpenCL.so* \
+				"${ED}"${cl_dir}
+			fi
+			if [ -f "${ED}/usr/include/CL/opencl.h" ]; then
+				mv -f "${ED}"/usr/include/CL \
+				"${ED}"${cl_dir}/include
+			fi
+		)
+		eend $? || die "(subshell): moving Gallium/Clover OpenCL implementation failed"
 	fi
 
 	if use openmax; then
@@ -376,10 +383,10 @@ multilib_src_install_all() {
 multilib_src_test() {
 	if use llvm; then
 		local llvm_tests='lp_test_arit lp_test_arit lp_test_blend lp_test_blend lp_test_conv lp_test_conv lp_test_format lp_test_format lp_test_printf lp_test_printf'
-		pushd src/gallium/drivers/llvmpipe >/dev/null || die
+		pushd src/gallium/drivers/llvmpipe >/dev/null || die "pushd"
 		emake ${llvm_tests}
 		pax-mark m ${llvm_tests}
-		popd >/dev/null || die
+		popd >/dev/null || die "popd"
 	fi
 	emake check
 }

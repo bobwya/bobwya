@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=5
+EAPI=6
 
 EGIT_REPO_URI="git://anongit.freedesktop.org/mesa/mesa"
 
@@ -25,7 +25,7 @@ HOMEPAGE="http://mesa3d.sourceforge.net/"
 
 if [[ $PV == 9999 ]]; then
 	SRC_URI=""
-	KEYWORDS=""
+	KEYWORDS="~hppa"
 else
 	SRC_URI="ftp://ftp.freedesktop.org/pub/mesa/${FOLDER}/${MY_P}.tar.xz"
 	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~x86-freebsd ~amd64-linux ~arm-linux ~ia64-linux ~x86-linux ~sparc-solaris ~x64-solaris ~x86-solaris"
@@ -37,15 +37,15 @@ RESTRICT="!bindist? ( bindist )"
 
 INTEL_CARDS="i915 i965 ilo intel"
 RADEON_CARDS="r100 r200 r300 r600 radeon radeonsi"
-VIDEO_CARDS="${INTEL_CARDS} ${RADEON_CARDS} freedreno nouveau vmware"
+VIDEO_CARDS="${INTEL_CARDS} ${RADEON_CARDS} freedreno nouveau vc4 vmware"
 for card in ${VIDEO_CARDS}; do
 	IUSE_VIDEO_CARDS+=" video_cards_${card}"
 done
 
 IUSE="${IUSE_VIDEO_CARDS}
 	bindist +classic d3d9 debug +dri3 +egl +gallium +gbm gles1 gles2 +llvm
-	+nptl opencl osmesa pax_kernel openmax pic selinux +udev vaapi vdpau
-	wayland xvmc xa kernel_FreeBSD"
+	+nptl opencl osmesa pax_kernel openmax pic selinux +udev vaapi valgrind
+	vdpau wayland xvmc xa kernel_FreeBSD"
 
 REQUIRED_USE="
 	d3d9?   ( dri3 gallium )
@@ -75,16 +75,16 @@ REQUIRED_USE="
 	${PYTHON_REQUIRED_USE}
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.64"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.67"
 # keep correct libdrm and dri2proto dep
 # keep blocks in rdepend for binpkg
 RDEPEND="
-	!<x11-base/xorg-server-1.16.4-r6
+	!<x11-base/xorg-server-1.7
 	!<=x11-proto/xf86driproto-2.0.3
 	abi_x86_32? ( !app-emulation/emul-linux-x86-opengl[-abi_x86_32(-)] )
 	classic? ( app-eselect/eselect-mesa )
 	gallium? ( app-eselect/eselect-mesa )
-	=app-eselect/eselect-opengl-1.3.2
+	>=app-eselect/eselect-opengl-1.3.0
 	udev? ( kernel_linux? ( >=virtual/libudev-215:=[${MULTILIB_USEDEP}] ) )
 	>=dev-libs/expat-2.1.0-r3:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libX11-1.6.2:=[${MULTILIB_USEDEP}]
@@ -99,8 +99,7 @@ RDEPEND="
 		!video_cards_r600? (
 			video_cards_radeon? ( virtual/libelf:0=[${MULTILIB_USEDEP}] )
 		) )
-		>=sys-devel/llvm-3.4.2:=[${MULTILIB_USEDEP}]
-		<sys-devel/llvm-3.8
+		>=sys-devel/llvm-3.6.0:=[${MULTILIB_USEDEP}]
 	)
 	opencl? (
 				app-eselect/eselect-opencl
@@ -108,11 +107,14 @@ RDEPEND="
 				!kernel_FreeBSD? ( virtual/libelf:0=[${MULTILIB_USEDEP}] )
 			)
 	openmax? ( >=media-libs/libomxil-bellagio-0.9.3:=[${MULTILIB_USEDEP}] )
-	vaapi? ( >=x11-libs/libva-1.6.0:=[${MULTILIB_USEDEP}] )
+	vaapi? (
+		>=x11-libs/libva-1.6.0:=[${MULTILIB_USEDEP}]
+		video_cards_nouveau? ( !<=x11-libs/libva-vdpau-driver-0.7.4-r3 )
+	)
 	vdpau? ( >=x11-libs/libvdpau-1.1:=[${MULTILIB_USEDEP}] )
 	wayland? ( >=dev-libs/wayland-1.2.0:=[${MULTILIB_USEDEP}] )
 	xvmc? ( >=x11-libs/libXvMC-1.0.8:=[${MULTILIB_USEDEP}] )
-	${LIBDRM_DEPSTRING}[video_cards_freedreno?,video_cards_nouveau?,video_cards_vmware?,${MULTILIB_USEDEP}]
+	${LIBDRM_DEPSTRING}[video_cards_freedreno?,video_cards_nouveau?,video_cards_vc4?,video_cards_vmware?,${MULTILIB_USEDEP}]
 "
 for card in ${INTEL_CARDS}; do
 	RDEPEND="${RDEPEND}
@@ -140,6 +142,7 @@ DEPEND="${RDEPEND}
 	)
 	sys-devel/gettext
 	virtual/pkgconfig
+	valgrind? ( dev-util/valgrind )
 	>=x11-proto/dri2proto-2.8-r1:=[${MULTILIB_USEDEP}]
 	dri3? (
 		>=x11-proto/dri3proto-1.0:=[${MULTILIB_USEDEP}]
@@ -183,6 +186,7 @@ pkg_setup() {
 
 src_prepare() {
 	[[ ${PV} == 9999 ]] && eautoreconf
+	default
 }
 
 multilib_src_configure() {
@@ -229,6 +233,7 @@ multilib_src_configure() {
 		use vaapi && myconf+=" --with-va-libdir=/usr/$(get_libdir)/va/drivers"
 
 		gallium_enable swrast
+		gallium_enable video_cards_vc4 vc4
 		gallium_enable video_cards_vmware svga
 		gallium_enable video_cards_nouveau nouveau
 		gallium_enable video_cards_i915 i915
@@ -256,7 +261,7 @@ multilib_src_configure() {
 		fi
 	fi
 
-	# x86 hardened pax_kernel needs glx-read-only-text, bug 240956
+	# x86 hardened pax_kernel needs glx-rts, bug 240956
 	if [[ ${ABI} == x86 ]]; then
 		myconf+=" $(use_enable pax_kernel glx-read-only-text)"
 	fi
@@ -264,6 +269,12 @@ multilib_src_configure() {
 	# on abi_x86_32 hardened we need to have asm disable
 	if [[ ${ABI} == x86* ]] && use pic; then
 		myconf+=" --disable-asm"
+	fi
+
+	if use gallium; then
+		myconf+=" $(use_enable osmesa gallium-osmesa)"
+	else
+		myconf+=" $(use_enable osmesa)"
 	fi
 
 	# build fails with BSD indent, bug #428112
@@ -274,6 +285,7 @@ multilib_src_configure() {
 		--enable-dri \
 		--enable-glx \
 		--enable-shared-glapi \
+		--disable-shader-cache \
 		$(use_enable !bindist texture-float) \
 		$(use_enable d3d9 nine) \
 		$(use_enable debug) \
@@ -283,8 +295,8 @@ multilib_src_configure() {
 		$(use_enable gles1) \
 		$(use_enable gles2) \
 		$(use_enable nptl glx-tls) \
-		$(use_enable osmesa) \
 		$(use_enable !udev sysfs) \
+		--enable-valgrind=$(usex valgrind auto no) \
 		--enable-llvm-shared-libs \
 		--with-dri-drivers=${DRI_DRIVERS} \
 		--with-gallium-drivers=${GALLIUM_DRIVERS} \
@@ -296,19 +308,22 @@ multilib_src_install() {
 	emake install DESTDIR="${D}"
 
 	# Move lib{EGL*,GL*,OpenVG,OpenGL}.{la,a,so*} files from /usr/lib to /usr/lib/opengl/mesa/lib
-	ebegin "Moving lib{EGL*,GL*,OpenGL}.{la,a,so*} in order to implement dynamic GL switching support"
-	local gl_dir="/usr/$(get_libdir)/opengl/${OPENGL_DIR}"
-	dodir ${gl_dir}/lib
-	for x in "${ED}"/usr/$(get_libdir)/lib{EGL*,GL*,OpenGL}.{la,a,so*} ; do
-		if [ -f ${x} -o -L ${x} ]; then
-			mv -f "${x}" "${ED}${gl_dir}"/lib \
-				|| die "Failed to move ${x}"
-		fi
-	done
-	eend $?
+	ebegin "(subshell): moving lib{EGL*,GL*,OpenGL}.{la,a,so*} in order to implement dynamic GL switching support"
+	(
+		local gl_dir="/usr/$(get_libdir)/opengl/${OPENGL_DIR}"
+		dodir ${gl_dir}/lib
+		for x in "${ED}"/usr/$(get_libdir)/lib{EGL*,GL*,OpenGL}.{la,a,so*} ; do
+			if [[ -f ${x} || -L ${x} ]]; then
+				mv -f "${x}" "${ED}${gl_dir}"/lib \
+					|| die "Failed to move ${x}"
+			fi
+		done
+	)
+	eend $? || die "(subshell): failed to move lib{EGL*,GL*,OpenGL}.{la,a,so*}"
 
 	if use classic || use gallium; then
-			ebegin "Moving DRI/Gallium drivers for dynamic switching"
+		ebegin "(subshell): moving DRI/Gallium drivers for dynamic switching"
+		(
 			local gallium_drivers=( i915_dri.so i965_dri.so r300_dri.so r600_dri.so swrast_dri.so )
 			keepdir /usr/$(get_libdir)/dri
 			dodir /usr/$(get_libdir)/mesa
@@ -322,7 +337,7 @@ multilib_src_install() {
 				emake -C "${BUILD_DIR}/src/mesa/drivers/dri" DESTDIR="${D}" install
 			fi
 			for x in "${ED}"/usr/$(get_libdir)/dri/*.so; do
-				if [ -f ${x} -o -L ${x} ]; then
+				if [[ -f ${x} || -L ${x} ]]; then
 					mv -f "${x}" "${x/dri/mesa}" \
 						|| die "Failed to move ${x}"
 				fi
@@ -331,26 +346,29 @@ multilib_src_install() {
 			ln -s ../mesa/*.so . || die "Creating symlink failed"
 			# remove symlinks to drivers known to eselect
 			for x in ${gallium_drivers[@]}; do
-				if [ -f ${x} -o -L ${x} ]; then
+				if [[ -f ${x} || -L ${x} ]]; then
 					rm "${x}" || die "Failed to remove ${x}"
 				fi
 			done
 			popd
-		eend $?
+		)
+		eend $? || die "(subshell): moving DRI/Gallium drivers failed"
 	fi
 	if use opencl; then
-		ebegin "Moving Gallium/Clover OpenCL implementation for dynamic switching"
-		local cl_dir="/usr/$(get_libdir)/OpenCL/vendors/mesa"
-		dodir ${cl_dir}/{lib,include}
-		if [ -f "${ED}/usr/$(get_libdir)/libOpenCL.so" ]; then
-			mv -f "${ED}"/usr/$(get_libdir)/libOpenCL.so* \
-			"${ED}"${cl_dir}
-		fi
-		if [ -f "${ED}/usr/include/CL/opencl.h" ]; then
-			mv -f "${ED}"/usr/include/CL \
-			"${ED}"${cl_dir}/include
-		fi
-		eend $?
+		ebegin "(subshell): moving Gallium/Clover OpenCL implementation for dynamic switching"
+		(
+			local cl_dir="/usr/$(get_libdir)/OpenCL/vendors/mesa"
+			dodir ${cl_dir}/{lib,include}
+			if [ -f "${ED}/usr/$(get_libdir)/libOpenCL.so" ]; then
+				mv -f "${ED}"/usr/$(get_libdir)/libOpenCL.so* \
+				"${ED}"${cl_dir}
+			fi
+			if [ -f "${ED}/usr/include/CL/opencl.h" ]; then
+				mv -f "${ED}"/usr/include/CL \
+				"${ED}"${cl_dir}/include
+			fi
+		)
+		eend $? || die "(subshell): moving Gallium/Clover OpenCL implementation failed"
 	fi
 
 	if use openmax; then
@@ -376,10 +394,10 @@ multilib_src_install_all() {
 multilib_src_test() {
 	if use llvm; then
 		local llvm_tests='lp_test_arit lp_test_arit lp_test_blend lp_test_blend lp_test_conv lp_test_conv lp_test_format lp_test_format lp_test_printf lp_test_printf'
-		pushd src/gallium/drivers/llvmpipe >/dev/null || die
+		pushd src/gallium/drivers/llvmpipe >/dev/null || die "pushd"
 		emake ${llvm_tests}
 		pax-mark m ${llvm_tests}
-		popd >/dev/null || die
+		popd >/dev/null || die "popd"
 	fi
 	emake check
 }
