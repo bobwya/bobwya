@@ -2,19 +2,17 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI="6"
+EAPI=6
 VIRTUALX_REQUIRED="pgo"
 WANT_AUTOCONF="2.1"
-MOZ_ESR=1
+MOZ_ESR=""
 
 # This list can be updated with scripts/get_langs.sh from the mozilla overlay
-# No official support as of fetch time
-# csb
-MOZ_LANGS=( af ar as ast be bg bn-BD bn-IN br bs ca cs cy da de el en
-en-GB en-US en-ZA eo es-AR es-CL es-ES es-MX et eu fa fi fr fy-NL ga-IE gd
-gl gu-IN he hi-IN hr hu hy-AM id is it ja kk km kn ko lt lv mai mk ml mr
-nb-NO nl nn-NO or pa-IN pl pt-BR pt-PT rm ro ru si sk sl son sq sr sv-SE ta te
-th tr uk vi xh zh-CN zh-TW )
+MOZ_LANGS=( ach af an ar as ast az be bg bn-BD bn-IN br bs ca cak cs cy da de dsb
+el en en-GB en-US en-ZA eo es-AR es-CL es-ES es-MX et eu fa ff fi fr fy-NL
+ga-IE gd gl gn gu-IN he hi-IN hr hsb hu hy-AM id is it ja kk km kn ko lij lt
+lv mai mk ml mr ms nb-NO nl nn-NO or pa-IN pl pt-BR pt-PT rm ro ru si sk sl
+son sq sr sv-SE ta te th tr uk uz vi xh zh-CN zh-TW )
 
 # Convert the ebuild version to the upstream mozilla version, used by mozlinguas
 MOZ_PN="firefox"
@@ -23,76 +21,54 @@ MOZ_PV="${MOZ_PV/_beta/b}" # Handle beta for SRC_URI
 MOZ_PV="${MOZ_PV/_rc/rc}" # Handle rc for SRC_URI
 
 if [[ ${MOZ_ESR} == 1 ]]; then
-	# ESR releases have slightly version numbers
+	# ESR releases have slightly different version numbers
 	MOZ_PV="${MOZ_PV}esr"
 fi
 
 # Patch version
-PATCH="${MOZ_PN}-38.0-patches-04"
-MOZ_HTTP_URI="http://archive.mozilla.org/pub/${MOZ_PN}/releases"
+PATCH="${MOZ_PN}-49.0-patches-02"
+MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
 EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 
+MOZCONFIG_OPTIONAL_GTK2ONLY=1
 MOZCONFIG_OPTIONAL_WIFI=1
 MOZCONFIG_OPTIONAL_JIT="enabled"
 
-inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-kde-v6.38 multilib pax-utils fdo-mime autotools virtualx mozlinguas-kde-v1 mercurial
+inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-kde-v6.49 pax-utils fdo-mime autotools virtualx mozlinguas-kde-v2 mercurial
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="http://www.mozilla.com/firefox
 	${EHG_REPO_URI}"
 
-KEYWORDS="amd64 x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist egl hardened kde +minimal pgo selinux +gmp-autoupdate test"
+IUSE="bindist hardened +hwaccel kde pgo selinux +gmp-autoupdate test"
 RESTRICT="!bindist? ( bindist )"
 
-# More URIs appended below...
+PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCH}.tar.xz )
 SRC_URI="${SRC_URI}
-	https://dev.gentoo.org/~anarchy/mozilla/patchsets/${PATCH}.tar.xz
-	https://dev.gentoo.org/~axs/mozilla/patchsets/${PATCH}.tar.xz
-	https://dev.gentoo.org/~polynomial-c/mozilla/patchsets/${PATCH}.tar.xz"
+	${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz
+	${PATCH_URIS[@]}"
 
 ASM_DEPEND=">=dev-lang/yasm-1.1"
 
-# Mesa 7.10 needed for WebGL + bugfixes
 RDEPEND="
-	>=dev-libs/nss-3.21.1
-	>=dev-libs/nspr-4.10.10
+	>=dev-libs/nss-3.25
+	>=dev-libs/nspr-4.12
 	selinux? ( sec-policy/selinux-mozilla )
 	kde? ( kde-misc/kmozillahelper:*  )
 	!!www-client/firefox"
 
 DEPEND="${RDEPEND}
-	pgo? (
-		>=sys-devel/gcc-4.5 )
-	amd64? ( ${ASM_DEPEND}
-		virtual/opengl )
-	x86? ( ${ASM_DEPEND}
-		virtual/opengl )"
+	pgo? ( >=sys-devel/gcc-4.5 )
+	amd64? ( ${ASM_DEPEND} virtual/opengl )
+	x86? ( ${ASM_DEPEND} virtual/opengl )"
 
-# No source releases for alpha|beta
-if [[ ${PV} =~ alpha ]]; then
-	CHANGESET="8a3042764de7"
-	SRC_URI="${SRC_URI}
-		https://dev.gentoo.org/~nirbheek/mozilla/firefox/firefox-${MOZ_PV}_${CHANGESET}.source.tar.bz2"
-	S="${WORKDIR}/mozilla-aurora-${CHANGESET}"
-elif [[ ${PV} =~ beta ]]; then
-	S="${WORKDIR}/mozilla-release"
-	SRC_URI="${SRC_URI}
-		${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.bz2"
-else
-	SRC_URI="${SRC_URI}
-		${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.bz2"
-	if [[ ${MOZ_ESR} == 1 ]]; then
-		S="${WORKDIR}/mozilla-esr${PV%%.*}"
-	else
-		S="${WORKDIR}/mozilla-release"
-	fi
-fi
+S="${WORKDIR}/firefox-${MOZ_PV}"
 
 QA_PRESTRIPPED="usr/lib*/${MOZ_PN}/firefox"
 
@@ -158,22 +134,15 @@ src_unpack() {
 }
 
 src_prepare() {
-	ebegin "(subshell): correct EAPI 6 firefox patchset compliance (hack)"
-	(
-		source "${FILESDIR}/${PN}-fix-patch-eapi6-support.sh" "${PV}" "${WORKDIR}/firefox" || die
-	)
-	eend $? || die "(subshell): failed to correct EAPI 6 firefox patchset compliance"
 	# Default to our patchset
 	local PATCHES=( "${WORKDIR}/firefox" )
 	if use kde; then
 		sed -i -e 's:@BINPATH@/defaults/pref/kde.js:@RESPATH@/browser/@PREF_DIR@/kde.js:' \
 			"${EHG_CHECKOUT_DIR}/firefox-kde.patch" || die "sed failed"
 		# Gecko/toolkit OpenSUSE KDE integration patchset
-		PATCHES+=( "${EHG_CHECKOUT_DIR}/toolkit-download-folder.patch" )
 		PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-kde.patch" )
 		PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-language.patch" )
 		PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch" )
-		PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-prefer_plugin_pref.patch" )
 		# Firefox OpenSUSE KDE integration patchset
 		PATCHES+=( "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch" )
 		PATCHES+=( "${EHG_CHECKOUT_DIR}/firefox-kde.patch" )
@@ -185,8 +154,7 @@ src_prepare() {
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox-kde-opensuse/)
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
-
-	default
+	PATCHES+=( "${FILESDIR}/${PN}-48.0-pgo.patch" )
 
 	# Enable gnomebreakpad
 	if use debug; then
@@ -215,11 +183,20 @@ src_prepare() {
 	sed 's@\(xargs rm\)$@\1 -f@' \
 		-i "${S}"/toolkit/mozapps/installer/packager.mk || die "sed failed"
 
-	eautoreconf
+	# Keep codebase the same even if not using official branding
+	sed '/^MOZ_DEV_EDITION=1/d' \
+		-i "${S}"/browser/branding/aurora/configure.sh || die "sed failed"
+
+	default
+
+	# Autotools configure is now called old-configure.in
+	# This works because there is still a configure.in that happens to be for the
+	# shell wrapper configure script
+	eautoreconf old-configure.in
 
 	# Must run autoconf in js/src
 	cd "${S}"/js/src || die "cd failed"
-	eautoconf
+	eautoconf old-configure.in
 
 	# Need to update jemalloc's configure
 	cd "${S}"/memory/jemalloc/src || die "cd failed"
@@ -227,7 +204,6 @@ src_prepare() {
 }
 
 src_configure() {
-	MOZILLA_FIVE_HOME="/usr/$(get_libdir)/${MOZ_PN}"
 	MEXTENSIONS="default"
 	# Google API keys (see http://www.chromium.org/developers/how-tos/api-keys)
 	# Note: These are for Gentoo Linux use ONLY. For your own distribution, please
@@ -249,24 +225,22 @@ src_configure() {
 	# Add full relro support for hardened
 	use hardened && append-ldflags "-Wl,-z,relro,-z,now"
 
-	use egl && mozconfig_annotate 'Enable EGL as GL provider' --with-gl-provider=EGL
+	# Only available on mozilla-overlay for experimentation -- Removed in Gentoo repo per bug 571180
+	#use egl && mozconfig_annotate 'Enable EGL as GL provider' --with-gl-provider=EGL
 
 	# Setup api key for location services
 	echo -n "${_google_api_key}" > "${S}"/google-api-key
 	mozconfig_annotate '' --with-google-api-keyfile="${S}/google-api-key"
 
 	mozconfig_annotate '' --enable-extensions="${MEXTENSIONS}"
-	mozconfig_annotate '' --disable-mailnews
-
-	# Other ff-specific settings
-	mozconfig_annotate '' --with-default-mozilla-five-home=${MOZILLA_FIVE_HOME}
 
 	# Allow for a proper pgo build
 	if use pgo; then
-		echo "mk_add_options PROFILE_GEN_SCRIPT='\$(PYTHON) \$(OBJDIR)/_profile/pgo/profileserver.py'" >> "${S}"/.mozconfig
+		echo "mk_add_options PROFILE_GEN_SCRIPT='EXTRA_TEST_ARGS=10 \$(MAKE) -C \$(MOZ_OBJDIR) pgo-profile-run'" >> "${S}"/.mozconfig
 	fi
 
 	echo "mk_add_options MOZ_OBJDIR=${BUILD_OBJ_DIR}" >> "${S}"/.mozconfig
+	echo "mk_add_options XARGS=/usr/bin/xargs" >> "${S}"/.mozconfig
 
 	# Finalize and report settings
 	mozconfig_final
@@ -276,6 +250,7 @@ src_configure() {
 	fi
 
 	# workaround for funky/broken upstream configure...
+	SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 	emake -f client.mk configure
 }
 
@@ -301,11 +276,9 @@ src_compile() {
 		shopt -u nullglob
 		addpredict "${cards}"
 
-		CC="$(tc-getCC)" CXX="$(tc-getCXX)" LD="$(tc-getLD)" \
 		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
-		Xemake -f client.mk profiledbuild || die "Xemake failed"
+		virtx emake -f client.mk profiledbuild || die "virtx emake failed"
 	else
-		CC="$(tc-getCC)" CXX="$(tc-getCXX)" LD="$(tc-getLD)" \
 		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 		emake -f client.mk realbuild
 	fi
@@ -313,9 +286,6 @@ src_compile() {
 }
 
 src_install() {
-	MOZILLA_FIVE_HOME="/usr/$(get_libdir)/${MOZ_PN}"
-	DICTPATH="\"${EPREFIX}/usr/share/myspell\""
-
 	cd "${BUILD_OBJ_DIR}" || die "cd failed"
 
 	# Pax mark xpcshell for hardened support, only used for startupcache creation.
@@ -327,10 +297,15 @@ src_install() {
 		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
 		|| die "cp failed"
 
-	# Set default path to search for dictionaries.
-	echo "pref(\"spellchecker.dictionary_path\", ${DICTPATH});" \
-		>> "${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
-		|| die "echo failed"
+	mozconfig_install_prefs \
+		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js"
+
+	# Augment this with hwaccel prefs
+	if use hwaccel; then
+		cat "${FILESDIR}"/gentoo-hwaccel-prefs.js-1 >> \
+		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
+		|| die "cat failed"
+	fi
 
 	echo "pref(\"extensions.autoDisableScopes\", 3);" >> \
 		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
@@ -365,6 +340,17 @@ src_install() {
 		# Let's just stick with this one...
 		icon="aurora"
 		name="Aurora"
+
+		# Override preferences to set the MOZ_DEV_EDITION defaults, since we
+		# don't define MOZ_DEV_EDITION to avoid profile debaucles.
+		# (source: browser/app/profile/firefox.js)
+		cat >>"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" <<PROFILE_EOF
+pref("app.feedback.baseURL", "https://input.mozilla.org/%LOCALE%/feedback/firefoxdev/%VERSION%/");
+sticky_pref("lightweightThemes.selectedThemeID", "firefox-devedition@mozilla.org");
+sticky_pref("browser.devedition.theme.enabled", true);
+sticky_pref("devtools.theme", "dark");
+PROFILE_EOF
+
 	else
 		sizes="16 22 24 32 256"
 		icon_path="${S}/browser/branding/official"
@@ -393,16 +379,11 @@ src_install() {
 			|| die "echo failed"
 	fi
 
-	# Required in order to use plugins and even run firefox on hardened.
+	# Required in order to use plugins and even run firefox on hardened, with jit useflag.
 	if use jit; then
 		pax-mark m "${ED}"${MOZILLA_FIVE_HOME}/{firefox,firefox-bin,plugin-container}
 	else
 		pax-mark m "${ED}"${MOZILLA_FIVE_HOME}/plugin-container
-	fi
-
-	if use minimal; then
-		rm -r "${ED}"/usr/include "${ED}${MOZILLA_FIVE_HOME}"/{idl,include,lib,sdk} \
-			|| die "Failed to remove sdk and headers"
 	fi
 
 	# very ugly hack to make firefox not sigbus on sparc
@@ -410,11 +391,6 @@ src_install() {
 	use sparc && { sed -e 's/Firefox/FirefoxGentoo/g' \
 					 -i "${ED}/${MOZILLA_FIVE_HOME}/application.ini" \
 					|| die "sparc sed failed"; }
-
-	# revdep-rebuild entry
-	insinto /etc/revdep-rebuild
-	echo "SEARCH_DIRS_MASK=${MOZILLA_FIVE_HOME}" >> ${T}/10firefox
-	doins "${T}"/10${MOZ_PN} || die "doins failed"
 }
 
 pkg_preinst() {
