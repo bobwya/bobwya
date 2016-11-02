@@ -179,13 +179,13 @@ pkg_setup() {
 }
 
 src_prepare() {
-	local PATCHES=( "${FILESDIR}"/${PN}-370.23-profiles-rc.patch )
+	local PATCHES=( "${FILESDIR}"/${P}-profiles-rc.patch )
 
 	if use pax_kernel; then
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
 		ewarn "need support with these patches, contact the PaX team."
-		PATCHES+=( "${FILESDIR}"/${PN}-364.12-pax-r1.patch )
+		PATCHES+=( "${FILESDIR}"/${PN}-367.35-pax-r1.patch )
 	fi
 
 	# Allow user patches so they can support RC kernels and whatever else
