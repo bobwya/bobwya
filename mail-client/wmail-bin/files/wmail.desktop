@@ -1,0 +1,9 @@
+[Desktop Entry]
+Exec=/opt/bin/wmail %U
+Name=WMail
+GenericName=Google email client
+Icon=/opt/wmail/icon.png
+StartupNotify=true
+Terminal=false
+Type=Application
+Categories=Network;Email;
