@@ -25,7 +25,7 @@ HOMEPAGE="http://mesa3d.sourceforge.net/"
 
 if [[ $PV == 9999 ]]; then
 	SRC_URI=""
-	KEYWORDS="~hppa"
+	KEYWORDS=""
 else
 	SRC_URI="ftp://ftp.freedesktop.org/pub/mesa/${FOLDER}/${MY_P}.tar.xz"
 	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~x86-freebsd ~amd64-linux ~arm-linux ~ia64-linux ~x86-linux ~sparc-solaris ~x64-solaris ~x86-solaris"
@@ -43,11 +43,12 @@ for card in ${VIDEO_CARDS}; do
 done
 
 IUSE="${IUSE_VIDEO_CARDS}
-	bindist +classic d3d9 debug +dri3 +egl +gallium +gbm gles1 gles2 +llvm
-	+nptl opencl osmesa pax_kernel openmax pic selinux +udev vaapi valgrind
-	vdpau wayland xvmc xa kernel_FreeBSD"
+	bindist +classic d3d9 debug +dri3 +egl +gallium +gbm gcrypt gles1 gles2
+	libressl +llvm nettle +nptl opencl osmesa pax_kernel openmax +openssl pic
+	selinux vaapi valgrind vdpau wayland xvmc xa kernel_FreeBSD"
 
 REQUIRED_USE="
+	|| ( gcrypt libressl nettle openssl )
 	d3d9?   ( dri3 gallium )
 	llvm?   ( gallium )
 	opencl? ( gallium llvm )
@@ -85,7 +86,6 @@ RDEPEND="
 	classic? ( app-eselect/eselect-mesa )
 	gallium? ( app-eselect/eselect-mesa )
 	>=app-eselect/eselect-opengl-1.3.0
-	udev? ( kernel_linux? ( >=virtual/libudev-215:=[${MULTILIB_USEDEP}] ) )
 	>=dev-libs/expat-2.1.0-r3:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libX11-1.6.2:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libxshmfence-1.1:=[${MULTILIB_USEDEP}]
@@ -100,6 +100,14 @@ RDEPEND="
 			video_cards_radeon? ( virtual/libelf:0=[${MULTILIB_USEDEP}] )
 		) )
 		>=sys-devel/llvm-3.6.0:=[${MULTILIB_USEDEP}]
+	)
+	nettle? ( dev-libs/nettle:=[${MULTILIB_USEDEP}] )
+	!nettle? (
+		gcrypt? ( dev-libs/libgcrypt:=[${MULTILIB_USEDEP}] )
+		!gcrypt? (
+			libressl? ( dev-libs/libressl:=[${MULTILIB_USEDEP}] )
+			!libressl? ( dev-libs/openssl:=[${MULTILIB_USEDEP}] )
+		)
 	)
 	opencl? (
 				app-eselect/eselect-opencl
@@ -131,9 +139,14 @@ RDEPEND="${RDEPEND}
 	video_cards_radeonsi? ( ${LIBDRM_DEPSTRING}[video_cards_amdgpu] )
 "
 
+# FIXME: kill the sys-devel/llvm[video_cards_radeon] compat once
+# LLVM < 3.9 is out of the game
 DEPEND="${RDEPEND}
 	llvm? (
-		video_cards_radeonsi? ( sys-devel/llvm[video_cards_radeon] )
+		video_cards_radeonsi? ( || (
+			sys-devel/llvm[llvm_targets_AMDGPU]
+			sys-devel/llvm[video_cards_radeon]
+		) )
 	)
 	opencl? (
 				>=sys-devel/llvm-3.4.2:=[${MULTILIB_USEDEP}]
@@ -295,11 +308,11 @@ multilib_src_configure() {
 		$(use_enable gles1) \
 		$(use_enable gles2) \
 		$(use_enable nptl glx-tls) \
-		$(use_enable !udev sysfs) \
 		--enable-valgrind=$(usex valgrind auto no) \
 		--enable-llvm-shared-libs \
 		--with-dri-drivers=${DRI_DRIVERS} \
 		--with-gallium-drivers=${GALLIUM_DRIVERS} \
+		--with-sha1=$(usex nettle libnettle $(usex gcrypt libgcrypt libcrypto)) \
 		PYTHON2="${PYTHON}" \
 		${myconf}
 }
