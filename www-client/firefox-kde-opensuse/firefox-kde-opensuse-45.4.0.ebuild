@@ -298,6 +298,9 @@ src_compile() {
 src_install() {
 	cd "${BUILD_OBJ_DIR}" || die "cd failed"
 
+	# Pax mark xpcshell for hardened support, only used for startupcache creation.
+	pax-mark m "${BUILD_OBJ_DIR}"/dist/bin/xpcshell
+
 	# Add our default prefs for firefox
 	local pkg_default_pref_dir="dist/bin/browser/defaults/preferences"
 	cp "${FILESDIR}"/gentoo-default-prefs.js-1 \
