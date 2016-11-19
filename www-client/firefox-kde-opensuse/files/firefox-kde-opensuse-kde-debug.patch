@@ -1,6 +1,6 @@
 diff -Naur mozilla-release.old/toolkit/xre/nsKDEUtils.cpp mozilla-release.new/toolkit/xre/nsKDEUtils.cpp
---- mozilla-release.old/toolkit/xre/nsKDEUtils.cpp	2015-01-14 09:52:25.179106037 +0000
-+++ mozilla-release.new/toolkit/xre/nsKDEUtils.cpp	2015-01-24 23:54:35.441810863 +0000
+--- a/toolkit/xre/nsKDEUtils.cpp	2015-01-14 09:52:25.179106037 +0000
++++ b/toolkit/xre/nsKDEUtils.cpp	2015-01-24 23:54:35.441810863 +0000
 @@ -19,13 +19,9 @@
  #include <unistd.h>
  #include <X11/Xlib.h>
