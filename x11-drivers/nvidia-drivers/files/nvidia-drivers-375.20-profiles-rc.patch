@@ -1,0 +1,11 @@
+--- a/nvidia-application-profiles-375.20-rc	2016-11-16 00:42:54.000000000 +0000
++++ b/nvidia-application-profiles-375.20-rc	2016-11-20 00:58:40.509936310 +0000
+@@ -48,7 +48,7 @@
+         {
+           "name" : "NoEnforceShaderInputOutputMatching",
+           "settings" : [ "GLShaderPortabilityWarnings", false ]
+-        },
++        }
+     ],
+     "rules" : [
+         {

@@ -10,6 +10,7 @@ inherit eutils flag-o-matic linux-info linux-mod multilib nvidia-driver \
 NV_URI="http://us.download.nvidia.com/XFree86/"
 X86_NV_PACKAGE="NVIDIA-Linux-x86-${PV}"
 AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
+ARM_NV_PACKAGE="NVIDIA-Linux-armv7l-gnueabihf-${PV}"
 X86_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86-${PV}"
 AMD64_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86_64-${PV}"
 
@@ -18,9 +19,13 @@ HOMEPAGE="http://www.nvidia.com/ http://www.nvidia.com/Download/Find.aspx"
 SRC_URI="
 	amd64-fbsd? ( ${NV_URI}FreeBSD-x86_64/${PV}/${AMD64_FBSD_NV_PACKAGE}.tar.gz )
 	amd64? ( ${NV_URI}Linux-x86_64/${PV}/${AMD64_NV_PACKAGE}.run )
+	arm? ( ${NV_URI}Linux-x86-ARM/${PV}/${ARM_NV_PACKAGE}.run )
 	x86-fbsd? ( ${NV_URI}FreeBSD-x86/${PV}/${X86_FBSD_NV_PACKAGE}.tar.gz )
 	x86? ( ${NV_URI}Linux-x86/${PV}/${X86_NV_PACKAGE}.run )
-	tools? ( ftp://download.nvidia.com/XFree86/nvidia-settings/nvidia-settings-${PV}.tar.bz2 )
+	tools? (
+		ftp://download.nvidia.com/XFree86/nvidia-settings/nvidia-settings-${PV}.tar.bz2
+		https://raw.githubusercontent.com/NVIDIA/nvidia-settings/168e17f53098254b4a5ab93eeb2f23c80ca1d97f/src/nvml.h -> nvml.h-${PV}
+	)
 "
 
 LICENSE="GPL-2 NVIDIA-r2"
@@ -90,11 +95,11 @@ pkg_pretend() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 6; then
+		if kernel_is ge 4 9; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.6"
-			ewarn "<sys-kernel/vanilla-sources-4.6"
+			ewarn "<sys-kernel/gentoo-sources-4.9"
+			ewarn "<sys-kernel/vanilla-sources-4.9"
 		elif use kms && kernel_is le 4 1; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -178,6 +183,21 @@ pkg_setup() {
 
 src_prepare() {
 	local PATCHES
+	if use tools; then
+		cp "${DISTDIR}/nvml.h-${PV}" "${S}/nvidia-settings-${PV}/src/nvml.h"nvml.h || die "cp"
+
+		ln -s libnvidia-ml.so.${PV} libnvidia-ml.so || die "sed"
+		if use multilib; then
+			pushd 32/ 2>/dev/null || die "pushd"
+			ln -s libnvidia-ml.so.${PV} libnvidia-ml.so || die "sed"
+			popd 2>/dev/null || die "popd"
+		fi
+
+		sed -i -e "s|-lnvidia-ml|-L../../ &|g" nvidia-settings-${PV}/src/Makefile || die "sed"
+	fi
+
+	PATCHES+=( "${FILESDIR}"/${P}-profiles-rc.patch )
+
 	if use pax_kernel; then
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
@@ -341,6 +361,9 @@ src_install() {
 
 	if use X; then
 		doexe ${NV_OBJ}/nvidia-xconfig
+
+		insinto /etc/vulkan/icd.d
+		doins nvidia_icd.json
 	fi
 
 	if use kernel_linux; then
@@ -397,9 +420,6 @@ src_install() {
 
 		exeinto /etc/X11/xinit/xinitrc.d
 		newexe "${FILESDIR}"/95-nvidia-settings-r1 95-nvidia-settings
-
-		insinto /etc/vulkan/icd.d
-		doins nvidia_icd.json
 	fi
 
 	dobin ${NV_OBJ}/nvidia-bug-report.sh

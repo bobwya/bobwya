@@ -97,6 +97,10 @@ pkg_pretend() {
 			ewarn "which are limited to the following kernels:"
 			ewarn "<sys-kernel/gentoo-sources-4.8"
 			ewarn "<sys-kernel/vanilla-sources-4.8"
+			ewarn "This version of ${CATEGORY}/${PN} has an unofficial patch"
+			ewarn "applied to enable support for the following kernels:"
+			ewarn "=sys-kernel/gentoo-sources-4.8"
+			ewarn "=sys-kernel/vanilla-sources-4.8"
 		elif use kms && kernel_is le 4 1; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -179,13 +183,14 @@ pkg_setup() {
 }
 
 src_prepare() {
-	local PATCHES=( "${FILESDIR}"/${P}-profiles-rc.patch )
+	local PATCHES=( "${FILESDIR}/${PN}-367.18-kernel-4.7.0.patch" )
+	PATCHES+=( "${FILESDIR}"/${PN}-367.57-profiles-rc.patch )
 
 	if use pax_kernel; then
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
 		ewarn "need support with these patches, contact the PaX team."
-		PATCHES+=( "${FILESDIR}"/${PN}-367.35-pax-r1.patch )
+		PATCHES+=( "${FILESDIR}"/${PN}-367.57-pax-r1.patch )
 	fi
 
 	# Allow user patches so they can support RC kernels and whatever else
@@ -344,6 +349,9 @@ src_install() {
 
 	if use X; then
 		doexe ${NV_OBJ}/nvidia-xconfig
+
+		insinto /etc/vulkan/icd.d
+		doins nvidia_icd.json
 	fi
 
 	if use kernel_linux; then
@@ -400,9 +408,6 @@ src_install() {
 
 		exeinto /etc/X11/xinit/xinitrc.d
 		newexe "${FILESDIR}"/95-nvidia-settings-r1 95-nvidia-settings
-
-		insinto /etc/vulkan/icd.d
-		doins nvidia_icd.json
 	fi
 
 	dobin ${NV_OBJ}/nvidia-bug-report.sh

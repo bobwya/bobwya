@@ -10,7 +10,6 @@ inherit eutils flag-o-matic linux-info linux-mod multilib nvidia-driver \
 NV_URI="http://us.download.nvidia.com/XFree86/"
 X86_NV_PACKAGE="NVIDIA-Linux-x86-${PV}"
 AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
-ARM_NV_PACKAGE="NVIDIA-Linux-armv7l-gnueabihf-${PV}"
 X86_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86-${PV}"
 AMD64_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86_64-${PV}"
 
@@ -19,7 +18,6 @@ HOMEPAGE="http://www.nvidia.com/ http://www.nvidia.com/Download/Find.aspx"
 SRC_URI="
 	amd64-fbsd? ( ${NV_URI}FreeBSD-x86_64/${PV}/${AMD64_FBSD_NV_PACKAGE}.tar.gz )
 	amd64? ( ${NV_URI}Linux-x86_64/${PV}/${AMD64_NV_PACKAGE}.run )
-	arm? ( ${NV_URI}Linux-x86-ARM/${PV}/${ARM_NV_PACKAGE}.run )
 	x86-fbsd? ( ${NV_URI}FreeBSD-x86/${PV}/${X86_FBSD_NV_PACKAGE}.tar.gz )
 	x86? ( ${NV_URI}Linux-x86/${PV}/${X86_NV_PACKAGE}.run )
 	tools? ( ftp://download.nvidia.com/XFree86/nvidia-settings/nvidia-settings-${PV}.tar.bz2 )
@@ -92,15 +90,11 @@ pkg_pretend() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 8; then
+		if kernel_is ge 4 6; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.8"
-			ewarn "<sys-kernel/vanilla-sources-4.8"
-			ewarn "This version of ${CATEGORY}/${PN} has an unofficial patch"
-			ewarn "applied to enable support for the following kernels:"
-			ewarn "=sys-kernel/gentoo-sources-4.8"
-			ewarn "=sys-kernel/vanilla-sources-4.8"
+			ewarn "<sys-kernel/gentoo-sources-4.6"
+			ewarn "<sys-kernel/vanilla-sources-4.6"
 		elif use kms && kernel_is le 4 1; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -183,14 +177,12 @@ pkg_setup() {
 }
 
 src_prepare() {
-	local PATCHES=( "${FILESDIR}/${PN}-367.18-kernel-4.7.0.patch" )
-	PATCHES+=( "${FILESDIR}"/${PN}-367.57-profiles-rc.patch )
-
+	local PATCHES
 	if use pax_kernel; then
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
 		ewarn "need support with these patches, contact the PaX team."
-		PATCHES+=( "${FILESDIR}"/${PN}-367.57-pax-r1.patch )
+		PATCHES+=( "${FILESDIR}"/${PN}-364.12-pax-r1.patch )
 	fi
 
 	# Allow user patches so they can support RC kernels and whatever else
@@ -349,6 +341,9 @@ src_install() {
 
 	if use X; then
 		doexe ${NV_OBJ}/nvidia-xconfig
+
+		insinto /etc/vulkan/icd.d
+		doins nvidia_icd.json
 	fi
 
 	if use kernel_linux; then
@@ -405,9 +400,6 @@ src_install() {
 
 		exeinto /etc/X11/xinit/xinitrc.d
 		newexe "${FILESDIR}"/95-nvidia-settings-r1 95-nvidia-settings
-
-		insinto /etc/vulkan/icd.d
-		doins nvidia_icd.json
 	fi
 
 	dobin ${NV_OBJ}/nvidia-bug-report.sh

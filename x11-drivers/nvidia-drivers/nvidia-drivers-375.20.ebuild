@@ -24,7 +24,6 @@ SRC_URI="
 	x86? ( ${NV_URI}Linux-x86/${PV}/${X86_NV_PACKAGE}.run )
 	tools? (
 		ftp://download.nvidia.com/XFree86/nvidia-settings/nvidia-settings-${PV}.tar.bz2
-		https://raw.githubusercontent.com/NVIDIA/nvidia-settings/168e17f53098254b4a5ab93eeb2f23c80ca1d97f/src/nvml.h -> nvml.h-${PV}
 	)
 "
 
@@ -73,7 +72,7 @@ RDEPEND="
 	tools? ( !media-video/nvidia-settings )
 	wayland? ( dev-libs/wayland )
 	X? (
-		<x11-base/xorg-server-1.18.99:=
+		<x11-base/xorg-server-1.19.99:=
 		>=x11-libs/libvdpau-1.0
 		multilib? (
 			>=x11-libs/libX11-1.6.2[abi_x86_32]
@@ -184,8 +183,15 @@ pkg_setup() {
 src_prepare() {
 	local PATCHES
 	if use tools; then
-		cp "${DISTDIR}/nvml.h-${PV}" "${S}/nvidia-settings-${PV}/src/nvml.h" || die "cp"
-		sed -i -e 's|-lnvidia-ml|-L../../ &|g' nvidia-settings-${PV}/src/Makefile || die "sed"
+
+		ln -s libnvidia-ml.so.${PV} libnvidia-ml.so || die "sed"
+		if use multilib; then
+			pushd 32/ 2>/dev/null || die "pushd"
+			ln -s libnvidia-ml.so.${PV} libnvidia-ml.so || die "sed"
+			popd 2>/dev/null || die "popd"
+		fi
+
+		sed -i -e "s|-lnvidia-ml|-L../../ &|g" nvidia-settings-${PV}/src/Makefile || die "sed"
 	fi
 
 	PATCHES+=( "${FILESDIR}"/${P}-profiles-rc.patch )
@@ -353,6 +359,9 @@ src_install() {
 
 	if use X; then
 		doexe ${NV_OBJ}/nvidia-xconfig
+
+		insinto /etc/vulkan/icd.d
+		doins nvidia_icd.json
 	fi
 
 	if use kernel_linux; then
@@ -409,9 +418,6 @@ src_install() {
 
 		exeinto /etc/X11/xinit/xinitrc.d
 		newexe "${FILESDIR}"/95-nvidia-settings-r1 95-nvidia-settings
-
-		insinto /etc/vulkan/icd.d
-		doins nvidia_icd.json
 	fi
 
 	dobin ${NV_OBJ}/nvidia-bug-report.sh
