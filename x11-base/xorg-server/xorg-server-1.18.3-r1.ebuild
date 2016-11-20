@@ -2,21 +2,21 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=5
+EAPI=6
 
 XORG_DOC=doc
-inherit xorg-2 multilib versionator flag-o-matic
+inherit xorg-3 multilib versionator flag-o-matic
 EGIT_REPO_URI="git://anongit.freedesktop.org/xorg/xserver"
 
 DESCRIPTION="X.Org X servers"
 SLOT="0/${PV}"
-KEYWORDS="~alpha ~amd64 arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~arm-linux ~x86-linux"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~arm-linux ~x86-linux"
 
 IUSE_SERVERS="dmx kdrive xephyr xnest xorg xvfb"
 IUSE="${IUSE_SERVERS} fop glamor ipv6 libressl minimal selinux +suid systemd tslib +udev unwind wayland"
 
 CDEPEND="=app-eselect/eselect-opengl-1.3.2
-	!libressl? ( dev-libs/openssl:0 )
+	!libressl? ( dev-libs/openssl:0= )
 	libressl? ( dev-libs/libressl )
 	media-libs/freetype
 	>=x11-apps/iceauth-1.0.2
@@ -137,21 +137,23 @@ REQUIRED_USE="!minimal? (
 	)
 	xephyr? ( kdrive )"
 
-#UPSTREAMED_PATCHES=(
-#	"${WORKDIR}/patches/"
-#)
-
-PATCHES=(
-	"${UPSTREAMED_PATCHES[@]}"
-	"${FILESDIR}"/${PN}-1.12-unloadsubmodule.patch
-	# needed for new eselect-opengl, bug #541232
-	"${FILESDIR}"/${PN}-1.18-support-multiple-Files-sections.patch
-)
-
 pkg_pretend() {
 	# older gcc is not supported
 	[[ "${MERGE_TYPE}" != "binary" && $(gcc-major-version) -lt 4 ]] && \
 		die "Sorry, but gcc earlier than 4.0 will not work for xorg-server."
+}
+
+src_prepare() {
+	#local UPSTREAMED_PATCHES=(
+	#	"${WORKDIR}/patches/"
+	#)
+	local PATCHES=(
+		"${UPSTREAMED_PATCHES[@]}"
+		"${FILESDIR}"/${PN}-1.12-unloadsubmodule.patch
+		# needed for new eselect-opengl, bug #541232
+		"${FILESDIR}"/${PN}-1.18-support-multiple-Files-sections.patch
+	)
+	default
 }
 
 src_configure() {
@@ -184,7 +186,7 @@ src_configure() {
 		$(use_enable udev config-udev)
 		$(use_with doc doxygen)
 		$(use_with doc xmlto)
-		$(use_with fop)
+	$(use_with fop)
 		$(use_with systemd systemd-daemon)
 		$(use_enable systemd systemd-logind)
 		--enable-libdrm
@@ -199,17 +201,17 @@ src_configure() {
 		--with-sha1=libcrypto
 	)
 
-	xorg-2_src_configure
+	xorg-3_src_configure
 }
 
 src_install() {
-	xorg-2_src_install
+	xorg-3_src_install
 
 	server_based_install
 
 	if ! use minimal && use xorg; then
 		# Install xorg.conf.example into docs
-		dodoc "${AUTOTOOLS_BUILD_DIR}"/hw/xfree86/xorg.conf.example
+		dodoc "${S}/hw/xfree86/xorg.conf.example"
 	fi
 
 	newinitd "${FILESDIR}"/xdm-setup.initd-1 xdm-setup

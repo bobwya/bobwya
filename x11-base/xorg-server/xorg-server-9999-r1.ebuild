@@ -10,7 +10,7 @@ EGIT_REPO_URI="git://anongit.freedesktop.org/xorg/xserver"
 
 DESCRIPTION="X.Org X servers"
 SLOT="0/${PV}"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~arm-linux ~x86-linux"
+KEYWORDS=""
 
 IUSE_SERVERS="dmx kdrive xephyr xnest xorg xvfb"
 IUSE="${IUSE_SERVERS} fop glamor ipv6 libressl minimal selinux +suid systemd tslib +udev unwind wayland"
@@ -27,7 +27,7 @@ CDEPEND="=app-eselect/eselect-opengl-1.3.2
 	>=x11-libs/libpciaccess-0.12.901
 	>=x11-libs/libXau-1.0.4
 	>=x11-libs/libXdmcp-1.0.2
-	>=x11-libs/libXfont-1.4.2
+	>=x11-libs/libXfont2-2.0.1
 	>=x11-libs/libxkbfile-1.0.4
 	>=x11-libs/libxshmfence-1.1
 	>=x11-libs/pixman-0.27.2
@@ -106,7 +106,7 @@ DEPEND="${CDEPEND}
 	>=x11-proto/xf86rushproto-1.1.2
 	>=x11-proto/xf86vidmodeproto-2.2.99.1
 	>=x11-proto/xineramaproto-1.1.3
-	>=x11-proto/xproto-7.0.28
+	>=x11-proto/xproto-7.0.31
 	>=x11-proto/presentproto-1.0
 	>=x11-proto/dri3proto-1.0
 	dmx? (

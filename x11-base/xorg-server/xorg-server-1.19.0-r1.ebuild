@@ -27,7 +27,7 @@ CDEPEND="=app-eselect/eselect-opengl-1.3.2
 	>=x11-libs/libpciaccess-0.12.901
 	>=x11-libs/libXau-1.0.4
 	>=x11-libs/libXdmcp-1.0.2
-	>=x11-libs/libXfont-1.4.2
+	>=x11-libs/libXfont2-2.0.1
 	>=x11-libs/libxkbfile-1.0.4
 	>=x11-libs/libxshmfence-1.1
 	>=x11-libs/pixman-0.27.2
@@ -106,7 +106,7 @@ DEPEND="${CDEPEND}
 	>=x11-proto/xf86rushproto-1.1.2
 	>=x11-proto/xf86vidmodeproto-2.2.99.1
 	>=x11-proto/xineramaproto-1.1.3
-	>=x11-proto/xproto-7.0.28
+	>=x11-proto/xproto-7.0.31
 	>=x11-proto/presentproto-1.0
 	>=x11-proto/dri3proto-1.0
 	dmx? (
