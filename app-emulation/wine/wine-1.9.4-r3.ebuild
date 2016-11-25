@@ -375,11 +375,12 @@ src_unpack() {
 src_prepare() {
 	local md5hash="$(md5sum server/protocol.def || die "md5sum")"
 	local PATCHES=(
-		"${FILESDIR}"/${PN}-1.5.26-winegcc.patch #260726
-		"${FILESDIR}"/${PN}-1.7.12-osmesa-check.patch #429386
-		"${FILESDIR}"/${PN}-1.6-memset-O3.patch #480508
-		"${FILESDIR}"/${PN}-sysmacros.patch #580046
-		"${FILESDIR}"/${PN}-1.8-gnutls-3.5-compat.patch #587028
+		"${FILESDIR}/${PN}-1.8_winecfg_detailed_version.patch"
+		"${FILESDIR}/${PN}-1.5.26-winegcc.patch" #260726
+		"${FILESDIR}/${PN}-1.7.12-osmesa-check.patch" #429386
+		"${FILESDIR}/${PN}-1.6-memset-O3.patch" #480508
+		"${FILESDIR}/${PN}-sysmacros.patch" #580046
+		"${FILESDIR}/${PN}-1.8-gnutls-3.5-compat.patch" #587028
 	)
 	#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
 	ebegin "(subshell) script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" ..."
@@ -402,6 +403,8 @@ src_prepare() {
 			source "${STAGING_DIR}/patches/patchinstall.sh"
 		)
 		eend $? || die "(subshell) script: failed to apply Wine-Staging patches."
+		sed -r -i -e '/^AC_INIT\(.*\)$/{s/\[Wine\]/\[Wine \(Staging\)\]/}' "${S}/configure.ac" || die "sed failed"
+		sed -r -i -e 's/Wine (\(Staging\) |)/Wine \(Staging\) /' "${S}/VERSION" || die "sed failed"
 
 		if [[ ! -z "${STAGING_SUFFIX}" ]]; then
 			sed -i -e 's/(Staging)/(Staging'"${STAGING_SUFFIX}"')/' libs/wine/Makefile.in || die "sed"

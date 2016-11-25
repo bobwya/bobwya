@@ -1,0 +1,98 @@
+diff -u1rN a/programs/winecfg/about.c b/programs/winecfg/about.c
+--- a/programs/winecfg/about.c	2016-11-04 13:15:36.408975989 +0000
++++ b/programs/winecfg/about.c	2016-11-04 13:17:00.854184551 +0000
+@@ -28,2 +28,5 @@
+ 
++#include <stdlib.h> 
++#include <stdio.h>  
++#include <ctype.h>
+ #include <windows.h>
+@@ -45,3 +48,7 @@
+     RECT rcClient, rcRect;
+-    char *owner, *org;
++    char *owner, *org, *full_package_str, *commit_url_str;
++    int ch_start=-1, ch_end=-1, i, str_length; 
++    static const WCHAR tahomaW[] = {'T','a','h','o','m','a',0}, 
++                       ubuntu_monoW[] = {'U','b','u','n','t','u',' ','M','o','n','o',0}; 
++    static const char git_url_str[]="https://source.winehq.org/git/wine.git/commit/";
+ 
+@@ -113,5 +120,4 @@
+         {
+-            static const WCHAR tahomaW[] = {'T','a','h','o','m','a',0};
+             titleFont = CreateFontW(
+-                -MulDiv(24, GetDeviceCaps(hDC, LOGPIXELSY), 72),
++                -MulDiv(20, GetDeviceCaps(hDC, LOGPIXELSY), 72),
+                 0, 0, 0, 0, FALSE, 0, 0, 0, 0, 0, 0, 0, tahomaW);
+@@ -120,3 +126,36 @@
+         }
+-        SetDlgItemTextA(hDlg, IDC_ABT_PANEL_TEXT, PACKAGE_VERSION);
++        full_package_str = strdup( PACKAGE_STRING ); 
++        str_length=strlen(full_package_str); 
++        for (i=0; i<str_length; ++i) 
++        { 
++            if (ch_start == -1) 
++                ch_start=(isspace(*(full_package_str+i))) ? i+1 : ch_start; 
++            else if (isspace(*(full_package_str+i))) 
++                ch_end=i+1; 
++            else if (ch_end != -1) 
++                ch_end=(isxdigit(*(full_package_str+i))) ? ch_end : -1; 
++        } 
++        hWnd = GetDlgItem(hDlg, IDC_ABT_COMMIT_LINK); 
++        if ((ch_end != -1) && hWnd) 
++        { 
++            titleFont = CreateFontW( 
++                -MulDiv(7, GetDeviceCaps(hDC, LOGPIXELSY), 72), 
++                0, 0, 0, FW_LIGHT, FALSE, TRUE, 0, 0, 0, 0, CLEARTYPE_QUALITY, FIXED_PITCH | FF_MODERN, ubuntu_monoW); 
++            *(full_package_str+ch_end-1)=0; 
++            commit_url_str=malloc((strlen("<a href=\"\"></a>")+strlen(git_url_str)+strlen(full_package_str+ch_end)*2+1) * sizeof(char)); 
++            sprintf(commit_url_str, "<a href=\"%s%s\">%s</a>", 
++                    git_url_str, full_package_str+ch_end, full_package_str+ch_end); 
++            SendMessageW(hWnd, WM_SETFONT, (WPARAM)titleFont, TRUE); 
++            SetWindowTextA(hWnd, commit_url_str); 
++        } 
++        hWnd = GetDlgItem(hDlg, IDC_ABT_VERSION_TEXT); 
++        if ((ch_start != -1) && hWnd) 
++        { 
++            titleFont = CreateFontW( 
++                -MulDiv(14, GetDeviceCaps(hDC, LOGPIXELSY), 72), 
++                0, 0, 0, 0, FALSE, 0, 0, 0, 0, 0, 0, 0, tahomaW); 
++            SendMessageW(hWnd, WM_SETFONT, (WPARAM)titleFont, TRUE); 
++            SetWindowTextA(hWnd, full_package_str+ch_start); 
++        } 
++        free(full_package_str);
+ 
+@@ -168,5 +207,6 @@
+         case IDC_ABT_TITLE_TEXT:
++        case IDC_ABT_VERSION_TEXT: 
++        case IDC_ABT_COMMIT_LINK:
+             /* set the title to a wine color */
+             SetTextColor((HDC)wParam, 0x0000007F);
+-        case IDC_ABT_PANEL_TEXT:
+         case IDC_ABT_LICENSE_TEXT:
+diff -u1rN a/programs/winecfg/resource.h b/programs/winecfg/resource.h
+--- a/programs/winecfg/resource.h	2016-11-04 13:15:36.412976047 +0000
++++ b/programs/winecfg/resource.h	2016-11-04 13:17:00.858184608 +0000
+@@ -216,3 +216,3 @@
+ #define IDC_ABT_PANEL                8434
+-#define IDC_ABT_PANEL_TEXT           8435
++#define IDC_ABT_VERSION_TEXT         8435
+ #define IDC_ABT_TITLE_TEXT           8436
+@@ -220 +220,2 @@
+ #define IDC_ABT_LICENSE_TEXT         8438
++#define IDC_ABT_COMMIT_LINK          8439
+diff -u1rN a/programs/winecfg/winecfg.rc b/programs/winecfg/winecfg.rc
+--- a/programs/winecfg/winecfg.rc	2016-11-04 13:15:36.412976047 +0000
++++ b/programs/winecfg/winecfg.rc	2016-11-04 13:17:00.862184665 +0000
+@@ -136,7 +136,8 @@
+     CONTROL         "", IDC_ABT_PANEL, "STATIC", SS_OWNERDRAW, 0, 0, 260, 140
+-    LTEXT           "",IDC_ABT_TITLE_TEXT,105,30,55,30
+-    LTEXT           "",IDC_ABT_PANEL_TEXT,160,43,140,8
+-    CONTROL         "",IDC_ABT_WEB_LINK,"SysLink", LWS_TRANSPARENT, 105,53,106,8
++    LTEXT           "",IDC_ABT_TITLE_TEXT,100,12,50,20
++    LTEXT           "",IDC_ABT_VERSION_TEXT,146,18,135,14 
++    CONTROL         "",IDC_ABT_COMMIT_LINK,"SysLink", LWS_TRANSPARENT, 100,36,140,8
++    CONTROL         "",IDC_ABT_WEB_LINK,"SysLink", LWS_TRANSPARENT, 100,54,100,10
+     LTEXT           "This program is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation; either version 2.1 of the License, or (at your option) any later version.",
+-                    IDC_ABT_LICENSE_TEXT,105,64,145,66
++                    IDC_ABT_LICENSE_TEXT,100,66,140,56
+     GROUPBOX        "Windows registration information", IDC_STATIC, 15, 155, 230, 55

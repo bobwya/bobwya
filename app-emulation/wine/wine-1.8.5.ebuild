@@ -296,9 +296,10 @@ src_unpack() {
 src_prepare() {
 	local md5hash="$(md5sum server/protocol.def || die "md5sum")"
 	local PATCHES=(
-		"${FILESDIR}"/${PN}-1.5.26-winegcc.patch #260726
-		"${FILESDIR}"/${PN}-1.7.12-osmesa-check.patch #429386
-		"${FILESDIR}"/${PN}-1.6-memset-O3.patch #480508
+		"${FILESDIR}/${PN}-1.8_winecfg_detailed_version.patch"
+		"${FILESDIR}/${PN}-1.5.26-winegcc.patch" #260726
+		"${FILESDIR}/${PN}-1.7.12-osmesa-check.patch" #429386
+		"${FILESDIR}/${PN}-1.6-memset-O3.patch" #480508
 	)
 	if [[ ${PV} != "9999" ]]; then
 		use gstreamer && PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
