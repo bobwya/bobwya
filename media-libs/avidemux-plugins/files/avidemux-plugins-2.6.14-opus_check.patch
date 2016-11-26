@@ -1,0 +1,12 @@
+--- a/cmake/admCheckOpus.cmake	2016-11-19 07:58:39.000000000 +0000
++++ b/cmake/admCheckOpus.cmake	2016-11-21 11:40:00.051289131 +0000
+@@ -20,3 +20,9 @@
+                 ENDIF (OPUS)
++
++		SET(OPUS_CHECKED 1)
++
++		MESSAGE("")
++
+ 	ENDIF (NOT OPUS_CHECKED)
++
+ 	APPEND_SUMMARY_LIST("Audio Decoder" "Opus" "${LIBOPUS_FOUND}")

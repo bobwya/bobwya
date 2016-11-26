@@ -1,0 +1,60 @@
+--- a/avidemux/gtk/CMakeLists.txt	2016-11-25 00:27:08.313109140 +0000
++++ b/avidemux/gtk/CMakeLists.txt	2016-11-25 00:32:29.611618979 +0000
+@@ -1,4 +1,4 @@
+ cmake_minimum_required(VERSION 2.6)
+-
++SET(AVIDEMUX_API_VERSION 2.6)
+ SET(ADM_PROJECT Avidemux_gtk)
+ 
+@@ -9,5 +9,36 @@
+ MESSAGE("")
+ 
+-include(../commonCmakeApplication.cmake)
++MESSAGE(STATUS "Checking for avidemux development files ..")
++
++IF(NOT FAKEROOT)
++	SET(AVIDEMUX_FAKEROOT "")
++else(NOT FAKEROOT)
++	SET(AVIDEMUX_FAKEROOT "${FAKEROOT}/")
++endif(NOT FAKEROOT)
++
++
++SET(ADM_HEADER_DIR ${AVIDEMUX_FAKEROOT}${CMAKE_INSTALL_PREFIX}/include/avidemux/${AVIDEMUX_API_VERSION})
++SET(ADM_CMAKE_DIR  ${ADM_HEADER_DIR}/cmake)
++# Common definitions...
++SET(CMAKE_MODULE_PATH "${ADM_CMAKE_DIR}" "${CMAKE_MODULE_PATH}")
++MESSAGE(STATUS  "Checking for avidemux include folder (i.e. CMAKE_INSTALL_PREFIX/include/avidemux/${AVIDEMUX_API_VERSION}, looking in ${ADM_HEADER_DIR}")
++if(NOT EXISTS "${ADM_HEADER_DIR}")
++        MESSAGE(STATUS  "Make sure you installed all the files.\n i cannot find avidemux include folder.cmake .\nSet CMAKE_INSTALL_PREFIX to the install folder, current value is ${CMAKE_INSTALL_PREFIX}")
++        MESSAGE(FATAL_ERROR  "Aborting")
++endif(NOT EXISTS "${ADM_HEADER_DIR}")
++
++MESSAGE(STATUS "Found avidemux include folder. good.")
++MESSAGE(STATUS "Checking for cmake subfolder")
++
++if(NOT EXISTS "${ADM_CMAKE_DIR}/commonCmakeApplication.cmake")
++        MESSAGE(STATUS  "Make sure you installed all the files.\n I cannot find content of the cmake subfolder .\n")
++        MESSAGE(STATUS  "Set CMAKE_INSTALL_PREFIX to the install folder, current value is ${CMAKE_INSTALL_PREFIX}")
++        MESSAGE(STATUS  "I was looking for commonCmakeApplication.cmake in  ${ADM_CMAKE_DIR}")
++        MESSAGE(FATAL_ERROR  "Aborting")
++endif(NOT EXISTS "${ADM_CMAKE_DIR}/commonCmakeApplication.cmake")
++MESSAGE(STATUS "Found cmake subfolder.good.")
++
++include(commonCmakeApplication)
++include(../admAppSettings.cmake)
+ include(admCheckGtk)
+ 
+@@ -21,5 +52,5 @@
+ SET(UI_SUFFIX gtk)
+ 
+-CONFIGURE_FILE("${AVIDEMUX_TOP_SOURCE_DIR}/cmake/config.h.cmake" "${CMAKE_BINARY_DIR}/config/gtk/config.h")
++CONFIGURE_FILE("${ADM_CMAKE_DIR}/config.h.cmake" "${CMAKE_BINARY_DIR}/config/gtk/config.h")
+ MESSAGE(STATUS "GTK config.h generated")
+ 
+@@ -29,4 +60,6 @@
+ # Add subdirectories 
+ ########################################
++INCLUDE_DIRECTORIES(ADM_UIs/include/)
++INCLUDE_DIRECTORIES(/usr/include/avidemux/${AVIDEMUX_API_VERSION}/ADM_coreUI)
+ ADD_SUBDIRECTORY(../common ./common)
+ ADD_SUBDIRECTORY(ADM_UIs ./ADM_UIsGtk)

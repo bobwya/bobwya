@@ -1,0 +1,16 @@
+--- a/cmake/admCheckNvEnc.cmake	2016-11-21 10:43:00.218489813 +0000
++++ b/cmake/admCheckNvEnc.cmake	2016-11-21 10:43:33.537949942 +0000
+@@ -9,3 +9,3 @@
+                         FIND_PATH(NVENC_INCLUDE_DIR nvEncodeAPI.h 
+-		      	PATHS /usr/include/x86_64-linux-gnu) # Needed for 64 bits linux
++		      	PATHS /usr/include/nvidia-video-sdk) # Needed for 64 bits linux
+                         IF(NVENC_INCLUDE_DIR)
+@@ -14,2 +14,3 @@
+                                 SET(NVENC_FOUND 1)
++                                SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I/usr/include/nvidia-video-sdk")
+                         ELSE(NVENC_INCLUDE_DIR)
+@@ -22,3 +23,3 @@
+ 		MESSAGE("")
+-	APPEND_SUMMARY_LIST("Video Encoder" "NVENC" "${NVENC_FOUND}")
++	APPEND_SUMMARY_LIST("Video Encoder" "NVENC" "${NVENC_CHECKED}")
+ 	ENDIF (NOT NVENC_CHECKED)
