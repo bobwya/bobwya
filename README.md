@@ -15,7 +15,10 @@ Testing and updating of these ebuild package build scripts is irregular. So YMMV
 	games-util/lutris : Lutris is an open gaming platform for Linux. It helps you install and manage your games in a unified interface.
 	kde-misc/kmozillahelper : helper application that allows Mozilla Firefox to use KDE/Plasma 5 file dialogs, file associations, protocol handlers and other KDE/Plasma 5 integration features.
 	mail-client/thunderbird-kde-opensuse : Thunderbird mail client, with OpenSUSE Patchset for better KDE Desktop integration. 
+	media-libs/avidemux-core : Avidemux is a free open-source program designed for multi-purpose video editing and processing (core libraries).
+	media-libs/avidemux-plugins : Avidemux is a free open-source program designed for multi-purpose video editing and processing (plugins).
 	media-tv/freetuxtv : freetuxtv GTK+ WebTV and Web Radio player for Linux.
+	media-video/avidemux : Avidemux is a free open-source program designed for multi-purpose video editing and processing (main frontends).
 	media-video/filebot-bin : FileBot tool for organizing and renaming your movies, tv shows or anime, and music. (java jar)
 	media-video/handbrake : Handbrake A/V Conversion Tool
 	media-video/h264enc : h264enc is an advanced and powerful interactive menu-driven shell script written for the GNU/Linux operating system to encode video files
