@@ -181,20 +181,7 @@ pkg_setup() {
 }
 
 src_prepare() {
-	local PATCHES
-	if use tools; then
-
-		ln -s libnvidia-ml.so.${PV} libnvidia-ml.so || die "sed"
-		if use multilib; then
-			pushd 32/ 2>/dev/null || die "pushd"
-			ln -s libnvidia-ml.so.${PV} libnvidia-ml.so || die "sed"
-			popd 2>/dev/null || die "popd"
-		fi
-
-		sed -i -e "s|-lnvidia-ml|-L../../ &|g" nvidia-settings-${PV}/src/Makefile || die "sed"
-	fi
-
-	PATCHES+=( "${FILESDIR}"/${P}-profiles-rc.patch )
+	local PATCHES=( "${FILESDIR}"/${P}-profiles-rc.patch )
 
 	if use pax_kernel; then
 		ewarn "Using PAX patches is not supported. You will be asked to"

@@ -184,7 +184,7 @@ pkg_setup() {
 src_prepare() {
 	local PATCHES
 	if use tools; then
-		cp "${DISTDIR}/nvml.h-${PV}" "${S}/nvidia-settings-${PV}/src/nvml.h"nvml.h || die "cp"
+		cp "${DISTDIR}/nvml.h-${PV}" "${S}/nvidia-settings-${PV}/src/nvml.h" || die "cp"
 
 		ln -s libnvidia-ml.so.${PV} libnvidia-ml.so || die "sed"
 		if use multilib; then
