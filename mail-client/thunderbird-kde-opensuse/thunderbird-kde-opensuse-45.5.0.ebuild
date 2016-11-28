@@ -23,7 +23,7 @@ EMVER="1.9.1"
 
 # Patches
 PATCH="thunderbird-38.0-patches-0.1"
-PATCHFF="firefox-45.0-patches-06"
+PATCHFF="firefox-45.0-patches-07"
 
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
@@ -43,7 +43,7 @@ DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE 
 HOMEPAGE="http://www.mozilla.com/en-US/thunderbird
 	${EHG_REPO_URI}"
 
-KEYWORDS="~amd64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 x86 ~x86-fbsd ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist crypt hardened kde ldap lightning +minimal mozdom selinux"
@@ -162,7 +162,6 @@ src_prepare() {
 	fi
 	# Apply our patchset from firefox to thunderbird as well
 	eapply "${WORKDIR}/firefox"
-		"${FILESDIR}"/firefox-45-gcc6.patch
 	popd &>/dev/null || die "popd failed"
 
 	# Ensure that are plugins dir is enabled as default
