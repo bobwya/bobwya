@@ -57,7 +57,7 @@ SRC_URI="${SRC_URI}
 ASM_DEPEND=">=dev-lang/yasm-1.1"
 
 RDEPEND="
-	>=dev-libs/nss-3.23
+	>=dev-libs/nss-3.23.2
 	>=dev-libs/nspr-4.12
 	selinux? ( sec-policy/selinux-mozilla )
 	kde? ( kde-misc/kmozillahelper:*  )
@@ -74,6 +74,12 @@ QA_PRESTRIPPED="usr/lib*/${MOZ_PN}/firefox"
 
 BUILD_OBJ_DIR="${S}/ff"
 MAX_OBJ_DIR_LEN="80"
+
+# dependencies newer than specified in the eclass
+RDEPEND="${RDEPEND}
+	>=media-libs/libpng-1.6.23
+	kde? ( kde-misc/kmozillahelper:*  )
+	!!www-client/firefox"
 
 pkg_setup() {
 	moz_pkgsetup
@@ -163,6 +169,16 @@ src_prepare() {
 	if use debug; then
 		sed -i -e "s:GNOME_DISABLE_CRASH_DIALOG=1:GNOME_DISABLE_CRASH_DIALOG=0:g" \
 			"${S}"/build/unix/run-mozilla.sh || die "sed failed!"
+	fi
+
+	# Drop -Wl,--as-needed related manipulation for ia64 as it causes ld sefgaults, bug #582432
+	if use ia64; then
+		sed -i \
+		-e '/^OS_LIBS += no_as_needed/d' \
+		-e '/^OS_LIBS += as_needed/d' \
+		"${S}"/widget/gtk/mozgtk/gtk2/moz.build \
+		"${S}"/widget/gtk/mozgtk/gtk3/moz.build \
+		|| die "sed failed to drop --as-needed for ia64"
 	fi
 
 	# Ensure that our plugins dir is enabled as default
