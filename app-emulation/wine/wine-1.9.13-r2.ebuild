@@ -373,6 +373,7 @@ src_unpack() {
 
 src_prepare() {
 	local md5hash="$(md5sum server/protocol.def || die "md5sum")"
+	[[ ! -z "${STABLE_PREFIX}" ]] && sed -i -e 's/[\-\.[:alnum:]]\+$/'"${MY_PV}"'/' "${S}/VERSION"
 	local PATCHES=(
 		"${FILESDIR}/${PN}-1.8_winecfg_detailed_version.patch"
 		"${FILESDIR}/${PN}-1.5.26-winegcc.patch" #260726
