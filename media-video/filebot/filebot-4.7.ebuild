@@ -4,6 +4,8 @@
 
 EAPI=6
 
+inherit java-utils-2
+
 DESCRIPTION="Java-based tools to rename TV shows, download subtitles, and validate checksums"
 HOMEPAGE="http://filebot.sourceforge.net/"
 
@@ -16,16 +18,14 @@ KEYWORDS="~amd64 ~x86"
 IUSE=""
 
 DEPEND=""
-RDEPEND="media-libs/fontconfig
+RDEPEND="media-libs/chromaprint
+		media-libs/fontconfig
 		>=virtual/jre-1.8"
 
 S="${WORKDIR}"
-QA_PREBUILT="/opt/${PN}/"
 
 src_install() {
-	exeopts -m644
-	exeinto "/opt/${PN}"
-	doexe "${MY_PN}.jar"
+	java-pkg_dojar "${MY_PN}.jar"
 	exeopts -m755
 	exeinto "/usr/bin"
 	newexe "${FILESDIR}/${PN}.sh" "${PN}"
