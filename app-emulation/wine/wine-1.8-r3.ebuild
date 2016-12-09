@@ -20,13 +20,17 @@ else
 	MAJOR_VERSION=$(get_version_component_range 1-2)
 	if [[ "$(get_version_component_range $(get_version_component_count))" =~ ^rc ]]; then
 		MY_PV=$(replace_version_separator $(get_last_version_component_index) '''-''')
-		# Pull Wine stable revision control (RC) versions from alternate github repostiory...
+	else
+		KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
+	fi
+	if [[ "${MAJOR_VERSION}" == "1.8" ]]; then
+		# Pull Wine stable packages from alternate github repostiory...
 		STABLE_PREFIX="wine-stable"
 		SRC_URI="https://github.com/mstefani/wine-stable/archive/${PN}-${MY_PV}.tar.gz -> ${STABLE_PREFIX}-${P}.tar.gz"
 		MY_P="${STABLE_PREFIX}-${PN}-${MY_PV}"
 	else
-		KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
-		SRC_URI="https://dl.winehq.org/wine/source/${MAJOR_VERSION}/${MY_P}.tar.bz2 -> ${P}.tar.bz2"
+		SRC_URI="https://dl.winehq.org/wine/source/${MAJOR_VERSION}/${PN}-${MY_PV}.tar.bz2 -> ${P}.tar.bz2"
+		MY_P="${PN}-${MY_PV}"
 	fi
 fi
 
@@ -550,7 +554,8 @@ multilib_src_install_all() {
 
 	# Remove wineconsole if neither backend is installed #551124
 	if ! use X && ! use ncurses; then
-		rm	"${D}"/usr/{bin/,man/man1/}wineconsole* || die "rm"
+		rm "${D}"/usr/bin/wineconsole* || die "rm"
+		rm "${D}"/usr/share/man/man1/wineconsole* || die "rm"
 		use abi_x86_32 && rm "${D}"/usr/lib32/wine/{,fakedlls/}wineconsole.exe* || die "rm"
 		use abi_x86_64 && rm "${D}"/usr/lib64/wine/{,fakedlls/}wineconsole.exe* || die "rm"
 	fi
