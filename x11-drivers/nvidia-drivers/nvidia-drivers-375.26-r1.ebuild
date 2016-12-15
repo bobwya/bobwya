@@ -3,7 +3,6 @@
 # $Id$
 
 EAPI=6
-
 inherit eutils flag-o-matic linux-info linux-mod multilib nvidia-driver \
 	portability toolchain-funcs unpacker user udev
 
@@ -94,11 +93,11 @@ pkg_pretend() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 9; then
+		if kernel_is ge 4 10; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.9"
-			ewarn "<sys-kernel/vanilla-sources-4.9"
+			ewarn "<sys-kernel/gentoo-sources-4.10"
+			ewarn "<sys-kernel/vanilla-sources-4.10"
 		elif use kms && kernel_is le 4 1; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -326,7 +325,6 @@ src_install() {
 	fi
 
 	# Documentation
-	dohtml ${NV_DOC}/html/*
 	if use kernel_FreeBSD; then
 		dodoc "${NV_DOC}/README"
 		use X && doman "${NV_MAN}/nvidia-xconfig.1"
@@ -340,6 +338,9 @@ src_install() {
 		use tools && doman "${NV_MAN}/nvidia-settings.1.gz"
 		doman "${NV_MAN}/nvidia-cuda-mps-control.1.gz"
 	fi
+
+	docinto html
+	dodoc -r ${NV_DOC}/html/*
 
 	# Helper Apps
 	exeinto /opt/bin/
