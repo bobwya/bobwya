@@ -2,9 +2,9 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=5
+EAPI=6
 
-inherit autotools eutils
+inherit autotools
 
 DESCRIPTION="Tool and library to extract CAB files from InstallShield installers"
 HOMEPAGE="https://github.com/twogood/unshield"
@@ -16,21 +16,24 @@ KEYWORDS="~amd64 ~hppa ~ppc ~x86"
 IUSE="libressl static-libs"
 
 RDEPEND="
-	!libressl? ( dev-libs/openssl:0 )
-	libressl? ( dev-libs/libressl )
+	!libressl? ( dev-libs/openssl:0= )
+	libressl? ( dev-libs/libressl:0= )
 	sys-libs/zlib"
 DEPEND="${RDEPEND}"
 
 src_prepare() {
-	epatch "${FILESDIR}"/${PN}-bootstrap.patch
-	"${S}"/bootstrap || die "bootstrap script failed"
+	local PATCHES=( "${FILESDIR}/${PN}-1.0-bootstrap.patch" )
+	default
+	"${S}/bootstrap" || die "bootstrap script failed"
 	eautoreconf
 }
 
 src_configure() {
-	econf \
-		$(use_enable static-libs static) \
+	local myeconf=(
+		$(use_enable static-libs static)
 		--with-ssl
+	)
+	econf "${myeconf[@]}"
 }
 
 pkg_preinst() {
