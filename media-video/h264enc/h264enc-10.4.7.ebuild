@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=5
+EAPI=6
 
 DESCRIPTION="Script to encode H.264/AVC/MPEG-4 Part 10 formats"
 HOMEPAGE="http://h264enc.sourceforge.net/"
