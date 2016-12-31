@@ -72,11 +72,7 @@ src_prepare() {
 		sed -i -e 's/include(admFFmpegBuild)//g' "{S}/${cmake_directory}/CMakeLists.txt" \
 			|| die "sed failed"
 	else
-		if [[ ${PV} == 9999 ]]; then
-			eapply --binary "${FILESDIR}/${PN}-2.6.16-ffmpeg-parallel-build-use-processorcount.patch"
-		else
-			eapply --binary "${FILESDIR}/${PN}-2.6.14-ffmpeg-parallel-build-use-processorcount.patch"
-		fi
+		eapply --binary "${FILESDIR}/${PN}-2.6.14-ffmpeg-parallel-build-use-processorcount.patch"
 		# Avoid existing avidemux installations from making the build process fail, bug #461496.
 		sed -i -e "s:getFfmpegLibNames(\"\${sourceDir}\"):getFfmpegLibNames(\"${S}/${build_directory}/ffmpeg/source/\"):g" \
 					"${S}/cmake/admFFmpegUtil.cmake" \

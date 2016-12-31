@@ -1,18 +1,15 @@
---- a/cmake/admFFmpegBuild_helpers.cmake	2016-11-22 12:59:02.690387325 +0000
-+++ b/cmake/admFFmpegBuild_helpers.cmake	2016-11-22 13:08:25.023794577 +0000
-@@ -263,8 +263,14 @@
-     configure_file("${AVIDEMUX_TOP_SOURCE_DIR}/cmake/ffmpeg_make.sh.cmake" "${FFMPEG_BINARY_DIR}/ffmpeg_make.sh")
-     registerFFmpeg("${FFMPEG_SOURCE_DIR}" "${FFMPEG_BINARY_DIR}" 0)
- 
-+	include(ProcessorCount)
-+	ProcessorCount(N)
-+	if(NOT N EQUAL 0)
-+	    set(JOBS_IN_PARALLEL -j${N})
-+	endif(NOT N EQUAL 0)
-+
-     add_custom_target(         libavutil_dummy
--                                       COMMAND ${CMAKE_BUILD_TOOL}  -j 4 # We assume make or gnumake when host is unix
-+                      COMMAND ${CMAKE_BUILD_TOOL}  ${JOBS_IN_PARALLEL} # We assume make or gnumake when host is unix
-                                        WORKING_DIRECTORY "${FFMPEG_BINARY_DIR}")
- ENDMACRO(ADM_FF_BUILD_UNIX_STYLE)
- #
+--- a/cmake/admFFmpegBuild_helpers.cmake	2016-12-31 13:31:10.566103475 +0000
++++ b/cmake/admFFmpegBuild_helpers.cmake	2016-12-31 13:34:44.105772551 +0000
+@@ -299,6 +299,10 @@
+     if(NOT MSVC)
+-       SET(PARRALLEL "-j4") 
++        include(ProcessorCount)
++        ProcessorCount(N)
++        if(NOT N EQUAL 0)
++            set(PARALLEL -j${N})
++        endif(NOT N EQUAL 0)
+     endif(NOT MSVC)
+     add_custom_target(         libavutil_dummy ALL
+-                                       COMMAND ${CMAKE_BUILD_TOOL}  ${PARRALLEL} # We assume make or gnumake when host is unix
++                                       COMMAND ${CMAKE_BUILD_TOOL}  ${PARALLEL} # We assume make or gnumake when host is unix
+                                        WORKING_DIRECTORY "${FFMPEG_BINARY_DIR}"
