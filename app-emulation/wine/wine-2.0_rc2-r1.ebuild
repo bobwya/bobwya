@@ -548,8 +548,10 @@ multilib_src_install_all() {
 	if ! use X && ! use ncurses; then
 		rm "${D}"/usr/bin/wineconsole* || die "rm"
 		rm "${D}"/usr/share/man/man1/wineconsole* || die "rm"
-		use abi_x86_32 && rm "${D}"/usr/lib32/wine/{,fakedlls/}wineconsole.exe* || die "rm"
-		use abi_x86_64 && rm "${D}"/usr/lib64/wine/{,fakedlls/}wineconsole.exe* || die "rm"
+		rm_wineconsole() {
+			rm "${D}usr/$(get_libdir)"/wine/{,fakedlls/}wineconsole.exe* || die "rm failed"
+		}
+		multilib_foreach_abi rm_wineconsole
 	fi
 
 	use abi_x86_32 && pax-mark psmr "${D}"usr/bin/wine{,-preloader} #255055
