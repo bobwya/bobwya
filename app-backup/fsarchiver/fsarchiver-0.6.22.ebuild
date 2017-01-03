@@ -4,7 +4,7 @@
 
 EAPI=6
 
-inherit autotools eutils
+inherit autotools
 
 DESCRIPTION="Flexible filesystem archiver for backup and deployment tool"
 HOMEPAGE="http://www.fsarchiver.org"
