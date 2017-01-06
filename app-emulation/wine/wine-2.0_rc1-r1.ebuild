@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
@@ -382,6 +382,7 @@ src_prepare() {
 		"${FILESDIR}/${PN}-1.5.26-winegcc.patch" #260726
 		"${FILESDIR}/${PN}-1.7.12-osmesa-check.patch" #429386
 		"${FILESDIR}/${PN}-1.6-memset-O3.patch" #480508
+		"${FILESDIR}/${PN}-winhlp32-macro-flex-2.6.3-flex.patch" # https://bugs.winehq.org/show_bug.cgi?id=42132
 	)
 	#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
 	ebegin "(subshell) script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" ..."
@@ -549,7 +550,7 @@ multilib_src_install_all() {
 		rm "${D}"/usr/bin/wineconsole* || die "rm"
 		rm "${D}"/usr/share/man/man1/wineconsole* || die "rm"
 		rm_wineconsole() {
-			rm "${D}usr/$(get_libdir)"/wine/{,fakedlls/}wineconsole.exe* || die "rm failed"
+			rm "${D}usr/$(get_libdir)"/wine/{,fakedlls/}wineconsole.exe* || die "rm"
 		}
 		multilib_foreach_abi rm_wineconsole
 	fi
