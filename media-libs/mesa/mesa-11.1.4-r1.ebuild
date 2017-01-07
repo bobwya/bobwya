@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
@@ -35,10 +35,12 @@ LICENSE="MIT"
 SLOT="0"
 RESTRICT="!bindist? ( bindist )"
 
-INTEL_CARDS="i915 i965 ilo intel"
-RADEON_CARDS="r100 r200 r300 r600 radeon radeonsi"
-VIDEO_CARDS="${INTEL_CARDS} ${RADEON_CARDS} freedreno nouveau vmware"
-for card in ${VIDEO_CARDS}; do
+AMD_CARDS=( "r100" "r200" "r300" "r600" "radeon" "radeonsi" )
+INTEL_CARDS=( "i915" "i965" "ilo" "intel" )
+VIDEO_CARDS=( "freedreno" "nouveau" "vmware" )
+VIDEO_CARDS+=( "${AMD_CARDS[@]}" )
+VIDEO_CARDS+=( "${INTEL_CARDS[@]}" )
+for card in "${VIDEO_CARDS[@]}"; do
 	IUSE_VIDEO_CARDS+=" video_cards_${card}"
 done
 
@@ -79,12 +81,12 @@ LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.64"
 # keep correct libdrm and dri2proto dep
 # keep blocks in rdepend for binpkg
 RDEPEND="
-	!<x11-base/xorg-server-1.7
+	!<x11-base/xorg-server-1.16.4-r6
 	!<=x11-proto/xf86driproto-2.0.3
 	abi_x86_32? ( !app-emulation/emul-linux-x86-opengl[-abi_x86_32(-)] )
 	classic? ( app-eselect/eselect-mesa )
 	gallium? ( app-eselect/eselect-mesa )
-	>=app-eselect/eselect-opengl-1.3.0
+	=app-eselect/eselect-opengl-1.3.2
 	udev? ( kernel_linux? ( >=virtual/libudev-215:=[${MULTILIB_USEDEP}] ) )
 	>=dev-libs/expat-2.1.0-r3:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libX11-1.6.2:=[${MULTILIB_USEDEP}]
