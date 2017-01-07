@@ -1,10 +1,10 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
 EAPI=6
 
-inherit eutils flag-o-matic linux-info linux-mod multilib nvidia-driver \
+inherit flag-o-matic linux-info linux-mod multilib nvidia-driver \
 	portability toolchain-funcs unpacker user udev
 
 NV_URI="http://us.download.nvidia.com/XFree86/"
@@ -92,15 +92,15 @@ pkg_pretend() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 8; then
+		if kernel_is ge 4 9; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.8"
-			ewarn "<sys-kernel/vanilla-sources-4.8"
+			ewarn "<sys-kernel/gentoo-sources-4.9"
+			ewarn "<sys-kernel/vanilla-sources-4.9"
 			ewarn "This version of ${CATEGORY}/${PN} has an unofficial patch"
 			ewarn "applied to enable support for the following kernels:"
-			ewarn "=sys-kernel/gentoo-sources-4.8"
-			ewarn "=sys-kernel/vanilla-sources-4.8"
+			ewarn "=sys-kernel/gentoo-sources-4.9"
+			ewarn "=sys-kernel/vanilla-sources-4.9"
 		elif use kms && kernel_is le 4 1; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
