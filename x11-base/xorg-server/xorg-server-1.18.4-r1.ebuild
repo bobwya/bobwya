@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
@@ -152,6 +152,7 @@ src_prepare() {
 		"${FILESDIR}"/${PN}-1.12-unloadsubmodule.patch
 		# needed for new eselect-opengl, bug #541232
 		"${FILESDIR}"/${PN}-1.18-support-multiple-Files-sections.patch
+		"${FILESDIR}"/${PN}-1.18-sysmacros.patch #580044
 	)
 	default
 }
