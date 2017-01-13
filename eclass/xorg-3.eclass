@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
@@ -44,8 +44,11 @@ fi
 : ${XORG_MULTILIB:="no"}
 
 # we need to inherit autotools first to get the deps
-inherit autotools eutils libtool multilib toolchain-funcs \
+inherit autotools libtool multilib toolchain-funcs \
 	flag-o-matic ${FONT_ECLASS} ${GIT_ECLASS}
+case "{EAPI:-0}" in
+	3|4|5) inherit autotools-utils eutils ;;
+esac
 
 if [[ ${XORG_MULTILIB} == yes ]]; then
 	inherit autotools-multilib
@@ -61,7 +64,7 @@ esac
 EXPORT_FUNCTIONS ${EXPORTED_FUNCTIONS}
 
 IUSE=""
-HOMEPAGE="http://xorg.freedesktop.org/"
+HOMEPAGE="https://www.x.org/wiki/"
 
 # @ECLASS-VARIABLE: XORG_EAUTORECONF
 # @DESCRIPTION:
@@ -73,7 +76,7 @@ HOMEPAGE="http://xorg.freedesktop.org/"
 # @DESCRIPTION:
 # Set up SRC_URI for individual modular releases. If set to an empty
 # string, no SRC_URI will be provided by the eclass.
-: ${XORG_BASE_INDIVIDUAL_URI="http://xorg.freedesktop.org/releases/individual"}
+: ${XORG_BASE_INDIVIDUAL_URI="https://www.x.org/releases/individual"}
 
 # @ECLASS-VARIABLE: XORG_MODULE
 # @DESCRIPTION:
