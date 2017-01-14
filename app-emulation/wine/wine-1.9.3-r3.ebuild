@@ -398,13 +398,26 @@ src_prepare() {
 		ewarn "Applying the Wine-Staging patchset. Any bug reports to the"
 		ewarn "Wine bugzilla should explicitly state that staging was used."
 
-		local STAGING_EXCLUDE=""
-		use pipelight || STAGING_EXCLUDE="${STAGING_EXCLUDE} -W Pipelight"
+		# Declare Wine-Staging excluded patchsets
+		local -a STAGING_EXCLUDE_PATCHSETS=( "winhlp32-Flex_Workaround" )
+		use pipelight || STAGING_EXCLUDE_PATCHSETS+=( "Pipelight" )
+
+		# Process Wine-Staging exluded patchsets
+		local array_indices=( ${!STAGING_EXCLUDE_PATCHSETS[*]} )
+		for ((i=0; i<${#array_indices[*]}; i++)); do
+			local patchset="${STAGING_EXCLUDE_PATCHSETS[array_indices[i]]}"
+			if grep -q "${patchset}" "${STAGING_DIR}/patches/patchinstall.sh"; then
+				STAGING_EXCLUDE_PATCHSETS[${array_indices[i]}]="-W ${patchset}"
+				einfo "Excluding Wine-Staging patchset: \"${patchset}\""
+			else
+				unset -v STAGING_EXCLUDE_PATCHSETS[${array_indices[i]}]
+			fi
+		done
 
 		# Launch wine-staging patcher in a subshell, using epatch as a backend, and gitapply.sh as a backend for binary patches
 		ebegin "Running Wine-Staging patch installer"
 		(
-			set -- DESTDIR="${S}" --backend=epatch --no-autoconf --all ${STAGING_EXCLUDE}
+			set -- DESTDIR="${S}" --backend=epatch --no-autoconf --all ${STAGING_EXCLUDE_PATCHSETS[@]}
 			cd "${STAGING_DIR}/patches"
 			source "${STAGING_DIR}/patches/patchinstall.sh"
 		)
