@@ -4,7 +4,7 @@
 
 EAPI=6
 
-inherit flag-o-matic linux-info linux-mod multilib nvidia-driver \
+inherit flag-o-matic linux-info linux-mod multilib-minimal nvidia-driver \
 	portability toolchain-funcs unpacker user udev
 
 NV_URI="http://us.download.nvidia.com/XFree86/"
@@ -29,7 +29,7 @@ KEYWORDS="-* ~amd64 ~x86 ~amd64-fbsd ~x86-fbsd"
 RESTRICT="bindist mirror"
 EMULTILIB_PKG="true"
 
-IUSE="acpi compat +driver gtk3 kernel_FreeBSD kernel_linux +kms multilib pax_kernel static-libs +tools uvm wayland +X"
+IUSE="acpi compat +driver gtk3 kernel_FreeBSD kernel_linux +kms multilib pax_kernel static-libs +tools uvm +X"
 REQUIRED_USE="
 	tools? ( X )
 	static-libs? ( tools )
@@ -39,19 +39,19 @@ COMMON="
 	app-eselect/eselect-opencl
 	kernel_linux? ( >=sys-libs/glibc-2.6.1 )
 	tools? (
-		dev-libs/atk
-		dev-libs/glib:2
-		dev-libs/jansson
-		gtk3? ( x11-libs/gtk+:3 )
-		x11-libs/cairo
-		x11-libs/gdk-pixbuf[X]
-		x11-libs/gtk+:2
-		x11-libs/libX11
-		x11-libs/libXext
-		x11-libs/libXrandr
-		x11-libs/libXv
-		x11-libs/libXxf86vm
-		x11-libs/pango[X]
+		dev-libs/atk[${MULTILIB_USEDEP}]
+		dev-libs/glib:2[${MULTILIB_USEDEP}]
+		dev-libs/jansson[${MULTILIB_USEDEP}]
+		gtk3? ( x11-libs/gtk+:3[${MULTILIB_USEDEP}] )
+		x11-libs/cairo[${MULTILIB_USEDEP}]
+		x11-libs/gdk-pixbuf[X,${MULTILIB_USEDEP}]
+		x11-libs/gtk+:2[${MULTILIB_USEDEP}]
+		x11-libs/libX11[${MULTILIB_USEDEP}]
+		x11-libs/libXext[${MULTILIB_USEDEP}]
+		x11-libs/libXrandr[${MULTILIB_USEDEP}]
+		x11-libs/libXv[${MULTILIB_USEDEP}]
+		x11-libs/libXxf86vm[${MULTILIB_USEDEP}]
+		x11-libs/pango[X,${MULTILIB_USEDEP}]
 	)
 	X? (
 		=app-eselect/eselect-opengl-1.3.2
@@ -66,14 +66,12 @@ RDEPEND="
 	${COMMON}
 	acpi? ( sys-power/acpid )
 	tools? ( !media-video/nvidia-settings )
-	wayland? ( dev-libs/wayland )
 	X? (
 		<x11-base/xorg-server-1.18.99:=
-		>=x11-libs/libvdpau-1.0
-		multilib? (
-			>=x11-libs/libX11-1.6.2[abi_x86_32]
-			>=x11-libs/libXext-1.3.2[abi_x86_32]
-		)
+		>=x11-libs/libX11-1.6.2[${MULTILIB_USEDEP}]
+		>=x11-libs/libXext-1.3.2[${MULTILIB_USEDEP}]
+		>=x11-libs/libvdpau-1.0[${MULTILIB_USEDEP}]
+		sys-libs/zlib[${MULTILIB_USEDEP}]
 	)
 "
 
@@ -88,7 +86,6 @@ pkg_pretend() {
 		die "Unexpected \${DEFAULT_ABI} = ${DEFAULT_ABI}"
 	fi
 
-	CONFIG_CHECK=""
 	if use kernel_linux; then
 		if kernel_is ge 4 5; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
@@ -101,10 +98,6 @@ pkg_pretend() {
 			ewarn "<sys-kernel/gentoo-sources-4.2"
 			ewarn "<sys-kernel/vanilla-sources-4.2"
 			ewarn
-		elif use kms; then
-			einfo "USE +kms: checking kernel for KMS CONFIG recommended by NVIDIA."
-			einfo
-			CONFIG_CHECK+=" ~DRM_KMS_HELPER ~DRM_KMS_FB_HELPER"
 		fi
 	fi
 
@@ -115,7 +108,7 @@ pkg_pretend() {
 	nvidia-driver-check-warning
 
 	# Kernel features/options to check for
-	CONFIG_CHECK+=" ~ZONE_DMA ~MTRR ~SYSVIPC ~!LOCKDEP"
+	CONFIG_CHECK="~ZONE_DMA ~MTRR ~SYSVIPC ~!LOCKDEP"
 	use x86 && CONFIG_CHECK+=" ~HIGHMEM"
 
 	# Now do the above checks
@@ -130,10 +123,7 @@ pkg_setup() {
 	if use driver && use kernel_linux; then
 		MODULE_NAMES="nvidia(video:${S}/kernel)"
 		use uvm && MODULE_NAMES+=" nvidia-uvm(video:${S}/kernel)"
-		if use kms; then
-			MODULE_NAMES+=" nvidia-modeset(video:${S}/kernel)"
-			MODULE_NAMES+=" nvidia-drm(video:${S}/kernel)"
-		fi
+		use kms && MODULE_NAMES+=" nvidia-modeset(video:${S}/kernel)"
 
 		# This needs to run after MODULE_NAMES (so that the eclass checks
 		# whether the kernel supports loadable modules) but before BUILD_PARAMS
@@ -182,7 +172,7 @@ src_prepare() {
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
 		ewarn "need support with these patches, contact the PaX team."
-		PATCHES+=( "${FILESDIR}"/${PN}-364.12-pax-r1.patch )
+		PATCHES+=( "${FILESDIR}"/${PN}-361.28-pax-r1.patch )
 	fi
 
 	# Allow user patches so they can support RC kernels and whatever else
@@ -393,9 +383,6 @@ src_install() {
 
 		exeinto /etc/X11/xinit/xinitrc.d
 		newexe "${FILESDIR}"/95-nvidia-settings-r1 95-nvidia-settings
-
-		insinto /etc/vulkan/icd.d
-		doins nvidia_icd.json
 	fi
 
 	dobin ${NV_OBJ}/nvidia-bug-report.sh
@@ -455,24 +442,13 @@ src_install-libs() {
 			"libvdpau_nvidia.so.${NV_SOVER}"
 		)
 
-		if use wayland && has_multilib_profile && [[ ${ABI} == "amd64" ]];
-		then
-			NV_GLX_LIBRARIES+=(
-				"libnvidia-egl-wayland.so.${NV_SOVER}"
-			)
-		fi
-
 		if use kernel_linux && has_multilib_profile && [[ ${ABI} == "amd64" ]];
 		then
-			NV_GLX_LIBRARIES+=(
-				"libnvidia-wfb.so.${NV_SOVER}"
-			)
+			NV_GLX_LIBRARIES+=( "libnvidia-wfb.so.${NV_SOVER}" )
 		fi
 
 		if use kernel_FreeBSD; then
-			NV_GLX_LIBRARIES+=(
-				"libnvidia-tls.so.${NV_SOVER}"
-			)
+			NV_GLX_LIBRARIES+=( "libnvidia-tls.so.${NV_SOVER}" )
 		fi
 
 		if use kernel_linux; then
