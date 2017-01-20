@@ -311,22 +311,6 @@ src_prepare() {
 		source "${FILESDIR}/${PN}-9999-multilib-portage-sed.sh" || die
 	)
 	eend $? || die "(subshell) script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\"."
-		# Declare Wine-Staging excluded patchsets
-		local -a STAGING_EXCLUDE_PATCHSETS=( "winhlp32-Flex_Workaround" )
-		use pipelight || STAGING_EXCLUDE_PATCHSETS+=( "Pipelight" )
-
-		# Process Wine-Staging exluded patchsets
-		local array_indices=( ${!STAGING_EXCLUDE_PATCHSETS[*]} )
-		for ((i=0; i<${#array_indices[*]}; i++)); do
-			local patchset="${STAGING_EXCLUDE_PATCHSETS[array_indices[i]]}"
-			if grep -q "${patchset}" "${STAGING_DIR}/patches/patchinstall.sh"; then
-				STAGING_EXCLUDE_PATCHSETS[${array_indices[i]}]="-W ${patchset}"
-				einfo "Excluding Wine-Staging patchset: \"${patchset}\""
-			else
-				unset -v STAGING_EXCLUDE_PATCHSETS[${array_indices[i]}]
-			fi
-		done
-
 
 	default
 	eautoreconf
