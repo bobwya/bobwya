@@ -315,6 +315,9 @@ src_install() {
 		# Xorg nvidia.conf
 		insinto /usr/share/X11/xorg.conf.d
 		newins {,50-}nvidia-drm-outputclass.conf
+
+		insinto /usr/share/glvnd/egl_vendor.d
+		doins ${NV_X11}/10_nvidia.json
 	fi
 
 	# OpenCL ICD for NVIDIA
@@ -437,7 +440,7 @@ src_install-libs() {
 
 	if use X; then
 		NV_GLX_LIBRARIES=(
-			"libEGL.so.1 ${GL_ROOT}"
+			"libEGL.so.$(usex compat ${NV_SOVER} 1) ${GL_ROOT}"
 			"libEGL_nvidia.so.${NV_SOVER} ${GL_ROOT}"
 			"libGL.so.$(usex compat ${NV_SOVER} 1.0.0) ${GL_ROOT}"
 			"libGLESv1_CM.so.1 ${GL_ROOT}"
