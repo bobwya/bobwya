@@ -55,7 +55,7 @@ REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	elibc_glibc? ( threads )
 	osmesa? ( opengl )
 	test? ( abi_x86_32 )
-	"
+	" # osmesa-opengl #286560 # X-truetype #551124
 
 # FIXME: the test suite is unsuitable for us; many tests require net access
 # or fail due to Xvfb's opengl limitations.
