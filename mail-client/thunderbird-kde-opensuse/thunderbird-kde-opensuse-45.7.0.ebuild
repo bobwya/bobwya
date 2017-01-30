@@ -1,11 +1,11 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
 EAPI=6
 WANT_AUTOCONF="2.1"
 MOZ_ESR=""
-MOZ_LIGHTNING_VER="4.7.5.1"
+MOZ_LIGHTNING_VER="4.7.7"
 MOZ_LIGHTNING_GDATA_VER="2.6"
 
 # This list can be updated using scripts/get_langs.sh from the mozilla overlay
@@ -23,7 +23,7 @@ EMVER="1.9.1"
 
 # Patches
 PATCH="thunderbird-38.0-patches-0.1"
-PATCHFF="firefox-45.0-patches-07"
+PATCHFF="firefox-45.0-patches-10"
 
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
@@ -43,7 +43,7 @@ DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE 
 HOMEPAGE="http://www.mozilla.com/en-US/thunderbird
 	${EHG_REPO_URI}"
 
-KEYWORDS="amd64 x86 ~x86-fbsd ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist crypt hardened kde ldap lightning +minimal mozdom selinux"
@@ -389,15 +389,6 @@ pkg_preinst() {
 }
 
 pkg_postinst() {
-	if [[ $(get_major_version) -ge 40 ]]; then
-		# See https://forums.gentoo.org/viewtopic-t-1028874.html
-		ewarn "If your set Desktop Environment cursor theme - randomly changes to"
-		ewarn "\"adwaita\" when mousing over ${PN}, see:"
-		ewarn "  https://forums.gentoo.org/viewtopic-t-1028874.html"
-		ewarn "  https://wiki.gentoo.org/wiki/Cursor_themes"
-		ewarn "  https://wiki.archlinux.org/index.php/Cursor_themes"
-		ewarn
-	fi
 	fdo-mime_desktop_database_update
 	gnome2_icon_cache_update
 
