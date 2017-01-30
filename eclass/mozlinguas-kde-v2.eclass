@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
@@ -322,6 +322,18 @@ mozlinguas_kde_xpistage_langpacks() {
 			cp -RLp -t "${modpath}/chrome" "${srcprefix}-${l}/chrome/${c}-${l}" || die
 			grep "locale ${c} ${l} chrome/" "${srcprefix}-${l}/chrome.manifest" \
 				>>"${modpath}/chrome.manifest" || die
+		elif [[ -e "${srcprefix}-${l}/chrome/${c}/locale" ]]; then
+			if grep "locale ${c} ${l}" "${srcprefix}-${l}/chrome.manifest" &>/dev/null; then
+				grep "locale ${c} ${l} chrome/" "${srcprefix}-${l}/chrome.manifest" \
+					>>"${modpath}/chrome.manifest" || die
+				cp -RLp -t "${modpath}/chrome" "${srcprefix}-${l}/chrome/${c}" || die
+			elif grep "locale ${c} ${l}" "${srcprefix}-${l}/chrome/${c}.manifest" &>/dev/null ; then
+				grep "locale ${c} ${l}" "${srcprefix}-${l}/chrome/${c}.manifest" \
+					>>"${modpath}/chrome/${c}.manifest" || die
+				cp -RLp -t "${modpath}/chrome" "${srcprefix}-${l}/chrome/${c}" || die
+			else
+				ewarn "Locale ${l} could not be processed for ${c}, skipping."
+			fi
 		elif [[ -e "${srcprefix}/chrome/${c}-${l}" ]]; then
 			cp -RLp -t "${modpath}/chrome" "${srcprefix}/chrome/${c}-${l}" || die
 			grep "locale ${c} ${l} chrome/" "${srcprefix}/chrome.manifest" \

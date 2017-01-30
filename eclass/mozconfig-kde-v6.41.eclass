@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 #
-# @ECLASS: mozconfig-kde-v6.42.eclass
+# @ECLASS: mozconfig-kde-v6.41.eclass
 # @MAINTAINER:
 # mozilla team <mozilla@gentoo.org>
 # @BLURB: the new mozilla common configuration eclass for FF33 and newer, v6
@@ -56,7 +56,7 @@ esac
 # Set the variable to any value if the use flag should exist but not be default-enabled.
 
 # use-flags common among all mozilla ebuilds
-IUSE="${IUSE} dbus debug +gstreamer +jemalloc3 neon pulseaudio selinux startup-notification system-cairo system-icu system-jpeg system-sqlite system-libvpx"
+IUSE="${IUSE} dbus debug gstreamer +jemalloc3 pulseaudio selinux startup-notification system-cairo system-icu system-jpeg system-sqlite system-libvpx"
 
 # some notes on deps:
 # gtk:2 minimum is technically 2.10 but gio support (enabled by default) needs 2.14
@@ -96,10 +96,10 @@ RDEPEND=">=app-text/hunspell-1.2:=
 	x11-libs/libXfixes
 	x11-libs/libXrender
 	x11-libs/libXt
-	system-cairo? ( >=x11-libs/cairo-1.12[X,xcb] >=x11-libs/pixman-0.19.2 )
+	system-cairo? ( >=x11-libs/cairo-1.12[X] >=x11-libs/pixman-0.19.2 )
 	system-icu? ( >=dev-libs/icu-51.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
-	system-sqlite? ( >=dev-db/sqlite-3.8.11.1:3[secure-delete,debug=] )
+	system-sqlite? ( >=dev-db/sqlite-3.8.10.1:3[secure-delete,debug=] )
 	system-libvpx? ( >=media-libs/libvpx-1.3.0:0=[postproc] )
 "
 
@@ -119,11 +119,9 @@ if [[ -n ${MOZCONFIG_OPTIONAL_WIFI} ]]; then
 		IUSE+=" wifi"
 	fi
 	RDEPEND+="
-	wifi? (
-		kernel_linux? ( >=sys-apps/dbus-0.60
-			>=dev-libs/dbus-glib-0.72
-			net-misc/networkmanager )
-	)"
+	wifi? ( >=sys-apps/dbus-0.60
+		>=dev-libs/dbus-glib-0.72
+		net-wireless/wireless-tools )"
 fi
 if [[ -n ${MOZCONFIG_OPTIONAL_JIT} ]]; then
 	if [[ ${MOZCONFIG_OPTIONAL_JIT} = "enabled" ]]; then
@@ -195,9 +193,9 @@ mozconfig_config() {
 	if [[ -n ${MOZCONFIG_OPTIONAL_WIFI} ]]; then
 		# wifi pulls in dbus so manage both here
 		mozconfig_use_enable wifi necko-wifi
-		if use kernel_linux && use wifi && ! use dbus; then
+		if use wifi && ! use dbus; then
 			echo "Enabling dbus support due to wifi request"
-			mozconfig_annotate 'dbus required by necko-wifi on linux' --enable-dbus
+			mozconfig_annotate 'dbus required by necko-wifi' --enable-dbus
 		else
 			mozconfig_use_enable dbus
 		fi
@@ -229,9 +227,7 @@ mozconfig_config() {
 	mozconfig_annotate 'Gentoo default' --with-system-png
 	mozconfig_annotate '' --enable-system-ffi
 	mozconfig_annotate 'Gentoo default to honor system linker' --disable-gold
-	mozconfig_annotate 'Gentoo default' --disable-skia
 	mozconfig_annotate '' --disable-gconf
-	mozconfig_annotate '' --with-intl-api
 
 	# Use jemalloc unless libc is not glibc >= 2.4
 	# at this time the minimum glibc in the tree is 2.9 so we should be safe.
@@ -256,21 +252,6 @@ mozconfig_config() {
 	mozconfig_use_enable system-sqlite
 	mozconfig_use_with system-jpeg
 	mozconfig_use_with system-icu
+	mozconfig_use_with system-icu intl-api
 	mozconfig_use_with system-libvpx
-
-	# Modifications to better support ARM, bug 553364
-	if use neon; then
-		mozconfig_annotate '' --with-fpu=neon
-		mozconfig_annotate '' --with-thumb=yes
-		mozconfig_annotate '' --with-thumb-interwork=no
-	fi
-	if [[ ${CHOST} == armv* ]]; then
-		mozconfig_annotate '' --with-float-abi=hard
-		mozconfig_annotate '' --enable-skia
-
-		if ! use system-libvpx; then
-			sed -i -e "s|softfp|hard|" \
-				"${S}"/media/libvpx/moz.build
-		fi
-	fi
 }

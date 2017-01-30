@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 #
@@ -78,7 +78,7 @@ IUSE="${IUSE} dbus debug ffmpeg +gstreamer +jemalloc3 neon pulseaudio selinux st
 # gtk:2 minimum is technically 2.10 but gio support (enabled by default) needs 2.14
 # media-libs/mesa needs to be 10.2 or above due to a bug with flash+vdpau
 
-RDEPEND=">=app-text/hunspell-1.2
+RDEPEND=">=app-text/hunspell-1.2:=
 	dev-libs/atk
 	dev-libs/expat
 	>=x11-libs/cairo-1.10[X]
@@ -120,7 +120,7 @@ RDEPEND=">=app-text/hunspell-1.2
 	system-harfbuzz? ( >=media-libs/harfbuzz-1.1.3:0=[graphite,icu] >=media-gfx/graphite2-1.3.8 )
 "
 
-if [[ ${PV/45.0*/} == "" ]]; then
+if [[ ${PV} == "45.0" ]]; then
 	RDEPEND+="
 	system-libvpx? ( >=media-libs/libvpx-1.3.0:0=[postproc] )"
 else

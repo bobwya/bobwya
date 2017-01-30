@@ -2,10 +2,10 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 #
-# @ECLASS: mozconfig-kde-v6.42.eclass
+# @ECLASS: mozconfig-kde-v6.39.eclass
 # @MAINTAINER:
 # mozilla team <mozilla@gentoo.org>
-# @BLURB: the new mozilla common configuration eclass for FF33 and newer, v6
+# @BLURB: the new mozilla common configuration eclass for FF33 and newer, v5
 # @DESCRIPTION:
 # This eclass is used in mozilla ebuilds (firefox-kde-opensuse, thunderbird-kde-opensuse),
 # patched with the unofficial OpenSUSE KDE patchset.
@@ -45,18 +45,8 @@ esac
 # Set the variable to "enabled" if the use flag should be enabled by default.
 # Set the variable to any value if the use flag should exist but not be default-enabled.
 
-# @ECLASS-VARIABLE: MOZCONFIG_OPTIONAL_GTK3
-# @DESCRIPTION:
-# Set this variable before the inherit line, when an ebuild can provide
-# optional gtk3 support via IUSE="gtk3".  Currently this would include
-# ebuilds for firefox, but thunderbird could follow in the future.
-#
-# Leave the variable UNSET if gtk3 support should not be available.
-# Set the variable to "enabled" if the use flag should be enabled by default.
-# Set the variable to any value if the use flag should exist but not be default-enabled.
-
 # use-flags common among all mozilla ebuilds
-IUSE="${IUSE} dbus debug +gstreamer +jemalloc3 neon pulseaudio selinux startup-notification system-cairo system-icu system-jpeg system-sqlite system-libvpx"
+IUSE="${IUSE} dbus debug gstreamer +jemalloc3 pulseaudio selinux startup-notification system-cairo system-icu system-jpeg system-sqlite system-libvpx"
 
 # some notes on deps:
 # gtk:2 minimum is technically 2.10 but gio support (enabled by default) needs 2.14
@@ -70,7 +60,7 @@ RDEPEND=">=app-text/hunspell-1.2:=
 	>=x11-libs/gtk+-2.18:2
 	x11-libs/gdk-pixbuf
 	>=x11-libs/pango-1.22.0
-	>=media-libs/libpng-1.6.17:0=[apng]
+	>=media-libs/libpng-1.6.16:0=[apng]
 	>=media-libs/mesa-10.2:*
 	media-libs/fontconfig
 	>=media-libs/freetype-2.4.10
@@ -96,22 +86,13 @@ RDEPEND=">=app-text/hunspell-1.2:=
 	x11-libs/libXfixes
 	x11-libs/libXrender
 	x11-libs/libXt
-	system-cairo? ( >=x11-libs/cairo-1.12[X,xcb] >=x11-libs/pixman-0.19.2 )
+	system-cairo? ( >=x11-libs/cairo-1.12[X] >=x11-libs/pixman-0.19.2 )
 	system-icu? ( >=dev-libs/icu-51.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
-	system-sqlite? ( >=dev-db/sqlite-3.8.11.1:3[secure-delete,debug=] )
+	system-sqlite? ( >=dev-db/sqlite-3.8.9:3[secure-delete,debug=] )
 	system-libvpx? ( >=media-libs/libvpx-1.3.0:0=[postproc] )
 "
 
-if [[ -n ${MOZCONFIG_OPTIONAL_GTK3} ]]; then
-	if [[ ${MOZCONFIG_OPTIONAL_GTK3} = "enabled" ]]; then
-		IUSE+=" +gtk3"
-	else
-		IUSE+=" gtk3"
-	fi
-	RDEPEND+="
-	gtk3? ( >=x11-libs/gtk+-3.14.0:3 )"
-fi
 if [[ -n ${MOZCONFIG_OPTIONAL_WIFI} ]]; then
 	if [[ ${MOZCONFIG_OPTIONAL_WIFI} = "enabled" ]]; then
 		IUSE+=" +wifi"
@@ -119,11 +100,9 @@ if [[ -n ${MOZCONFIG_OPTIONAL_WIFI} ]]; then
 		IUSE+=" wifi"
 	fi
 	RDEPEND+="
-	wifi? (
-		kernel_linux? ( >=sys-apps/dbus-0.60
-			>=dev-libs/dbus-glib-0.72
-			net-misc/networkmanager )
-	)"
+	wifi? ( >=sys-apps/dbus-0.60
+		>=dev-libs/dbus-glib-0.72
+		net-wireless/wireless-tools )"
 fi
 if [[ -n ${MOZCONFIG_OPTIONAL_JIT} ]]; then
 	if [[ ${MOZCONFIG_OPTIONAL_JIT} = "enabled" ]]; then
@@ -168,11 +147,7 @@ mozconfig_config() {
 		--enable-svg \
 		--with-system-bz2
 
-	if [[ -n ${MOZCONFIG_OPTIONAL_GTK3} ]]; then
-		mozconfig_annotate 'gtk3 use flag' --enable-default-toolkit=$(usex gtk3 cairo-gtk3 cairo-gtk2)
-	else
-		mozconfig_annotate '' --enable-default-toolkit=cairo-gtk2
-	fi
+	mozconfig_annotate '' --enable-default-toolkit=cairo-gtk2
 
 	if has bindist ${IUSE}; then
 		mozconfig_use_enable !bindist official-branding
@@ -195,9 +170,9 @@ mozconfig_config() {
 	if [[ -n ${MOZCONFIG_OPTIONAL_WIFI} ]]; then
 		# wifi pulls in dbus so manage both here
 		mozconfig_use_enable wifi necko-wifi
-		if use kernel_linux && use wifi && ! use dbus; then
+		if use wifi && ! use dbus; then
 			echo "Enabling dbus support due to wifi request"
-			mozconfig_annotate 'dbus required by necko-wifi on linux' --enable-dbus
+			mozconfig_annotate 'dbus required by necko-wifi' --enable-dbus
 		else
 			mozconfig_use_enable dbus
 		fi
@@ -229,9 +204,7 @@ mozconfig_config() {
 	mozconfig_annotate 'Gentoo default' --with-system-png
 	mozconfig_annotate '' --enable-system-ffi
 	mozconfig_annotate 'Gentoo default to honor system linker' --disable-gold
-	mozconfig_annotate 'Gentoo default' --disable-skia
 	mozconfig_annotate '' --disable-gconf
-	mozconfig_annotate '' --with-intl-api
 
 	# Use jemalloc unless libc is not glibc >= 2.4
 	# at this time the minimum glibc in the tree is 2.9 so we should be safe.
@@ -256,21 +229,6 @@ mozconfig_config() {
 	mozconfig_use_enable system-sqlite
 	mozconfig_use_with system-jpeg
 	mozconfig_use_with system-icu
+	mozconfig_use_with system-icu intl-api
 	mozconfig_use_with system-libvpx
-
-	# Modifications to better support ARM, bug 553364
-	if use neon; then
-		mozconfig_annotate '' --with-fpu=neon
-		mozconfig_annotate '' --with-thumb=yes
-		mozconfig_annotate '' --with-thumb-interwork=no
-	fi
-	if [[ ${CHOST} == armv* ]]; then
-		mozconfig_annotate '' --with-float-abi=hard
-		mozconfig_annotate '' --enable-skia
-
-		if ! use system-libvpx; then
-			sed -i -e "s|softfp|hard|" \
-				"${S}"/media/libvpx/moz.build
-		fi
-	fi
 }

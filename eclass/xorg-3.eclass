@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-# @ECLASS: xorg-3.eclass
+# @ECLASS: xorg-kde-3.eclass
 # @MAINTAINER:
 # x11@gentoo.org
 # @AUTHOR:

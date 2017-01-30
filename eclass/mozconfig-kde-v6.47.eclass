@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 #
@@ -10,15 +10,13 @@
 # This eclass is used in mozilla ebuilds (firefox-kde-opensuse, thunderbird-kde-opensuse),
 # patched with the unofficial OpenSUSE KDE patchset.
 # Providing a single location for common mozilla engine components.
-# patched with the unofficial OpenSUSE KDE patchset.
-# Providing a single location for common mozilla engine components.
 #
 # The eclass provides all common dependencies as well as common use flags.
 #
 # Some use flags which may be optional in particular mozilla packages can be
 # supported through setting eclass variables.
 #
-# This eclass inherits mozconfig helper functions as defined in mozcoreconf-kde-v4,
+# This eclass inherits mozconfig helper functions as defined in mozcoreconf-v4,
 # and so ebuilds inheriting this eclass do not need to inherit that.
 
 case ${EAPI} in
@@ -93,7 +91,7 @@ IUSE="${IUSE} dbus debug +jemalloc3 neon pulseaudio selinux startup-notification
 # gtk:2 minimum is technically 2.10 but gio support (enabled by default) needs 2.14
 # media-libs/mesa needs to be 10.2 or above due to a bug with flash+vdpau
 
-RDEPEND=">=app-text/hunspell-1.2
+RDEPEND=">=app-text/hunspell-1.2:=
 	dev-libs/atk
 	dev-libs/expat
 	>=x11-libs/cairo-1.10[X]
@@ -348,11 +346,9 @@ mozconfig_config() {
 	# Instead of the standard --build= and --host=, mozilla uses --host instead
 	# of --build, and --target intstead of --host.
 	# Note, mozilla also has --build but it does not do what you think it does.
+	# Set both --target and --host as mozilla uses python to guess values otherwise
 	mozconfig_annotate '' --target="${CHOST}"
-	if [[ "${CBUILD:-${CHOST}}" != "${CHOST}" ]]; then
-		# set --host only when cross-compiling
-		mozconfig_annotate '' --host="${CBUILD:-${CHOST}}"
-	fi
+	mozconfig_annotate '' --host="${CBUILD:-${CHOST}}"
 
 	mozconfig_use_enable pulseaudio
 
@@ -393,7 +389,7 @@ mozconfig_config() {
 #
 # Example:
 #
-# inherit mozconfig-kde-v6.46
+# inherit mozconfig-v6.46
 #
 # src_install() {
 # 	cp "${FILESDIR}"/gentoo-default-prefs.js \

@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
@@ -112,10 +112,16 @@ esac
 # Defaults to '.tar.xz'
 : ${MOZ_L10N_URI_SUFFIX:=".tar.xz"}
 
+# @ECLASS-VARIABLE: MOZ_FORCE_UPSTREAM_L10N
+# @DESCRIPTION:
+# Set this to use upstream langpaks even if the package normally
+# shouldn't (ie it is an alpha or beta package)
+: ${MOZ_FORCE_UPSTREAM_L10N:=""}
+
 # Add linguas_* to IUSE according to available language packs
 # No language packs for alphas and betas
 if ! [[ -n ${MOZ_GENERATE_LANGPACKS} ]]; then
-	if ! [[ ${PV} =~ alpha|beta ]]; then
+	if ! [[ ${PV} =~ alpha|beta ]] || [[ -n ${MOZ_FORCE_UPSTREAM_L10N} ]]; then
 		[[ -z ${MOZ_FTP_URI} ]] && [[ -z ${MOZ_HTTP_URI} ]] && die "No URI set to download langpacks, please set one of MOZ_{FTP,HTTP}_URI"
 		for x in "${MOZ_LANGS[@]}" ; do
 			# en and en_US are handled internally
