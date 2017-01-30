@@ -1,18 +1,19 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
 EAPI=6
 VIRTUALX_REQUIRED="pgo"
 WANT_AUTOCONF="2.1"
-MOZ_ESR=1
+MOZ_ESR=""
 
 # This list can be updated with scripts/get_langs.sh from the mozilla overlay
+# Excluding: cak, dsb, ff, gn, lij ; as they aren't on the gentoo list
 MOZ_LANGS=( ach af an ar as ast az be bg bn-BD bn-IN br bs ca cs cy da de
-el en en-GB en-US en-ZA eo es-AR es-CL es-ES es-MX et eu fa fi fr
-fy-NL ga-IE gd gl gu-IN he hi-IN hr hsb hu hy-AM id is it ja kk km kn ko
-lt lv mai mk ml mr ms nb-NO nl nn-NO or pa-IN pl pt-BR pt-PT rm ro ru si
-sk sl son sq sr sv-SE ta te th tr uk uz vi xh zh-CN zh-TW )
+el en en-GB en-US en-ZA eo es-AR es-CL es-ES es-MX et eu fa fi fr fy-NL
+ga-IE gd gl gu-IN he hi-IN hr hsb hu hy-AM id is it ja kk km kn ko lt
+lv mai mk ml mr ms nb-NO nl nn-NO or pa-IN pl pt-BR pt-PT rm ro ru si sk sl
+son sq sr sv-SE ta te th tr uk uz vi xh zh-CN zh-TW )
 
 # Convert the ebuild version to the upstream mozilla version, used by mozlinguas
 MOZ_PN="firefox"
@@ -26,65 +27,51 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${MOZ_PN}-45.0-patches-08"
+PATCH="${MOZ_PN}-48.0-patches-01"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
 EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 
-# Kill gtk3 support since gtk+-3.20 breaks it hard prior to 48.0
-#MOZCONFIG_OPTIONAL_GTK3=1
+MOZCONFIG_OPTIONAL_GTK2ONLY=1
+#MOZCONFIG_OPTIONAL_QT5=1
 MOZCONFIG_OPTIONAL_WIFI=1
 MOZCONFIG_OPTIONAL_JIT="enabled"
 
-inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-kde-v6.45 pax-utils fdo-mime autotools virtualx mozlinguas-kde-v2 mercurial
+inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mozconfig-kde-v6.48 pax-utils fdo-mime autotools virtualx mozlinguas-kde-v2 mercurial
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="http://www.mozilla.com/firefox
 	${EHG_REPO_URI}"
 
-KEYWORDS="amd64 x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist hardened +hwaccel kde pgo selinux +gmp-autoupdate test"
+IUSE="bindist egl hardened hwaccel jack kde pgo selinux +gmp-autoupdate test"
 RESTRICT="!bindist? ( bindist )"
 
-# More URIs appended below...
+PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCH}.tar.xz )
 SRC_URI="${SRC_URI}
-	https://dev.gentoo.org/~anarchy/mozilla/patchsets/${PATCH}.tar.xz
-	https://dev.gentoo.org/~axs/mozilla/patchsets/${PATCH}.tar.xz
-	https://dev.gentoo.org/~polynomial-c/mozilla/patchsets/${PATCH}.tar.xz"
+	${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz
+	${PATCH_URIS[@]}"
 
 ASM_DEPEND=">=dev-lang/yasm-1.1"
 
-# Mesa 7.10 needed for WebGL + bugfixes
 RDEPEND="
-	>=dev-libs/nss-3.21.1
+	jack? ( virtual/jack )
+	>=dev-libs/nss-3.24
 	>=dev-libs/nspr-4.12
 	selinux? ( sec-policy/selinux-mozilla )
-	kde? ( kde-misc/kmozillahelper:*  )
+	kde? ( kde-misc/kmozillahelper:=  )
 	!!www-client/firefox"
 
 DEPEND="${RDEPEND}
-	pgo? (
-		>=sys-devel/gcc-4.5 )
-	amd64? ( ${ASM_DEPEND}
-		virtual/opengl )
-	x86? ( ${ASM_DEPEND}
-		virtual/opengl )"
+	pgo? ( >=sys-devel/gcc-4.5 )
+	amd64? ( ${ASM_DEPEND} virtual/opengl )
+	x86? ( ${ASM_DEPEND} virtual/opengl )"
 
-# No source releases for alpha|beta
-if [[ ${PV} =~ alpha ]]; then
-	CHANGESET="8a3042764de7"
-	SRC_URI="${SRC_URI}
-		https://dev.gentoo.org/~nirbheek/mozilla/firefox/firefox-${MOZ_PV}_${CHANGESET}.source.tar.xz"
-	S="${WORKDIR}/mozilla-aurora-${CHANGESET}"
-else
-	S="${WORKDIR}/firefox-${MOZ_PV}"
-	SRC_URI="${SRC_URI}
-		${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz"
-fi
+S="${WORKDIR}/firefox-${MOZ_PV}"
 
 QA_PRESTRIPPED="usr/lib*/${MOZ_PN}/firefox"
 
@@ -119,6 +106,11 @@ pkg_setup() {
 }
 
 pkg_pretend() {
+	ewarn
+	ewarn "Version ${PV}, of ${MOZ_PN}, is no longer supported by Mozilla (Upstream)."
+	ewarn "This version should only be used in the event of breakage"
+	ewarn "with the latest release of ${PN}."
+
 	if [[ ${#BUILD_OBJ_DIR} -gt ${MAX_OBJ_DIR_LEN} ]]; then
 		ewarn "Building ${PN} with a build object directory path >${MAX_OBJ_DIR_LEN} characters long may cause the build to fail:"
 		ewarn " ... \"${BUILD_OBJ_DIR}\""
@@ -140,6 +132,8 @@ src_unpack() {
 	if use kde; then
 		if [[ ${MOZ_PV} =~ ^\(10|17|24\)\..*esr$ ]]; then
 			EHG_REVISION="esr${MOZ_PV%%.*}"
+		elif [[ ${MOZ_PV} =~ ^48\. ]]; then
+			EHG_REVISION="4663386a04de"
 		else
 			EHG_REVISION="firefox${MOZ_PV%%.*}"
 		fi
@@ -152,6 +146,9 @@ src_unpack() {
 src_prepare() {
 	# Default to our patchset
 	local PATCHES=( "${WORKDIR}/firefox" )
+	if ! use gtk2 && [[ $(best_version 'x11-libs/gtk+') == 'x11-libs/gtk+-3.20.'* ]]; then
+		PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-gtk3_20.patch" )
+	fi
 	if use kde; then
 		sed -i -e 's:@BINPATH@/defaults/pref/kde.js:@RESPATH@/browser/@PREF_DIR@/kde.js:' \
 			"${EHG_CHECKOUT_DIR}/firefox-kde.patch" || die "sed failed"
@@ -170,8 +167,12 @@ src_prepare() {
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox-kde-opensuse/)
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
+	PATCHES+=( "${FILESDIR}/mozilla_configure_regexp.patch" )
+	PATCHES+=( "${FILESDIR}/${PN}-48.0-pgo.patch" )
 
-	default
+	if ! tc-ld-is-gold && has_version ">=sys-devel/binutils-2.26"; then
+		PATCHES+=( "${FILESDIR}/xpcom-components-binutils-26.patch" )
+	fi
 
 	# Enable gnomebreakpad
 	if use debug; then
@@ -204,11 +205,16 @@ src_prepare() {
 	sed '/^MOZ_DEV_EDITION=1/d' \
 		-i "${S}"/browser/branding/aurora/configure.sh || die "sed failed"
 
-	eautoreconf
+	default
+
+	# Autotools configure is now called old-configure.in
+	# This works because there is still a configure.in that happens to be for
+	# the shell wrapper configure script
+	eautoreconf old-configure.in
 
 	# Must run autoconf in js/src
 	cd "${S}"/js/src || die "cd failed"
-	eautoconf
+	eautoconf old-configure.in
 
 	# Need to update jemalloc's configure
 	cd "${S}"/memory/jemalloc/src || die "cd failed"
@@ -237,19 +243,22 @@ src_configure() {
 	# Add full relro support for hardened
 	use hardened && append-ldflags "-Wl,-z,relro,-z,now"
 
+	# egl build error #571180
+	use egl && mozconfig_annotate 'Enable EGL as GL provider' --with-gl-provider=EGL
+
 	# Setup api key for location services
 	echo -n "${_google_api_key}" > "${S}"/google-api-key
 	mozconfig_annotate '' --with-google-api-keyfile="${S}/google-api-key"
 
 	mozconfig_annotate '' --enable-extensions="${MEXTENSIONS}"
-	mozconfig_annotate '' --disable-mailnews
 
 	# Allow for a proper pgo build
 	if use pgo; then
-		echo "mk_add_options PROFILE_GEN_SCRIPT='\$(PYTHON) \$(OBJDIR)/_profile/pgo/profileserver.py'" >> "${S}"/.mozconfig
+		echo "mk_add_options PROFILE_GEN_SCRIPT='EXTRA_TEST_ARGS=10 \$(MAKE) -C \$(MOZ_OBJDIR) pgo-profile-run'" >> "${S}/.mozconfig"
 	fi
 
-	echo "mk_add_options MOZ_OBJDIR=${BUILD_OBJ_DIR}" >> "${S}"/.mozconfig
+	echo "mk_add_options MOZ_OBJDIR=${BUILD_OBJ_DIR}" >> "${S}/.mozconfig"
+	echo "mk_add_options XARGS=/usr/bin/xargs" >> "${S}/.mozconfig"
 
 	# Finalize and report settings
 	mozconfig_final
@@ -259,6 +268,7 @@ src_configure() {
 	fi
 
 	# workaround for funky/broken upstream configure...
+	SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 	emake -f client.mk configure
 }
 
@@ -284,11 +294,9 @@ src_compile() {
 		shopt -u nullglob
 		addpredict "${cards}"
 
-		CC="$(tc-getCC)" CXX="$(tc-getCXX)" LD="$(tc-getLD)" \
 		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 		virtx emake -f client.mk profiledbuild || die "virtx emake failed"
 	else
-		CC="$(tc-getCC)" CXX="$(tc-getCXX)" LD="$(tc-getLD)" \
 		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 		emake -f client.mk realbuild
 	fi
@@ -328,15 +336,16 @@ src_install() {
 			|| die "cp failed"
 	fi
 
-	local plugin
-	use gmp-autoupdate || for plugin in \
-	gmp-gmpopenh264 ; do
-		echo "pref(\"media.${plugin}.autoupdate\", false);" >> \
-			"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
-			|| die "echo failed"
-	done
+	if use gmp-autoupdate; then
+		local plugin
+		for plugin in gmp-gmpopenh264; do
+			echo "pref(\"media.${plugin}.autoupdate\", false);" >> \
+				"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
+				|| die "echo failed"
+		done
+	fi
 
-	MOZ_MAKE_FLAGS="${MAKEOPTS}" \
+	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 	emake DESTDIR="${D}" install
 
 	# Install language packs
@@ -411,21 +420,6 @@ pkg_postinst() {
 	# Update mimedb for the new .desktop file
 	fdo-mime_desktop_database_update
 	gnome2_icon_cache_update
-	if [[ $(get_major_version) -ge 40 ]]; then
-		# See https://forums.gentoo.org/viewtopic-t-1028874.html
-		ewarn "If your set Desktop Environment cursor theme - randomly changes to"
-		ewarn "\"adwaita\" when mousing over ${PN}, see:"
-		ewarn "  https://forums.gentoo.org/viewtopic-t-1028874.html"
-		ewarn "  https://wiki.gentoo.org/wiki/Cursor_themes"
-		ewarn "  https://wiki.archlinux.org/index.php/Cursor_themes"
-		ewarn
-	fi
-	if [[ $(get_major_version) -ge 47 ]]; then
-		einfo "To enable experimental Electrolysis (e10s) support for ${PN}..."
-		einfo "  browse to: \"about:config\" page"
-		einfo "  add entry: \"browser.tabs.remote.force-enable = true\""
-		einfo
-	fi
 }
 
 pkg_postrm() {
