@@ -4,8 +4,7 @@
 
 EAPI=6
 
-PYTHON_COMPAT=( python3_{4,5} )
-PYTHON_REQ_USE="sqlite,threads"
+PYTHON_COMPAT=( python2_7 )
 
 inherit distutils-r1 gnome2-utils python-r1
 
@@ -22,7 +21,7 @@ else
 fi
 
 LICENSE="GPL-3"
-SLOT="0/0.4"
+SLOT="0/0.3"
 IUSE=""
 
 DEPEND=""
@@ -31,9 +30,11 @@ RDEPEND="
 	dev-python/dbus-python[${PYTHON_USEDEP}]
 	dev-python/pygobject:3[${PYTHON_USEDEP}]
 	dev-python/pyyaml[${PYTHON_USEDEP}]
+	dev-python/pyxdg[${PYTHON_USEDEP}]
 	net-libs/libsoup
 	x11-apps/xrandr
-	x11-apps/xgamma"
+	x11-apps/xgamma
+	x11-misc/xdg-utils"
 
 python_install() {
 	distutils-r1_python_install
