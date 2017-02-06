@@ -7,7 +7,7 @@ EAPI=6
 PLOCALES="ar bg ca cs da de el en en_US eo es fa fi fr he hi hr hu it ja ko lt ml nb_NO nl or pa pl pt_BR pt_PT rm ro ru sk sl sr_RS@cyrillic sr_RS@latin sv te th tr uk wa zh_CN zh_TW"
 PLOCALE_BACKUP="en"
 
-inherit autotools eutils fdo-mime flag-o-matic gnome2-utils l10n multilib multilib-minimal pax-utils toolchain-funcs virtualx versionator
+inherit autotools fdo-mime flag-o-matic gnome2-utils l10n multilib multilib-minimal pax-utils toolchain-funcs virtualx versionator
 
 MY_PV="${PV}"
 MY_P="${P}"
@@ -18,22 +18,26 @@ if [[ ${PV} == "9999" ]]; then
 	SRC_URI=""
 	#KEYWORDS=""
 else
-	MAJOR_VERSION=$(get_version_component_range 1-2)
 	if [[ "$(get_version_component_range $(get_version_component_count))" =~ ^rc ]]; then
 		MY_PV=$(replace_version_separator $(get_last_version_component_index) '''-''')
 	else
 		KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
 	fi
-	if [[ "${MAJOR_VERSION}" == "1.8" ]]; then
+	MY_P="${PN}-${MY_PV}"
+	major_version=$(get_major_version)
+	minor_version=$(get_version_component_range 2)
+	if (( (major_version == 1 && minor_version == 8) || (major_version >= 2 && minor_version == 0) )); then
 		# Pull Wine stable packages from alternate github repostiory...
 		STABLE_PREFIX="wine-stable"
-		SRC_URI="https://github.com/mstefani/wine-stable/archive/${PN}-${MY_PV}.tar.gz -> ${STABLE_PREFIX}-${P}.tar.gz"
-		MY_P="${STABLE_PREFIX}-${PN}-${MY_PV}"
+		MY_P="${STABLE_PREFIX}-${MY_P}"
+		SRC_URI="https://github.com/mstefani/wine-stable/archive/${PN}-${MY_PV}.tar.gz -> ${MY_P}.tar.gz"
+	elif ((major_version >= 2)); then
+		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.x/${MY_P}.tar.xz -> ${P}.tar.xz"
 	else
-		SRC_URI="https://dl.winehq.org/wine/source/${MAJOR_VERSION}/${PN}-${MY_PV}.tar.bz2 -> ${P}.tar.bz2"
-		MY_P="${PN}-${MY_PV}"
+		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.${minor_version}/${MY_P}.tar.bz2 -> ${P}.tar.bz2"
 	fi
-	[[ "${MAJOR_VERSION}" == "1.8" ]] && STAGING_SUFFIX="-unofficial"
+	((major_version == 1 && minor_version == 8)) && STAGING_SUFFIX="-unofficial"
+	unset -v minor_version major_version
 fi
 
 VANILLA_GV="2.47"
@@ -74,7 +78,7 @@ fi
 
 LICENSE="LGPL-2.1"
 SLOT="0"
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test themes +threads +truetype +udisks udev v4l vaapi +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test themes +threads +truetype udev +udisks v4l vaapi +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )

@@ -7,7 +7,7 @@ EAPI=6
 PLOCALES="ar bg ca cs da de el en en_US eo es fa fi fr he hi hr hu it ja ko lt ml nb_NO nl or pa pl pt_BR pt_PT rm ro ru sk sl sr_RS@cyrillic sr_RS@latin sv te th tr uk wa zh_CN zh_TW"
 PLOCALE_BACKUP="en"
 
-inherit autotools eutils fdo-mime flag-o-matic gnome2-utils l10n multilib multilib-minimal pax-utils toolchain-funcs virtualx versionator
+inherit autotools fdo-mime flag-o-matic gnome2-utils l10n multilib multilib-minimal pax-utils toolchain-funcs virtualx versionator
 
 MY_PV="${PV}"
 MY_P="${P}"
@@ -18,26 +18,30 @@ if [[ ${PV} == "9999" ]]; then
 	SRC_URI=""
 	#KEYWORDS=""
 else
-	MAJOR_VERSION=$(get_version_component_range 1-2)
 	if [[ "$(get_version_component_range $(get_version_component_count))" =~ ^rc ]]; then
 		MY_PV=$(replace_version_separator $(get_last_version_component_index) '''-''')
 	else
 		KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
 	fi
-	if [[ "${MAJOR_VERSION}" == "1.8" ]]; then
+	MY_P="${PN}-${MY_PV}"
+	major_version=$(get_major_version)
+	minor_version=$(get_version_component_range 2)
+	if (( (major_version == 1 && minor_version == 8) || (major_version >= 2 && minor_version == 0) )); then
 		# Pull Wine stable packages from alternate github repostiory...
 		STABLE_PREFIX="wine-stable"
-		SRC_URI="https://github.com/mstefani/wine-stable/archive/${PN}-${MY_PV}.tar.gz -> ${STABLE_PREFIX}-${P}.tar.gz"
-		MY_P="${STABLE_PREFIX}-${PN}-${MY_PV}"
+		MY_P="${STABLE_PREFIX}-${MY_P}"
+		SRC_URI="https://github.com/mstefani/wine-stable/archive/${PN}-${MY_PV}.tar.gz -> ${MY_P}.tar.gz"
+	elif ((major_version >= 2)); then
+		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.x/${MY_P}.tar.xz -> ${P}.tar.xz"
 	else
-		SRC_URI="https://dl.winehq.org/wine/source/${MAJOR_VERSION}/${PN}-${MY_PV}.tar.bz2 -> ${P}.tar.bz2"
-		MY_P="${PN}-${MY_PV}"
+		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.${minor_version}/${MY_P}.tar.bz2 -> ${P}.tar.bz2"
 	fi
-	[[ "${MAJOR_VERSION}" == "1.8" ]] && STAGING_SUFFIX="-unofficial"
+	((major_version == 1 && minor_version == 8)) && STAGING_SUFFIX="-unofficial"
+	unset -v minor_version major_version
 fi
 
-VANILLA_GV="2.40"
-VANILLA_MV="4.5.6"
+VANILLA_GV="2.44"
+VANILLA_MV="4.6.0"
 STAGING_P="wine-staging-${MY_PV}"
 STAGING_DIR="${WORKDIR}/${STAGING_P}${STAGING_SUFFIX}"
 STAGING_HELPER="wine-staging-git-helper-0.1.3"
@@ -76,7 +80,6 @@ IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fon
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
-	mono? ( abi_x86_32 )
 	osmesa? ( opengl )
 	pipelight? ( staging )
 	s3tc? ( staging )
@@ -388,6 +391,7 @@ src_prepare() {
 		"${FILESDIR}/${PN}-1.8-gnutls-3.5-compat.patch" #587028
 		"${FILESDIR}/${PN}-winhlp32-macro-flex-2.6.3-flex.patch" # https://bugs.winehq.org/show_bug.cgi?id=42132
 	)
+	use cups && PATCHES+=( "${FILESDIR}/${PN}-cups-2.2-cupsgetppd-build-fix.patch" ) # https://bugs.winehq.org/show_bug.cgi?id=40851
 	#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
 	ebegin "(subshell) script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" ..."
 	(
@@ -608,6 +612,9 @@ pkg_postinst() {
 		ewarn "implementation of .NET.  Many windows applications rely upon"
 		ewarn "the existence of a .NET implementation, so you will likely need"
 		ewarn "to install an external one, via winetricks."
+	fi
+	if use staging; then
+		ewarn "This version of Wine-Staging does not support the CMST patchset."
 	fi
 }
 

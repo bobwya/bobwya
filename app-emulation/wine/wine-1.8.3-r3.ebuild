@@ -40,12 +40,13 @@ else
 	unset -v minor_version major_version
 fi
 
-VANILLA_GV="2.47"
-VANILLA_MV="4.6.3"
+VANILLA_GV="2.40"
+VANILLA_MV="4.5.6"
 STAGING_P="wine-staging-${MY_PV}"
 STAGING_DIR="${WORKDIR}/${STAGING_P}${STAGING_SUFFIX}"
 STAGING_HELPER="wine-staging-git-helper-0.1.3"
 WINE_GENTOO="wine-gentoo-2015.03.07"
+GST_P="wine-1.8-gstreamer-1.0"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
 HOMEPAGE="http://www.winehq.org/"
 SRC_URI="${SRC_URI}
@@ -63,6 +64,7 @@ SRC_URI="${SRC_URI}
 		)
 		mono? ( https://dl.winehq.org/wine/wine-mono/${STAGING_MV:-${VANILLA_MV}}/wine-mono-${STAGING_MV:-${VANILLA_MV}}.msi )
 	)
+	gstreamer? ( https://dev.gentoo.org/~np-hardass/distfiles/${PN}/${GST_P}.patch.bz2 )
 	https://dev.gentoo.org/~tetromino/distfiles/${PN}/${WINE_GENTOO}.tar.bz2"
 
 if [[ ${PV} == "9999" ]]; then
@@ -80,6 +82,7 @@ IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fon
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
+	mono? ( abi_x86_32 )
 	osmesa? ( opengl )
 	pipelight? ( staging )
 	s3tc? ( staging )
@@ -387,8 +390,17 @@ src_prepare() {
 		"${FILESDIR}/${PN}-1.5.26-winegcc.patch" #260726
 		"${FILESDIR}/${PN}-1.7.12-osmesa-check.patch" #429386
 		"${FILESDIR}/${PN}-1.6-memset-O3.patch" #480508
+		"${FILESDIR}/${PN}-1.8-gnutls-3.5-compat.patch" #587028
 		"${FILESDIR}/${PN}-winhlp32-macro-flex-2.6.3-flex.patch" # https://bugs.winehq.org/show_bug.cgi?id=42132
 	)
+	use cups && PATCHES+=( "${FILESDIR}/${PN}-cups-2.2-cupsgetppd-build-fix.patch" ) # https://bugs.winehq.org/show_bug.cgi?id=40851
+	if [[ ${PV} != "9999" ]]; then
+		use gstreamer && PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
+	else
+		# only apply gstreamer:1.0 patch to older versions of wine, using gstreamer:0.1 API/ABI
+		grep -q "gstreamer-0.10" "${S}/configure" &>/dev/null || unset GST_P
+		[[ ! -z "${GST_P}" ]] && use gstreamer && PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
+	fi
 	#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
 	ebegin "(subshell) script: \"${FILESDIR}/${PN}-9999-multilib-portage-sed.sh\" ..."
 	(
@@ -415,10 +427,10 @@ src_prepare() {
 			fi
 		done
 
-		# Launch wine-staging patcher in a subshell, using eapply as a backend, and gitapply.sh as a backend for binary patches
+		# Launch wine-staging patcher in a subshell, using epatch as a backend, and gitapply.sh as a backend for binary patches
 		ebegin "Running Wine-Staging patch installer"
 		(
-			set -- DESTDIR="${S}" --backend=eapply --no-autoconf --all ${STAGING_EXCLUDE_PATCHSETS[@]}
+			set -- DESTDIR="${S}" --backend=epatch --no-autoconf --all ${STAGING_EXCLUDE_PATCHSETS[@]}
 			cd "${STAGING_DIR}/patches"
 			source "${STAGING_DIR}/patches/patchinstall.sh"
 		)
@@ -609,6 +621,11 @@ pkg_postinst() {
 		ewarn "implementation of .NET.  Many windows applications rely upon"
 		ewarn "the existence of a .NET implementation, so you will likely need"
 		ewarn "to install an external one, via winetricks."
+	fi
+	if [[ ! -z "${GST_P}" ]] && use gstreamer; then
+		ewarn "This package uses a Gentoo specific patchset to provide "
+		ewarn "gstreamer:1.0 API / ABI support.  Any bugs related to GStreamer"
+		ewarn "should be filed at Gentoo's bugzilla, not upstream's."
 	fi
 }
 
