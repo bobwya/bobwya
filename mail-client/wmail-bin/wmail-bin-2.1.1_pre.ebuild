@@ -1,15 +1,23 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
 EAPI=6
 
+inherit versionator
+
 DESCRIPTION="The missing desktop client for Gmail & Google Inbox"
 HOMEPAGE="https://github.com/Thomas101/${PN%-bin}"
 
 MY_PN="WMail"
-SRC_URI="amd64? ( ${HOMEPAGE}/releases/download/v${PV}/${MY_PN}_${PV//./_}_prerelease_linux_x86_64.tar.gz -> wmail-${PV}-amd64.tar.gz )
-		x86? ( ${HOMEPAGE}/releases/download/v${PV}/${MY_PN}_${PV//./_}_prerelease_linux_ia32.tar.gz -> wmail-${PV}-x86.tar.gz )"
+MY_PV=$(replace_all_version_separators '_')
+MAIN_VERISON="${PV}"
+if [[ "${PV}" =~ _pre ]]; then
+	MY_PV="${MY_PV/_pre/_prerelease}"
+	MAIN_VERISON="v${PV%_pre*}"
+fi
+SRC_URI="amd64? ( ${HOMEPAGE}/releases/download/${MAIN_VERISON}/${MY_PN}_${MY_PV}_linux_x86_64.tar.gz -> ${PN}-${PV}-amd64.tar.gz )
+		x86? ( ${HOMEPAGE}/releases/download/${MAIN_VERISON}/${MY_PN}_${MY_PV}_linux_ia32.tar.gz -> ${PN}-${PV}-x86.tar.gz )"
 
 LICENSE="MIT"
 SLOT="0"
