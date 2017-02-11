@@ -8,7 +8,7 @@
 +	int user_id=getuid();
 +	if ( user_id == 0 ) {
 +#ifdef DEBUG_KDE
-+        QTextStream( stderr ) << "User ID=" << QString::number(user_id) << endl;
++        std::cerr << "User ID=" << user_id << std::endl;
 +#endif
 +		return 1;
 +	}

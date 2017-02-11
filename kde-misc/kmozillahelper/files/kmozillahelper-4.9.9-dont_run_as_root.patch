@@ -1,0 +1,27 @@
+--- a/main.cpp	2017-02-11 01:33:29.416232050 +0000
++++ b/main.cpp	2017-02-11 01:36:55.313947522 +0000
+@@ -25,6 +25,7 @@
+ 
+ #include <cassert>
+ #include <unistd.h>
++#include <sys/types.h>
+ 
+ #include <QtCore/QCommandLineParser>
+ #include <QtCore/QMimeDatabase>
+@@ -53,6 +54,16 @@
+ 
+ int main( int argc, char* argv[] )
+     {
++
++    int user_id=getuid();
++    if ( user_id == 0 )
++        {
++#ifdef DEBUG_KDE
++        std::cerr << "User ID=" << user_id << std::endl;
++#endif
++        return 1;
++        }
++
+     QApplication app(argc, argv);
+ 
+     // This shows on file dialogs
