@@ -179,7 +179,8 @@ pkg_setup() {
 }
 
 src_prepare() {
-	local PATCHES
+	local PATCHES=( "${FILESDIR}"/${P}-profiles-rc.patch )
+
 	if use pax_kernel; then
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
@@ -317,11 +318,6 @@ src_install() {
 
 		insinto /usr/share/glvnd/egl_vendor.d
 		doins ${NV_X11}/10_nvidia.json
-	fi
-
-	if use wayland; then
-		insinto /usr/share/glvnd/egl_vendor.d
-		doins ${NV_X11}/10_nvidia_wayland.json
 	fi
 
 	# OpenCL ICD for NVIDIA
@@ -474,7 +470,7 @@ src_install-libs() {
 		if use wayland && has_multilib_profile && [[ ${ABI} == "amd64" ]];
 		then
 			NV_GLX_LIBRARIES+=(
-				"libnvidia-egl-wayland.so.1.0.0"
+				"libnvidia-egl-wayland.so.${NV_SOVER}"
 			)
 		fi
 
