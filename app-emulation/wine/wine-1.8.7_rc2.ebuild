@@ -39,7 +39,7 @@ else
 fi
 
 VANILLA_GV="2.47"
-VANILLA_MV="4.6.4"
+VANILLA_MV="4.5.6"
 WINE_GENTOO="wine-gentoo-2015.03.07"
 GST_P="wine-1.8-gstreamer-1.0"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
@@ -59,6 +59,7 @@ IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fon
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
+	mono? ( abi_x86_32 )
 	osmesa? ( opengl )
 	test? ( abi_x86_32 )" # osmesa-opengl #286560 # X-truetype #551124
 
@@ -104,7 +105,7 @@ COMMON_DEPEND="
 	pulseaudio? ( media-sound/pulseaudio[${MULTILIB_USEDEP}] )
 	scanner? ( media-gfx/sane-backends:=[${MULTILIB_USEDEP}] )
 	ssl? ( net-libs/gnutls:=[${MULTILIB_USEDEP}] )
-	truetype? ( >=media-libs/freetype-2.0.0[${MULTILIB_USEDEP}] )
+	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
 	xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
@@ -145,7 +146,7 @@ RDEPEND="${COMMON_DEPEND}
 
 # tools/make_requests requires perl
 DEPEND="${COMMON_DEPEND}
-	sys-devel/flex
+	>=sys-devel/flex-2.5.33
 	>=sys-kernel/linux-headers-2.6
 	virtual/pkgconfig
 	virtual/yacc

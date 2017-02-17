@@ -134,7 +134,7 @@ COMMON_DEPEND="
 	ssl? ( net-libs/gnutls:=[${MULTILIB_USEDEP}] )
 	staging? ( sys-apps/attr[${MULTILIB_USEDEP}] )
 	themes? ( x11-libs/gtk+:3[X?,${MULTILIB_USEDEP}] )
-	truetype? ( >=media-libs/freetype-2.0.0[${MULTILIB_USEDEP}] )
+	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
 	vaapi? ( x11-libs/libva[X,${MULTILIB_USEDEP}] )
@@ -177,7 +177,7 @@ RDEPEND="${COMMON_DEPEND}
 
 # tools/make_requests requires perl
 DEPEND="${COMMON_DEPEND}
-	sys-devel/flex
+	>=sys-devel/flex-2.5.33
 	>=sys-kernel/linux-headers-2.6
 	virtual/pkgconfig
 	virtual/yacc
