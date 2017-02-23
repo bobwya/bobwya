@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
@@ -20,7 +20,7 @@ IUSE=""
 DEPEND=""
 RDEPEND="media-libs/chromaprint
 		media-libs/fontconfig
-		>=virtual/jre-1.8"
+		virtual/jre:1.8"
 
 S="${WORKDIR}"
 

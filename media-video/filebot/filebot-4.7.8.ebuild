@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
@@ -18,20 +18,11 @@ KEYWORDS="~amd64 ~x86"
 IUSE=""
 
 DEPEND=""
-RDEPEND="media-libs/chromaprint
-		media-libs/fontconfig
-		>=virtual/jre-1.8"
+RDEPEND="|| ( dev-java/oracle-jdk-bin:1.8[javafx] dev-java/oracle-jre-bin:1.8[javafx] )
+		media-libs/chromaprint
+		media-libs/fontconfig"
 
 S="${WORKDIR}"
-
-pkg_pretend() {
-	local system_java_vm=$(eselect --brief java-vm show system | sed -e 's/ //g' -e 's/\-8$/:8/')
-	if [[ "${system_java_vm}" =~ $icedtea ]]; then
-		ewarn "=${CATEGORY}/${P} is known not to work correctly with the dev-java/${system_java_vm}."
-		ewarn  "This is due to the fact it does not include OpenJFX support."
-		ewarn  "Downgrade to <=${CATEGORY}/${PN}-4.7 as a workaround."
-	fi
-}
 
 src_install() {
 	java-pkg_dojar "${MY_PN}.jar"
