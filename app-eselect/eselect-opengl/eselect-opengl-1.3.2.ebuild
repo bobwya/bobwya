@@ -1,10 +1,10 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=5
+EAPI=6
 
-inherit eutils multilib
+inherit multilib
 
 DESCRIPTION="Utility to change the OpenGL interface being used"
 HOMEPAGE="https://www.gentoo.org/"
@@ -20,7 +20,7 @@ SRC_URI="https://github.com/bobwya/${MY_PN}/archive/${PV}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc x86 ~amd64-fbsd ~x86-fbsd ~x64-freebsd ~x86-freebsd ~amd64-linux ~arm-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos ~sparc-solaris ~x64-solaris ~x86-solaris"
+KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~arm-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos ~sparc-solaris ~x64-solaris ~x86-solaris"
 IUSE=""
 
 DEPEND="app-arch/xz-utils"
@@ -36,31 +36,37 @@ S="${WORKDIR}/${MY_PN}-${PV}"
 
 pkg_preinst() {
 	# we may be moving the config file, so get it early
-	OLD_IMPLEMENTATION=$(eselect opengl show)
+	old_gl_implementation=$(eselect opengl show)
 }
 
 pkg_postinst() {
-	if path_exists "${EROOT}"/usr/lib*/opengl; then
-		# delete broken symlinks
-		find "${EROOT}"/usr/lib*/opengl -xtype l -delete
-		# delete empty leftover directories (they confuse eselect)
-		find "${EROOT}"/usr/lib*/opengl -depth -type d -empty -exec rmdir -v {} +
-	fi
+	delete_opengl_symlinks() {
+		path_exists "${EROOT}/usr/$(get_libdir)/opengl/" || return
 
-	if [[ -n "${OLD_IMPLEMENTATION}" && "${OLD_IMPLEMENTATION}" != '(none)' ]] ; then
-		eselect opengl set "${OLD_IMPLEMENTATION}"
+		# delete broken symlinks
+		find "${EROOT}/usr/$(get_libdir)/opengl/" -xtype l -delete
+		# delete empty leftover directories (they confuse eselect)
+		find "${EROOT}/usr/$(get_libdir)/opengl/" -depth -type d -empty -exec rmdir -v {} +
+	}
+
+	multilib_foreach_abi delete_opengl_symlinks
+
+	if [[ -n "${old_gl_implementation}" && "${old_gl_implementation}" != '(none)' ]]; then
+		eselect opengl set "${old_gl_implementation}"
 	fi
-	for CONF_FILE in "etc/env.d/000opengl" "etc/X11/xorg.conf.d/20opengl.conf" ; do
-		[[ -f "${EROOT}/${CONF_FILE}" ]] && rm -vf "${EROOT}/${CONF_FILE}"
+	for conf_file in "etc/env.d/000opengl" "etc/X11/xorg.conf.d/20opengl.conf"; do
+		[[ -f "${EROOT}/${CONF_FILE}" ]] || continue
+		rm -vf "${EROOT}/${CONF_FILE}" || die "rm failed"
 	done
-	unset CONF_FILE
+	unset -v conf_file old_gl_implementation
 }
 
 src_prepare() {
 	# don't die on Darwin users
 	if [[ ${CHOST} == *-darwin* ]] ; then
-		sed -i -e 's/libGL\.so/libGL.dylib/' ${MY_PN} || die
+		sed -i -e 's/libGL\.so/libGL.dylib/' ${MY_PN} || die "sed failed"
 	fi
+	eapply_user
 }
 
 src_install() {
