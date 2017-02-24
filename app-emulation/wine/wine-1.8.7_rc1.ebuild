@@ -329,16 +329,16 @@ src_prepare() {
 
 	if ! $(md5sum -c - <<<"${md5hash}" &>/dev/null); then
 		einfo "server/protocol.def was patched; running tools/make_requests"
-		tools/make_requests || die "tools/make_requests" #432348
+		tools/make_requests || die "tools/make_requests failed" #432348
 	fi
-	sed -i '/^UPDATE_DESKTOP_DATABASE/s:=.*:=true:' tools/Makefile.in || die "sed"
+	sed -i '/^UPDATE_DESKTOP_DATABASE/s:=.*:=true:' tools/Makefile.in || die "sed failed"
 	if ! use run-exes; then
-		sed -i '/^MimeType/d' loader/wine.desktop || die "sed" #117785
+		sed -i '/^MimeType/d' loader/wine.desktop || die "sed failed" #117785
 	fi
 
-	cp "${WORKDIR}"/${WINE_GENTOO}/icons/oic_winlogo.ico dlls/user32/resources/ || die "cp"
+	cp "${WORKDIR}"/${WINE_GENTOO}/icons/oic_winlogo.ico dlls/user32/resources/ || die "cp failed"
 
-	l10n_get_locales > po/LINGUAS || die "l10n_get_locales" # otherwise wine doesn't respect LINGUAS
+	l10n_get_locales > po/LINGUAS || die "l10n_get_locales failed" # otherwise wine doesn't respect LINGUAS
 }
 
 src_configure() {
@@ -426,15 +426,16 @@ multilib_src_test() {
 }
 
 multilib_src_install_all() {
-	local DOCS=( ANNOUNCE AUTHORS README )
-	local l
+	DOCS=( "ANNOUNCE" "AUTHORS" "README" )
 	add_locale_docs() {
-		local locale_doc="documentation/README.$1"
-		[[ ! -e ${locale_doc} ]] || DOCS+=( ${locale_doc} )
+		local locale_doc="documentation/README.${1}"
+		[[ ! -e "S{S}/${locale_doc}" ]] || DOCS+=( "${locale_doc}" )
 	}
 	l10n_for_each_locale_do add_locale_docs
 
 	einstalldocs
+	unset -v DOCS
+
 	prune_libtool_files --all
 
 	emake -C "../${WINE_GENTOO}" install DESTDIR="${D}" EPREFIX="${EPREFIX}"
@@ -448,15 +449,16 @@ multilib_src_install_all() {
 		doins "${DISTDIR}/wine-mono-${MV}.msi"
 	fi
 	if ! use perl; then  # winedump calls function_grep.pl, and winemaker is a perl script
-		rm "${D}"usr/bin/{wine{dump,maker},function_grep.pl} "${D}"usr/share/man/man1/wine{dump,maker}.1 || die "rm"
+		rm "${D}usr/bin"/{wine{dump,maker},function_grep.pl} || die "rm failed"
+		rm "${D}usr/share/man/man1"/wine{dump,maker}.1 || die "rm failed"
 	fi
 
 	# Remove wineconsole if neither backend is installed #551124
 	if ! use X && ! use ncurses; then
-		rm "${D}"/usr/bin/wineconsole* || die "rm"
-		rm "${D}"/usr/share/man/man1/wineconsole* || die "rm"
+		rm "${D}"/usr/bin/wineconsole* || die "rm failed"
+		rm "${D}"/usr/share/man/man1/wineconsole* || die "rm failed"
 		rm_wineconsole() {
-			rm "${D}usr/$(get_libdir)"/wine/{,fakedlls/}wineconsole.exe* || die "rm"
+			rm "${D}usr/$(get_libdir)"/wine/{,fakedlls/}wineconsole.exe* || die "rm failed"
 		}
 		multilib_foreach_abi rm_wineconsole
 	fi
@@ -470,8 +472,9 @@ multilib_src_install_all() {
 	fi
 
 	# respect LINGUAS when installing man pages, #469418
-	for l in de fr pl; do
-		use linguas_${l} || rm -r "${D}"usr/share/man/${l}*
+	local locale_man
+	for locale_man in "de" "fr" "pl"; do
+		use linguas_${locale_man} || rm -r "${D}/usr/share/man/${locale_man}"*
 	done
 }
 

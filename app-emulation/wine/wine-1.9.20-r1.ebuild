@@ -408,7 +408,7 @@ src_prepare() {
 		local array_indices=( ${!STAGING_EXCLUDE_PATCHSETS[*]} )
 		for ((i=0; i<${#array_indices[*]}; i++)); do
 			local patchset="${STAGING_EXCLUDE_PATCHSETS[array_indices[i]]}"
-			if grep -q "${patchset}" "${STAGING_DIR}/patches/patchinstall.sh"; then
+			if grep -q "${patchset})" "${STAGING_DIR}/patches/patchinstall.sh"; then
 				STAGING_EXCLUDE_PATCHSETS[${array_indices[i]}]="-W ${patchset}"
 				einfo "Excluding Wine-Staging patchset: \"${patchset}\""
 			else
@@ -423,12 +423,12 @@ src_prepare() {
 			cd "${STAGING_DIR}/patches"
 			source "${STAGING_DIR}/patches/patchinstall.sh"
 		)
-		eend $? || die "(subshell) script: failed to apply Wine-Staging patches."
+		eend $? || die "(subshell) script: failed to apply Wine-Staging patches (excluding: ${STAGING_EXCLUDE_PATCHSETS[@]})."
 		sed -r -i -e '/^AC_INIT\(.*\)$/{s/\[Wine\]/\[Wine \(Staging\)\]/}' "${S}/configure.ac" || die "sed failed"
 		sed -r -i -e 's/Wine (\(Staging\) |)/Wine \(Staging\) /' "${S}/VERSION" || die "sed failed"
 
 		if [[ ! -z "${STAGING_SUFFIX}" ]]; then
-			sed -i -e 's/(Staging)/(Staging'"${STAGING_SUFFIX}"')/' libs/wine/Makefile.in || die "sed"
+			sed -i -e 's/(Staging)/(Staging'"${STAGING_SUFFIX}"')/' libs/wine/Makefile.in || die "sed failed"
 		fi
 	fi
 
@@ -438,17 +438,17 @@ src_prepare() {
 	# Modification of the server protocol requires regenerating the server requests
 	if ! $(md5sum -c - <<<"${md5hash}" &>/dev/null); then
 		einfo "server/protocol.def was patched; running tools/make_requests"
-		tools/make_requests || die "tools/make_requests" #432348
+		tools/make_requests || die "tools/make_requests failed" #432348
 	fi
-	sed -i '/^UPDATE_DESKTOP_DATABASE/s:=.*:=true:' tools/Makefile.in || die "sed"
+	sed -i '/^UPDATE_DESKTOP_DATABASE/s:=.*:=true:' tools/Makefile.in || die "sed failed"
 	if ! use run-exes; then
-		sed -i '/^MimeType/d' loader/wine.desktop || die "sed" #117785
+		sed -i '/^MimeType/d' loader/wine.desktop || die "sed failed" #117785
 	fi
 
 	# hi-res default icon, #472990, http://bugs.winehq.org/show_bug.cgi?id=24652
-	cp "${WORKDIR}"/${WINE_GENTOO}/icons/oic_winlogo.ico dlls/user32/resources/ || die "cp"
+	cp "${WORKDIR}"/${WINE_GENTOO}/icons/oic_winlogo.ico dlls/user32/resources/ || die "cp failed"
 
-	l10n_get_locales > po/LINGUAS || die "l10n_get_locales" # otherwise wine doesn't respect LINGUAS
+	l10n_get_locales > po/LINGUAS || die "l10n_get_locales failed" # otherwise wine doesn't respect LINGUAS
 }
 
 src_configure() {
@@ -543,15 +543,16 @@ multilib_src_test() {
 }
 
 multilib_src_install_all() {
-	local DOCS=( ANNOUNCE AUTHORS README )
-	local l
+	DOCS=( "ANNOUNCE" "AUTHORS" "README" )
 	add_locale_docs() {
-		local locale_doc="documentation/README.$1"
-		[[ ! -e ${locale_doc} ]] || DOCS+=( ${locale_doc} )
+		local locale_doc="documentation/README.${1}"
+		[[ ! -e "S{S}/${locale_doc}" ]] || DOCS+=( "${locale_doc}" )
 	}
 	l10n_for_each_locale_do add_locale_docs
 
 	einstalldocs
+	unset -v DOCS
+
 	prune_libtool_files --all
 
 	emake -C "../${WINE_GENTOO}" install DESTDIR="${D}" EPREFIX="${EPREFIX}"
@@ -565,15 +566,16 @@ multilib_src_install_all() {
 		doins "${DISTDIR}/wine-mono-${MV}.msi"
 	fi
 	if ! use perl; then  # winedump calls function_grep.pl, and winemaker is a perl script
-		rm "${D}"usr/bin/{wine{dump,maker},function_grep.pl} "${D}"usr/share/man/man1/wine{dump,maker}.1 || die "rm"
+		rm "${D}usr/bin"/{wine{dump,maker},function_grep.pl} || die "rm failed"
+		rm "${D}usr/share/man/man1"/wine{dump,maker}.1 || die "rm failed"
 	fi
 
 	# Remove wineconsole if neither backend is installed #551124
 	if ! use X && ! use ncurses; then
-		rm "${D}"/usr/bin/wineconsole* || die "rm"
-		rm "${D}"/usr/share/man/man1/wineconsole* || die "rm"
+		rm "${D}"/usr/bin/wineconsole* || die "rm failed"
+		rm "${D}"/usr/share/man/man1/wineconsole* || die "rm failed"
 		rm_wineconsole() {
-			rm "${D}usr/$(get_libdir)"/wine/{,fakedlls/}wineconsole.exe* || die "rm"
+			rm "${D}usr/$(get_libdir)"/wine/{,fakedlls/}wineconsole.exe* || die "rm failed"
 		}
 		multilib_foreach_abi rm_wineconsole
 	fi
@@ -587,8 +589,9 @@ multilib_src_install_all() {
 	fi
 
 	# respect LINGUAS when installing man pages, #469418
-	for l in de fr pl; do
-		use linguas_${l} || rm -r "${D}"usr/share/man/${l}*
+	local locale_man
+	for locale_man in "de" "fr" "pl"; do
+		use linguas_${locale_man} || rm -r "${D}/usr/share/man/${locale_man}"*
 	done
 }
 
