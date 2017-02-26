@@ -38,7 +38,7 @@ else
 	unset -v minor_version major_version
 fi
 
-VANILLA_GV="2.47"
+VANILLA_GV="2.40"
 VANILLA_MV="4.5.6"
 WINE_GENTOO="wine-gentoo-2015.03.07"
 GST_P="wine-1.8-gstreamer-1.0"
