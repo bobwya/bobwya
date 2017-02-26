@@ -11,13 +11,9 @@ HOMEPAGE="https://github.com/Thomas101/${PN%-bin}"
 
 MY_PN="WMail"
 MY_PV=$(replace_all_version_separators '_')
-MAIN_VERISON="${PV}"
-if [[ "${PV}" =~ _pre ]]; then
-	MY_PV="${MY_PV/_pre/_prerelease}"
-	MAIN_VERISON="v${PV%_pre*}"
-fi
-SRC_URI="amd64? ( ${HOMEPAGE}/releases/download/${MAIN_VERISON}/${MY_PN}_${MY_PV}_linux_x86_64.tar.gz -> ${PN}-${PV}-amd64.tar.gz )
-		x86? ( ${HOMEPAGE}/releases/download/${MAIN_VERISON}/${MY_PN}_${MY_PV}_linux_ia32.tar.gz -> ${PN}-${PV}-x86.tar.gz )"
+[[ "${PV}" =~ _pre ]] && MY_PV="${MY_PV/_pre/_prerelease}"
+SRC_URI="amd64? ( ${HOMEPAGE}/releases/download/v${PV%_pre*}/${MY_PN}_${MY_PV}_linux_x86_64.tar.gz -> ${PN}-${PV}-amd64.tar.gz )
+		x86? ( ${HOMEPAGE}/releases/download/v${PV%_pre*}/${MY_PN}_${MY_PV}_linux_ia32.tar.gz -> ${PN}-${PV}-x86.tar.gz )"
 
 LICENSE="MIT"
 SLOT="0"
