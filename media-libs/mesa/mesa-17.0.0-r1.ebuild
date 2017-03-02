@@ -1,6 +1,5 @@
 # Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Id$
 
 EAPI=6
 
@@ -20,7 +19,7 @@ OPENGL_DIR="${PN}"
 MY_P="${P/_/-}"
 
 DESCRIPTION="OpenGL-like graphic library for Linux"
-HOMEPAGE="http://mesa3d.sourceforge.net/"
+HOMEPAGE="https://www.mesa3d.org/"
 
 if [[ $PV == 9999 ]]; then
 	SRC_URI=""
@@ -35,7 +34,7 @@ SLOT="0"
 RESTRICT="!bindist? ( bindist )"
 
 AMD_CARDS=( "r100" "r200" "r300" "r600" "radeon" "radeonsi" )
-INTEL_CARDS=( "i915" "i965" "ilo" "intel" )
+INTEL_CARDS=( "i915" "i965" "intel" )
 VIDEO_CARDS=( "freedreno" "imx" "nouveau" "vc4" "vivante" "vmware" )
 VIDEO_CARDS+=( "${AMD_CARDS[@]}" )
 VIDEO_CARDS+=( "${INTEL_CARDS[@]}" )
@@ -65,7 +64,6 @@ REQUIRED_USE="
 	video_cards_intel?  ( classic )
 	video_cards_i915?   ( || ( classic gallium ) )
 	video_cards_i965?   ( classic )
-	video_cards_ilo?    ( gallium )
 	video_cards_imx?    ( gallium )
 	video_cards_nouveau? ( || ( classic gallium ) )
 	video_cards_radeon? ( || ( classic gallium )
@@ -103,14 +101,14 @@ RDEPEND="
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
 			vulkan? (
 				|| (
-					sys-devel/llvm:4
+					sys-devel/llvm:4[${MULTILIB_USEDEP}]
 					>=sys-devel/llvm-3.9.0:0[${MULTILIB_USEDEP}] ) )
 		)
 		|| (
-			sys-devel/llvm:4
+			sys-devel/llvm:4[${MULTILIB_USEDEP}]
 			>=sys-devel/llvm-3.6.0:0[${MULTILIB_USEDEP}]
 		)
-		<sys-devel/llvm-5:=
+		<sys-devel/llvm-5:=[${MULTILIB_USEDEP}]
 	)
 	opencl? (
 				app-eselect/eselect-opencl
@@ -153,11 +151,11 @@ DEPEND="${RDEPEND}
 	)
 	opencl? (
 		|| (
-			sys-devel/llvm:4
+			sys-devel/llvm:4[${MULTILIB_USEDEP}]
 			>=sys-devel/llvm-3.6.0:0[${MULTILIB_USEDEP}]
 		)
 		|| (
-			sys-devel/clang:4
+			sys-devel/clang:4[${MULTILIB_USEDEP}]
 			>=sys-devel/clang-3.6.0:0[${MULTILIB_USEDEP}]
 		)
 		>=sys-devel/gcc-4.6
@@ -264,7 +262,6 @@ multilib_src_configure() {
 		gallium_enable video_cards_vmware svga
 		gallium_enable video_cards_nouveau nouveau
 		gallium_enable video_cards_i915 i915
-		gallium_enable video_cards_ilo ilo
 		gallium_enable video_cards_imx imx
 		if ! use video_cards_i915 && \
 			! use video_cards_i965; then
