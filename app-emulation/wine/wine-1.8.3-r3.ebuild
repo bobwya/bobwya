@@ -1,6 +1,5 @@
 # Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Id$
 
 EAPI=6
 
@@ -18,26 +17,30 @@ if [[ ${PV} == "9999" ]]; then
 	SRC_URI=""
 	#KEYWORDS=""
 else
-	if [[ "$(get_version_component_range $(get_version_component_count))" =~ ^rc ]]; then
+	rc_version=0
+	[[ "$(get_version_component_range $(get_version_component_count))" =~ ^rc ]] && rc_version=1
+	if (( rc_version )); then
 		MY_PV=$(replace_version_separator $(get_last_version_component_index) '''-''')
+		#KEYWORDS=""
 	else
 		KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
 	fi
 	MY_P="${PN}-${MY_PV}"
 	major_version=$(get_major_version)
 	minor_version=$(get_version_component_range 2)
-	if (( (major_version == 1 && minor_version == 8) || (major_version >= 2 && minor_version == 0) )); then
-		# Pull Wine stable packages from alternate github repostiory...
+	stable_version=$(( (major_version == 1 && (minor_version % 2 == 0)) || (major_version >= 2 && minor_version == 0) ))
+	if (( stable_version && rc_version )); then
+		# Pull Wine RC stable versions from alternate Github repostiory...
 		STABLE_PREFIX="wine-stable"
 		MY_P="${STABLE_PREFIX}-${MY_P}"
 		SRC_URI="https://github.com/mstefani/wine-stable/archive/${PN}-${MY_PV}.tar.gz -> ${MY_P}.tar.gz"
-	elif ((major_version >= 2)); then
-		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.x/${MY_P}.tar.xz -> ${P}.tar.xz"
-	else
+	elif (( stable_version || (major_version < 2) )); then
 		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.${minor_version}/${MY_P}.tar.bz2 -> ${P}.tar.bz2"
+	else
+		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.x/${MY_P}.tar.xz -> ${P}.tar.xz"
 	fi
 	((major_version == 1 && minor_version == 8)) && STAGING_SUFFIX="-unofficial"
-	unset -v minor_version major_version
+	unset -v minor_version major_version rc_version stable_version
 fi
 
 VANILLA_GV="2.40"
