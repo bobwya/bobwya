@@ -1,8 +1,7 @@
 # Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Id$
 #
-# @ECLASS: mozconfig-kde-v6.42.eclass
+# @ECLASS: mozconfig-kde-v6.52.eclass
 # @MAINTAINER:
 # mozilla team <mozilla@gentoo.org>
 # @BLURB: the new mozilla common configuration eclass for FF33 and newer, v6
@@ -19,11 +18,16 @@
 # This eclass inherits mozconfig helper functions as defined in mozcoreconf-v3,
 # and so ebuilds inheriting this eclass do not need to inherit that.
 
-inherit multilib flag-o-matic toolchain-funcs mozcoreconf-kde-v3
-
 case ${EAPI} in
-	0|1|2|3|4) die "EAPI=${EAPI} not supported"
+	0|1|2|3|4)
+		die "EAPI=${EAPI} not supported"
+		;;
+	5)
+		inherit multilib
+		;;
 esac
+
+inherit flag-o-matic toolchain-funcs mozcoreconf-kde-v4
 
 # @ECLASS-VARIABLE: MOZCONFIG_OPTIONAL_WIFI
 # @DESCRIPTION:
@@ -38,10 +42,10 @@ esac
 # @ECLASS-VARIABLE: MOZCONFIG_OPTIONAL_JIT
 # @DESCRIPTION:
 # Set this variable before the inherit line, when an ebuild needs to provide
-# optional necko-wifi support via IUSE="jit".  Currently this would include
-# ebuilds for firefox.
+# deterministic jit support via IUSE="jit".  The upstream default will be used
+# otherwise, which is generally to enable jit unless support for the platform
+# is missing.
 #
-# Leave the variable UNSET if optional jit support should not be available.
 # Set the variable to "enabled" if the use flag should be enabled by default.
 # Set the variable to any value if the use flag should exist but not be default-enabled.
 
@@ -55,8 +59,32 @@ esac
 # Set the variable to "enabled" if the use flag should be enabled by default.
 # Set the variable to any value if the use flag should exist but not be default-enabled.
 
+# @ECLASS-VARIABLE: MOZCONFIG_OPTIONAL_GTK2ONLY
+# @DESCRIPTION:
+# Set this variable before the inherit line, when an ebuild can provide
+# optional gtk2-only support via IUSE="gtk2".
+#
+# Note that this option conflicts directly with MOZCONFIG_OPTIONAL_GTK3, both
+# variables cannot be set at the same time and this variable will be ignored if
+# MOZCONFIG_OPTIONAL_GTK3 is set.
+#
+# Leave the variable UNSET if gtk2-only support should not be available.
+# Set the variable to "enabled" if the use flag should be enabled by default.
+# Set the variable to any value if the use flag should exist but not be default-enabled.
+
+# @ECLASS-VARIABLE: MOZCONFIG_OPTIONAL_QT5
+# @DESCRIPTION:
+# Set this variable before the inherit line, when an ebuild can provide
+# optional qt5 support via IUSE="qt5".  Currently this would include
+# ebuilds for firefox, but thunderbird could follow in the future.
+#
+# Leave the variable UNSET if qt5 support should not be available.
+# Set the variable to "enabled" if the use flag should be enabled by default.
+# Set the variable to any value if the use flag should exist but not be default-enabled.
+
 # use-flags common among all mozilla ebuilds
-IUSE="${IUSE} dbus debug +gstreamer +jemalloc3 neon pulseaudio selinux startup-notification system-cairo system-icu system-jpeg system-sqlite system-libvpx"
+IUSE="${IUSE} dbus debug +jemalloc neon pulseaudio selinux startup-notification system-cairo
+	system-harfbuzz system-icu system-jpeg system-libevent system-sqlite system-libvpx"
 
 # some notes on deps:
 # gtk:2 minimum is technically 2.10 but gio support (enabled by default) needs 2.14
@@ -65,12 +93,10 @@ IUSE="${IUSE} dbus debug +gstreamer +jemalloc3 neon pulseaudio selinux startup-n
 RDEPEND=">=app-text/hunspell-1.2:=
 	dev-libs/atk
 	dev-libs/expat
-	>=dev-libs/libevent-1.4.7
 	>=x11-libs/cairo-1.10[X]
-	>=x11-libs/gtk+-2.18:2
 	x11-libs/gdk-pixbuf
 	>=x11-libs/pango-1.22.0
-	>=media-libs/libpng-1.6.17:0=[apng]
+	>=media-libs/libpng-1.6.25:0=[apng]
 	>=media-libs/mesa-10.2:*
 	media-libs/fontconfig
 	>=media-libs/freetype-2.4.10
@@ -83,12 +109,7 @@ RDEPEND=">=app-text/hunspell-1.2:=
 	>=dev-libs/glib-2.26:2
 	>=sys-libs/zlib-1.2.3
 	>=virtual/libffi-3.0.10
-	gstreamer? (
-		>=media-libs/gstreamer-1.4.5:1.0
-		>=media-libs/gst-plugins-base-1.4.5:1.0
-		>=media-libs/gst-plugins-good-1.4.5:1.0
-		>=media-plugins/gst-plugins-libav-1.4.5:1.0
-	)
+	virtual/ffmpeg
 	x11-libs/libX11
 	x11-libs/libXcomposite
 	x11-libs/libXdamage
@@ -97,20 +118,36 @@ RDEPEND=">=app-text/hunspell-1.2:=
 	x11-libs/libXrender
 	x11-libs/libXt
 	system-cairo? ( >=x11-libs/cairo-1.12[X,xcb] >=x11-libs/pixman-0.19.2 )
-	system-icu? ( >=dev-libs/icu-51.1:= )
+	system-icu? ( >=dev-libs/icu-56.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
-	system-sqlite? ( >=dev-db/sqlite-3.8.11.1:3[secure-delete,debug=] )
-	system-libvpx? ( >=media-libs/libvpx-1.3.0:0=[postproc] )
+	system-libevent? ( >=dev-libs/libevent-2.0:0= )
+	system-sqlite? ( >=dev-db/sqlite-3.17.0:3[secure-delete,debug=] )
+	system-libvpx? ( >=media-libs/libvpx-1.5.0:0=[postproc] )
+	system-harfbuzz? ( >=media-libs/harfbuzz-1.2.6:0=[graphite,icu] >=media-gfx/graphite2-1.3.8 )
 "
 
 if [[ -n ${MOZCONFIG_OPTIONAL_GTK3} ]]; then
+	MOZCONFIG_OPTIONAL_GTK2ONLY=
 	if [[ ${MOZCONFIG_OPTIONAL_GTK3} = "enabled" ]]; then
 		IUSE+=" +gtk3"
 	else
 		IUSE+=" gtk3"
 	fi
 	RDEPEND+="
-	gtk3? ( >=x11-libs/gtk+-3.14.0:3 )"
+	gtk3? ( >=x11-libs/gtk+-3.4.0:3 )
+	!gtk3? ( >=x11-libs/gtk+-2.18:2 )"
+elif [[ -n ${MOZCONFIG_OPTIONAL_GTK2ONLY} ]]; then
+	if [[ ${MOZCONFIG_OPTIONAL_GTK2ONLY} = "enabled" ]]; then
+		IUSE+=" +gtk2"
+	else
+		IUSE+=" gtk2"
+	fi
+	RDEPEND+="
+	gtk2? ( >=x11-libs/gtk+-2.18:2 )
+	!gtk2? ( >=x11-libs/gtk+-3.4.0:3 )"
+else
+	RDEPEND+="
+		>=x11-libs/gtk+-2.18:2"
 fi
 if [[ -n ${MOZCONFIG_OPTIONAL_WIFI} ]]; then
 	if [[ ${MOZCONFIG_OPTIONAL_WIFI} = "enabled" ]]; then
@@ -125,23 +162,19 @@ if [[ -n ${MOZCONFIG_OPTIONAL_WIFI} ]]; then
 			net-misc/networkmanager )
 	)"
 fi
-if [[ -n ${MOZCONFIG_OPTIONAL_JIT} ]]; then
-	if [[ ${MOZCONFIG_OPTIONAL_JIT} = "enabled" ]]; then
-		IUSE+=" +jit"
-	else
-		IUSE+=" jit"
-	fi
-fi
 
 DEPEND="app-arch/zip
 	app-arch/unzip
 	>=sys-devel/binutils-2.16.1
+	sys-apps/findutils
 	${RDEPEND}"
 
 RDEPEND+="
 	selinux? ( sec-policy/selinux-mozilla )"
 
-REQUIRED_USE=""
+# force system-icu if system-harfbuzz is selected, to avoid potential ABI issues
+REQUIRED_USE="
+	system-harfbuzz? ( system-icu )"
 
 # @FUNCTION: mozconfig_config
 # @DESCRIPTION:
@@ -150,7 +183,7 @@ REQUIRED_USE=""
 #
 # Example:
 #
-# inherit mozconfig-kde-v5.33
+# inherit mozconfig-kde-v6.46
 #
 # src_configure() {
 # 	mozconfig_init
@@ -164,15 +197,7 @@ mozconfig_config() {
 	# Migrated from mozcoreconf-2
 	mozconfig_annotate 'system_libs' \
 		--with-system-zlib \
-		--enable-pango \
-		--enable-svg \
 		--with-system-bz2
-
-	if [[ -n ${MOZCONFIG_OPTIONAL_GTK3} ]]; then
-		mozconfig_annotate 'gtk3 use flag' --enable-default-toolkit=$(usex gtk3 cairo-gtk3 cairo-gtk2)
-	else
-		mozconfig_annotate '' --enable-default-toolkit=cairo-gtk2
-	fi
 
 	if has bindist ${IUSE}; then
 		mozconfig_use_enable !bindist official-branding
@@ -181,6 +206,8 @@ mozconfig_config() {
 		fi
 	fi
 
+	# Enable position independent executables 
+	mozconfig_annotate 'enabled by Gentoo' --enable-pie
 	mozconfig_use_enable debug
 	mozconfig_use_enable debug tests
 
@@ -206,50 +233,78 @@ mozconfig_config() {
 		mozconfig_annotate 'disabled' --disable-necko-wifi
 	fi
 
-	# These are forced-on for webm support
-	mozconfig_annotate 'required' --enable-ogg
-	mozconfig_annotate 'required' --enable-wave
-
 	if [[ -n ${MOZCONFIG_OPTIONAL_JIT} ]]; then
 		mozconfig_use_enable jit ion
 	fi
 
 	# These are enabled by default in all mozilla applications
-	mozconfig_annotate '' --with-system-nspr --with-nspr-prefix="${EPREFIX}"/usr
-	mozconfig_annotate '' --with-system-nss --with-nss-prefix="${EPREFIX}"/usr
-	mozconfig_annotate '' --x-includes="${EPREFIX}"/usr/include --x-libraries="${EPREFIX}"/usr/$(get_libdir)
-	mozconfig_annotate '' --with-system-libevent="${EPREFIX}"/usr
+	mozconfig_annotate '' --with-system-nspr --with-nspr-prefix="${SYSROOT}${EPREFIX}"/usr
+	mozconfig_annotate '' --with-system-nss --with-nss-prefix="${SYSROOT}${EPREFIX}"/usr
+	mozconfig_annotate '' --x-includes="${SYSROOT}${EPREFIX}"/usr/include --x-libraries="${SYSROOT}${EPREFIX}"/usr/$(get_libdir)
+	if use system-libevent; then
+		mozconfig_annotate '' --with-system-libevent="${SYSROOT}${EPREFIX}"/usr
+	fi
 	mozconfig_annotate '' --prefix="${EPREFIX}"/usr
 	mozconfig_annotate '' --libdir="${EPREFIX}"/usr/$(get_libdir)
 	mozconfig_annotate 'Gentoo default' --enable-system-hunspell
-	mozconfig_annotate '' --disable-gnomevfs
 	mozconfig_annotate '' --disable-gnomeui
 	mozconfig_annotate '' --enable-gio
 	mozconfig_annotate '' --disable-crashreporter
 	mozconfig_annotate 'Gentoo default' --with-system-png
 	mozconfig_annotate '' --enable-system-ffi
 	mozconfig_annotate 'Gentoo default to honor system linker' --disable-gold
-	mozconfig_annotate 'Gentoo default' --disable-skia
+	mozconfig_annotate '' --enable-skia
 	mozconfig_annotate '' --disable-gconf
 	mozconfig_annotate '' --with-intl-api
 
+	# default toolkit is cairo-gtk2, optional use flags can change this
+	local toolkit="cairo-gtk2"
+	local toolkit_comment=""
+	if [[ -n ${MOZCONFIG_OPTIONAL_GTK3} ]]; then
+		if use gtk3; then
+			toolkit="cairo-gtk3"
+			toolkit_comment="gtk3 use flag"
+		fi
+	fi
+	if [[ -n ${MOZCONFIG_OPTIONAL_GTK2ONLY} ]]; then
+		if ! use gtk2; then
+			toolkit="cairo-gtk3"
+		else
+			toolkit_comment="gtk2 use flag"
+		fi
+	fi
+	if [[ -n ${MOZCONFIG_OPTIONAL_QT5} ]]; then
+		if use qt5; then
+			toolkit="cairo-qt"
+			toolkit_comment="qt5 use flag"
+			# need to specify these vars because the qt5 versions are not found otherwise,
+			# and setting --with-qtdir overrides the pkg-config include dirs
+			local i
+			for i in qmake moc rcc; do
+				echo "export HOST_${i^^}=\"$(qt5_get_bindir)/${i}\"" \
+					>> "${S}"/.mozconfig || die
+			done
+			echo 'unset QTDIR' >> "${S}"/.mozconfig || die
+			mozconfig_annotate '+qt5' --disable-gio
+		fi
+	fi
+	mozconfig_annotate "${toolkit_comment}" --enable-default-toolkit=${toolkit}
+
 	# Use jemalloc unless libc is not glibc >= 2.4
 	# at this time the minimum glibc in the tree is 2.9 so we should be safe.
-	if use elibc_glibc && use jemalloc3; then
-		# We must force-enable jemalloc 3 via .mozconfig
-		echo "export MOZ_JEMALLOC3=1" >> "${S}"/.mozconfig || die
-		mozconfig_annotate '' --enable-jemalloc
+	if use elibc_glibc && use jemalloc; then
+		# We must force-enable jemalloc 4 via .mozconfig
+		echo "export MOZ_JEMALLOC4=1" >> "${S}"/.mozconfig || die
 		mozconfig_annotate '' --enable-replace-malloc
 	fi
 
-	mozconfig_annotate '' --target="${CTARGET:-${CHOST}}"
-	mozconfig_annotate '' --build="${CTARGET:-${CHOST}}"
+	# Instead of the standard --build= and --host=, mozilla uses --host instead
+	# of --build, and --target intstead of --host.
+	# Note, mozilla also has --build but it does not do what you think it does.
+	# Set both --target and --host as mozilla uses python to guess values otherwise
+	mozconfig_annotate '' --target="${CHOST}"
+	mozconfig_annotate '' --host="${CBUILD:-${CHOST}}"
 
-	if use gstreamer; then
-		mozconfig_annotate '+gstreamer' --enable-gstreamer=1.0
-	else
-		mozconfig_annotate '' --disable-gstreamer
-	fi
 	mozconfig_use_enable pulseaudio
 
 	mozconfig_use_enable system-cairo
@@ -257,6 +312,8 @@ mozconfig_config() {
 	mozconfig_use_with system-jpeg
 	mozconfig_use_with system-icu
 	mozconfig_use_with system-libvpx
+	mozconfig_use_with system-harfbuzz
+	mozconfig_use_with system-harfbuzz system-graphite2
 
 	# Modifications to better support ARM, bug 553364
 	if use neon; then
@@ -272,5 +329,46 @@ mozconfig_config() {
 			sed -i -e "s|softfp|hard|" \
 				"${S}"/media/libvpx/moz.build
 		fi
+	fi
+}
+
+# @FUNCTION: mozconfig_install_prefs
+# @DESCRIPTION:
+# Set preferences into the prefs.js file specified as a parameter to
+# the function.  This sets both some common prefs to all mozilla
+# packages, and any prefs that may relate to the use flags administered
+# by mozconfig_config().
+#
+# Call this within src_install() phase, after copying the template
+# prefs file (if any) from ${FILESDIR}
+#
+# Example:
+#
+# inherit mozconfig-v6.46
+#
+# src_install() {
+# 	cp "${FILESDIR}"/gentoo-default-prefs.js \
+#	"${BUILD_OBJ_DIR}/dist/bin/browser/defaults/preferences/all-gentoo.js"  \
+#	|| die
+#
+# 	mozconfig_install_prefs \
+#	"${BUILD_OBJ_DIR}/dist/bin/browser/defaults/preferences/all-gentoo.js"
+#
+#	...
+# }
+
+mozconfig_install_prefs() {
+	local prefs_file="${1}"
+
+	einfo "Adding prefs from mozconfig to ${prefs_file}"
+
+	# set dictionary path, to use system hunspell
+	echo "pref(\"spellchecker.dictionary_path\", \"${EPREFIX}/usr/share/myspell\");" \
+		>>"${prefs_file}" || die
+
+	# force the graphite pref if system-harfbuzz is enabled, since the pref cant disable it
+	if use system-harfbuzz; then
+		echo "sticky_pref(\"gfx.font_rendering.graphite.enabled\",true);" \
+			>>"${prefs_file}" || die
 	fi
 }

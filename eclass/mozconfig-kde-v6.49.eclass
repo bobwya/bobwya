@@ -1,6 +1,5 @@
 # Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Id$
 #
 # @ECLASS: mozconfig-kde-v6.49.eclass
 # @MAINTAINER:
@@ -95,6 +94,7 @@ RDEPEND=">=app-text/hunspell-1.2:=
 	dev-libs/atk
 	dev-libs/expat
 	>=x11-libs/cairo-1.10[X]
+	>=x11-libs/gtk+-2.18:2
 	x11-libs/gdk-pixbuf
 	>=x11-libs/pango-1.22.0
 	>=media-libs/libpng-1.6.21:0=[apng]
@@ -121,7 +121,7 @@ RDEPEND=">=app-text/hunspell-1.2:=
 	system-cairo? ( >=x11-libs/cairo-1.12[X,xcb] >=x11-libs/pixman-0.19.2 )
 	system-icu? ( >=dev-libs/icu-56.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
-	system-libevent? ( =dev-libs/libevent-2.0*:0= )
+	system-libevent? ( >=dev-libs/libevent-2.0:0= )
 	system-sqlite? ( >=dev-db/sqlite-3.13.0:3[secure-delete,debug=] )
 	system-libvpx? ( >=media-libs/libvpx-1.5.0:0=[postproc] )
 	system-harfbuzz? ( >=media-libs/harfbuzz-1.2.6:0=[graphite,icu] >=media-gfx/graphite2-1.3.8 )
@@ -135,8 +135,7 @@ if [[ -n ${MOZCONFIG_OPTIONAL_GTK3} ]]; then
 		IUSE+=" gtk3"
 	fi
 	RDEPEND+="
-	gtk3? ( >=x11-libs/gtk+-3.4.0:3 )
-	!gtk3? ( >=x11-libs/gtk+-2.18:2 )"
+	gtk3? ( >=x11-libs/gtk+-3.4.0:3 )"
 elif [[ -n ${MOZCONFIG_OPTIONAL_GTK2ONLY} ]]; then
 	if [[ ${MOZCONFIG_OPTIONAL_GTK2ONLY} = "enabled" ]]; then
 		IUSE+=" +gtk2"
@@ -144,11 +143,7 @@ elif [[ -n ${MOZCONFIG_OPTIONAL_GTK2ONLY} ]]; then
 		IUSE+=" gtk2"
 	fi
 	RDEPEND+="
-	gtk2? ( >=x11-libs/gtk+-2.18:2 )
 	!gtk2? ( >=x11-libs/gtk+-3.4.0:3 )"
-else
-	RDEPEND+="
-		>=x11-libs/gtk+-2.18:2"
 fi
 if [[ -n ${MOZCONFIG_OPTIONAL_QT5} ]]; then
 	inherit qmake-utils
@@ -240,8 +235,6 @@ mozconfig_config() {
 		fi
 	fi
 
-	# Enable position independent executables 
-	mozconfig_annotate 'enabled by Gentoo' --enable-pie
 	mozconfig_use_enable debug
 	mozconfig_use_enable debug tests
 
