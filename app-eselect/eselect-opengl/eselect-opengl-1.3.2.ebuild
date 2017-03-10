@@ -1,6 +1,5 @@
 # Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Id$
 
 EAPI=6
 
@@ -55,8 +54,9 @@ pkg_postinst() {
 		eselect opengl set "${old_gl_implementation}"
 	fi
 	for conf_file in "etc/env.d/000opengl" "etc/X11/xorg.conf.d/20opengl.conf"; do
-		[[ -f "${EROOT}/${CONF_FILE}" ]] || continue
-		rm -vf "${EROOT}/${CONF_FILE}" || die "rm failed"
+		[[ -f "${EROOT}/${conf_file}" ]] || continue
+
+		rm -vf "${EROOT}/${conf_file}" || die "rm failed"
 	done
 	unset -v conf_file old_gl_implementation
 }
