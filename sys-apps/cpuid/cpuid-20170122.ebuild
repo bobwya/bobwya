@@ -18,7 +18,7 @@ IUSE=""
 src_prepare() {
 	PATCHES+=(
 		"${FILESDIR}"/${PN}-20160814-Makefile.patch
-		"${FILESDIR}"/${PN}-20110305-fPIC.patch #376245
+		"${FILESDIR}"/${PN}-20170122-fPIC.patch #376245
 	)
 	default
 }

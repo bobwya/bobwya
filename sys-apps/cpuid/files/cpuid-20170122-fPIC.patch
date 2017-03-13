@@ -1,0 +1,23 @@
+--- a/cpuid.c	2017-03-13 22:31:33.786314972 +0000
++++ b/cpuid.c	2017-03-13 22:36:54.321718100 +0000
+@@ -6613,9 +6613,20 @@
+                     words[WORD_ECX],
+                     words[WORD_EDX]);
+ #else
++#if defined(__i386__) && defined(__PIC__)
++      asm("push %%ebx\n"
++          "cpuid\n"
++          "movl %%ebx, %1\n"
++          "pop %%ebx\n"
++#else
+       asm("cpuid"
++#endif
+           : "=a" (words[WORD_EAX]),
++#if defined(__i386__) && defined(__PIC__)
++            "=r" (words[WORD_EBX]),
++#else
+             "=b" (words[WORD_EBX]),
++#endif
+             "=c" (words[WORD_ECX]),
+             "=d" (words[WORD_EDX])
+           : "a" (reg), 
