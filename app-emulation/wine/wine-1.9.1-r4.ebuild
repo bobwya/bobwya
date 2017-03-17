@@ -205,72 +205,6 @@ usr/share/applications/wine-winecfg.desktop"
 
 S="${WORKDIR}/${MY_P}"
 
-wine_gcc_specific_pretests() {
-	( [[ "${MERGE_TYPE}" = "binary" ]] || ! tc-is-gcc ) && return 0
-
-	# bug #549768
-	if use abi_x86_64 && [[ $(gcc-major-version) -eq 5 && $(gcc-minor-version) -le 2 ]]; then
-		ebegin "(subshell): checking for gcc-5.1/gcc-5.2 MS X86_64 ABI compiler bug ..."
-		( # Run in a subshell to prevent "Aborted" message
-			$(tc-getCC) -O2 "${FILESDIR}/pr66838.c" -o "${T}/pr66838" || die "cc compilation failed: pr66838 test"
-			"${T}"/pr66838 &>/dev/null || die "pr66838 test failed"
-		)
-		if ! eend $?; then
-			eerror "(subshell): gcc-5.1/5.2 MS X86_64 ABI compiler bug detected."
-			eerror "64-bit wine cannot be built with affected versions of gcc."
-			eerror "Please re-emerge wine using an unaffected version of gcc or apply"
-			eerror "Upstream (backport) patch to your current version of gcc-5.1/5.2."
-			eerror "See https://bugs.gentoo.org/549768"
-			eerror
-			return 1
-		fi
-	fi
-
-	# bug #574044
-	if use abi_x86_64 && [[ $(gcc-major-version) -eq 5 && $(gcc-minor-version) -eq 3 ]]; then
-		ebegin "(subshell): checking for gcc-5.3.0 X86_64 misaligned stack compiler bug ..."
-		( # Compile in a subshell to prevent "Aborted" message
-			$(tc-getCC) -O2 -mincoming-stack-boundary=3 "${FILESDIR}"/pr69140.c -o "${T}"/pr69140 &>/dev/null || die "pr69140 test failed"
-		)
-		if ! eend $?; then
-			eerror "(subshell): gcc-5.3.0 X86_64 misaligned stack compiler bug detected."
-			eerror "Please re-emerge the latest gcc-5.3.0 ebuild, or use gcc-config to select a different compiler version."
-			eerror "See https://bugs.gentoo.org/574044"
-			eerror
-			return 1
-		fi
-	fi
-}
-
-wine_generic_compiler_pretests() {
-	[[ ${MERGE_TYPE} = "binary" ]] && return 0
-
-	if use abi_x86_64; then
-		ebegin "(subshell): checking compiler support for (64-bit) builtin_ms_va_list ..."
-		( # Compile in a subshell to prevent "Aborted" message
-			$(tc-getCC) -O2 "${FILESDIR}"/builtin_ms_va_list.c -o "${T}"/builtin_ms_va_list &>/dev/null || die "test for builtin_ms_va_list support failed"
-		)
-		if ! eend $?; then
-			eerror "(subshell): $(tc-getCC) does not support builtin_ms_va_list."
-			eerror "Please re-emerge using a compiler (version) that supports building 64-bit Wine."
-			eerror "Use >=sys-devel/gcc-4.4 or >=sys-devel/clang-3.8 to build ${CATEGORY}/${PN}."
-			eerror
-			return 1
-		fi
-	fi
-}
-
-wine_build_environment_prechecks() {
-	[[ ${MERGE_TYPE} = "binary" ]] && return 0
-
-	if use abi_x86_32 && use opencl && [[ "$(eselect opencl show 2>/dev/null)" == "intel" ]]; then
-		eerror "You cannot build wine with USE=+opencl because intel-ocl-sdk is 64-bit only."
-		eerror "See https://bugs.gentoo.org/487864"
-		eerror
-		return 1
-	fi
-}
-
 wine_env_vcs_variable_prechecks() {
 	local pn_live_variable="${PN//[-+]/_}_LIVE_COMMIT"
 	local pn_live_value="${!pn_live_variable}"
@@ -287,7 +221,7 @@ wine_env_vcs_variable_prechecks() {
 		eerror "Git commit (and branch) overrides must now be specified"
 		eerror "using ONE of following the environmental variables:"
 		eerror "  EGIT_WINE_COMMIT or EGIT_WINE_BRANCH (Wine)"
-		eerror "  EGIT_STAGING_COMMIT or EGIT_STAGING_BRANCH (Wine-Staging)."
+		eerror "  EGIT_STAGING_COMMIT or EGIT_STAGING_BRANCH (Wine Staging)."
 		eerror
 		return 1
 	fi
@@ -305,10 +239,118 @@ wine_git_unpack() {
 	fi
 }
 
+wine_build_environment_prechecks() {
+	[[ "${MERGE_TYPE}" = "binary" ]] && return 0
+
+	local using_gcc=$(tc-is-gcc) using_clang=$(tc-is-clang) \
+		gcc_major_version=$(gcc-major-version) gcc_minor_version=$(gcc-minor-version) \
+		clang_major_version=$(clang-major-version) clang_minor_version=$(clang-minor-version)
+
+	if use abi_x86_64; then
+		if (( using_gcc && ( gcc_major_version < 4 || (gcc_major_version == 4 && gcc_minor_version < 4) ) )); then
+			eerror "You need >=sys-devel/gcc-4.4.x to compile 64-bit Wine"
+			die "wine_build_environment_prechecks() failed"
+		elif (( using_clang && ( clang_major_version < 3 || (clang_major_version == 3 && clang_minor_version < 8) ) )); then
+			eerror "You need >=sys-devel/clang-3.8 to compile 64-bit wine"
+			die "wine_build_environment_prechecks() failed"
+		fi
+		if (( using_gcc && (gcc_major_version == 5 && gcc_minor_version <= 3) )); then
+			ewarn "=sys-devel/gcc-5.0.x ... =sys-devel/gcc-5.3.x - introduced compilation bugs"
+			ewarn "and are no longer supported byGentoo's Toolchain Team."
+			ewarn "If your ebuild fails the compiler checks in the src-configure phase then:"
+			ewarn "update your compiler, switch to <sys-devel-gcc-5.0.x or >=sys-devel/gcc-5.4.x"
+			ewarn "See https://bugs.gentoo.org/610752"
+		fi
+		if use abi_x86_32 && use opencl && [[ "$(eselect opencl show 2>/dev/null)" == "intel" ]]; then
+			eerror "You cannot build wine with USE=+opencl because dev-util/intel-ocl-sdk is 64-bit only."
+			eerror "See https://bugs.gentoo.org/487864"
+			eerror
+			return 1
+		fi
+	fi
+}
+
+wine_gcc_specific_pretests() {
+	( [[ "${MERGE_TYPE}" = "binary" ]] || ! tc-is-gcc ) && return 0
+
+	local using_abi_x86_64=$(use abi_x86_64) \
+		gcc_major_version=$(gcc-major-version) gcc_minor_version=$(gcc-minor-version)
+
+	# bug #549768
+	if (( using_abi_x86_64 && (gcc_major_version == 5 && gcc_minor_version <= 2) )); then
+		ebegin "(subshell): checking for =sys-devel/gcc-5.1.x , =sys-devel/gcc-5.2.0 MS X86_64 ABI compiler bug ..."
+		( # Run in a subshell to prevent "Aborted" message
+			$(tc-getCC) -O2 "${FILESDIR}/pr66838.c" -o "${T}/pr66838" || die "cc compilation failed: pr66838 test"
+			"${T}"/pr66838 &>/dev/null || die "pr66838 test failed"
+		)
+		if ! eend $?; then
+			eerror "(subshell): =sys-devel/gcc-5.1.x , =sys-devel/gcc-5.2.0 MS X86_64 ABI compiler bug detected."
+			eerror "64-bit wine cannot be built with =sys-devel/gcc-5.1 or initial patchset of =sys-devel/gcc-5.2.0."
+			eerror "Please re-emerge wine using an unaffected version of gcc or apply"
+			eerror "Re-emerge the latest =sys-devel/gcc-5.2.0 ebuild,"
+			eerror "or use gcc-config to select a different compiler version."
+			eerror "See https://bugs.gentoo.org/549768"
+			eerror
+			return 1
+		fi
+	fi
+
+	# bug #574044
+	if (( using_abi_x86_64 && (gcc_major_version == 5) && (gcc_minor_version == 3) )); then
+		ebegin "(subshell): checking for =sys-devel/gcc-5.3.0 X86_64 misaligned stack compiler bug ..."
+		( # Compile in a subshell to prevent "Aborted" message
+			$(tc-getCC) -O2 -mincoming-stack-boundary=3 "${FILESDIR}"/pr69140.c -o "${T}"/pr69140 &>/dev/null \
+				|| die "pr69140 test failed"
+		)
+		if ! eend $?; then
+			eerror "(subshell): =sys-devel/gcc-5.3.0 X86_64 misaligned stack compiler bug detected."
+			eerror "Please re-emerge the latest =sys-devel/gcc-5.3.0 ebuild,"
+			eerror "or use gcc-config to select a different compiler version."
+			eerror "See https://bugs.gentoo.org/574044"
+			eerror
+			return 1
+		fi
+	fi
+}
+
+wine_generic_compiler_pretests() {
+	[[ "${MERGE_TYPE}" = "binary" ]] && return 0
+
+	if use abi_x86_64; then
+		ebegin "(subshell): checking compiler support for (64-bit) builtin_ms_va_list ..."
+		( # Compile in a subshell to prevent "Aborted" message
+			$(tc-getCC) -O2 "${FILESDIR}"/builtin_ms_va_list.c -o "${T}"/builtin_ms_va_list &>/dev/null || die "test for builtin_ms_va_list support failed"
+		)
+		if ! eend $?; then
+			eerror "(subshell): $(tc-getCC) does not support builtin_ms_va_list."
+			eerror "Please re-emerge using a compiler (version) that supports building 64-bit Wine."
+			eerror "Use >=sys-devel/gcc-4.4 or >=sys-devel/clang-3.8 to build ${CATEGORY}/${PN}."
+			eerror
+			return 1
+		fi
+	fi
+}
+
+wine_generic_compiler_pretests() {
+	[[ "${MERGE_TYPE}" = "binary" ]] && return 0
+
+	if use abi_x86_64; then
+		ebegin "(subshell): checking compiler support for (64-bit) builtin_ms_va_list ..."
+		( # Compile in a subshell to prevent "Aborted" message
+			$(tc-getCC) -O2 "${FILESDIR}"/builtin_ms_va_list.c -o "${T}"/builtin_ms_va_list &>/dev/null || die "test for builtin_ms_va_list support failed"
+		)
+		if ! eend $?; then
+			eerror "(subshell): $(tc-getCC) does not support builtin_ms_va_list."
+			eerror "Please re-emerge using a compiler (version) that supports building 64-bit Wine."
+			eerror "Use >=sys-devel/gcc-4.4 or >=sys-devel/clang-3.8 to build ${CATEGORY}/${PN}."
+			eerror
+			return 1
+		fi
+	fi
+}
+
 pkg_pretend() {
-	wine_gcc_specific_pretests || die
-	wine_generic_compiler_pretests || die
-	wine_build_environment_prechecks || die
+	wine_build_environment_prechecks || die "wine_build_environment_prechecks() failed"
 
 	# Verify OSS support
 	if use oss && ! use kernel_FreeBSD && ! has_version '>=media-sound/oss-4'; then
@@ -319,8 +361,8 @@ pkg_pretend() {
 }
 
 pkg_setup() {
-	wine_build_environment_prechecks || die
-	wine_env_vcs_variable_prechecks || die
+	wine_build_environment_prechecks || die "wine_build_environment_prechecks() failed"
+	wine_env_vcs_variable_prechecks || die "wine_env_vcs_variable_prechecks() failed"
 
 	if ! use staging; then
 		GV="${VANILLA_GV}"
@@ -340,30 +382,30 @@ src_unpack() {
 		if ! use staging; then
 			wine_git_unpack
 		elif [[ ! -z "${EGIT_STAGING_COMMIT:-${EGIT_STAGING_BRANCH}}" ]]; then
-			# References are relative to Wine-Staging git tree (checkout Wine-Staging git tree first)
-			# Use env variables "EGIT_STAGING_COMMIT" or "EGIT_STAGING_BRANCH" to reference Wine-Staging git tree
-			# Use git-r3 internal functions for secondary Wine-Staging repository. See #588604
-			ebegin "(subshell): you have specified a Wine-Staging git reference (building Wine git with USE +staging) ..."
+			# References are relative to Wine Staging git tree (checkout Wine Staging git tree first)
+			# Use env variables "EGIT_STAGING_COMMIT" or "EGIT_STAGING_BRANCH" to reference Wine Staging git tree
+			# Use git-r3 internal functions for secondary Wine Staging repository. See #588604
+			ebegin "(subshell): you have specified a Wine Staging git reference (building Wine git with USE +staging) ..."
 			(
 				source "${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh" || die
 				if [[ ! -z "${EGIT_STAGING_COMMIT}" ]]; then
-					ewarn "Building Wine against Wine-Staging git commit EGIT_STAGING_COMMIT=\"${EGIT_STAGING_COMMIT}\" ."
+					ewarn "Building Wine against Wine Staging git commit EGIT_STAGING_COMMIT=\"${EGIT_STAGING_COMMIT}\" ."
 					git-r3_fetch "${STAGING_EGIT_REPO_URI}" "${EGIT_STAGING_COMMIT}"
 				else
-					ewarn "Building Wine against Wine-Staging git branch EGIT_STAGING_BRANCH=\"${EGIT_STAGING_BRANCH}\" ."
+					ewarn "Building Wine against Wine Staging git branch EGIT_STAGING_BRANCH=\"${EGIT_STAGING_BRANCH}\" ."
 					git-r3_fetch "${STAGING_EGIT_REPO_URI}" "refs/heads/${EGIT_STAGING_BRANCH}"
 				fi
 				git-r3_checkout "${STAGING_EGIT_REPO_URI}" "${STAGING_DIR}"
 				wine_staging_commit="${EGIT_VERSION}"
 				get_upstream_wine_commit  "${STAGING_DIR}" "${wine_staging_commit}" "wine_commit"
 				EGIT_COMMIT="${wine_commit}" git-r3_src_unpack
-				einfo "Building Wine commit \"${wine_commit}\" referenced by Wine-Staging commit \"${wine_staging_commit}\" ..."
+				einfo "Building Wine commit \"${wine_commit}\" referenced by Wine Staging commit \"${wine_staging_commit}\" ..."
 			)
 			eend $? || die "(subshell): ... failed to determine target Wine commit."
 		else
-			# References are relative to Wine git tree (post-checkout Wine-Staging git tree)
+			# References are relative to Wine git tree (post-checkout Wine Staging git tree)
 			# Use env variables "EGIT_WINE_COMMIT" or "EGIT_WINE_BRANCH" to reference Wine git tree
-			# Use git-r3 internal functions for secondary Wine-Staging repository. See #588604
+			# Use git-r3 internal functions for secondary Wine Staging repository. See #588604
 			ebegin "(subshell): You are using a Wine git reference (building Wine git with USE +staging) ..."
 			(
 				source "${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh" || die
@@ -374,11 +416,11 @@ src_unpack() {
 				if ! walk_wine_staging_git_tree "${STAGING_DIR}" "${S}" "${wine_commit}" "wine_staging_commit" ; then
 					find_closest_wine_commit "${STAGING_DIR}" "${S}" "wine_commit" "wine_staging_commit" "wine_commit_offset"
 					(($? == 0)) && display_closest_wine_commit_message "${wine_commit}" "${wine_staging_commit}" "${wine_commit_offset}"
-					die "Failed to find Wine-Staging git commit corresponding to supplied Wine git commit \"${wine_commit}\" ."
+					die "Failed to find Wine Staging git commit corresponding to supplied Wine git commit \"${wine_commit}\" ."
 				fi
-				einfo "Building Wine-Staging commit \"${wine_staging_commit}\" corresponding to Wine commit \"${wine_commit}\" ..."
+				einfo "Building Wine Staging commit \"${wine_staging_commit}\" corresponding to Wine commit \"${wine_commit}\" ..."
 			)
-			eend $? || die "(subshell): ... failed to determine target Wine-Staging commit."
+			eend $? || die "(subshell): ... failed to determine target Wine Staging commit."
 		fi
 	fi
 
@@ -419,17 +461,17 @@ src_prepare() {
 		ewarn "Applying the Wine-Staging patchset. Any bug reports to the"
 		ewarn "Wine bugzilla should explicitly state that staging was used."
 
-		# Declare Wine-Staging excluded patchsets
+		# Declare Wine Staging excluded patchsets
 		local -a STAGING_EXCLUDE_PATCHSETS=( "winhlp32-Flex_Workaround" )
 		use pipelight || STAGING_EXCLUDE_PATCHSETS+=( "Pipelight" )
 
-		# Process Wine-Staging exluded patchsets
+		# Process Wine Staging exluded patchsets
 		local array_indices=( ${!STAGING_EXCLUDE_PATCHSETS[*]} )
 		for ((i=0; i<${#array_indices[*]}; i++)); do
 			local patchset="${STAGING_EXCLUDE_PATCHSETS[array_indices[i]]}"
 			if grep -q "${patchset})" "${STAGING_DIR}/patches/patchinstall.sh"; then
 				STAGING_EXCLUDE_PATCHSETS[${array_indices[i]}]="-W ${patchset}"
-				einfo "Excluding Wine-Staging patchset: \"${patchset}\""
+				einfo "Excluding Wine Staging patchset: \"${patchset}\""
 			else
 				unset -v STAGING_EXCLUDE_PATCHSETS[${array_indices[i]}]
 			fi
@@ -442,7 +484,7 @@ src_prepare() {
 			cd "${STAGING_DIR}/patches"
 			source "${STAGING_DIR}/patches/patchinstall.sh"
 		)
-		eend $? || die "(subshell) script: failed to apply Wine-Staging patches (excluding: ${STAGING_EXCLUDE_PATCHSETS[@]})."
+		eend $? || die "(subshell) script: failed to apply Wine Staging patches (excluding: ${STAGING_EXCLUDE_PATCHSETS[@]})."
 		sed -r -i -e '/^AC_INIT\(.*\)$/{s/\[Wine\]/\[Wine \(Staging\)\]/}' "${S}/configure.ac" || die "sed failed"
 		sed -r -i -e 's/Wine (\(Staging\) |)/Wine \(Staging\) /' "${S}/VERSION" || die "sed failed"
 
@@ -471,6 +513,9 @@ src_prepare() {
 }
 
 src_configure() {
+	wine_gcc_specific_pretests || die "wine_gcc_specific_pretests() failed"
+	wine_generic_compiler_pretests || die "wine_generic_compiler_pretests() failed"
+
 	export LDCONFIG=/bin/true
 	use custom-cflags || strip-flags
 
