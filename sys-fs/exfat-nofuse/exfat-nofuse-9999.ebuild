@@ -15,8 +15,8 @@ SLOT="0"
 KEYWORDS=""
 IUSE=""
 
-RDEPENDS="!sys-fs/exfat"
-DEPENDS="${RDEPENDS}"
+RDEPEND="!sys-fs/fuse-exfat"
+DEPEND="${RDEPENDS}"
 
 MODULE_NAMES="exfat(kernel/fs:${S})"
 BUILD_TARGETS="all"
