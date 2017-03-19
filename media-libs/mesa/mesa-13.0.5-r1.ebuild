@@ -24,7 +24,6 @@ HOMEPAGE="https://www.mesa3d.org/"
 
 if [[ $PV == 9999 ]]; then
 	SRC_URI=""
-	KEYWORDS=""
 else
 	SRC_URI="ftp://ftp.freedesktop.org/pub/mesa/${FOLDER}/${MY_P}.tar.xz"
 	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~arm-linux ~x86-linux ~sparc-solaris ~x64-solaris ~x86-solaris"
@@ -58,8 +57,7 @@ REQUIRED_USE="
 	gles2?  ( egl )
 	vaapi? ( gallium )
 	vdpau? ( gallium )
-	vulkan? ( || ( video_cards_i965 video_cards_radeonsi )
-	          video_cards_radeonsi? ( llvm ) )
+	vulkan? ( video_cards_i965 )
 	wayland? ( egl gbm )
 	xa?  ( gallium )
 	video_cards_freedreno?  ( gallium )
@@ -99,7 +97,12 @@ RDEPEND="
 	llvm? (
 		video_cards_radeonsi? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
-			vulkan? ( >=sys-devel/llvm-3.9.0:0=[${MULTILIB_USEDEP}] )
+		)
+		video_cards_r600? (
+			virtual/libelf:0=[${MULTILIB_USEDEP}]
+		)
+		video_cards_radeon? (
+			virtual/libelf:0=[${MULTILIB_USEDEP}]
 		)
 		>=sys-devel/llvm-3.6.0:0=[${MULTILIB_USEDEP}]
 	)
@@ -200,7 +203,10 @@ pkg_setup() {
 }
 
 src_prepare() {
-	[[ ${PV} == 9999 ]] && eautoreconf
+	local PATCHES
+	PATCHES+=( "${FILESDIR}/${PN}-13-clover-Work-around-build-failure-with-AltiVec.patch" )
+
+	eautoreconf
 	default
 }
 
@@ -277,7 +283,9 @@ multilib_src_configure() {
 
 	if use vulkan; then
 		vulkan_enable video_cards_i965 intel
-		vulkan_enable video_cards_radeonsi radeon
+
+		# radv is disabled due to dependence on >=llvm-3.9, bug 607660
+		#vulkan_enable video_cards_radeonsi radeon
 	fi
 
 	# x86 hardened pax_kernel needs glx-rts, bug 240956
