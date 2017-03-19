@@ -1,7 +1,7 @@
 # Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
+EAPI=5
 
 XORG_DOC=doc
 inherit xorg-3 multilib versionator flag-o-matic
@@ -11,13 +11,12 @@ DESCRIPTION="X.Org X servers"
 SLOT="0/${PV}"
 KEYWORDS=""
 
-IUSE_SERVERS="dmx kdrive xephyr xnest xorg xvfb"
-IUSE="${IUSE_SERVERS} fop glamor ipv6 libressl minimal selinux +suid systemd tslib +udev unwind wayland"
+IUSE_SERVERS="dmx kdrive wayland xephyr xnest xorg xvfb"
+IUSE="${IUSE_SERVERS} debug fop glamor ipv6 libressl minimal selinux +suid systemd tslib +udev unwind"
 
 CDEPEND="=app-eselect/eselect-opengl-1.3.2
 	!libressl? ( dev-libs/openssl:0= )
 	libressl? ( dev-libs/libressl )
-	media-libs/freetype
 	>=x11-apps/iceauth-1.0.2
 	>=x11-apps/rgb-1.0.3
 	>=x11-apps/xauth-1.0.3
@@ -48,7 +47,7 @@ CDEPEND="=app-eselect/eselect-opengl-1.3.2
 	)
 	fop? ( dev-java/fop )
 	glamor? (
-		media-libs/libepoxy
+		media-libs/libepoxy[X]
 		>=media-libs/mesa-11.0.6-r1[egl,gbm]
 		!x11-libs/glamor
 	)
@@ -57,7 +56,7 @@ CDEPEND="=app-eselect/eselect-opengl-1.3.2
 		x11-libs/libXv
 	)
 	xephyr? (
-		x11-libs/libxcb
+		x11-libs/libxcb[xkb]
 		x11-libs/xcb-util
 		x11-libs/xcb-util-image
 		x11-libs/xcb-util-keysyms
@@ -75,6 +74,7 @@ CDEPEND="=app-eselect/eselect-opengl-1.3.2
 	wayland? (
 		>=dev-libs/wayland-1.3.0
 		media-libs/libepoxy
+		>=dev-libs/wayland-protocols-1.1
 	)
 	>=x11-apps/xinit-1.3.3-r1
 	systemd? (
@@ -107,6 +107,7 @@ DEPEND="${CDEPEND}
 	>=x11-proto/xineramaproto-1.1.3
 	>=x11-proto/xproto-7.0.31
 	>=x11-proto/presentproto-1.0
+	>=x11-proto/dri2proto-2.8
 	>=x11-proto/dri3proto-1.0
 	dmx? (
 		>=x11-proto/dmxproto-2.2.99.1
@@ -120,7 +121,6 @@ DEPEND="${CDEPEND}
 	)
 	!minimal? (
 		>=x11-proto/xf86driproto-2.1.0
-		>=x11-proto/dri2proto-2.8
 	)"
 
 RDEPEND="${CDEPEND}
@@ -136,39 +136,40 @@ REQUIRED_USE="!minimal? (
 	)
 	xephyr? ( kdrive )"
 
+#UPSTREAMED_PATCHES=(
+#	"${WORKDIR}/patches/"
+#)
+
+PATCHES=(
+	"${UPSTREAMED_PATCHES[@]}"
+	"${FILESDIR}"/${PN}-1.12-unloadsubmodule.patch
+	# needed for new eselect-opengl, bug #541232
+	"${FILESDIR}"/${PN}-1.18-support-multiple-Files-sections.patch
+)
+
 pkg_pretend() {
 	# older gcc is not supported
 	[[ "${MERGE_TYPE}" != "binary" && $(gcc-major-version) -lt 4 ]] && \
 		die "Sorry, but gcc earlier than 4.0 will not work for xorg-server."
 }
 
-src_prepare() {
-	#local UPSTREAMED_PATCHES=(
-	#	"${WORKDIR}/patches/"
-	#)
-	local PATCHES=(
-		"${UPSTREAMED_PATCHES[@]}"
-		"${FILESDIR}"/${PN}-1.12-unloadsubmodule.patch
-		# needed for new eselect-opengl, bug #541232
-		"${FILESDIR}"/${PN}-1.18-support-multiple-Files-sections.patch
-	)
-	default
+pkg_setup() {
+	if use wayland && ! use glamor; then
+		ewarn "glamor is necessary for acceleration under Xwayland."
+		ewarn "Performance may be unacceptable without it."
+	fi
 }
 
 src_configure() {
 	# localstatedir is used for the log location; we need to override the default
 	#	from ebuild.sh
 	# sysconfdir is used for the xorg.conf location; same applies
-	# NOTE: fop is used for doc generating; and I have no idea if Gentoo
-	#	package it somewhere
 	XORG_CONFIGURE_OPTIONS=(
 		$(use_enable ipv6)
+		$(use_enable debug)
 		$(use_enable dmx)
 		$(use_enable glamor)
 		$(use_enable kdrive)
-		$(use_enable kdrive kdrive-kbd)
-		$(use_enable kdrive kdrive-mouse)
-		$(use_enable kdrive kdrive-evdev)
 		$(use_enable suid install-setuid)
 		$(use_enable tslib)
 		$(use_enable unwind libunwind)
@@ -185,7 +186,7 @@ src_configure() {
 		$(use_enable udev config-udev)
 		$(use_with doc doxygen)
 		$(use_with doc xmlto)
-	$(use_with fop)
+		$(use_with fop)
 		$(use_with systemd systemd-daemon)
 		$(use_enable systemd systemd-logind)
 		--enable-libdrm
@@ -210,7 +211,7 @@ src_install() {
 
 	if ! use minimal && use xorg; then
 		# Install xorg.conf.example into docs
-		dodoc "${S}/hw/xfree86/xorg.conf.example"
+		dodoc "${AUTOTOOLS_BUILD_DIR}"/hw/xfree86/xorg.conf.example
 	fi
 
 	newinitd "${FILESDIR}"/xdm-setup.initd-1 xdm-setup
