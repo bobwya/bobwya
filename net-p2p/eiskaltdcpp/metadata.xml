@@ -19,4 +19,7 @@
   <flag name="minimal">Don't install headers</flag>
   <flag name="qml">Build with Qt Declarative Ui support</flag>
 </use>
+<upstream>
+	<remote-id type="github">eiskaltdcpp/eiskaltdcpp</remote-id>
+</upstream>
 </pkgmetadata>

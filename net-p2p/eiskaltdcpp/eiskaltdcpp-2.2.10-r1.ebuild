@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -6,12 +6,20 @@ EAPI=6
 PLOCALES="be bg cs de el en es eu fr hu it pl pt_BR ru sk sr sr@latin sv_SE uk vi zh_CN"
 
 inherit cmake-utils l10n fdo-mime gnome2-utils
-[[ "${PV}" = *9999 ]] && inherit git-r3
 
 DESCRIPTION="Qt based client for DirectConnect and ADC protocols, based on DC++ library"
 HOMEPAGE="https://github.com/eiskaltdcpp/eiskaltdcpp"
 
-LICENSE="GPL-2 GPL-3"
+if [[ "${PV}" == 9999 ]]; then
+	inherit git-r3
+	EGIT_REPO_URI="https://github.com/${PN}/${PN}.git"
+	KEYWORDS=""
+else
+	SRC_URI="https://github.com/${PN}/${PN}/archive/v${PV}.tar.gz"
+	KEYWORDS="~amd64 ~x86"
+fi
+
+LICENSE="GPL-3"
 SLOT="0"
 IUSE="cli daemon dbus +dht +emoticons examples -gtk2 -gtk3 idn -javascript json libcanberra libnotify lua +minimal pcre qml qt4 +qt5 sound spell sqlite upnp -xmlrpc"
 
@@ -38,14 +46,6 @@ REQUIRED_USE="
 	json? ( !xmlrpc )
 	sound? ( ^^ ( gtk2 gtk3 qt4 qt5 ) )
 "
-
-if [[ ${PV} != *9999* ]]; then
-	SRC_URI="https://github.com/${PN}/${PN}/archive/v${PV}.tar.gz"
-	KEYWORDS="~amd64 ~x86"
-else
-	EGIT_REPO_URI="https://github.com/${PN}/${PN}.git"
-	KEYWORDS=""
-fi
 
 GTK_COMMON_DEPEND="
 	>=dev-libs/glib-2.24:2
@@ -99,7 +99,6 @@ RDEPEND="
 		>=dev-qt/qtwidgets-5.0.2:5
 		>=dev-qt/qtxml-5.0.2:5
 		>=dev-qt/qtnetwork-5.0.2:5
-		>=dev-qt/linguist-tools-5.0.2:5
 		>=dev-qt/qtmultimedia-5.0.2:5
 		>=dev-qt/qtconcurrent-5.0.2:5
 		dbus? ( >=dev-qt/qtdbus-5.0.2:5 )
@@ -121,22 +120,26 @@ DOCS=( AUTHORS ChangeLog.txt )
 eiskaltdcpp_gcc_specific_pretests() {
 	( [[ "${MERGE_TYPE}" = "binary" ]] || ! tc-is-gcc ) && return 0
 
-	if [[ $(gcc-major-version) -lt 4 || ( $(gcc-major-version) -eq 4 && $(gcc-minor-version) -lt 6 ) ]]; then
-		die ">=sys-devel/gcc-4.6.0 is required to build ${CATEGORY}/${PN}."
+	local gcc_major_version=$(gcc-major-version) gcc_minor_version=$(gcc-minor-version)
+	if (( gcc_major_version < 4 || ( gcc_major_version == 4 && gcc_minor_version < 6) )); then
+		eerror ">=sys-devel/gcc-4.6.0 is required to build ${CATEGORY}/${PN}."
+		return 1
 	fi
 }
 
 eiskaltdcpp_clang_specific_pretests() {
 	( [[ "${MERGE_TYPE}" = "binary" ]] || ! tc-is-clang ) && return 0
 
-	if [[ $(clang-major-version) -lt 3 || ( $(clang-major-version) -eq 3 && $(clang-minor-version) -lt 2 ) ]]; then
-		die ">=sys-devel/clang-3.2.0 is required to build ${CATEGORY}/${PN}."
+	local clang_major_version=$(clang-major-version) clang_minor_version=$(clang-minor-version)
+	if (( clang_major_version < 3 || ( clang_major_version == 3 && clang_minor_version < 2 ) )); then
+		eerror ">=sys-devel/clang-3.2.0 is required to build ${CATEGORY}/${PN}."
+		return 1
 	fi
 }
 
 pkg_pretend() {
-	eiskaltdcpp_gcc_specific_pretests || die
-	eiskaltdcpp_clang_specific_pretests || die
+	eiskaltdcpp_gcc_specific_pretests || die "eiskaltdcpp_gcc_specific_pretests() failed"
+	eiskaltdcpp_clang_specific_pretests || die "eiskaltdcpp_clang_specific_pretests() failed"
 }
 
 src_prepare() {
