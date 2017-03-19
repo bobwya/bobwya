@@ -1,8 +1,7 @@
-# Copyright 1999-2015 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=5
-inherit eutils
+EAPI=6
 
 DESCRIPTION="Simple serial terminal emulator"
 HOMEPAGE="http://www.knossos.net.nz/resources/free-software/dterm"
@@ -16,14 +15,11 @@ IUSE=""
 DEPEND=""
 RDEPEND="net-dialup/lrzsz"
 
-DOCS="README.txt"
-
 src_prepare() {
-	epatch "${FILESDIR}"/${P}-fix-error-unused-result.patch
-}
-
-src_install() {
-	bininto "/usr/bin"
-	dobin "${PN}"
-	dodoc "${DOCS}"
+	sed -i	-e '\@^BIN@{s@/usr/local/bin@${D}${EROOT}usr/bin@}' \
+			-e '\@^COPT@{s@=.*$@= $(CFLAGS)@}' \
+			-e '\@^VERSION@a\ dummy_build_folder := $(shell mkdir -p ${BIN})' \
+		"${S}/Makefile" || die "sed failed"
+	local PATCHES=( "${FILESDIR}"/${P}-fix-error-unused-result.patch )
+	default
 }
