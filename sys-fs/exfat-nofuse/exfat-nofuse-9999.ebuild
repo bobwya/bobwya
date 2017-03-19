@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -6,14 +6,17 @@ EAPI=6
 inherit linux-mod git-r3
 
 DESCRIPTION="Non-fuse kernel driver for exFat and VFat file systems"
-HOMEPAGE="https://github.com/evan-a-a/exfat-nofuse"
+HOMEPAGE="https://github.com/dorimanx/exfat-nofuse.git"
 
-EGIT_REPO_URI="https://github.com/evan-a-a/exfat-nofuse.git"
+EGIT_REPO_URI="https://github.com/dorimanx/exfat-nofuse.git git://github.com/dorimanx/exfat-nofuse.git"
 
 LICENSE="GPL-2+"
 SLOT="0"
 KEYWORDS=""
 IUSE=""
+
+RDEPENDS="!sys-fs/exfat"
+DEPENDS="${RDEPENDS}"
 
 MODULE_NAMES="exfat(kernel/fs:${S})"
 BUILD_TARGETS="all"
