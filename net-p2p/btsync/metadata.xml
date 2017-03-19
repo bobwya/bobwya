@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
-<pkgmetadata>
-<longdescription lang="en">
-Sync unlimited files between your own devices, or share a folder with friends and family to automatically sync anything.
-File transfers are encrypted. Your information is never stored on a server in the cloud and your data is protected by private keys.
-BitTorrent Sync is specifically designed to handle large files, so feel free to sync original, high quality, uncompressed files.
-</longdescription>
-</pkgmetadata>
