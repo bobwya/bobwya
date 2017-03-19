@@ -29,8 +29,7 @@ net-misc
 net-p2p
 sys-apps
 sys-auth
+sys-fs
 www-client
-www-plugins
 x11-base
 x11-drivers
-x11-themes
