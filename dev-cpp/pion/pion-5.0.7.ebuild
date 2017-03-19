@@ -105,7 +105,7 @@ src_configure() {
 }
 
 src_compile() {
-	emake all
+	default
 	if use doc; then
 		# Force single threaded build for Latex-based documentation
 		if (( generate_latex )); then
