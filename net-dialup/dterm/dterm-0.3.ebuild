@@ -16,10 +16,14 @@ DEPEND=""
 RDEPEND="net-dialup/lrzsz"
 
 src_prepare() {
-	sed -i	-e '\@^BIN@{s@/usr/local/bin@${D}${EROOT}usr/bin@}' \
-			-e '\@^COPT@{s@=.*$@= $(CFLAGS)@}' \
-			-e '\@^VERSION@a\ dummy_build_folder := $(shell mkdir -p ${BIN})' \
-		"${S}/Makefile" || die "sed failed"
-	local PATCHES=( "${FILESDIR}"/${P}-fix-error-unused-result.patch )
+	local PATCHES=(
+		"${FILESDIR}/${P}-makefile-fix.patch"
+		"${FILESDIR}/${P}-fix-error-unused-result.patch"
+	)
 	default
+}
+
+src_install() {
+	emake BIN="${D}${EROOT}usr/bin" COPT="$(CFLAGS)" install
+	einstalldocs
 }
