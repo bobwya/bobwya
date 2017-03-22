@@ -45,7 +45,7 @@ KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist egl +gmp-autoupdate hardened hwaccel jack kde pgo rust selinux test"
+IUSE="bindist egl +gmp-autoupdate hardened hwaccel jack kde nsplugin pgo rust selinux test"
 RESTRICT="!bindist? ( bindist )"
 
 PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCH}.tar.xz )
@@ -338,6 +338,12 @@ src_install() {
 	echo "pref(\"extensions.autoDisableScopes\", 3);" >> \
 		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
 		|| die "echo failed"
+
+	if use nsplugin; then
+		echo "pref(\"plugin.load_flash_only\", false);" >> \
+			"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
+			|| die "echo failed"
+	fi
 
 	if use kde; then
 		# Add our kde prefs for firefox
