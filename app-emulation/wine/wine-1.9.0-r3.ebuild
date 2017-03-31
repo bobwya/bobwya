@@ -73,7 +73,7 @@ SRC_URI="${SRC_URI}
 if [[ ${PV} == "9999" ]]; then
 	STAGING_EGIT_REPO_URI="git://github.com/wine-compholio/wine-staging.git"
 	SRC_URI="${SRC_URI}
-	staging? ( https://github.com/bobwya/${STAGING_HELPER%-*}/archive/${STAGING_HELPER##*-}.tar.gz -> ${STAGING_HELPER}.tar.gz )"
+		staging? ( https://github.com/bobwya/${STAGING_HELPER%-*}/archive/${STAGING_HELPER##*-}.tar.gz -> ${STAGING_HELPER}.tar.gz )"
 else
 	SRC_URI="${SRC_URI}
 	staging? ( https://github.com/wine-compholio/wine-staging/archive/v${MY_PV}${STAGING_SUFFIX}.tar.gz -> ${STAGING_P}.tar.gz )"
@@ -208,16 +208,16 @@ S="${WORKDIR}/${MY_P}"
 wine_env_vcs_variable_prechecks() {
 	local pn_live_variable="${PN//[-+]/_}_LIVE_COMMIT"
 	local pn_live_value="${!pn_live_variable}"
-	local env_error=false
+	local env_error=0
 
 	if [[ ! -z "${pn_live_value}" ]] && use staging; then
 		eerror "Because ${PN} is multi-repository based, ${pn_live_variable}"
 		eerror "cannot be used to set the commit."
-		env_error=true
+		env_error=1
 	fi
-	[[ ! -z ${EGIT_COMMIT} || ! -z ${EGIT_BRANCH} ]] && \
-		env_error=true
-	if [[ ${env_error} == true ]]; then
+	[[ ! -z ${EGIT_COMMIT} || ! -z ${EGIT_BRANCH} ]] \
+		&& env_error=1
+	if (( env_error )); then
 		eerror "Git commit (and branch) overrides must now be specified"
 		eerror "using ONE of following the environmental variables:"
 		eerror "  EGIT_WINE_COMMIT or EGIT_WINE_BRANCH (Wine)"
@@ -481,9 +481,10 @@ src_prepare() {
 			source "${STAGING_DIR}/patches/patchinstall.sh"
 		)
 		eend $? || die "(subshell) script: failed to apply Wine Staging patches (excluding: ${STAGING_EXCLUDE_PATCHSETS[@]})."
+
+		# Apply Staging branding to reported Wine version...
 		sed -r -i -e '/^AC_INIT\(.*\)$/{s/\[Wine\]/\[Wine \(Staging\)\]/}' "${S}/configure.ac" || die "sed failed"
 		sed -r -i -e 's/Wine (\(Staging\) |)/Wine \(Staging\) /' "${S}/VERSION" || die "sed failed"
-
 		if [[ ! -z "${STAGING_SUFFIX}" ]]; then
 			sed -i -e 's/(Staging)/(Staging'"${STAGING_SUFFIX}"')/' libs/wine/Makefile.in || die "sed failed"
 		fi
@@ -526,7 +527,6 @@ multilib_src_configure() {
 		$(use_with lcms cms)
 		$(use_with cups)
 		$(use_with ncurses curses)
-		$(use_with udisks dbus)
 		$(use_with fontconfig)
 		$(use_with ssl gnutls)
 		$(use_enable gecko mshtml)
@@ -552,6 +552,7 @@ multilib_src_configure() {
 		$(use_with scanner sane)
 		$(use_enable test tests)
 		$(use_with truetype freetype)
+		$(use_with udisks dbus)
 		$(use_with v4l)
 		$(use_with X x)
 		$(use_with xcomposite)

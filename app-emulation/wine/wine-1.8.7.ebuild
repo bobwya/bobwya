@@ -173,20 +173,14 @@ S="${WORKDIR}/${MY_P}"
 wine_env_vcs_variable_prechecks() {
 	local pn_live_variable="${PN//[-+]/_}_LIVE_COMMIT"
 	local pn_live_value="${!pn_live_variable}"
-	local env_error=false
+	local env_error=0
 
-	if [[ ! -z "${pn_live_value}" ]] && use staging; then
-		eerror "Because ${PN} is multi-repository based, ${pn_live_variable}"
-		eerror "cannot be used to set the commit."
-		env_error=true
-	fi
-	[[ ! -z ${EGIT_COMMIT} || ! -z ${EGIT_BRANCH} ]] && \
-		env_error=true
-	if [[ ${env_error} == true ]]; then
+	[[ ! -z ${EGIT_COMMIT} || ! -z ${EGIT_BRANCH} ]] \
+		&& env_error=1
+	if (( env_error )); then
 		eerror "Git commit (and branch) overrides must now be specified"
 		eerror "using ONE of following the environmental variables:"
 		eerror "  EGIT_WINE_COMMIT or EGIT_WINE_BRANCH (Wine)"
-		eerror "  EGIT_STAGING_COMMIT or EGIT_STAGING_BRANCH (Wine Staging)."
 		eerror
 		return 1
 	fi
@@ -404,7 +398,6 @@ multilib_src_configure() {
 		$(use_with lcms cms)
 		$(use_with cups)
 		$(use_with ncurses curses)
-		$(use_with udisks dbus)
 		$(use_with fontconfig)
 		$(use_with ssl gnutls)
 		$(use_enable gecko mshtml)
@@ -430,6 +423,7 @@ multilib_src_configure() {
 		$(use_with scanner sane)
 		$(use_enable test tests)
 		$(use_with truetype freetype)
+		$(use_with udisks dbus)
 		$(use_with v4l)
 		$(use_with X x)
 		$(use_with xcomposite)
