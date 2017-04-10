@@ -49,11 +49,9 @@ unset -v last_component minor_version major_version rc_version stable_version ve
 STAGING_P="wine-staging-${MY_PV}"
 STAGING_DIR="${WORKDIR}/${STAGING_P}${STAGING_SUFFIX}"
 STAGING_HELPER="wine-staging-git-helper-0.1.4"
-GST_P="wine-1.8-gstreamer-1.0"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
 HOMEPAGE="http://www.winehq.org/"
 SRC_URI="${SRC_URI}
-	gstreamer? ( https://dev.gentoo.org/~np-hardass/distfiles/${MY_PN}/${GST_P}.patch.bz2 )
 	"
 
 if [[ ${MY_PV} == "9999" ]]; then
@@ -67,7 +65,7 @@ fi
 
 LICENSE="LGPL-2.1"
 SLOT="0"
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test themes +threads +truetype udev +udisks v4l vaapi +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test themes +threads +truetype +udisks v4l vaapi +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
@@ -124,7 +122,6 @@ COMMON_DEPEND="
 	staging? ( sys-apps/attr[${MULTILIB_USEDEP}] )
 	themes? ( x11-libs/gtk+:3[X?,${MULTILIB_USEDEP}] )
 	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
-	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
 	vaapi? ( x11-libs/libva[X,${MULTILIB_USEDEP}] )
@@ -155,7 +152,7 @@ RDEPEND="${COMMON_DEPEND}
 	!virtual/wine:*
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
 	gecko? ( app-emulation/wine-gecko:2.47[abi_x86_32?,abi_x86_64?] )
-	mono? ( app-emulation/wine-mono:4.7.0 )
+	mono? ( app-emulation/wine-mono:4.6.3 )
 	perl? (
 		dev-lang/perl
 		dev-perl/XML-Simple
@@ -411,13 +408,6 @@ src_prepare() {
 		"${FILESDIR}/${MY_PN}-1.7.12-osmesa-check.patch" #429386
 		"${FILESDIR}/${MY_PN}-1.6-memset-O3.patch" #480508
 	)
-	if [[ ${MY_PV} != "9999" ]]; then
-		use gstreamer && PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
-	else
-		# only apply gstreamer:1.0 patch to older versions of wine, using gstreamer:0.1 API/ABI
-		grep -q "gstreamer-0.10" "${S}/configure" &>/dev/null || unset GST_P
-		[[ ! -z "${GST_P}" ]] && use gstreamer && PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
-	fi
 	#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
 	ebegin "(subshell) script: \"${FILESDIR}/${MY_PN}-9999-multilib-portage-sed.sh\" ..."
 	(
@@ -444,13 +434,6 @@ src_prepare() {
 				unset -v STAGING_EXCLUDE_PATCHSETS[${array_indices[i]}]
 			fi
 		done
-
-		# Disable Upstream (Wine Staging) about tab customisation, for winecfg utility, to support our own version
-		if [[ -f "${STAGING_DIR}/patches/winecfg-Staging/0001-winecfg-Add-staging-tab-for-CSMT.patch" ]]; then
-			sed -i '/SetDlgItemTextA(hDlg, IDC_ABT_PANEL_TEXT, PACKAGE_VERSION " (Staging)");/{s/PACKAGE_VERSION " (Staging)"/PACKAGE_VERSION/}' \
-				"${STAGING_DIR}/patches/winecfg-Staging/0001-winecfg-Add-staging-tab-for-CSMT.patch" \
-				|| die "sed failed"
-		fi
 
 		# Launch wine-staging patcher in a subshell, using eapply as a backend, and gitapply.sh as a backend for binary patches
 		ebegin "Running Wine-Staging patch installer"
@@ -531,7 +514,6 @@ multilib_src_configure() {
 		$(use_with scanner sane)
 		$(use_enable test tests)
 		$(use_with truetype freetype)
-		$(use_with udev)
 		$(use_with udisks dbus)
 		$(use_with v4l)
 		$(use_with X x)
@@ -646,11 +628,6 @@ pkg_postinst() {
 		ewarn "implementation of .NET.  Many windows applications rely upon"
 		ewarn "the existence of a .NET implementation, so you will likely need"
 		ewarn "to install an external one, using winetricks."
-	fi
-	if [[ ! -z "${GST_P}" ]] && use gstreamer; then
-		ewarn "This package uses a Gentoo specific patchset to provide "
-		ewarn "gstreamer:1.0 API / ABI support.  Any bugs related to GStreamer"
-		ewarn "should be filed at Gentoo's bugzilla, not upstream's."
 	fi
 }
 

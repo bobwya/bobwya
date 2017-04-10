@@ -49,11 +49,9 @@ unset -v last_component minor_version major_version rc_version stable_version ve
 STAGING_P="wine-staging-${MY_PV}"
 STAGING_DIR="${WORKDIR}/${STAGING_P}${STAGING_SUFFIX}"
 STAGING_HELPER="wine-staging-git-helper-0.1.4"
-GST_P="wine-1.8-gstreamer-1.0"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
 HOMEPAGE="http://www.winehq.org/"
 SRC_URI="${SRC_URI}
-	gstreamer? ( https://dev.gentoo.org/~np-hardass/distfiles/${MY_PN}/${GST_P}.patch.bz2 )
 	"
 
 if [[ ${MY_PV} == "9999" ]]; then
@@ -155,7 +153,7 @@ RDEPEND="${COMMON_DEPEND}
 	!virtual/wine:*
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
 	gecko? ( app-emulation/wine-gecko:2.47[abi_x86_32?,abi_x86_64?] )
-	mono? ( app-emulation/wine-mono:4.7.0 )
+	mono? ( app-emulation/wine-mono:4.6.4 )
 	perl? (
 		dev-lang/perl
 		dev-perl/XML-Simple
@@ -411,13 +409,6 @@ src_prepare() {
 		"${FILESDIR}/${MY_PN}-1.7.12-osmesa-check.patch" #429386
 		"${FILESDIR}/${MY_PN}-1.6-memset-O3.patch" #480508
 	)
-	if [[ ${MY_PV} != "9999" ]]; then
-		use gstreamer && PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
-	else
-		# only apply gstreamer:1.0 patch to older versions of wine, using gstreamer:0.1 API/ABI
-		grep -q "gstreamer-0.10" "${S}/configure" &>/dev/null || unset GST_P
-		[[ ! -z "${GST_P}" ]] && use gstreamer && PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
-	fi
 	#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
 	ebegin "(subshell) script: \"${FILESDIR}/${MY_PN}-9999-multilib-portage-sed.sh\" ..."
 	(
@@ -431,6 +422,8 @@ src_prepare() {
 
 		# Declare Wine Staging excluded patchsets
 		local -a STAGING_EXCLUDE_PATCHSETS=( "winhlp32-Flex_Workaround" )
+		# https://bugs.winehq.org/show_bug.cgi?id=42512
+		STAGING_EXCLUDE_PATCHSETS+=( "wined3d-buffer_create" )
 		use pipelight || STAGING_EXCLUDE_PATCHSETS+=( "Pipelight" )
 
 		# Process Wine Staging exluded patchsets
@@ -646,11 +639,6 @@ pkg_postinst() {
 		ewarn "implementation of .NET.  Many windows applications rely upon"
 		ewarn "the existence of a .NET implementation, so you will likely need"
 		ewarn "to install an external one, using winetricks."
-	fi
-	if [[ ! -z "${GST_P}" ]] && use gstreamer; then
-		ewarn "This package uses a Gentoo specific patchset to provide "
-		ewarn "gstreamer:1.0 API / ABI support.  Any bugs related to GStreamer"
-		ewarn "should be filed at Gentoo's bugzilla, not upstream's."
 	fi
 }
 

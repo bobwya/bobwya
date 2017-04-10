@@ -67,10 +67,11 @@ fi
 
 LICENSE="LGPL-2.1"
 SLOT="0"
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test themes +threads +truetype udev +udisks v4l vaapi +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test themes +threads +truetype +udisks v4l vaapi +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
+	mono? ( abi_x86_32 )
 	osmesa? ( opengl )
 	pipelight? ( staging )
 	s3tc? ( staging )
@@ -124,7 +125,6 @@ COMMON_DEPEND="
 	staging? ( sys-apps/attr[${MULTILIB_USEDEP}] )
 	themes? ( x11-libs/gtk+:3[X?,${MULTILIB_USEDEP}] )
 	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
-	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
 	vaapi? ( x11-libs/libva[X,${MULTILIB_USEDEP}] )
@@ -154,8 +154,8 @@ COMMON_DEPEND="
 RDEPEND="${COMMON_DEPEND}
 	!virtual/wine:*
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
-	gecko? ( app-emulation/wine-gecko:2.47[abi_x86_32?,abi_x86_64?] )
-	mono? ( app-emulation/wine-mono:4.7.0 )
+	gecko? ( app-emulation/wine-gecko:2.40[abi_x86_32?,abi_x86_64?] )
+	mono? ( app-emulation/wine-mono:4.5.6 )
 	perl? (
 		dev-lang/perl
 		dev-perl/XML-Simple
@@ -410,7 +410,9 @@ src_prepare() {
 		"${FILESDIR}/${MY_PN}-1.5.26-winegcc.patch" #260726
 		"${FILESDIR}/${MY_PN}-1.7.12-osmesa-check.patch" #429386
 		"${FILESDIR}/${MY_PN}-1.6-memset-O3.patch" #480508
+		"${FILESDIR}/${MY_PN}-1.8-gnutls-3.5-compat.patch" #587028
 	)
+	use cups && PATCHES+=( "${FILESDIR}/${PN}-cups-2.2-cupsgetppd-build-fix.patch" ) # https://bugs.winehq.org/show_bug.cgi?id=40851
 	if [[ ${MY_PV} != "9999" ]]; then
 		use gstreamer && PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
 	else
@@ -445,17 +447,10 @@ src_prepare() {
 			fi
 		done
 
-		# Disable Upstream (Wine Staging) about tab customisation, for winecfg utility, to support our own version
-		if [[ -f "${STAGING_DIR}/patches/winecfg-Staging/0001-winecfg-Add-staging-tab-for-CSMT.patch" ]]; then
-			sed -i '/SetDlgItemTextA(hDlg, IDC_ABT_PANEL_TEXT, PACKAGE_VERSION " (Staging)");/{s/PACKAGE_VERSION " (Staging)"/PACKAGE_VERSION/}' \
-				"${STAGING_DIR}/patches/winecfg-Staging/0001-winecfg-Add-staging-tab-for-CSMT.patch" \
-				|| die "sed failed"
-		fi
-
-		# Launch wine-staging patcher in a subshell, using eapply as a backend, and gitapply.sh as a backend for binary patches
+		# Launch wine-staging patcher in a subshell, using epatch as a backend, and gitapply.sh as a backend for binary patches
 		ebegin "Running Wine-Staging patch installer"
 		(
-			set -- DESTDIR="${S}" --backend=eapply --no-autoconf --all ${STAGING_EXCLUDE_PATCHSETS[@]}
+			set -- DESTDIR="${S}" --backend=epatch --no-autoconf --all ${STAGING_EXCLUDE_PATCHSETS[@]}
 			cd "${STAGING_DIR}/patches"
 			source "${STAGING_DIR}/patches/patchinstall.sh"
 		)
@@ -531,7 +526,6 @@ multilib_src_configure() {
 		$(use_with scanner sane)
 		$(use_enable test tests)
 		$(use_with truetype freetype)
-		$(use_with udev)
 		$(use_with udisks dbus)
 		$(use_with v4l)
 		$(use_with X x)
