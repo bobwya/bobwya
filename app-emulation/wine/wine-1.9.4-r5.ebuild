@@ -339,11 +339,27 @@ pkg_pretend() {
 		eerror "or >=media-sound/oss-4 (only available through an Overlay)."
 		die "USE=+oss currently unsupported on this system."
 	fi
+
+	ewarn "Hence forth the ${CATEGORY}/${PN} package is split into 4 seperate packages."
+	ewarn "It is necessary to unmerge any installed earlier revisions of ${CATEGORY}/${PN}."
+	ewarn "The new (3) split packages will be blocked from installation:"
+	ewarn "  app-emulation/wine-desktop-common"
+	ewarn "  app-emulation/wine-gecko"
+	ewarn "  app-emulation/wine-gecko"
+	ewarn "due to file/directory install collisions with any installed earlier revisions of ${CATEGORY}/${PN}."
 }
 
 pkg_setup() {
 	wine_build_environment_prechecks || die "wine_build_environment_prechecks() failed"
 	wine_env_vcs_variable_prechecks || die "wine_env_vcs_variable_prechecks() failed"
+
+	ewarn "Hence forth the ${CATEGORY}/${PN} package is split into 4 seperate packages."
+	ewarn "It is necessary to unmerge any installed earlier revisions of ${CATEGORY}/${PN}."
+	ewarn "The new (3) split packages will be blocked from installation:"
+	ewarn "  app-emulation/wine-desktop-common"
+	ewarn "  app-emulation/wine-gecko"
+	ewarn "  app-emulation/wine-gecko"
+	ewarn "due to file/directory install collisions with any installed earlier revisions of ${CATEGORY}/${PN}."
 }
 
 src_unpack() {
