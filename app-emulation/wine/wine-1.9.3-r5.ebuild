@@ -49,6 +49,7 @@ unset -v last_component minor_version major_version rc_version stable_version ve
 STAGING_P="wine-staging-${MY_PV}"
 STAGING_DIR="${WORKDIR}/${STAGING_P}${STAGING_SUFFIX}"
 STAGING_HELPER="wine-staging-git-helper-0.1.4"
+STAGING_HELPER_SCRIPT="${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
 HOMEPAGE="http://www.winehq.org/"
 SRC_URI="${SRC_URI}
@@ -223,9 +224,13 @@ wine_git_unpack() {
 wine_build_environment_prechecks() {
 	[[ "${MERGE_TYPE}" = "binary" ]] && return 0
 
-	local using_gcc=$(tc-is-gcc) using_clang=$(tc-is-clang) \
-		gcc_major_version=$(gcc-major-version) gcc_minor_version=$(gcc-minor-version) \
-		clang_major_version=$(clang-major-version) clang_minor_version=$(clang-minor-version)
+	local using_gcc using_clang gcc_major_version gcc_minor_version clang_major_version clang_minor_version
+	using_gcc=$(tc-is-gcc)
+	using_clang=$(tc-is-clang)
+	gcc_major_version=$(gcc-major-version)
+	gcc_minor_version=$(gcc-minor-version)
+	clang_major_version=$(clang-major-version)
+	clang_minor_version=$(clang-minor-version)
 
 	if use abi_x86_64; then
 		if (( using_gcc && ( gcc_major_version < 4 || (gcc_major_version == 4 && gcc_minor_version < 4) ) )); then
@@ -254,8 +259,10 @@ wine_build_environment_prechecks() {
 wine_gcc_specific_pretests() {
 	( [[ "${MERGE_TYPE}" = "binary" ]] || ! tc-is-gcc ) && return 0
 
-	local using_abi_x86_64=$(use abi_x86_64) \
-		gcc_major_version=$(gcc-major-version) gcc_minor_version=$(gcc-minor-version)
+	local using_abi_x86_64 gcc_major_version gcc_minor_version
+	using_abi_x86_64=$(use abi_x86_64)
+	gcc_major_version=$(gcc-major-version)
+	gcc_minor_version=$(gcc-minor-version)
 
 	# bug #549768
 	if (( using_abi_x86_64 && (gcc_major_version == 5 && gcc_minor_version <= 2) )); then
@@ -345,21 +352,14 @@ pkg_pretend() {
 	ewarn "The new (3) split packages will be blocked from installation:"
 	ewarn "  app-emulation/wine-desktop-common"
 	ewarn "  app-emulation/wine-gecko"
-	ewarn "  app-emulation/wine-gecko"
-	ewarn "due to file/directory install collisions with any installed earlier revisions of ${CATEGORY}/${PN}."
+	ewarn "  app-emulation/wine-mono"
+	ewarn "due to file/directory install collisions. This will occur with any installed earlier revisions of ${CATEGORY}/${PN}"
+	ewarn "(earlier ebuild revisions - which have been purged from this Overlay)."
 }
 
 pkg_setup() {
 	wine_build_environment_prechecks || die "wine_build_environment_prechecks() failed"
 	wine_env_vcs_variable_prechecks || die "wine_env_vcs_variable_prechecks() failed"
-
-	ewarn "Hence forth the ${CATEGORY}/${PN} package is split into 4 seperate packages."
-	ewarn "It is necessary to unmerge any installed earlier revisions of ${CATEGORY}/${PN}."
-	ewarn "The new (3) split packages will be blocked from installation:"
-	ewarn "  app-emulation/wine-desktop-common"
-	ewarn "  app-emulation/wine-gecko"
-	ewarn "  app-emulation/wine-gecko"
-	ewarn "due to file/directory install collisions with any installed earlier revisions of ${CATEGORY}/${PN}."
 }
 
 src_unpack() {
@@ -376,7 +376,7 @@ src_unpack() {
 			# Use git-r3 internal functions for secondary Wine Staging repository. See #588604
 			ebegin "(subshell): Wine Staging git reference specified. Building Wine git with Wine Staging patchset ..."
 			(
-				source "${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh" || die
+				source "${STAGING_HELPER_SCRIPT}" || die
 				if [[ ! -z "${EGIT_STAGING_COMMIT}" ]]; then
 					ewarn "Building Wine against Wine Staging git commit EGIT_STAGING_COMMIT=\"${EGIT_STAGING_COMMIT}\" ."
 					git-r3_fetch "${STAGING_EGIT_REPO_URI}" "${EGIT_STAGING_COMMIT}"
@@ -397,7 +397,7 @@ src_unpack() {
 			# Use git-r3 internal functions for secondary Wine Staging repository. See #588604
 			ebegin "(subshell): Wine git reference specified or inferred. Building Wine git with with Wine Staging patchset ..."
 			(
-				source "${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh" || die
+				source "${STAGING_HELPER_SCRIPT}" || die
 				wine_git_unpack
 				wine_commit="${EGIT_VERSION}"
 				git-r3_fetch "${STAGING_EGIT_REPO_URI}" "HEAD"
@@ -417,7 +417,8 @@ src_unpack() {
 }
 
 src_prepare() {
-	local md5hash="$(md5sum server/protocol.def || die "md5sum")"
+	local md5hash
+	md5hash="$(md5sum server/protocol.def || die "md5sum")"
 	[[ ! -z "${STABLE_PREFIX}" ]] && sed -i -e 's/[\-\.[:alnum:]]\+$/'"${MY_PV}"'/' "${S}/VERSION"
 	local PATCHES=(
 		"${FILESDIR}/${MY_PN}-1.8_winecfg_detailed_version.patch"
@@ -448,21 +449,21 @@ src_prepare() {
 		for ((i=0; i<${#array_indices[*]}; i++)); do
 			local patchset="${STAGING_EXCLUDE_PATCHSETS[array_indices[i]]}"
 			if grep -q "${patchset})" "${STAGING_DIR}/patches/patchinstall.sh"; then
-				STAGING_EXCLUDE_PATCHSETS[${array_indices[i]}]="-W ${patchset}"
+				STAGING_EXCLUDE_PATCHSETS["${array_indices[i]}"]="-W ${patchset}"
 				einfo "Excluding Wine Staging patchset: \"${patchset}\""
 			else
-				unset -v STAGING_EXCLUDE_PATCHSETS[${array_indices[i]}]
+				unset -v STAGING_EXCLUDE_PATCHSETS["${array_indices[i]}"]
 			fi
 		done
 
 		# Launch wine-staging patcher in a subshell, using epatch as a backend, and gitapply.sh as a backend for binary patches
 		ebegin "Running Wine-Staging patch installer"
 		(
-			set -- DESTDIR="${S}" --backend=epatch --no-autoconf --all ${STAGING_EXCLUDE_PATCHSETS[@]}
-			cd "${STAGING_DIR}/patches"
+			set -- DESTDIR="${S}" --backend=epatch --no-autoconf --all "${STAGING_EXCLUDE_PATCHSETS[@]}"
+			cd "${STAGING_DIR}/patches" || die "cd failed"
 			source "${STAGING_DIR}/patches/patchinstall.sh"
 		)
-		eend $? || die "(subshell) script: failed to apply Wine Staging patches (excluding: ${STAGING_EXCLUDE_PATCHSETS[@]})."
+		eend $? || die "(subshell) script: failed to apply Wine Staging patches (excluding: \"${STAGING_EXCLUDE_PATCHSETS[*]}\")."
 
 		# Apply Staging branding to reported Wine version...
 		sed -r -i -e '/^AC_INIT\(.*\)$/{s/\[Wine\]/\[Wine \(Staging\)\]/}' "${S}/configure.ac" || die "sed failed"
@@ -476,7 +477,7 @@ src_prepare() {
 	eautoreconf
 
 	# Modification of the server protocol requires regenerating the server requests
-	if ! $(md5sum -c - <<<"${md5hash}" &>/dev/null); then
+	if ! md5sum -c - <<<"${md5hash}" &>/dev/null; then
 		einfo "server/protocol.def was patched; running tools/make_requests"
 		tools/make_requests || die "tools/make_requests failed" #432348
 	fi
@@ -503,7 +504,7 @@ src_configure() {
 
 multilib_src_configure() {
 	local myconf=(
-		--sysconfdir=/etc/wine
+		"--sysconfdir=/etc/wine"
 		$(use_with alsa)
 		$(use_with capi)
 		$(use_with lcms cms)
@@ -606,8 +607,8 @@ multilib_src_install_all() {
 	if ! use X && ! use ncurses; then
 		rm "${D%/}/usr/bin/wineconsole"* || die "rm failed"
 		rm "${D%/}/usr/share/man/man1/wineconsole"* || die "rm failed"
-		rm_wineconsole() {
 
+		rm_wineconsole() {
 			rm "/usr/$(get_libdir)/wine"/{,fakedlls/}wineconsole.exe* || die "rm failed"
 		}
 		multilib_foreach_abi rm_wineconsole
@@ -622,9 +623,15 @@ multilib_src_install_all() {
 	fi
 
 	# respect LINGUAS when installing man pages, #469418
-	local locale_man
+	local locale_man locale_man_directory
 	for locale_man in "de" "fr" "pl"; do
-		use linguas_${locale_man} || rm -r "${D%/}/usr/share/man/${locale_man}"*
+		while read -r locale_man_directory; do
+			use linguas_${locale_man} && continue
+
+			rm -r "${locale_man_directory}" || die "rm failed"
+		done < <(find "${D%/}/usr/share/man" -mindepth 1 -maxdepth 1 -type d \( -name "${locale_man}" -o -name "${locale_man}.*" \) -exec false {} + \
+				&& die "find failed - no \"${locale_man}\" locale manpage directory matches in \"${D%/}/usr/share/man\""
+				)
 	done
 }
 
