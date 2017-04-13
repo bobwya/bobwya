@@ -1,0 +1,4 @@
+# Unmask necessary dependencies for app-emulation/wine package:
+app-emulation/wine-desktop-common
+app-emulation/wine-gecko
+app-emulation/wine-mono
