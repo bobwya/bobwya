@@ -639,11 +639,11 @@ multilib_src_install_all() {
 	# respect LINGUAS when installing man pages, #469418
 	local locale_man locale_man_directory
 	for locale_man in "de" "fr" "pl"; do
-		while read -r locale_man_directory; do
+		while IFS= read -r -d '' locale_man_directory; do
 			use linguas_${locale_man} && continue
 
 			rm -r "${locale_man_directory}" || die "rm failed"
-		done < <(find "${D%/}/usr/share/man" -mindepth 1 -maxdepth 1 -type d \( -name "${locale_man}" -o -name "${locale_man}.*" \) -exec false {} + \
+		done < <(find "${D%/}/usr/share/man" -mindepth 1 -maxdepth 1 -type d \( -name "${locale_man}" -o -name "${locale_man}.*" \) -print0 -exec false {} + \
 				&& die "find failed - no \"${locale_man}\" locale manpage directory matches in \"${D%/}/usr/share/man\""
 				)
 	done
