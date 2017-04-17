@@ -1,6 +1,7 @@
 # Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+# shellcheck disable=SC2034
 EAPI=6
 
 PLOCALES="ar bg ca cs da de el en en_US eo es fa fi fr he hi hr hu it ja ko lt ml nb_NO nl or pa pl pt_BR pt_PT rm ro ru sk sl sr_RS@cyrillic sr_RS@latin sv te th tr uk wa zh_CN zh_TW"
@@ -352,11 +353,12 @@ src_prepare() {
 		"${FILESDIR}/${MY_PN}-1.6-memset-O3.patch" #480508
 	)
 	#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
-	ebegin "(subshell) script: \"${FILESDIR}/${MY_PN}-9999-multilib-portage-sed.sh\" ..."
+	ebegin "(subshell) script: \"${FILESDIR}/${MY_PN}-multilib-portage-sed.sh\" ..."
 	(
-		source "${FILESDIR}/${MY_PN}-9999-multilib-portage-sed.sh" || die
+		# shellcheck source=./files/wine-multilib-portage-sed.sh
+		source "${FILESDIR}/${MY_PN}-multilib-portage-sed.sh" || die
 	)
-	eend $? || die "(subshell) script: \"${FILESDIR}/${MY_PN}-9999-multilib-portage-sed.sh\"."
+	eend $? || die "(subshell) script: \"${FILESDIR}/${MY_PN}-multilib-portage-sed.sh\"."
 
 	default
 	eautoreconf
@@ -507,7 +509,8 @@ multilib_src_install_all() {
 			use linguas_${locale_man} && continue
 
 			rm -r "${locale_man_directory}" || die "rm failed"
-		done < <(find "${D%/}/usr/share/man" -mindepth 1 -maxdepth 1 -type d \( -name "${locale_man}" -o -name "${locale_man}.*" \) -print0 -exec false {} + \
+		done < <(find "${D%/}/usr/share/man" -mindepth 1 -maxdepth 1 -type d \
+			\( -name "${locale_man}" -o -name "${locale_man}.*" \) -print0 -exec false {} + \
 				&& die "find failed - no \"${locale_man}\" locale manpage directory matches in \"${D%/}/usr/share/man\""
 				)
 	done

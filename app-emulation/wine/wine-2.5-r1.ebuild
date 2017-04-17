@@ -1,6 +1,7 @@
 # Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+# shellcheck disable=SC2034
 EAPI=6
 
 PLOCALES="ar bg ca cs da de el en en_US eo es fa fi fr he hi hr hu it ja ko lt ml nb_NO nl or pa pl pt_BR pt_PT rm ro ru sk sl sr_RS@cyrillic sr_RS@latin sv te th tr uk wa zh_CN zh_TW"
@@ -376,6 +377,7 @@ src_unpack() {
 			# Use git-r3 internal functions for secondary Wine Staging repository. See #588604
 			ebegin "(subshell): Wine Staging git reference specified. Building Wine git with Wine Staging patchset ..."
 			(
+				# shellcheck source=/dev/null
 				source "${STAGING_HELPER_SCRIPT}" || die
 				if [[ ! -z "${EGIT_STAGING_COMMIT}" ]]; then
 					ewarn "Building Wine against Wine Staging git commit EGIT_STAGING_COMMIT=\"${EGIT_STAGING_COMMIT}\" ."
@@ -397,14 +399,16 @@ src_unpack() {
 			# Use git-r3 internal functions for secondary Wine Staging repository. See #588604
 			ebegin "(subshell): Wine git reference specified or inferred. Building Wine git with with Wine Staging patchset ..."
 			(
+				# shellcheck source=/dev/null
 				source "${STAGING_HELPER_SCRIPT}" || die
 				wine_git_unpack
 				wine_commit="${EGIT_VERSION}"
 				git-r3_fetch "${STAGING_EGIT_REPO_URI}" "HEAD"
 				git-r3_checkout "${STAGING_EGIT_REPO_URI}" "${STAGING_DIR}"
+				wine_staging_commit=""; wine_commit_offset=""
 				if ! walk_wine_staging_git_tree "${STAGING_DIR}" "${S}" "${wine_commit}" "wine_staging_commit" ; then
-					find_closest_wine_commit "${STAGING_DIR}" "${S}" "wine_commit" "wine_staging_commit" "wine_commit_offset"
-					(($? == 0)) && display_closest_wine_commit_message "${wine_commit}" "${wine_staging_commit}" "${wine_commit_offset}"
+					find_closest_wine_commit "${STAGING_DIR}" "${S}" "wine_commit" "wine_staging_commit" "wine_commit_offset" \
+						&& display_closest_wine_commit_message "${wine_commit}" "${wine_staging_commit}" "${wine_commit_offset}"
 					die "Failed to find Wine Staging git commit corresponding to supplied Wine git commit \"${wine_commit}\" ."
 				fi
 				einfo "Building Wine Staging commit \"${wine_staging_commit}\" corresponding to Wine commit \"${wine_commit}\" ..."
@@ -427,11 +431,12 @@ src_prepare() {
 		"${FILESDIR}/${MY_PN}-1.6-memset-O3.patch" #480508
 	)
 	#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
-	ebegin "(subshell) script: \"${FILESDIR}/${MY_PN}-9999-multilib-portage-sed.sh\" ..."
+	ebegin "(subshell) script: \"${FILESDIR}/${MY_PN}-multilib-portage-sed.sh\" ..."
 	(
-		source "${FILESDIR}/${MY_PN}-9999-multilib-portage-sed.sh" || die
+		# shellcheck source=./files/wine-multilib-portage-sed.sh
+		source "${FILESDIR}/${MY_PN}-multilib-portage-sed.sh" || die
 	)
-	eend $? || die "(subshell) script: \"${FILESDIR}/${MY_PN}-9999-multilib-portage-sed.sh\"."
+	eend $? || die "(subshell) script: \"${FILESDIR}/${MY_PN}-multilib-portage-sed.sh\"."
 	if use staging; then
 
 		ewarn "Applying the Wine Staging patchset. Any bug reports to Wine bugzilla"
@@ -442,14 +447,12 @@ src_prepare() {
 		use pipelight || STAGING_EXCLUDE_PATCHSETS+=( "Pipelight" )
 
 		# Process Wine Staging exluded patchsets
-		local array_indices=( ${!STAGING_EXCLUDE_PATCHSETS[*]} )
-		for ((i=0; i<${#array_indices[*]}; i++)); do
-			local patchset="${STAGING_EXCLUDE_PATCHSETS[array_indices[i]]}"
-			if grep -q "${patchset})" "${STAGING_DIR}/patches/patchinstall.sh"; then
-				STAGING_EXCLUDE_PATCHSETS["${array_indices[i]}"]="-W ${patchset}"
-				einfo "Excluding Wine Staging patchset: \"${patchset}\""
+		local indices=( ${!STAGING_EXCLUDE_PATCHSETS[*]} )
+		for ((i=0; i<${#indices[*]}; i++)); do
+			if grep -q "${STAGING_EXCLUDE_PATCHSETS[indices[i]]}" "${STAGING_DIR}/patches/patchinstall.sh"; then
+				einfo "Excluding Wine Staging patchset: \"${STAGING_EXCLUDE_PATCHSETS[indices[i]]}\""
 			else
-				unset -v STAGING_EXCLUDE_PATCHSETS["${array_indices[i]}"]
+				unset -v STAGING_EXCLUDE_PATCHSETS["${indices[i]}"]
 			fi
 		done
 
@@ -463,8 +466,10 @@ src_prepare() {
 		# Launch wine-staging patcher in a subshell, using eapply as a backend, and gitapply.sh as a backend for binary patches
 		ebegin "Running Wine-Staging patch installer"
 		(
-			set -- DESTDIR="${S}" --backend=eapply --no-autoconf --all "${STAGING_EXCLUDE_PATCHSETS[@]}"
+			# shellcheck disable=SC2068
+			set -- DESTDIR="${S}" --backend=eapply --no-autoconf --all ${STAGING_EXCLUDE_PATCHSETS[@]/#/-W }
 			cd "${STAGING_DIR}/patches" || die "cd failed"
+			# shellcheck source=/dev/null
 			source "${STAGING_DIR}/patches/patchinstall.sh"
 		)
 		eend $? || die "(subshell) script: failed to apply Wine Staging patches (excluding: \"${STAGING_EXCLUDE_PATCHSETS[*]}\")."
@@ -634,7 +639,8 @@ multilib_src_install_all() {
 			use linguas_${locale_man} && continue
 
 			rm -r "${locale_man_directory}" || die "rm failed"
-		done < <(find "${D%/}/usr/share/man" -mindepth 1 -maxdepth 1 -type d \( -name "${locale_man}" -o -name "${locale_man}.*" \) -print0 -exec false {} + \
+		done < <(find "${D%/}/usr/share/man" -mindepth 1 -maxdepth 1 -type d \
+			\( -name "${locale_man}" -o -name "${locale_man}.*" \) -print0 -exec false {} + \
 				&& die "find failed - no \"${locale_man}\" locale manpage directory matches in \"${D%/}/usr/share/man\""
 				)
 	done
