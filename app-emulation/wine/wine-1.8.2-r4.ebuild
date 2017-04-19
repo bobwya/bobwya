@@ -49,8 +49,8 @@ unset -v last_component minor_version major_version rc_version stable_version ve
 
 STAGING_P="wine-staging-${MY_PV}"
 STAGING_DIR="${WORKDIR}/${STAGING_P}${STAGING_SUFFIX}"
-STAGING_HELPER="wine-staging-git-helper-0.1.4"
-STAGING_HELPER_SCRIPT="${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER%-*}.sh"
+STAGING_HELPER="wine-staging-git-helper-0.1.7"
+STAGING_HELPER_SCRIPT="${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER/%-[.0-9]*/.sh}"
 GST_P="wine-1.8-gstreamer-1.0"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
 HOMEPAGE="http://www.winehq.org/"
@@ -389,10 +389,10 @@ src_unpack() {
 					git-r3_fetch "${STAGING_EGIT_REPO_URI}" "refs/heads/${EGIT_STAGING_BRANCH}"
 				fi
 				git-r3_checkout "${STAGING_EGIT_REPO_URI}" "${STAGING_DIR}"
-				wine_staging_commit="${EGIT_VERSION}"
-				get_upstream_wine_commit  "${STAGING_DIR}" "${wine_staging_commit}" "wine_commit"
+				wine_staging_target_commit="${EGIT_VERSION}"
+				get_upstream_wine_commit  "${STAGING_DIR}" "${wine_staging_target_commit}" "wine_commit"
 				EGIT_COMMIT="${wine_commit}" git-r3_src_unpack
-				einfo "Building Wine commit \"${wine_commit}\" referenced by Wine Staging commit \"${wine_staging_commit}\" ..."
+				einfo "Building Wine commit \"${wine_commit}\" referenced by Wine Staging commit \"${wine_staging_target_commit}\" ..."
 			)
 			eend $? || die "(subshell): ... failed to determine target Wine commit."
 		else
@@ -405,15 +405,16 @@ src_unpack() {
 				source "${STAGING_HELPER_SCRIPT}" || die
 				wine_git_unpack
 				wine_commit="${EGIT_VERSION}"
+				wine_target_commit="${wine_commit}"
 				git-r3_fetch "${STAGING_EGIT_REPO_URI}" "HEAD"
 				git-r3_checkout "${STAGING_EGIT_REPO_URI}" "${STAGING_DIR}"
 				wine_staging_commit=""; wine_commit_offset=""
 				if ! walk_wine_staging_git_tree "${STAGING_DIR}" "${S}" "${wine_commit}" "wine_staging_commit" ; then
 					find_closest_wine_commit "${STAGING_DIR}" "${S}" "wine_commit" "wine_staging_commit" "wine_commit_offset" \
 						&& display_closest_wine_commit_message "${wine_commit}" "${wine_staging_commit}" "${wine_commit_offset}"
-					die "Failed to find Wine Staging git commit corresponding to supplied Wine git commit \"${wine_commit}\" ."
+					die "Failed to find Wine Staging git commit corresponding to supplied Wine git commit \"${wine_target_commit}\" ."
 				fi
-				einfo "Building Wine Staging commit \"${wine_staging_commit}\" corresponding to Wine commit \"${wine_commit}\" ..."
+				einfo "Building Wine Staging commit \"${wine_staging_commit}\" corresponding to Wine commit \"${wine_target_commit}\" ..."
 			)
 			eend $? || die "(subshell): ... failed to determine target Wine Staging commit."
 		fi
@@ -429,7 +430,7 @@ src_prepare() {
 	local PATCHES=(
 		"${FILESDIR}/${MY_PN}-1.8_winecfg_detailed_version.patch"
 		"${FILESDIR}/${MY_PN}-1.5.26-winegcc.patch" #260726
-		"${FILESDIR}/${MY_PN}-1.7.12-osmesa-check.patch" #429386
+		"${FILESDIR}/${MY_PN}-2.6-osmesa-configure_support_recent_versions.patch" #429386
 		"${FILESDIR}/${MY_PN}-1.6-memset-O3.patch" #480508
 		"${FILESDIR}/${MY_PN}-sysmacros.patch" #580046
 		"${FILESDIR}/${MY_PN}-1.8-gnutls-3.5-compat.patch" #587028
@@ -455,7 +456,7 @@ src_prepare() {
 		ewarn "should explicitly state that the Wine Staging was used."
 
 		# Declare Wine Staging excluded patchsets
-		local -a STAGING_EXCLUDE_PATCHSETS=( "winhlp32-Flex_Workaround" )
+		local -a STAGING_EXCLUDE_PATCHSETS=( "configure-OSMesa" "winhlp32-Flex_Workaround" )
 		use pipelight || STAGING_EXCLUDE_PATCHSETS+=( "Pipelight" )
 
 		# Process Wine Staging exluded patchsets

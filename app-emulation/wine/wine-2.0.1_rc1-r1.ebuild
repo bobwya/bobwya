@@ -349,7 +349,7 @@ src_prepare() {
 	local PATCHES=(
 		"${FILESDIR}/${MY_PN}-1.8_winecfg_detailed_version.patch"
 		"${FILESDIR}/${MY_PN}-1.5.26-winegcc.patch" #260726
-		"${FILESDIR}/${MY_PN}-1.7.12-osmesa-check.patch" #429386
+		"${FILESDIR}/${MY_PN}-2.6-osmesa-configure_support_recent_versions.patch" #429386
 		"${FILESDIR}/${MY_PN}-1.6-memset-O3.patch" #480508
 	)
 	#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
