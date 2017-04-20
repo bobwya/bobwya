@@ -5,10 +5,13 @@ bobwya
 Gentoo Overlay containing various packages I have been unable to find @ Gentoo Portage Overlays website or elsewhere.
 Testing and updating of these ebuild package build scripts is irregular. So YMMV - you have been warned!
 
+### Main Overlay packages
+
 	app-arch/unshield : Tool and library to extract CAB files from InstallShield installers.
 	app-backup/fsarchiver : Flexible filesystem archiver for backup and deployment tool.
 	app-benchmarks/i7z : A better Intel i7 (and now i3, i5) CPU reporting tool for Linux.
 	app-crypt/chntpw : Offline NT Password & Registry Editor.
+	app-forensics/pev : PE file analysis toolkit - for examining Windows PE binary files.
 	app-text/hunspell : Hunspell is the spell checker of LibreOffice, OpenOffice.org, Mozilla Firefox 3 & Thunderbird, Google Chrome, etc.
 	dev-cpp/pion : C++ framework for building lightweight HTTP interfaces.
 	games-fps/dhewm3 : Doom 3 GPL source modification (with updates including SDL2 support).
@@ -22,10 +25,7 @@ Testing and updating of these ebuild package build scripts is irregular. So YMMV
 	media-video/filebot-bin : FileBot tool for organizing and renaming your movies, tv shows or anime, and music. (java jar)
 	media-video/handbrake : Handbrake A/V Conversion Tool
 	media-video/h264enc : h264enc is an advanced and powerful interactive menu-driven shell script written for the GNU/Linux operating system to encode video files
-	net-misc/fatrat : Open source download manager for Linux written in C++ and built on top of the Qt 4 library.
-	net-misc/teamviewer : TeamViewer is a proprietary computer software package for remote control, desktop sharing, online meetings, web conferencing and file transfer between computers. (binary proprietary / Wine wrapper) 
 	net-dialup/dterm : dterm is a simple terminal emulator for serial connections.
-	net-p2p/btsync : BitTorrent Sync uses advanced peer-to-peer technology to share files between devices. (binary proprietary)
 	net-p2p/eiskaltdcpp  :  EiskaltDC++ is a cross-platform program that uses the Direct Connect and ADC protocols.
 	sys-apps/uksmstat : Simple tool to monitor and control UKSM.
 	sys-auth/pam_kwallet : PAM integration to automatically unlock kwallet when logging into a KDE4 Desktop Session.
@@ -34,8 +34,59 @@ Testing and updating of these ebuild package build scripts is irregular. So YMMV
 	www-client/firefox-kde-opensuse : Firefox web browser, with OpenSUSE Patchset, for better KDE Desktop integration.
 
 ***
+### Customised Wine package set
+These packages are based heavily on NP's hard work - packaging Wine in the main Gentoo Portage tree. Thanks for his hardwork on this!
+Now Gentoo has the most awesome Wine support of any GNU/Linux distribution!
 
-Custom GL lib switcher implementation (these packages are masked and are NOT extensively tested) - loosely based off the Arch-Linux GL lib switcher.
+Customisations, on top of the stock Gentoo ebuilds for: ```app-emulation/wine:0```; include:
+* Customised **winecfg** utility - with clearer Wine/Wine Staging version information displayed.
+* Supports all **Wine** releases back to version 1.8. Includes custom Gentoo ```wine-1.8-gstreamer-1.0.patch``` to provide: GStreamer 1.0 support; for these older versions of **Wine**.
+* Supports all **Wine** releases back to version 1.8. Additional patches to provide this support: ```wine-1.8-gnutls-3.5-compat.patch``` , ```wine-cups-2.2-cupsgetppd-build-fix.patch```.
+* USE **+staging** supports live building against **Wine Staging** Git commits or branches.
+* USE **+staging** supports live building against **Wine** Git commits or branches. In the event that **Wine Staging** is unsupported for the specified commit - a helper utility will walk the **Wine** and **Wine Staging** Git trees. This helper utility will determine (automatically) the closest (date/time based) **Wine** Git commit which supports the **Wine Staging** patchset.
+* Supports **Wine** Release Candidate versions.
+
+Customisations, on top of the stock Gentoo ebuilds for: ```app-emulation/wine-desktop-common```:
+* installs oic_winlogo.ico globally - so ```app-emulation/wine[-staging|-vanilla]``` packages do not need to reference the ```wine-desktop-common.tar.gz``` tarball directly.
+
+Customisations, on top of the stock Gentoo ebuilds for: ```app-emulation/wine-gecko```:
+* Supports **Wine Gecko** beta versions.
+
+Customisations, on top of the stock Gentoo ebuilds for: ```app-emulation/wine-staging:${PV}```; include:
+* Customised **winecfg** utility - with clearer Wine Staging version information displayed.
+* Supports all **Wine Staging** releases back to version 1.8. Includes custom Gentoo ```wine-1.8-gstreamer-1.0.patch``` to provide: GStreamer 1.0 support; for these older versions of **Wine**.
+* Supports all **Wine Staging** releases back to version 1.8. Additional patches to provide this support: ```wine-1.8-gnutls-3.5-compat.patch``` , ```wine-cups-2.2-cupsgetppd-build-fix.patch```.
+* Supports live building against **Wine Staging** Git commits or branches.
+* Supports live building against **Wine** Git commits or branches. In the event that **Wine Staging** is unsupported for the specified commit - a helper utility will walk the **Wine** and **Wine Staging** Git trees. This helper utility will determine (automatically) the closest (date/time based) **Wine** Git commit which supports the **Wine Staging** patchset.
+
+Customisations, on top of the stock Gentoo ebuilds for: ```app-emulation/wine-vanilla:${PV}```; include:
+* Customised **winecfg** utility - with clearer Wine version information displayed.
+* Supports all **Wine** releases back to version 1.8. Includes custom Gentoo ```wine-1.8-gstreamer-1.0.patch``` to provide: GStreamer 1.0 support; for these older versions of Wine.
+* Supports all **Wine** releases back to version 1.8. Additional patches to provide this support: ```wine-1.8-gnutls-3.5-compat.patch``` , ```wine-cups-2.2-cupsgetppd-build-fix.patch```.
+* Supports **Wine** Release Candidate versions.
+
+Customisations, on top of the stock Gentoo package: ```app-eselect/eselect-wine```; include:
+* Provides more detailed error messages.
+* Supports more verbose output about operations.
+* Handles multiple variants - for more eselect wine operations.
+* Avoids using globbing for symbolic link validity tests.
+* Features an unset option to allow detection and removal of hanging / orphaned symbolic links (associated with this module / not associated with any installed packages).
+* Has a bundled manual page entry.
+
+```
+app-eselect/eselect-wine : Manage active Wine version for multislot Wine variants.
+app-emulation/wine:0 : Free implementation of Windows(tm) on Unix (single-slot version, supporting vanilla Wine & Wine Staging patchset).
+app-emulation/wine-desktop-common : Core desktop menu entries and icons for Wine (shared by all app-emulation/wine[-staging|-vanilla] packages).
+app-emulation/wine-gecko : A Mozilla Gecko based version of Internet Explorer for Wine (multi-slot version - shared by all app-emulation/wine[-staging|-vanilla] packages).
+app-emulation/wine-mono : Wine Mono is a replacement for the .NET runtime and class libraries in Wine (multi-slot version - shared by all app-emulation/wine[-staging|-vanilla] packages).
+app-emulation/wine-staging:${PV} : Free implementation of Windows(tm) on Unix (multi-slot version, only supports Wine with Wine Staging patchset automatically applied).
+app-emulation/wine-vanilla:${PV} : Free implementation of Windows(tm) on Unix (multi-slot version, only supports vanilla Wine).
+```
+
+***
+
+### Custom GL lib switcher implementation package set
+These packages are masked and are NOT extensively tested (but I use them personally!) Loosely based off the Arch-Linux GL lib switcher.
 
 	app-eselect/eselect-opengl : Gentoo OpenGL implementation switcher (heavily customised)
 	media-libs/mesa : OpenGL-like graphic library for Linux (patched version - to work with custom eselect-opengl switcher)
@@ -43,6 +94,8 @@ Custom GL lib switcher implementation (these packages are masked and are NOT ext
 	x11-drivers/nvidia-drivers : NVIDIA Accelerated Graphics Driver (patched version - to work with custom eselect-opengl switcher)
 
 ***
+
+### Infinality Fonts package set
 
 Package Set to provide updated Infinality Fonts (subpixel font rendering enhancements for freetype2 and associated packages). These four packages are designed to be used __in__ __conjunction__ with each other. The __media-libs/fontconfig-infinality__ package is in the main __Gentoo__ Portage tree.
 
