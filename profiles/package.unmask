@@ -1,4 +1,8 @@
-# Unmask necessary dependencies for app-emulation/wine package:
+# Unmask app-emulation/wine-staging|app-emulation/wine-vanilla multislot Wine packages and dependencies:
 app-emulation/wine-desktop-common
 app-emulation/wine-gecko
 app-emulation/wine-mono
+app-emulation/wine-vanilla
+app-emulation/wine-staging
+app-eselect/wine
+virtual/wine
