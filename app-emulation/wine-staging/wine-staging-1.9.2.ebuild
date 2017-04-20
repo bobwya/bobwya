@@ -31,8 +31,10 @@ else
 	major_version=$(get_major_version)
 	minor_version=$(get_version_component_range 2)
 	stable_version=$(( (major_version == 1 && (minor_version % 2 == 0)) || (major_version >= 2 && minor_version == 0) ))
-	if (( stable_version || (major_version < 2) )); then
+	if (( (major_version < 2) || ((version_component_count == 2) && (major_version == 2) && (minor_version == 0)) )); then
 		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.${minor_version}/${MY_P}.tar.bz2 -> ${MY_P}.tar.bz2"
+	elif (( (major_version == 2) && (minor_version == 0) )); then
+		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.0/${MY_P}.tar.xz -> ${MY_P}.tar.xz"
 	else
 		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.x/${MY_P}.tar.xz -> ${MY_P}.tar.xz"
 	fi
@@ -73,7 +75,7 @@ REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 RESTRICT="test"
 
 COMMON_DEPEND="
-	app-emulation/wine-desktop-common
+	>=app-emulation/wine-desktop-common-20170410
 	sys-apps/attr[${MULTILIB_USEDEP}]
 	X? (
 		x11-libs/libXcursor[${MULTILIB_USEDEP}]
@@ -145,8 +147,8 @@ COMMON_DEPEND="
 	)"
 
 RDEPEND="${COMMON_DEPEND}
-	>app-eselect/eselect-wine-0.3
 	!app-emulation/wine:0
+	>=app-eselect/eselect-wine-1.2
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
 	gecko? ( app-emulation/wine-gecko:2.40[abi_x86_32?,abi_x86_64?] )
 	mono? ( app-emulation/wine-mono:4.5.6 )
