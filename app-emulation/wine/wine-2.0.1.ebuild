@@ -22,7 +22,7 @@ else
 	last_component="$( get_version_component_range $((version_component_count)) )"
 	if [[ "${last_component}" =~ ^rc[[:digit:]]+$ ]]; then
 		rc_version=1
-		MY_PV=$(replace_version_separator $((version_component_count-1)) '''-''')
+		MY_PV=$(replace_version_separator $((--version_component_count)) '''-''')
 		MY_P="${MY_PN}-${MY_PV}"
 		#KEYWORDS=""
 	else
@@ -37,8 +37,10 @@ else
 		STABLE_PREFIX="wine-stable"
 		MY_P="${STABLE_PREFIX}-${MY_P}"
 		SRC_URI="https://github.com/mstefani/wine-stable/archive/${MY_PN}-${MY_PV}.tar.gz -> ${MY_P}.tar.gz"
-	elif (( stable_version || (major_version < 2) )); then
+	elif (( (major_version < 2) || ((version_component_count == 2) && (major_version == 2) && (minor_version == 0)) )); then
 		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.${minor_version}/${MY_P}.tar.bz2 -> ${MY_P}.tar.bz2"
+	elif (( (major_version == 2) && (minor_version == 0) )); then
+		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.0/${MY_P}.tar.xz -> ${MY_P}.tar.xz"
 	else
 		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.x/${MY_P}.tar.xz -> ${MY_P}.tar.xz"
 	fi
