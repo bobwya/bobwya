@@ -39,31 +39,31 @@ These packages are based heavily on NP's hard work - packaging Wine in the main 
 Now Gentoo has the most awesome Wine support of any GNU/Linux distribution!
 
 Customisations, on top of the stock Gentoo ebuilds for: ```app-emulation/wine:0```; include:
-* customised winecfg - with clearer Wine/Wine Staging version information displayed.
-* Supports all Wine releases - back to version 1.8. Includes custom Gentoo patch to provide: GStreamer 1.0 support - for these older versions of Wine.
-* Supports all Wine releases - back to version 1.8. Additional patches to provide this support: ```wine-1.8-gnutls-3.5-compat.patch``` , ```wine-cups-2.2-cupsgetppd-build-fix.patch```.
-* USE **+staging** supports live building against Wine Staging commits or branches.
-* USE **+staging** supports live building against Wine commits or branches. In the event that Wine Staging is unsupported for the specified commit - a helper utility will walk the Wine and Wine Staging Git trees. This helper utility will determine (automatically) the closest (date/time based) Wine commit which supports the Wine Staging patchset.
-* Supports Wine Release Candidate versions.
+* Customised **winecfg** utility - with clearer Wine/Wine Staging version information displayed.
+* Supports all **Wine** releases back to version 1.8. Includes custom Gentoo ```wine-1.8-gstreamer-1.0.patch``` to provide: GStreamer 1.0 support; for these older versions of **Wine**.
+* Supports all **Wine** releases back to version 1.8. Additional patches to provide this support: ```wine-1.8-gnutls-3.5-compat.patch``` , ```wine-cups-2.2-cupsgetppd-build-fix.patch```.
+* USE **+staging** supports live building against **Wine Staging** Git commits or branches.
+* USE **+staging** supports live building against **Wine** Git commits or branches. In the event that **Wine Staging** is unsupported for the specified commit - a helper utility will walk the **Wine** and **Wine Staging** Git trees. This helper utility will determine (automatically) the closest (date/time based) **Wine** Git commit which supports the **Wine Staging** patchset.
+* Supports **Wine** Release Candidate versions.
 
 Customisations, on top of the stock Gentoo ebuilds for: ```app-emulation/wine-desktop-common```:
 * installs oic_winlogo.ico globally - so ```app-emulation/wine[-staging|-vanilla]``` packages do not need to reference the ```wine-desktop-common.tar.gz``` tarball directly.
 
 Customisations, on top of the stock Gentoo ebuilds for: ```app-emulation/wine-gecko```:
-* Supports Wine Gecko beta versions.
+* Supports **Wine Gecko** beta versions.
 
 Customisations, on top of the stock Gentoo ebuilds for: ```app-emulation/wine-staging:${PV}```; include:
-* Customised winecfg - with clearer Wine Staging version information displayed.
-* Supports all Wine releases - back to version 1.8. Includes custom Gentoo patch to provide: GStreamer 1.0 support - for these older versions of Wine.
-* Supports all Wine releases - back to version 1.8. Additional patches to provide this support: ```wine-1.8-gnutls-3.5-compat.patch``` , ```wine-cups-2.2-cupsgetppd-build-fix.patch```.
-* Supports live building against Wine Staging commits or branches.
-* Supports live building against Wine commits or branches. In the event that Wine Staging is unsupported for the specified commit - a helper utility will walk the Wine and Wine Staging Git trees. This helper utility will determine (automatically) the closest (date/time based) Wine commit which supports the Wine Staging patchset.
+* Customised **winecfg** utility - with clearer Wine Staging version information displayed.
+* Supports all **Wine Staging** releases back to version 1.8. Includes custom Gentoo ```wine-1.8-gstreamer-1.0.patch``` to provide: GStreamer 1.0 support; for these older versions of **Wine**.
+* Supports all **Wine Staging** releases back to version 1.8. Additional patches to provide this support: ```wine-1.8-gnutls-3.5-compat.patch``` , ```wine-cups-2.2-cupsgetppd-build-fix.patch```.
+* Supports live building against **Wine Staging** Git commits or branches.
+* Supports live building against **Wine** Git commits or branches. In the event that **Wine Staging** is unsupported for the specified commit - a helper utility will walk the **Wine** and **Wine Staging** Git trees. This helper utility will determine (automatically) the closest (date/time based) **Wine** Git commit which supports the **Wine Staging** patchset.
 
 Customisations, on top of the stock Gentoo ebuilds for: ```app-emulation/wine-vanilla:${PV}```; include:
-* Customised winecfg - with clearer Wine version information displayed.
-* Supports all Wine releases - back to version 1.8. Includes custom Gentoo patch to provide: GStreamer 1.0 support - for these older versions of Wine.
-* Supports all Wine releases - back to version 1.8. Additional patches to provide this support: ```wine-1.8-gnutls-3.5-compat.patch``` , ```wine-cups-2.2-cupsgetppd-build-fix.patch```.
-* Supports Wine Release Candidate versions.
+* Customised **winecfg** utility - with clearer Wine version information displayed.
+* Supports all **Wine** releases back to version 1.8. Includes custom Gentoo ```wine-1.8-gstreamer-1.0.patch``` to provide: GStreamer 1.0 support; for these older versions of Wine.
+* Supports all **Wine** releases back to version 1.8. Additional patches to provide this support: ```wine-1.8-gnutls-3.5-compat.patch``` , ```wine-cups-2.2-cupsgetppd-build-fix.patch```.
+* Supports **Wine** Release Candidate versions.
 
 Customisations, on top of the stock Gentoo package: ```app-eselect/eselect-wine```; include:
 * Provides more detailed error messages.
