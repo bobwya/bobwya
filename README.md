@@ -73,7 +73,7 @@ Customisations, on top of the stock Gentoo package: ```app-eselect/eselect-wine`
 * Features an unset option to allow detection and removal of hanging / orphaned symbolic links (associated with this module / not associated with any installed packages).
 * Has a bundled manual page entry.
 
-
+```
 	app-eselect/eselect-wine : Manage active Wine version for multislot Wine variants.
 	app-emulation/wine:0 : Free implementation of Windows(tm) on Unix (single-slot version, supporting vanilla Wine & Wine Staging patchset).
 	app-emulation/wine-desktop-common : Core desktop menu entries and icons for Wine (shared by all app-emulation/wine[-staging|-vanilla] packages).
@@ -81,7 +81,7 @@ Customisations, on top of the stock Gentoo package: ```app-eselect/eselect-wine`
 	app-emulation/wine-mono : Wine Mono is a replacement for the .NET runtime and class libraries in Wine (multi-slot version - shared by all app-emulation/wine[-staging|-vanilla] packages).
 	app-emulation/wine-staging:${PV} : Free implementation of Windows(tm) on Unix (multi-slot version, only supports Wine with Wine Staging patchset automatically applied).
 	app-emulation/wine-vanilla:${PV} : Free implementation of Windows(tm) on Unix (multi-slot version, only supports vanilla Wine).
-
+```
 
 ***
 
