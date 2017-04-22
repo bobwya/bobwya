@@ -77,7 +77,7 @@ REQUIRED_USE="
 	${PYTHON_REQUIRED_USE}
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.77"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.74"
 # keep correct libdrm and dri2proto dep
 # keep blocks in rdepend for binpkg
 RDEPEND="
@@ -88,7 +88,6 @@ RDEPEND="
 	gallium? ( app-eselect/eselect-mesa )
 	=app-eselect/eselect-opengl-1.3.2
 	>=dev-libs/expat-2.1.0-r3:=[${MULTILIB_USEDEP}]
-	>=sys-libs/zlib-1.2.8[${MULTILIB_USEDEP}]
 	>=x11-libs/libX11-1.6.2:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libxshmfence-1.1:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libXdamage-1.1.4-r1:=[${MULTILIB_USEDEP}]
@@ -99,7 +98,10 @@ RDEPEND="
 	llvm? (
 		video_cards_radeonsi? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
-			vulkan? ( >=sys-devel/llvm-3.9.0:=[${MULTILIB_USEDEP}] )
+			vulkan? (
+				|| (
+					sys-devel/llvm:4[${MULTILIB_USEDEP}]
+					>=sys-devel/llvm-3.9.0:0[${MULTILIB_USEDEP}] ) )
 		)
 		video_cards_r600? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
@@ -107,7 +109,11 @@ RDEPEND="
 		video_cards_radeon? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
 		)
-		>=sys-devel/llvm-3.6.0:=[${MULTILIB_USEDEP}]
+		|| (
+			sys-devel/llvm:4[${MULTILIB_USEDEP}]
+			>=sys-devel/llvm-3.6.0:0[${MULTILIB_USEDEP}]
+		)
+		<sys-devel/llvm-5:=[${MULTILIB_USEDEP}]
 	)
 	opencl? (
 				app-eselect/eselect-opencl
@@ -149,9 +155,15 @@ DEPEND="${RDEPEND}
 		) )
 	)
 	opencl? (
-				>=sys-devel/llvm-3.6.0:=[${MULTILIB_USEDEP}]
-				>=sys-devel/clang-3.6.0:=[${MULTILIB_USEDEP}]
-				>=sys-devel/gcc-4.6
+		|| (
+			sys-devel/llvm:4[${MULTILIB_USEDEP}]
+			>=sys-devel/llvm-3.6.0:0[${MULTILIB_USEDEP}]
+		)
+		|| (
+			sys-devel/clang:4[${MULTILIB_USEDEP}]
+			>=sys-devel/clang-3.6.0:0[${MULTILIB_USEDEP}]
+		)
+		>=sys-devel/gcc-4.6
 	)
 	sys-devel/gettext
 	virtual/pkgconfig
@@ -195,13 +207,14 @@ pkg_setup() {
 	fi
 
 	if use llvm || use opencl; then
-		llvm_pkg_setup
+		LLVM_MAX_SLOT=4 llvm_pkg_setup
 	fi
 	python-any-r1_pkg_setup
 }
 
 src_prepare() {
 	[[ ${PV} == 9999 ]] && eautoreconf
+
 	eapply_user
 	default
 }
@@ -240,7 +253,7 @@ multilib_src_configure() {
 	if use gallium; then
 		myconf+="
 			$(use_enable d3d9 nine)
-			$(use_enable llvm)
+			$(use_enable llvm gallium-llvm)
 			$(use_enable openmax omx)
 			$(use_enable vaapi va)
 			$(use_enable vdpau)
