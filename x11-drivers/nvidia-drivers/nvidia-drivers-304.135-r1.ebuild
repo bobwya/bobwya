@@ -153,6 +153,8 @@ src_prepare() {
 
 	local PATCHES
 	if use kernel_linux; then
+		PATCHES+=( "${FILESDIR}"/${P}-endif.patch )
+
 		if kernel_is lt 2 6 9; then
 			eerror "You must build this against 2.6.9 or higher kernels."
 		fi

@@ -2,7 +2,6 @@
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
-
 inherit flag-o-matic linux-info linux-mod multilib-minimal nvidia-driver \
 	portability toolchain-funcs unpacker user udev
 
@@ -21,7 +20,9 @@ SRC_URI="
 	arm? ( ${NV_URI}Linux-x86-ARM/${PV}/${ARM_NV_PACKAGE}.run )
 	x86-fbsd? ( ${NV_URI}FreeBSD-x86/${PV}/${X86_FBSD_NV_PACKAGE}.tar.gz )
 	x86? ( ${NV_URI}Linux-x86/${PV}/${X86_NV_PACKAGE}.run )
-	tools? ( ftp://download.nvidia.com/XFree86/nvidia-settings/nvidia-settings-${PV}.tar.bz2 )
+	tools? (
+		ftp://download.nvidia.com/XFree86/nvidia-settings/nvidia-settings-${PV}.tar.bz2
+	)
 "
 
 LICENSE="GPL-2 NVIDIA-r2"
@@ -71,7 +72,7 @@ RDEPEND="
 	tools? ( !media-video/nvidia-settings )
 	wayland? ( dev-libs/wayland[${MULTILIB_USEDEP}] )
 	X? (
-		<x11-base/xorg-server-1.18.99:=
+		<x11-base/xorg-server-1.19.99:=
 		>=x11-libs/libX11-1.6.2[${MULTILIB_USEDEP}]
 		>=x11-libs/libXext-1.3.2[${MULTILIB_USEDEP}]
 		>=x11-libs/libvdpau-1.0[${MULTILIB_USEDEP}]
@@ -92,15 +93,11 @@ pkg_pretend() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 9; then
+		if kernel_is ge 4 11; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.9"
-			ewarn "<sys-kernel/vanilla-sources-4.9"
-			ewarn "This version of ${CATEGORY}/${PN} has an unofficial patch"
-			ewarn "applied to enable support for the following kernels:"
-			ewarn "=sys-kernel/gentoo-sources-4.9"
-			ewarn "=sys-kernel/vanilla-sources-4.9"
+			ewarn "<sys-kernel/gentoo-sources-4.11"
+			ewarn "<sys-kernel/vanilla-sources-4.11"
 		elif use kms && kernel_is le 4 1; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -183,14 +180,12 @@ pkg_setup() {
 }
 
 src_prepare() {
-	local PATCHES=( "${FILESDIR}/${PN}-367.18-kernel-4.7.patch" )
-	PATCHES+=( "${FILESDIR}"/${PN}-367.57-profiles-rc.patch )
-
+	local PATCHES
 	if use pax_kernel; then
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
 		ewarn "need support with these patches, contact the PaX team."
-		PATCHES+=( "${FILESDIR}"/${PN}-367.57-pax-r1.patch )
+		PATCHES+=( "${FILESDIR}"/${PN}-375.20-pax-r1.patch )
 	fi
 
 	# Allow user patches so they can support RC kernels and whatever else
@@ -320,6 +315,14 @@ src_install() {
 		# Xorg nvidia.conf
 		insinto /usr/share/X11/xorg.conf.d
 		newins {,50-}nvidia-drm-outputclass.conf
+
+		insinto /usr/share/glvnd/egl_vendor.d
+		doins ${NV_X11}/10_nvidia.json
+	fi
+
+	if use wayland; then
+		insinto /usr/share/egl/egl_external_platform.d
+		doins ${NV_X11}/10_nvidia_wayland.json
 	fi
 
 	# OpenCL ICD for NVIDIA
@@ -329,7 +332,6 @@ src_install() {
 	fi
 
 	# Documentation
-	dohtml ${NV_DOC}/html/*
 	if use kernel_FreeBSD; then
 		dodoc "${NV_DOC}/README"
 		use X && doman "${NV_MAN}/nvidia-xconfig.1"
@@ -343,6 +345,9 @@ src_install() {
 		use tools && doman "${NV_MAN}/nvidia-settings.1.gz"
 		doman "${NV_MAN}/nvidia-cuda-mps-control.1.gz"
 	fi
+
+	docinto html
+	dodoc -r ${NV_DOC}/html/*
 
 	# Helper Apps
 	exeinto /opt/bin/
@@ -440,7 +445,7 @@ src_install-libs() {
 
 	if use X; then
 		NV_GLX_LIBRARIES=(
-			"libEGL.so.1 ${GL_ROOT}"
+			"libEGL.so.$(usex compat ${NV_SOVER} 1) ${GL_ROOT}"
 			"libEGL_nvidia.so.${NV_SOVER} ${GL_ROOT}"
 			"libGL.so.$(usex compat ${NV_SOVER} 1.0.0) ${GL_ROOT}"
 			"libGLESv1_CM.so.1 ${GL_ROOT}"
@@ -470,7 +475,7 @@ src_install-libs() {
 		if use wayland && has_multilib_profile && [[ ${ABI} == "amd64" ]];
 		then
 			NV_GLX_LIBRARIES+=(
-				"libnvidia-egl-wayland.so.${NV_SOVER}"
+				"libnvidia-egl-wayland.so.1.0.1"
 			)
 		fi
 
