@@ -88,7 +88,7 @@ REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 RESTRICT="test"
 
 COMMON_DEPEND="
-	app-emulation/wine-desktop-common
+	>=app-emulation/wine-desktop-common-20170410
 	X? (
 		x11-libs/libXcursor[${MULTILIB_USEDEP}]
 		x11-libs/libXext[${MULTILIB_USEDEP}]
@@ -437,7 +437,7 @@ src_prepare() {
 		"${FILESDIR}/${MY_PN}-sysmacros.patch" #580046
 		"${FILESDIR}/${MY_PN}-1.8-gnutls-3.5-compat.patch" #587028
 	)
-	use cups && PATCHES+=( "${FILESDIR}/${PN}-cups-2.2-cupsgetppd-build-fix.patch" ) # https://bugs.winehq.org/show_bug.cgi?id=40851
+	use cups && PATCHES+=( "${FILESDIR}/${MY_PN}-cups-2.2-cupsgetppd-build-fix.patch" ) # https://bugs.winehq.org/show_bug.cgi?id=40851
 	if [[ ${MY_PV} != "9999" ]]; then
 		if use gstreamer; then
 			# version 1.9.1 already implements partial gstreamer:1.0 support
