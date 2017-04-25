@@ -365,7 +365,7 @@ src_prepare() {
 		"${FILESDIR}/${MY_PN}-1.6-memset-O3.patch" #480508
 		"${FILESDIR}/${MY_PN}-1.8-multislot-apploader.patch"
 	)
-	use cups && PATCHES+=( "${FILESDIR}/${PN}-cups-2.2-cupsgetppd-build-fix.patch" ) # https://bugs.winehq.org/show_bug.cgi?id=40851
+	use cups && PATCHES+=( "${FILESDIR}/${MY_PN}-cups-2.2-cupsgetppd-build-fix.patch" ) # https://bugs.winehq.org/show_bug.cgi?id=40851
 	#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
 	ebegin "(subshell) script: \"${FILESDIR}/${MY_PN}-multilib-portage-sed.sh\" ..."
 	(

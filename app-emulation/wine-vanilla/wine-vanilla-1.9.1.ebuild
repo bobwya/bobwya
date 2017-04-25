@@ -370,7 +370,7 @@ src_prepare() {
 		"${FILESDIR}/${MY_PN}-1.8-gnutls-3.5-compat.patch" #587028
 		"${FILESDIR}/${MY_PN}-1.8-multislot-apploader.patch"
 	)
-	use cups && PATCHES+=( "${FILESDIR}/${PN}-cups-2.2-cupsgetppd-build-fix.patch" ) # https://bugs.winehq.org/show_bug.cgi?id=40851
+	use cups && PATCHES+=( "${FILESDIR}/${MY_PN}-cups-2.2-cupsgetppd-build-fix.patch" ) # https://bugs.winehq.org/show_bug.cgi?id=40851
 	if [[ ${MY_PV} != "9999" ]]; then
 		if use gstreamer; then
 			# version 1.9.1 already implements partial gstreamer:1.0 support
