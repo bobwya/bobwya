@@ -425,7 +425,6 @@ src_prepare() {
 	local PATCHES=(
 		"${FILESDIR}/${MY_PN}-1.8_winecfg_detailed_version.patch"
 		"${FILESDIR}/${MY_PN}-1.5.26-winegcc.patch" #260726
-		"${FILESDIR}/${MY_PN}-2.6-osmesa-configure_support_recent_versions.patch" #429386
 		"${FILESDIR}/${MY_PN}-1.6-memset-O3.patch" #480508
 		"${FILESDIR}/${MY_PN}-1.8-multislot-apploader.patch"
 	)
