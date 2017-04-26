@@ -4,7 +4,7 @@
 EAPI=6
 WANT_AUTOCONF="2.1"
 MOZ_ESR=""
-MOZ_LIGHTNING_VER="4.7.7"
+MOZ_LIGHTNING_VER="4.7.8"
 MOZ_LIGHTNING_GDATA_VER="2.6"
 
 # This list can be updated using scripts/get_langs.sh from the mozilla overlay
@@ -17,12 +17,9 @@ uk vi zh-CN zh-TW )
 MOZ_PN="thunderbird"
 MOZ_PV="${PV/_beta/b}"
 
-# Enigmail version
-EMVER="1.9.1"
-
 # Patches
 PATCH="thunderbird-38.0-patches-0.1"
-PATCHFF="firefox-45.0-patches-10"
+PATCHFF="firefox-45.0-patches-12"
 
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
@@ -42,7 +39,7 @@ DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE 
 HOMEPAGE="http://www.mozilla.com/en-US/thunderbird
 	${EHG_REPO_URI}"
 
-KEYWORDS="~amd64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 x86 ~x86-fbsd ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist crypt hardened kde ldap lightning +minimal mozdom selinux"
@@ -53,7 +50,6 @@ SRC_URI="${SRC_URI}
 	${MOZ_HTTP_URI}/${MOZ_PV}/source/${MOZ_P}.source.tar.xz
 	https://dev.gentoo.org/~axs/distfiles/lightning-${MOZ_LIGHTNING_VER}.tar.xz
 	lightning? ( https://dev.gentoo.org/~axs/distfiles/gdata-provider-${MOZ_LIGHTNING_GDATA_VER}-r1.tar.xz )
-	crypt? ( http://www.enigmail.net/download/source/enigmail-${EMVER}.tar.gz )
 	${PATCH_URIS[@]}"
 
 ASM_DEPEND=">=dev-lang/yasm-1.1"
@@ -61,17 +57,8 @@ ASM_DEPEND=">=dev-lang/yasm-1.1"
 CDEPEND="
 	>=dev-libs/nss-3.21.1
 	>=dev-libs/nspr-4.12
-	!x11-plugins/enigmail
-	crypt?  ( || (
-		( >=app-crypt/gnupg-2.0
-			|| (
-				app-crypt/pinentry[gtk(-)]
-				app-crypt/pinentry[qt4(-)]
-				app-crypt/pinentry[qt5(-)]
-			)
-		)
-		=app-crypt/gnupg-1.4*
-	) )"
+	crypt? ( x11-plugins/enigmail[-thunderbird(-)] )
+	"
 
 DEPEND="${CDEPEND}
 	amd64? ( ${ASM_DEPEND}
@@ -256,12 +243,6 @@ src_configure() {
 	if [[ $(gcc-major-version) -lt 4 ]]; then
 		append-cxxflags -fno-stack-protector
 	fi
-
-	if use crypt; then
-		pushd "${WORKDIR}"/enigmail &>/dev/null || die "pushd failed"
-		econf
-		popd &>/dev/null || die "popd failed"
-	fi
 }
 
 src_compile() {
@@ -270,15 +251,6 @@ src_compile() {
 	CC="$(tc-getCC)" CXX="$(tc-getCXX)" LD="$(tc-getLD)" \
 	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 	emake -f "${S}"/client.mk
-
-	# Only build enigmail extension if crypt enabled.
-	if use crypt; then
-		einfo "Building enigmail"
-		pushd "${WORKDIR}"/enigmail &>/dev/null || die "pushd failed"
-		emake -j1
-		emake -j1 xpi
-		popd &>/dev/null || die "popd failed"
-	fi
 }
 
 src_install() {
@@ -360,14 +332,12 @@ src_install() {
 	fi
 
 	if use crypt; then
-		local enigmail_xpipath="${WORKDIR}/enigmail/build"
-		cd "${T}" || die "cd failed"
-		unzip "${enigmail_xpipath}"/enigmail*.xpi install.rdf || die "doins failed"
-		emid=$(sed -n '/<em:id>/!d; s/.*\({.*}\).*/\1/; p; q' install.rdf)
-
-		dodir ${MOZILLA_FIVE_HOME}/extensions/${emid} || die "doins failed"
-		cd "${ED}"${MOZILLA_FIVE_HOME}/extensions/${emid} || die "cd failed"
-		unzip "${enigmail_xpipath}"/enigmail*.xpi || die "doins failed"
+		emid=$(sed -n '/<em:id>/!d; s/.*\({.*}\).*/\1/; p; q' "${EPREFIX}"/usr/share/enigmail/install.rdf)
+		if [[ -n ${emid} ]]; then
+			dosym "${EPREFIX}"/usr/share/enigmail ${MOZILLA_FIVE_HOME}/extensions/${emid}
+		else
+			die "<EM:ID> tag for installed enigmail could not be found!"
+		fi
 	fi
 
 	# Required in order for jit to work on hardened, for mozilla-31 and above
@@ -385,23 +355,26 @@ src_install() {
 
 pkg_preinst() {
 	gnome2_icon_savelist
+
+	# Because PM's dont seem to properly merge a symlink replacing a directory
+	if use crypt; then
+		local emid=$(sed -n '/<em:id>/!d; s/.*\({.*}\).*/\1/; p; q' "${EPREFIX}"/usr/share/enigmail/install.rdf)
+		if [[ -d "${EPREFIX}${MOZILLA_FIVE_HOME}/extensions/${emid}" ]]; then
+			rm -Rf "${EPREFIX}${MOZILLA_FIVE_HOME}/extensions/${emid}" || (
+			eerror "Could not remove enigmail directory from previous installation,"
+			eerror "You must remove this by hand and rename the symbolic link yourself:"
+			eerror
+			eerror "\t cd ${EPREFIX}${MOZILLA_FIVE_HOME}/extensions"
+			eerror "\t rm -Rf ${emid}"
+			eerror "\t mv ${emid}.backup* ${emid}" )
+		fi
+	fi
 }
 
 pkg_postinst() {
 	fdo-mime_desktop_database_update
 	gnome2_icon_cache_update
 
-	if use crypt; then
-		local peimpl=$(eselect --brief --colour=no pinentry show)
-		case "${peimpl}" in
-		*gtk*|*qt*) ;;
-		*)	ewarn "The pinentry front-end currently selected is not one supported by thunderbird."
-			ewarn "You may be prompted for your password in an inaccessible shell!!"
-			ewarn "Please use 'eselect pinentry' to select either the gtk or qt front-end"
-			;;
-		esac
-	fi
-	elog
 	elog "If you experience problems with plugins please issue the"
 	elog "following command : rm \${HOME}/.thunderbird/*/extensions.sqlite ,"
 	elog "then restart thunderbird"

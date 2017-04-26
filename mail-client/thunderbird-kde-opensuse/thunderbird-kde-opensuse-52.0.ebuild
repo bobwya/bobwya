@@ -4,7 +4,7 @@
 EAPI=6
 WANT_AUTOCONF="2.1"
 MOZ_ESR=""
-MOZ_LIGHTNING_VER="4.7.6"
+MOZ_LIGHTNING_VER="4.7.7"
 MOZ_LIGHTNING_GDATA_VER="2.6"
 
 # This list can be updated using scripts/get_langs.sh from the mozilla overlay
@@ -17,12 +17,8 @@ uk vi zh-CN zh-TW )
 MOZ_PN="thunderbird"
 MOZ_PV="${PV/_beta/b}"
 
-# Enigmail version
-EMVER="1.9.1"
-
 # Patches
-PATCH="thunderbird-38.0-patches-0.1"
-PATCHFF="firefox-45.0-patches-07"
+PATCHFF="firefox-52.0-patches-08"
 
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
@@ -35,45 +31,37 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 MOZ_P="${MOZ_PN}-${MOZ_PV}"
 
-MOZCONFIG_OPTIONAL_JIT="enabled"
-inherit flag-o-matic toolchain-funcs mozconfig-kde-v6.45 makeedit autotools pax-utils check-reqs nsplugins mozlinguas-kde-v2 fdo-mime gnome2-utils mercurial
+MOZCONFIG_OPTIONAL_GTK2ONLY=1
+MOZCONFIG_OPTIONAL_WIFI=1
+
+inherit flag-o-matic toolchain-funcs mozconfig-kde-v6.52 makeedit autotools pax-utils check-reqs nsplugins mozlinguas-kde-v2 fdo-mime gnome2-utils mercurial
 
 DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="http://www.mozilla.com/en-US/thunderbird
 	${EHG_REPO_URI}"
 
-KEYWORDS="amd64 x86 ~x86-fbsd ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist crypt hardened kde ldap lightning +minimal mozdom selinux"
+IUSE="bindist crypt hardened kde ldap lightning +minimal mozdom rust selinux"
 RESTRICT="!bindist? ( bindist )"
 
-PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/{${PATCH},${PATCHFF}}.tar.xz )
+PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCHFF}.tar.xz )
 SRC_URI="${SRC_URI}
 	${MOZ_HTTP_URI}/${MOZ_PV}/source/${MOZ_P}.source.tar.xz
 	https://dev.gentoo.org/~axs/distfiles/lightning-${MOZ_LIGHTNING_VER}.tar.xz
 	lightning? ( https://dev.gentoo.org/~axs/distfiles/gdata-provider-${MOZ_LIGHTNING_GDATA_VER}-r1.tar.xz )
-	crypt? ( http://www.enigmail.net/download/source/enigmail-${EMVER}.tar.gz )
 	${PATCH_URIS[@]}"
 
 ASM_DEPEND=">=dev-lang/yasm-1.1"
 
 CDEPEND="
-	>=dev-libs/nss-3.21.1
-	>=dev-libs/nspr-4.12
-	!x11-plugins/enigmail
-	crypt?  ( || (
-		( >=app-crypt/gnupg-2.0
-			|| (
-				app-crypt/pinentry[gtk(-)]
-				app-crypt/pinentry[qt4(-)]
-				app-crypt/pinentry[qt5(-)]
-			)
-		)
-		=app-crypt/gnupg-1.4*
-	) )"
+	>=dev-libs/nss-3.28.3
+	>=dev-libs/nspr-4.13.1
+	crypt? ( x11-plugins/enigmail[-thunderbird(-)] )
+	"
 
-DEPEND="${CDEPEND}
+DEPEND="rust? ( dev-lang/rust )
 	amd64? ( ${ASM_DEPEND}
 		virtual/opengl )
 	x86? ( ${ASM_DEPEND}
@@ -111,13 +99,6 @@ pkg_pretend() {
 	# Ensure we have enough disk space to compile
 	CHECKREQS_DISK_BUILD="4G"
 	check-reqs_pkg_setup
-
-	if use jit && [[ -n ${PROFILE_IS_HARDENED} ]]; then
-		ewarn "You are emerging this package on a hardened profile with USE=jit enabled."
-		ewarn "This is horribly insecure as it disables all PAGEEXEC restrictions."
-		ewarn "Please ensure you know what you are doing.  If you don't, please consider"
-		ewarn "emerging the package with USE=-jit"
-	fi
 }
 
 src_unpack() {
@@ -144,9 +125,7 @@ src_unpack() {
 }
 
 src_prepare() {
-	rm -f "${WORKDIR}/thunderbird/2001_ldap_respect_cflags.patch"
-	# Default to our patchset
-	local PATCHES=( "${WORKDIR}/thunderbird" )
+	PATCHES+=( "${FILESDIR}"/1000_fix_gentoo_preferences.patch )
 
 	pushd "${S}"/mozilla &>/dev/null || die "pushd failed"
 	if use kde; then
@@ -161,8 +140,6 @@ src_prepare() {
 	fi
 	# Apply our patchset from firefox to thunderbird as well
 	eapply "${WORKDIR}/firefox"
-		"${FILESDIR}"/mozilla_configure_regexp_esr.patch \
-		"${FILESDIR}"/update_h2_curve.patch
 	popd &>/dev/null || die "popd failed"
 
 	# Ensure that are plugins dir is enabled as default
@@ -225,13 +202,13 @@ src_configure() {
 	use hardened && append-ldflags "-Wl,-z,relro,-z,now"
 
 	mozconfig_annotate '' --enable-extensions="${MEXTENSIONS}"
-	mozconfig_annotate '' --disable-mailnews
 	mozconfig_annotate '' --enable-calendar
 
 	# Other tb-specific settings
 	mozconfig_annotate '' --with-user-appdir=.thunderbird
 
 	mozconfig_use_enable ldap
+	mozconfig_use_enable rust
 
 	mozlinguas_kde_mozconfig
 
@@ -242,6 +219,7 @@ src_configure() {
 
 	# Use an objdir to keep things organized.
 	echo "mk_add_options MOZ_OBJDIR=${BUILD_OBJ_DIR}" >> "${S}"/.mozconfig
+	echo "mk_add_options XARGS=/usr/bin/xargs" >> "${S}"/.mozconfig
 
 	# Finalize and report settings
 	mozconfig_final
@@ -259,33 +237,22 @@ src_configure() {
 		append-cxxflags -fno-stack-protector
 	fi
 
-	if use crypt; then
-		pushd "${WORKDIR}"/enigmail &>/dev/null || die "pushd failed"
-		econf
-		popd &>/dev/null || die "popd failed"
-	fi
+	# workaround for funky/broken upstream configure...
+	SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
+	emake V=1 -f client.mk configure
 }
 
 src_compile() {
-	mkdir -p "${BUILD_OBJ_DIR}" && cd "${BUILD_OBJ_DIR}" || die "cd failed"
-
-	CC="$(tc-getCC)" CXX="$(tc-getCXX)" LD="$(tc-getLD)" \
-	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
-	emake -f "${S}"/client.mk
-
-	# Only build enigmail extension if crypt enabled.
-	if use crypt; then
-		einfo "Building enigmail"
-		pushd "${WORKDIR}"/enigmail &>/dev/null || die "pushd failed"
-		emake -j1
-		emake -j1 xpi
-		popd &>/dev/null || die "popd failed"
-	fi
+	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL}" \
+	emake V=1 -f client.mk
 }
 
 src_install() {
 	declare emid
 	cd "${BUILD_OBJ_DIR}" || die "cd failed"
+
+	# Pax mark xpcshell for hardened support, only used for startupcache creation.
+	pax-mark m "${BUILD_OBJ_DIR}"/dist/bin/xpcshell
 
 	# Copy our preference before omnijar is created.
 	cp "${FILESDIR}"/thunderbird-gentoo-default-prefs-1.js-1 \
@@ -301,9 +268,6 @@ src_install() {
 		echo "lockPref(\"mailnews.database.global.indexer.enabled\", false);" \
 			>>"${BUILD_OBJ_DIR}/dist/bin/defaults/pref/all-gentoo.js" || die "echo failed"
 	fi
-
-	# Pax mark xpcshell for hardened support, only used for startupcache creation.
-	pax-mark m "${BUILD_OBJ_DIR}"/dist/bin/xpcshell
 
 	MOZ_MAKE_FLAGS="${MAKEOPTS}" \
 	emake DESTDIR="${D}" install
@@ -362,22 +326,12 @@ src_install() {
 	fi
 
 	if use crypt; then
-		local enigmail_xpipath="${WORKDIR}/enigmail/build"
-		cd "${T}" || die "cd failed"
-		unzip "${enigmail_xpipath}"/enigmail*.xpi install.rdf || die "doins failed"
-		emid=$(sed -n '/<em:id>/!d; s/.*\({.*}\).*/\1/; p; q' install.rdf)
-
-		dodir ${MOZILLA_FIVE_HOME}/extensions/${emid} || die "doins failed"
-		cd "${ED}"${MOZILLA_FIVE_HOME}/extensions/${emid} || die "cd failed"
-		unzip "${enigmail_xpipath}"/enigmail*.xpi || die "doins failed"
+		emid=$(sed -n '/<em:id>/!d; s/.*\({.*}\).*/\1/; p; q' /usr/share/enigmail/install.rdf)
+		dosym /usr/share/enigmail ${MOZILLA_FIVE_HOME}/extensions/${emid}
 	fi
 
-	# Required in order for jit to work on hardened, for mozilla-31 and above
-	use jit && pax-mark pm "${ED}"${MOZILLA_FIVE_HOME}/{thunderbird,thunderbird-bin}
-
-	# Plugin-container needs to be pax-marked for hardened to ensure plugins such as flash
-	# continue to work as expected.
-	pax-mark m "${ED}"${MOZILLA_FIVE_HOME}/plugin-container
+	# Required in order to use plugins and even run thunderbird on hardened.
+	pax-mark pm "${ED}"${MOZILLA_FIVE_HOME}/{thunderbird,thunderbird-bin,plugin-container}
 
 	if use minimal; then
 		rm -r "${ED}"/usr/include "${ED}"${MOZILLA_FIVE_HOME}/{idl,include,lib,sdk} || \
@@ -393,20 +347,11 @@ pkg_postinst() {
 	fdo-mime_desktop_database_update
 	gnome2_icon_cache_update
 
-	if use crypt; then
-		local peimpl=$(eselect --brief --colour=no pinentry show)
-		case "${peimpl}" in
-		*gtk*|*qt*) ;;
-		*)	ewarn "The pinentry front-end currently selected is not one supported by thunderbird."
-			ewarn "You may be prompted for your password in an inaccessible shell!!"
-			ewarn "Please use 'eselect pinentry' to select either the gtk or qt front-end"
-			;;
-		esac
-	fi
 	elog
 	elog "If you experience problems with plugins please issue the"
 	elog "following command : rm \${HOME}/.thunderbird/*/extensions.sqlite ,"
 	elog "then restart thunderbird"
+
 	if ! use lightning; then
 		elog
 		elog "If calendar fails to show up in extensions please open config editor"
