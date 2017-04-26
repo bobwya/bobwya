@@ -52,12 +52,14 @@ inherit flag-o-matic toolchain-funcs mozcoreconf-kde-v4
 # @ECLASS-VARIABLE: MOZCONFIG_OPTIONAL_GTK3
 # @DESCRIPTION:
 # Set this variable before the inherit line, when an ebuild can provide
-# optional gtk3 support via IUSE="gtk3".  Currently this would include
-# ebuilds for firefox, but thunderbird could follow in the future.
+# optional gtk3 support via IUSE="force-gtk3".  Currently this would include
+# thunderbird in the future, once support is ready for testing.
 #
-# Leave the variable UNSET if gtk3 support should not be available.
+# Leave the variable UNSET if gtk3 support should not be optionally available.
 # Set the variable to "enabled" if the use flag should be enabled by default.
 # Set the variable to any value if the use flag should exist but not be default-enabled.
+# If gtk+:3 is to be the standard toolkit, do not use this and instead use
+# MOZCONFIG_OPTIONAL_GTK2ONLY.
 
 # @ECLASS-VARIABLE: MOZCONFIG_OPTIONAL_GTK2ONLY
 # @DESCRIPTION:
@@ -94,14 +96,16 @@ RDEPEND=">=app-text/hunspell-1.2:=
 	dev-libs/atk
 	dev-libs/expat
 	>=x11-libs/cairo-1.10[X]
+	>=x11-libs/gtk+-2.18:2
 	x11-libs/gdk-pixbuf
 	>=x11-libs/pango-1.22.0
 	>=media-libs/libpng-1.6.25:0=[apng]
 	>=media-libs/mesa-10.2:*
 	media-libs/fontconfig
 	>=media-libs/freetype-2.4.10
-	kernel_linux? ( media-libs/alsa-lib )
-	pulseaudio? ( media-sound/pulseaudio )
+	kernel_linux? ( !pulseaudio? ( media-libs/alsa-lib ) )
+	pulseaudio? ( || ( media-sound/pulseaudio
+		>=media-sound/apulse-0.1.9 ) )
 	virtual/freedesktop-icon-theme
 	dbus? ( >=sys-apps/dbus-0.60
 		>=dev-libs/dbus-glib-0.72 )
@@ -118,36 +122,29 @@ RDEPEND=">=app-text/hunspell-1.2:=
 	x11-libs/libXrender
 	x11-libs/libXt
 	system-cairo? ( >=x11-libs/cairo-1.12[X,xcb] >=x11-libs/pixman-0.19.2 )
-	system-icu? ( >=dev-libs/icu-56.1:= )
+	system-icu? ( >=dev-libs/icu-58.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
 	system-libevent? ( >=dev-libs/libevent-2.0:0= )
 	system-sqlite? ( >=dev-db/sqlite-3.17.0:3[secure-delete,debug=] )
 	system-libvpx? ( >=media-libs/libvpx-1.5.0:0=[postproc] )
-	system-harfbuzz? ( >=media-libs/harfbuzz-1.2.6:0=[graphite,icu] >=media-gfx/graphite2-1.3.8 )
+	system-harfbuzz? ( >=media-libs/harfbuzz-1.3.3:0= >=media-gfx/graphite2-1.3.8 )
 "
 
 if [[ -n ${MOZCONFIG_OPTIONAL_GTK3} ]]; then
 	MOZCONFIG_OPTIONAL_GTK2ONLY=
 	if [[ ${MOZCONFIG_OPTIONAL_GTK3} = "enabled" ]]; then
-		IUSE+=" +gtk3"
+		IUSE+=" +force-gtk3"
 	else
-		IUSE+=" gtk3"
+		IUSE+=" force-gtk3"
 	fi
-	RDEPEND+="
-	gtk3? ( >=x11-libs/gtk+-3.4.0:3 )
-	!gtk3? ( >=x11-libs/gtk+-2.18:2 )"
+	RDEPEND+=" force-gtk3? ( >=x11-libs/gtk+-3.4.0:3 )"
 elif [[ -n ${MOZCONFIG_OPTIONAL_GTK2ONLY} ]]; then
 	if [[ ${MOZCONFIG_OPTIONAL_GTK2ONLY} = "enabled" ]]; then
 		IUSE+=" +gtk2"
 	else
 		IUSE+=" gtk2"
 	fi
-	RDEPEND+="
-	gtk2? ( >=x11-libs/gtk+-2.18:2 )
-	!gtk2? ( >=x11-libs/gtk+-3.4.0:3 )"
-else
-	RDEPEND+="
-		>=x11-libs/gtk+-2.18:2"
+	RDEPEND+=" !gtk2? ( >=x11-libs/gtk+-3.4.0:3 )"
 fi
 if [[ -n ${MOZCONFIG_OPTIONAL_WIFI} ]]; then
 	if [[ ${MOZCONFIG_OPTIONAL_WIFI} = "enabled" ]]; then
@@ -167,14 +164,13 @@ DEPEND="app-arch/zip
 	app-arch/unzip
 	>=sys-devel/binutils-2.16.1
 	sys-apps/findutils
+	pulseaudio? ( media-sound/pulseaudio )
 	${RDEPEND}"
 
 RDEPEND+="
+	pulseaudio? ( || ( media-sound/pulseaudio
+		>=media-sound/apulse-0.1.9 ) )
 	selinux? ( sec-policy/selinux-mozilla )"
-
-# force system-icu if system-harfbuzz is selected, to avoid potential ABI issues
-REQUIRED_USE="
-	system-harfbuzz? ( system-icu )"
 
 # @FUNCTION: mozconfig_config
 # @DESCRIPTION:
@@ -206,7 +202,7 @@ mozconfig_config() {
 		fi
 	fi
 
-	# Enable position independent executables 
+	# Enable position independent executables
 	mozconfig_annotate 'enabled by Gentoo' --enable-pie
 	mozconfig_use_enable debug
 	mozconfig_use_enable debug tests
@@ -253,17 +249,23 @@ mozconfig_config() {
 	mozconfig_annotate 'Gentoo default' --with-system-png
 	mozconfig_annotate '' --enable-system-ffi
 	mozconfig_annotate 'Gentoo default to honor system linker' --disable-gold
-	mozconfig_annotate '' --enable-skia
 	mozconfig_annotate '' --disable-gconf
 	mozconfig_annotate '' --with-intl-api
+
+	# skia has no support for big-endian platforms
+	if [[ $(tc-endian) == "big" ]]; then
+		mozconfig_annotate 'big endian target' --disable-skia
+	else
+		mozconfig_annotate '' --enable-skia
+	fi
 
 	# default toolkit is cairo-gtk2, optional use flags can change this
 	local toolkit="cairo-gtk2"
 	local toolkit_comment=""
 	if [[ -n ${MOZCONFIG_OPTIONAL_GTK3} ]]; then
-		if use gtk3; then
+		if use force-gtk3; then
 			toolkit="cairo-gtk3"
-			toolkit_comment="gtk3 use flag"
+			toolkit_comment="force-gtk3 use flag"
 		fi
 	fi
 	if [[ -n ${MOZCONFIG_OPTIONAL_GTK2ONLY} ]]; then
@@ -306,6 +308,10 @@ mozconfig_config() {
 	mozconfig_annotate '' --host="${CBUILD:-${CHOST}}"
 
 	mozconfig_use_enable pulseaudio
+	# force the deprecated alsa sound code if pulseaudio is disabled
+	if use kernel_linux && ! use pulseaudio; then
+		mozconfig_annotate '-pulseaudio' --enable-alsa
+	fi
 
 	mozconfig_use_enable system-cairo
 	mozconfig_use_enable system-sqlite
@@ -323,8 +329,6 @@ mozconfig_config() {
 	fi
 	if [[ ${CHOST} == armv* ]]; then
 		mozconfig_annotate '' --with-float-abi=hard
-		mozconfig_annotate '' --enable-skia
-
 		if ! use system-libvpx; then
 			sed -i -e "s|softfp|hard|" \
 				"${S}"/media/libvpx/moz.build
@@ -369,6 +373,14 @@ mozconfig_install_prefs() {
 	# force the graphite pref if system-harfbuzz is enabled, since the pref cant disable it
 	if use system-harfbuzz; then
 		echo "sticky_pref(\"gfx.font_rendering.graphite.enabled\",true);" \
+			>>"${prefs_file}" || die
+	fi
+
+	# force cairo as the canvas renderer on platforms without skia support
+	if [[ $(tc-endian) == "big" ]]; then
+		echo "sticky_pref(\"gfx.canvas.azure.backends\",\"cairo\");" \
+			>>"${prefs_file}" || die
+		echo "sticky_pref(\"gfx.content.azure.backends\",\"cairo\");" \
 			>>"${prefs_file}" || die
 	fi
 }

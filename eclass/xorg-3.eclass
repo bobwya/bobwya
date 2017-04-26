@@ -43,11 +43,8 @@ fi
 : ${XORG_MULTILIB:="no"}
 
 # we need to inherit autotools first to get the deps
-inherit autotools libtool multilib toolchain-funcs \
+inherit autotools autotools-utils eutils libtool multilib toolchain-funcs \
 	flag-o-matic ${FONT_ECLASS} ${GIT_ECLASS}
-case "{EAPI:-0}" in
-	3|4|5) inherit autotools-utils eutils ;;
-esac
 
 if [[ ${XORG_MULTILIB} == yes ]]; then
 	inherit autotools-multilib
@@ -55,7 +52,7 @@ fi
 
 EXPORTED_FUNCTIONS="src_unpack src_compile src_install pkg_postinst pkg_postrm"
 case "${EAPI:-0}" in
-	3|4|5|6) EXPORTED_FUNCTIONS="${EXPORTED_FUNCTIONS} src_prepare src_configure" ;;
+	3|4|5) EXPORTED_FUNCTIONS="${EXPORTED_FUNCTIONS} src_prepare src_configure" ;;
 	*) die "EAPI=${EAPI} is not supported" ;;
 esac
 
@@ -348,8 +345,10 @@ xorg-3_patch_source() {
 
 	# Use standardized names and locations with bulk patching
 	# Patch directory is ${WORKDIR}/patch
+	# See epatch() in eutils.eclass for more documentation
+	EPATCH_SUFFIX=${EPATCH_SUFFIX:=patch}
 
-	[[ -d "${WORKDIR}/patches" ]] && eapply "${WORKDIR}/patches"
+	[[ -d "${EPATCH_SOURCE}" ]] && epatch
 }
 
 # @FUNCTION: xorg-3_reconf_source
@@ -380,7 +379,7 @@ xorg-3_src_prepare() {
 
 	xorg-3_patch_source
 	xorg-3_reconf_source
-	default_src_prepare "$@"
+	autotools-utils_src_prepare "$@"
 }
 
 # @FUNCTION: xorg-3_font_configure
@@ -483,7 +482,7 @@ xorg-3_src_configure() {
 	if [[ ${XORG_MULTILIB} == yes ]]; then
 		autotools-multilib_src_configure "$@"
 	else
-		default_src_configure "$@"
+		autotools-utils_src_configure "$@"
 	fi
 }
 
@@ -496,7 +495,7 @@ xorg-3_src_compile() {
 	if [[ ${XORG_MULTILIB} == yes ]]; then
 		autotools-multilib_src_compile "$@"
 	else
-		default_src_compile "$@"
+		autotools-utils_src_compile "$@"
 	fi
 }
 
@@ -518,7 +517,7 @@ xorg-3_src_install() {
 	if [[ ${XORG_MULTILIB} == yes ]]; then
 		autotools-multilib_src_install "${install_args[@]}"
 	else
-		default_src_install "${install_args[@]}"
+		autotools-utils_src_install "${install_args[@]}"
 	fi
 
 	if [[ -n ${GIT_ECLASS} ]]; then
