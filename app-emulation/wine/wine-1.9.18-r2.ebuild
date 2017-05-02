@@ -55,8 +55,6 @@ STAGING_HELPER="wine-staging-git-helper-0.1.7"
 STAGING_HELPER_SCRIPT="${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER/%-[.0-9]*/.sh}"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
 HOMEPAGE="http://www.winehq.org/"
-SRC_URI="${SRC_URI}
-	"
 
 if [[ ${MY_PV} == "9999" ]]; then
 	STAGING_EGIT_REPO_URI="git://github.com/wine-compholio/wine-staging.git"

@@ -49,8 +49,6 @@ unset -v last_component minor_version major_version rc_version stable_version ve
 
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
 HOMEPAGE="http://www.winehq.org/"
-SRC_URI="${SRC_URI}
-	"
 
 LICENSE="LGPL-2.1"
 SLOT="0"
