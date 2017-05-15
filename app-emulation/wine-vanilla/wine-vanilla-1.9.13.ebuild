@@ -54,7 +54,7 @@ else
 fi
 unset -v last_component minor_version major_version rc_version stable_version version_component_count
 
-DESCRIPTION="Free implementation of Windows(tm) on Unix"
+DESCRIPTION="Free implementation of Windows(tm) on Unix, without any external patchsets"
 HOMEPAGE="http://www.winehq.org/"
 
 LICENSE="LGPL-2.1"
@@ -359,10 +359,13 @@ src_prepare() {
 	local PATCHES=(
 		"${FILESDIR}/${MY_PN}-1.8_winecfg_detailed_version.patch"
 		"${FILESDIR}/${MY_PN}-1.5.26-winegcc.patch" #260726
-		"${FILESDIR}/${MY_PN}-2.6-osmesa-configure_support_recent_versions.patch" #429386
 		"${FILESDIR}/${MY_PN}-1.6-memset-O3.patch" #480508
 		"${FILESDIR}/${MY_PN}-1.8-multislot-apploader.patch"
 	)
+	# shellcheck disable=SC2016
+	if ! grep -q 'WINE_CHECK_SONAME(OSMesa,OSMesaGetProcAddress,,,\[$X_LIBS -lm $X_EXTRA_LIBS\])' "${S}/configure.ac"; then
+		PATCHES+=( "${FILESDIR}/${MY_PN}-2.6-osmesa-configure_support_recent_versions.patch" ) #429386
+	fi
 	use cups && PATCHES+=( "${FILESDIR}/${MY_PN}-cups-2.2-cupsgetppd-build-fix.patch" ) # https://bugs.winehq.org/show_bug.cgi?id=40851
 	#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
 	ebegin "(subshell) script: \"${FILESDIR}/${MY_PN}-multilib-portage-sed.sh\" ..."
@@ -375,20 +378,22 @@ src_prepare() {
 	default
 	eautoreconf
 
+	# Modification of the server protocol requires regenerating the server requests
 	if ! md5sum -c - <<<"${md5hash}" &>/dev/null; then
 		einfo "server/protocol.def was patched; running tools/make_requests"
 		tools/make_requests || die "tools/make_requests failed" #432348
 	fi
 	sed -i '/^UPDATE_DESKTOP_DATABASE/s:=.*:=true:' tools/Makefile.in || die "sed failed"
 	if use run-exes; then
-		sed -i '\:^Exec=:{s:wine :wine-'"${WINE_VARIANT}"' :}' loader/wine.desktop || die "sed failed"
+		sed -i '\:^Exec=:{s:wine :wine-'"${WINE_VARIANT}"' :}' "${S}/loader/wine.desktop" || die "sed failed"
 	else
-		sed -i '\:^MimeType:d' loader/wine.desktop || die "sed failed" #117785
+		sed -i '/^MimeType/d' "${S}/loader/wine.desktop" || die "sed failed" #117785
 	fi
 
+	# hi-res default icon, #472990, http://bugs.winehq.org/show_bug.cgi?id=24652
 	cp "${EROOT%/}/usr/share/wine/icons/oic_winlogo.ico" dlls/user32/resources/ || die "cp failed"
 
-	l10n_get_locales > po/LINGUAS || die "l10n_get_locales failed" # otherwise wine doesn't respect LINGUAS
+	l10n_get_locales > "${S}/po/LINGUAS" || die "l10n_get_locales failed" # Make Wine respect LINGUAS
 }
 
 src_configure() {

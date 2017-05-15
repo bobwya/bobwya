@@ -55,7 +55,7 @@ fi
 unset -v last_component minor_version major_version rc_version stable_version version_component_count
 
 GST_P="wine-1.8-gstreamer-1.0"
-DESCRIPTION="Free implementation of Windows(tm) on Unix"
+DESCRIPTION="Free implementation of Windows(tm) on Unix, without any external patchsets"
 HOMEPAGE="http://www.winehq.org/"
 SRC_URI="${SRC_URI}
 	gstreamer? ( https://dev.gentoo.org/~np-hardass/distfiles/${MY_PN}/${GST_P}.patch.bz2 )
@@ -367,12 +367,9 @@ src_prepare() {
 		"${FILESDIR}/${MY_PN}-1.6-memset-O3.patch" #480508
 		"${FILESDIR}/${MY_PN}-1.8-multislot-apploader.patch"
 	)
-	if [[ ${MY_PV} != "9999" ]]; then
-		use gstreamer && PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
-	else
-		# only apply gstreamer:1.0 patch to older versions of wine, using gstreamer:0.1 API/ABI
-		grep -q "gstreamer-0.10" "${S}/configure" &>/dev/null || unset GST_P
-		[[ ! -z "${GST_P}" ]] && use gstreamer && PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
+	# shellcheck disable=SC2016
+	if ! grep -q 'WINE_CHECK_SONAME(OSMesa,OSMesaGetProcAddress,,,\[$X_LIBS -lm $X_EXTRA_LIBS\])' "${S}/configure.ac"; then
+		PATCHES+=( "${FILESDIR}/${MY_PN}-2.6-osmesa-configure_support_recent_versions.patch" ) #429386
 	fi
 	#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
 	ebegin "(subshell) script: \"${FILESDIR}/${MY_PN}-multilib-portage-sed.sh\" ..."
@@ -385,20 +382,22 @@ src_prepare() {
 	default
 	eautoreconf
 
+	# Modification of the server protocol requires regenerating the server requests
 	if ! md5sum -c - <<<"${md5hash}" &>/dev/null; then
 		einfo "server/protocol.def was patched; running tools/make_requests"
 		tools/make_requests || die "tools/make_requests failed" #432348
 	fi
 	sed -i '/^UPDATE_DESKTOP_DATABASE/s:=.*:=true:' tools/Makefile.in || die "sed failed"
 	if use run-exes; then
-		sed -i '\:^Exec=:{s:wine :wine-'"${WINE_VARIANT}"' :}' loader/wine.desktop || die "sed failed"
+		sed -i '\:^Exec=:{s:wine :wine-'"${WINE_VARIANT}"' :}' "${S}/loader/wine.desktop" || die "sed failed"
 	else
-		sed -i '\:^MimeType:d' loader/wine.desktop || die "sed failed" #117785
+		sed -i '/^MimeType/d' "${S}/loader/wine.desktop" || die "sed failed" #117785
 	fi
 
+	# hi-res default icon, #472990, http://bugs.winehq.org/show_bug.cgi?id=24652
 	cp "${EROOT%/}/usr/share/wine/icons/oic_winlogo.ico" dlls/user32/resources/ || die "cp failed"
 
-	l10n_get_locales > po/LINGUAS || die "l10n_get_locales failed" # otherwise wine doesn't respect LINGUAS
+	l10n_get_locales > "${S}/po/LINGUAS" || die "l10n_get_locales failed" # Make Wine respect LINGUAS
 }
 
 src_configure() {
