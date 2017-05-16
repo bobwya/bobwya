@@ -9,7 +9,7 @@ However Wine can optionally use native Windows DLLs if they are available.Wine p
 
 Wine Staging is the testing area of winehq.org. It contains bug fixes and features, which have not been integrated into the development branch yet.
 The idea of Wine Staging is to provide experimental features faster to end users and to give developers the possibility to discuss and improve their patches before they are integrated into the main branch.
-This external patchset may be optionally applied when building Wine.
+The external Wine Staging patchset may be optionally applied when building Wine.
 	</longdescription>
 	<use>
 		<flag name="capi">Enable ISDN support via <pkg>net-libs/libcapi</pkg>.</flag>

@@ -49,8 +49,10 @@ unset -v last_component minor_version major_version rc_version stable_version ve
 
 STAGING_P="wine-staging-${MY_PV}"
 STAGING_DIR="${WORKDIR}/${STAGING_P}"
-STAGING_HELPER="wine-staging-git-helper-0.1.7"
-STAGING_HELPER_SCRIPT="${WORKDIR}/${STAGING_HELPER}/${STAGING_HELPER/%-[.0-9]*/.sh}"
+STAGING_HELPER_P="wine-staging-git-helper-0.1.7"
+STAGING_HELPER_PN="${STAGING_HELPER_P%-*}"
+STAGING_HELPER_PV="${STAGING_HELPER_P##*-}"
+STAGING_HELPER_SCRIPT="${WORKDIR}/${STAGING_HELPER_P}/${STAGING_HELPER_PN}.sh"
 GST_P="wine-1.8-gstreamer-1.0"
 DESCRIPTION="Free implementation of Windows(tm) on Unix, with optional Wine Staging patchset"
 HOMEPAGE="http://www.winehq.org/"
@@ -61,7 +63,7 @@ SRC_URI="${SRC_URI}
 if [[ ${MY_PV} == "9999" ]]; then
 	STAGING_EGIT_REPO_URI="git://github.com/wine-compholio/wine-staging.git"
 	SRC_URI="${SRC_URI}
-		staging? ( https://github.com/bobwya/${STAGING_HELPER%-*}/archive/${STAGING_HELPER##*-}.tar.gz -> ${STAGING_HELPER}.tar.gz )"
+		staging? ( https://github.com/bobwya/${STAGING_HELPER_PN}/archive/${STAGING_HELPER_PV}.tar.gz -> ${STAGING_HELPER_P}.tar.gz )"
 else
 	SRC_URI="${SRC_URI}
 	staging? ( https://github.com/wine-compholio/wine-staging/archive/v${MY_PV}.tar.gz -> ${STAGING_P}.tar.gz )"
