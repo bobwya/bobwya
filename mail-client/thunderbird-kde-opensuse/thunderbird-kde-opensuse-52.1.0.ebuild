@@ -4,8 +4,8 @@
 EAPI=6
 WANT_AUTOCONF="2.1"
 MOZ_ESR=""
-MOZ_LIGHTNING_VER="4.7.7"
-MOZ_LIGHTNING_GDATA_VER="2.6"
+MOZ_LIGHTNING_VER="5.4.1"
+MOZ_LIGHTNING_GDATA_VER="3.3"
 
 # This list can be updated using scripts/get_langs.sh from the mozilla overlay
 MOZ_LANGS=(ar ast be bg bn-BD br ca cs cy da de el en en-GB en-US es-AR
@@ -50,7 +50,7 @@ PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchset
 SRC_URI="${SRC_URI}
 	${MOZ_HTTP_URI}/${MOZ_PV}/source/${MOZ_P}.source.tar.xz
 	https://dev.gentoo.org/~axs/distfiles/lightning-${MOZ_LIGHTNING_VER}.tar.xz
-	lightning? ( https://dev.gentoo.org/~axs/distfiles/gdata-provider-${MOZ_LIGHTNING_GDATA_VER}-r1.tar.xz )
+	lightning? ( https://dev.gentoo.org/~axs/distfiles/gdata-provider-${MOZ_LIGHTNING_GDATA_VER}.tar.xz )
 	${PATCH_URIS[@]}"
 
 ASM_DEPEND=">=dev-lang/yasm-1.1"
@@ -265,7 +265,7 @@ src_install() {
 	# dev-db/sqlite does not have FTS3_TOKENIZER support.
 	# gloda needs it to function, and bad crashes happen when its enabled and doesn't work
 	if in_iuse system-sqlite && use system-sqlite; then
-		echo "lockPref(\"mailnews.database.global.indexer.enabled\", false);" \
+		echo "sticky_pref(\"mailnews.database.global.indexer.enabled\", false);" \
 			>>"${BUILD_OBJ_DIR}/dist/bin/defaults/pref/all-gentoo.js" || die "echo failed"
 	fi
 
