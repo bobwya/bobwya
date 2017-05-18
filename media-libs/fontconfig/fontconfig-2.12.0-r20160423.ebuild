@@ -1,9 +1,9 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
 
-inherit autotools eutils multilib-minimal readme.gentoo-r1 versionator
+inherit autotools multilib-minimal readme.gentoo-r1 versionator
 
 DESCRIPTION="A library for configuring and customizing font access"
 HOMEPAGE="http://fontconfig.org/"
@@ -24,7 +24,7 @@ fi
 
 LICENSE="MIT"
 SLOT="1.0"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~m68k ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~ppc-aix ~amd64-fbsd ~sparc-fbsd ~x86-fbsd ~x64-freebsd ~x86-freebsd ~x86-interix ~amd64-linux ~arm-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos ~m68k-mint ~sparc-solaris ~sparc64-solaris ~x64-solaris ~x86-solaris ~x86-winnt"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~m68k ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~ppc-aix ~x64-cygwin ~amd64-fbsd ~sparc-fbsd ~x86-fbsd ~amd64-linux ~arm-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos ~m68k-mint ~sparc-solaris ~sparc64-solaris ~x64-solaris ~x86-solaris ~x86-winnt"
 IUSE="doc infinality static-libs"
 
 # Purposefully dropped the xml USE flag and libxml2 support.  Expat is the
@@ -48,12 +48,13 @@ pkg_setup() {
 
 src_prepare() {
 	PATCHES=(
-		"${FILESDIR}"/${PN}-2.10.2-docbook.patch # 310157
-		"${FILESDIR}"/${PN}-2.11.93-latin-update.patch # 130466 + make liberation default
+		"${FILESDIR}/${PN}-2.10.2-docbook.patch" # 310157
+		"${FILESDIR}/${PN}-2.11.93-latin-update.patch" # 130466 + make liberation default
+		"${FILESDIR}/${PN}-2.12.0-fix-ts18661-1-namespace-conflicts-w-glibc.patch" # 608924
 	)
 	if use infinality; then
-		PATCHES+=( "${WORKDIR}/${FCU_P}"/fontconfig_patches/{01,02,03,04,05}*.patch )
-		cp -r "${WORKDIR}/${FCU_P}"/conf.d.infinality "${S}"/ || die "cp"
+		PATCHES+=( "${WORKDIR}/${FCU_P}/fontconfig_patches"/{01,02,03,04,05}*.patch )
+		cp -r "${WORKDIR}/${FCU_P}"/conf.d.infinality "${S}"/ || die "cp failed"
 	fi
 	default
 	eautoreconf
@@ -118,18 +119,18 @@ multilib_src_install_all() {
 	dodoc doc/fontconfig-user.{txt,pdf}
 
 	if [[ -e "${ED}"usr/share/doc/fontconfig/ ]];  then
-		mv "${ED}"usr/share/doc/fontconfig/* "${ED}"/usr/share/doc/${P} || die "mv"
-		rm -rf "${ED}"usr/share/doc/fontconfig || die "rm"
+		mv "${ED}"usr/share/doc/fontconfig/* "${ED}"/usr/share/doc/${P} || die "mv failed"
+		rm -rf "${ED}"usr/share/doc/fontconfig || die "rm failed"
 	fi
 
 	# Changes should be made to /etc/fonts/local.conf, and as we had
 	# too much problems with broken fonts.conf we force update it ...
-	echo 'CONFIG_PROTECT_MASK="/etc/fonts/fonts.conf"' > "${T}"/37fontconfig || die "echo"
+	echo 'CONFIG_PROTECT_MASK="/etc/fonts/fonts.conf"' > "${T}"/37fontconfig || die "echo failed"
 	doenvd "${T}"/37fontconfig
 
 	# As of fontconfig 2.7, everything sticks their noses in here.
 	dodir /etc/sandbox.d
-	echo 'SANDBOX_PREDICT="/var/cache/fontconfig"' > "${ED}"/etc/sandbox.d/37fontconfig || die "echo"
+	echo 'SANDBOX_PREDICT="/var/cache/fontconfig"' > "${ED}"/etc/sandbox.d/37fontconfig || die "echo failed"
 
 	readme.gentoo_create_doc
 }
@@ -140,17 +141,17 @@ pkg_preinst() {
 	# Bug #193476
 	# /etc/fonts/conf.d/ contains symlinks to ../conf.avail/ to include various
 	# config files.  If we install as-is, we'll blow away user settings.
-	ebegin "Syncing fontconfig configuration to system"
+	ebegin "Subshell: syncing fontconfig configuration to system"
 		for file in $(find "${EROOT}"/etc/fonts/conf.avail/ ! -type d -name "*.conf" -printf "%f "); do
 			if [[ -L "${EROOT}"/etc/fonts/conf.d/"${file}" && -f "${ED}"etc/fonts/conf.avail/"${file}" ]]; then
 				ln -sf ../conf.avail/"${file}" "${ED}"etc/fonts/conf.d/ &>/dev/null \
-					|| die "ln ../conf.avail/${file} ${ED}etc/fonts/conf.d/"
+					|| die "ln ../conf.avail/${file} ${ED}etc/fonts/conf.d/ failed"
 			elif [[ -f ${ED}etc/fonts/conf.avail/"${file}" ]]; then
 				rm -f "${ED}"etc/fonts/conf.d/"${file}" &>/dev/null \
-					|| die "rm -f ${ED}etc/fonts/conf.d/${file}"
+					|| die "rm -f ${ED}etc/fonts/conf.d/${file} failed"
 			fi
 		done
-	eend $? || die "Syncing fontconfig configuration: subshell failed"
+	eend $? || die "Subshell: syncing fontconfig configuration to system failed"
 }
 
 pkg_postinst() {
@@ -161,9 +162,9 @@ pkg_postinst() {
 
 	if [[ ${ROOT} = / ]]; then
 		multilib_pkg_postinst() {
-			ebegin "Creating global font cache for ${ABI}"
-			"${EPREFIX}"/usr/bin/${CHOST}-fc-cache -srf || die "${CHOST}-fc-cache"
-			eend $? || die "Creating global font cache for ${ABI}: subshell failed"
+			ebegin "Subshell: creating global font cache for ${ABI}"
+			"${EPREFIX}"/usr/bin/${CHOST}-fc-cache -srf || die "${CHOST}-fc-cache failed"
+			eend $? || die "Subshell: creating global font cache for ${ABI} failed"
 		}
 
 		multilib_parallel_foreach_abi multilib_pkg_postinst
