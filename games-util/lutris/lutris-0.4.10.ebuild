@@ -3,7 +3,7 @@
 
 EAPI=6
 
-PYTHON_COMPAT=( python3_{4,5} )
+PYTHON_COMPAT=( python3_{4,5,6} )
 
 inherit distutils-r1 gnome2-utils python-r1
 
@@ -24,6 +24,7 @@ SLOT="0/0.4"
 RDEPEND="
 	dev-python/dbus-python[${PYTHON_USEDEP}]
 	dev-python/pygobject:3[${PYTHON_USEDEP}]
+	dev-python/python-evdev[${PYTHON_USEDEP}]
 	dev-python/pyyaml[${PYTHON_USEDEP}]
 	net-libs/libsoup
 	x11-apps/xrandr
