@@ -1,7 +1,7 @@
 # Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 #
-# @ECLASS: mozconfig-kde-v6.52.eclass
+# @ECLASS: mozconfig-kde-v6.53.eclass
 # @MAINTAINER:
 # mozilla team <mozilla@gentoo.org>
 # @BLURB: the new mozilla common configuration eclass for FF33 and newer, v6
@@ -92,14 +92,14 @@ IUSE="${IUSE} dbus debug +jemalloc neon pulseaudio selinux startup-notification 
 # gtk:2 minimum is technically 2.10 but gio support (enabled by default) needs 2.14
 # media-libs/mesa needs to be 10.2 or above due to a bug with flash+vdpau
 
-RDEPEND=">=app-text/hunspell-1.2:=
+RDEPEND=">=app-text/hunspell-1.5.4:=
 	dev-libs/atk
 	dev-libs/expat
 	>=x11-libs/cairo-1.10[X]
 	>=x11-libs/gtk+-2.18:2
 	x11-libs/gdk-pixbuf
 	>=x11-libs/pango-1.22.0
-	>=media-libs/libpng-1.6.25:0=[apng]
+	>=media-libs/libpng-1.6.28:0=[apng]
 	>=media-libs/mesa-10.2:*
 	media-libs/fontconfig
 	>=media-libs/freetype-2.4.10
@@ -127,7 +127,7 @@ RDEPEND=">=app-text/hunspell-1.2:=
 	system-libevent? ( >=dev-libs/libevent-2.0:0= )
 	system-sqlite? ( >=dev-db/sqlite-3.17.0:3[secure-delete,debug=] )
 	system-libvpx? ( >=media-libs/libvpx-1.5.0:0=[postproc] )
-	system-harfbuzz? ( >=media-libs/harfbuzz-1.3.3:0= >=media-gfx/graphite2-1.3.8 )
+	system-harfbuzz? ( >=media-libs/harfbuzz-1.3.3:0= >=media-gfx/graphite2-1.3.9-r1 )
 "
 
 if [[ -n ${MOZCONFIG_OPTIONAL_GTK3} ]]; then
@@ -145,6 +145,9 @@ elif [[ -n ${MOZCONFIG_OPTIONAL_GTK2ONLY} ]]; then
 		IUSE+=" gtk2"
 	fi
 	RDEPEND+=" !gtk2? ( >=x11-libs/gtk+-3.4.0:3 )"
+else
+	# no gtk3 related dep set by optional use flags, force it
+	RDEPEND+="  >=x11-libs/gtk+-3.4.0:3"
 fi
 if [[ -n ${MOZCONFIG_OPTIONAL_WIFI} ]]; then
 	if [[ ${MOZCONFIG_OPTIONAL_WIFI} = "enabled" ]]; then
@@ -259,18 +262,18 @@ mozconfig_config() {
 		mozconfig_annotate '' --enable-skia
 	fi
 
-	# default toolkit is cairo-gtk2, optional use flags can change this
-	local toolkit="cairo-gtk2"
+	# default toolkit is cairo-gtk3, optional use flags can change this
+	local toolkit="cairo-gtk3"
 	local toolkit_comment=""
 	if [[ -n ${MOZCONFIG_OPTIONAL_GTK3} ]]; then
-		if use force-gtk3; then
-			toolkit="cairo-gtk3"
+		if ! use force-gtk3; then
+			toolkit="cairo-gtk2"
 			toolkit_comment="force-gtk3 use flag"
 		fi
 	fi
 	if [[ -n ${MOZCONFIG_OPTIONAL_GTK2ONLY} ]]; then
-		if ! use gtk2; then
-			toolkit="cairo-gtk3"
+		if use gtk2; then
+			toolkit="cairo-gtk2"
 		else
 			toolkit_comment="gtk2 use flag"
 		fi
