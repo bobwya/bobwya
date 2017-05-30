@@ -418,15 +418,15 @@ pkg_preinst() {
 
 	# if the apulse libs are available in MOZILLA_FIVE_HOME then apulse
 	# doesn't need to be forced into the LD_LIBRARY_PATH
-	if use pulseaudio && [ -d ${EPREFIX}/usr/$(get_libdir)/apulse ]; then
+	if use pulseaudio && has_version ">=media-sound/apulse-0.1.9"; then
 		einfo "APULSE found - Generating library symlinks for sound support"
 		local lib
 		pushd "${ED}"${MOZILLA_FIVE_HOME} &>/dev/null || die "pushd failed"
-		for lib in "${EPREFIX}"/usr/$(get_libdir)/apulse/libpulse* ; do
+		for lib in ../apulse/libpulse{.so{,.0},-simple.so{,.0}} ; do
 			# a quickpkg rolled by hand will grab symlinks as part of the package,
 			# so we need to avoid creating them if they already exist.
 			if ! [ -L ${lib##*/} ]; then
-				ln -s "${lib}" || die "echo failed"
+				ln -s "${lib}" ${lib##*/} || die "echo failed"
 			fi
 		done
 		popd &>/dev/null || die "popd failed"
@@ -443,6 +443,12 @@ pkg_postinst() {
 		elog "installing into new profiles:"
 		local plugin
 		for plugin in "${GMP_PLUGIN_LIST[@]}"; do elog "\t ${plugin}" ; done
+	fi
+
+	if use pulseaudio && has_version ">=media-sound/apulse-0.1.9"; then
+		elog "Apulse was detected at merge time on this system and so it will always be"
+		elog "used for sound.  If you wish to use pulseaudio instead please unmerge"
+		elog "media-sound/apulse."
 	fi
 }
 

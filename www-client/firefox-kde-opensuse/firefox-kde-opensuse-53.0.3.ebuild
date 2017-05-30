@@ -25,17 +25,16 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${MOZ_PN}-53.0-patches-01"
+PATCH="${MOZ_PN}-53.0-patches-02"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
 EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 
-MOZCONFIG_OPTIONAL_GTK2ONLY=1
 #MOZCONFIG_OPTIONAL_QT5=1
 MOZCONFIG_OPTIONAL_WIFI=1
 
-inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mozconfig-kde-v6.52 pax-utils fdo-mime autotools virtualx mozlinguas-kde-v2 mercurial
+inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mozconfig-kde-v6.53 pax-utils fdo-mime autotools virtualx mozlinguas-kde-v2 mercurial
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="http://www.mozilla.com/firefox
@@ -45,7 +44,7 @@ KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist egl +gmp-autoupdate hardened hwaccel jack kde pgo rust selinux test"
+IUSE="bindist egl +gmp-autoupdate hardened hwaccel jack kde nsplugin pgo rust selinux test"
 RESTRICT="!bindist? ( bindist )"
 
 PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCH}.tar.xz )
@@ -62,12 +61,6 @@ RDEPEND="
 	selinux? ( sec-policy/selinux-mozilla )
 	kde? ( kde-misc/kmozillahelper:=  )
 	!!www-client/firefox"
-
-# atoms in mozconfig that need to be newer than what is inherited
-RDEPEND+="
-	>=app-text/hunspell-1.5.4
-	>=media-libs/libpng-1.6.28
-"
 
 DEPEND="${RDEPEND}
 	pgo? ( >=sys-devel/gcc-4.5 )
@@ -175,6 +168,7 @@ src_prepare() {
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
 	PATCHES+=( "${FILESDIR}/musl_drop_hunspell_alloc_hooks.patch" )
+	PATCHES+=( "${FILESDIR}/${PN}-53-turn_off_crash_on_seccomp_fail.patch" )
 
 	# Enable gnomebreakpad
 	if use debug; then
@@ -346,6 +340,12 @@ src_install() {
 		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
 		|| die "echo failed"
 
+	if use nsplugin; then
+		echo "pref(\"plugin.load_flash_only\", false);" >> \
+			"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
+			|| die "echo failed"
+	fi
+
 	if use kde; then
 		# Add our kde prefs for firefox
 		cp "${EHG_CHECKOUT_DIR}/MozillaFirefox/kde.js" \
@@ -424,15 +424,15 @@ pkg_preinst() {
 
 	# if the apulse libs are available in MOZILLA_FIVE_HOME then apulse
 	# doesn't need to be forced into the LD_LIBRARY_PATH
-	if use pulseaudio && [ -d "${EPREFIX}"/usr/$(get_libdir)/apulse ]; then
+	if use pulseaudio && has_version ">=media-sound/apulse-0.1.9"; then
 		einfo "APULSE found - Generating library symlinks for sound support"
 		local lib
 		pushd "${ED}"${MOZILLA_FIVE_HOME} &>/dev/null || die "pushd failed"
-		for lib in "${EPREFIX}"/usr/$(get_libdir)/apulse/libpulse* ; do
+		for lib in ../apulse/libpulse{.so{,.0},-simple.so{,.0}} ; do
 			# a quickpkg rolled by hand will grab symlinks as part of the package,
 			# so we need to avoid creating them if they already exist.
 			if ! [ -L ${lib##*/} ]; then
-				ln -s "${lib}" || die "echo failed"
+				ln -s "${lib}" ${lib##*/} || die "echo failed"
 			fi
 		done
 		popd &>/dev/null || die "popd failed"
@@ -451,7 +451,7 @@ pkg_postinst() {
 		for plugin in "${GMP_PLUGIN_LIST[@]}"; do elog "\t ${plugin}" ; done
 	fi
 
-	if use pulseaudio && [ -d "${EPREFIX}"/usr/$(get_libdir)/apulse ]; then
+	if use pulseaudio && has_version ">=media-sound/apulse-0.1.9"; then
 		elog "Apulse was detected at merge time on this system and so it will always be"
 		elog "used for sound.  If you wish to use pulseaudio instead please unmerge"
 		elog "media-sound/apulse."
