@@ -51,7 +51,7 @@ RDEPEND="
 	fontconfig? ( media-libs/fontconfig:1.0 )
 	fribidi? ( dev-libs/fribidi:0 )
 	jack? (
-		media-sound/jack-audio-connection-kit:0
+		virtual/jack
 		libsamplerate? ( media-libs/libsamplerate:0 )
 	)
 	lame? ( media-sound/lame:0 )
