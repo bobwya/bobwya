@@ -4,7 +4,7 @@
 EAPI=6
 VIRTUALX_REQUIRED="pgo"
 WANT_AUTOCONF="2.1"
-MOZ_ESR=""
+MOZ_ESR=1
 
 # This list can be updated with scripts/get_langs.sh from the mozilla overlay
 MOZ_LANGS=( ach af an ar as ast az bg bn-BD bn-IN br bs ca cak cs cy da de dsb
@@ -25,16 +25,17 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${MOZ_PN}-53.0-patches-02"
+PATCH="${MOZ_PN}-52.0-patches-07"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
 EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
 
+MOZCONFIG_OPTIONAL_GTK2ONLY=1
 #MOZCONFIG_OPTIONAL_QT5=1
 MOZCONFIG_OPTIONAL_WIFI=1
 
-inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mozconfig-kde-v6.53 pax-utils fdo-mime autotools virtualx mozlinguas-kde-v2 mercurial
+inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mozconfig-kde-v6.52 pax-utils fdo-mime autotools virtualx mozlinguas-kde-v2 mercurial
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="http://www.mozilla.com/firefox
@@ -44,7 +45,7 @@ KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist egl +gmp-autoupdate hardened hwaccel jack kde nsplugin pgo rust selinux test"
+IUSE="bindist egl +gmp-autoupdate hardened hwaccel jack kde pgo rust selinux test"
 RESTRICT="!bindist? ( bindist )"
 
 PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCH}.tar.xz )
@@ -56,7 +57,7 @@ ASM_DEPEND=">=dev-lang/yasm-1.1"
 
 RDEPEND="
 	jack? ( virtual/jack )
-	>=dev-libs/nss-3.29.5
+	>=dev-libs/nss-3.28.3
 	>=dev-libs/nspr-4.13.1
 	selinux? ( sec-policy/selinux-mozilla )
 	kde? ( kde-misc/kmozillahelper:=  )
@@ -167,8 +168,6 @@ src_prepare() {
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox-kde-opensuse/)
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
-	PATCHES+=( "${FILESDIR}/musl_drop_hunspell_alloc_hooks.patch" )
-	PATCHES+=( "${FILESDIR}/${PN}-53-turn_off_crash_on_seccomp_fail.patch" )
 
 	# Enable gnomebreakpad
 	if use debug; then
@@ -279,7 +278,7 @@ src_configure() {
 	fi
 
 	# workaround for funky/broken upstream configure...
-	SHELL="${SHELL:-${EPREFIX}/bin/bash}" \
+	SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 	emake -f client.mk configure
 }
 
@@ -305,10 +304,10 @@ src_compile() {
 		shopt -u nullglob
 		[[ -n "${cards}" ]] && addpredict "${cards}"
 
-		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX}/bin/bash}" \
+		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 		virtx emake -f client.mk profiledbuild || die "virtx emake failed"
 	else
-		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX}/bin/bash}" \
+		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 		emake -f client.mk realbuild
 	fi
 
@@ -340,12 +339,6 @@ src_install() {
 		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
 		|| die "echo failed"
 
-	if use nsplugin; then
-		echo "pref(\"plugin.load_flash_only\", false);" >> \
-			"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
-			|| die "echo failed"
-	fi
-
 	if use kde; then
 		# Add our kde prefs for firefox
 		cp "${EHG_CHECKOUT_DIR}/MozillaFirefox/kde.js" \
@@ -362,7 +355,7 @@ src_install() {
 		done
 	fi
 
-	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX}/bin/bash}" \
+	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 	emake DESTDIR="${D}" install
 
 	# Install language packs
