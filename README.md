@@ -63,13 +63,15 @@ Customisations, on top of the stock Gentoo ebuilds for: ```app-emulation/wine-va
 * Customised **winecfg** utility - with clearer Wine version information displayed.
 * Supports all **Wine** releases back to version 1.8. Includes custom Gentoo ```wine-1.8-gstreamer-1.0.patch``` to provide: GStreamer 1.0 support; for these older versions of Wine.
 * Supports all **Wine** releases back to version 1.8. Additional patches to provide this support: ```wine-1.8-gnutls-3.5-compat.patch``` , ```wine-cups-2.2-cupsgetppd-build-fix.patch```.
-* Supports **Wine** Release Candidate versions.
+* Supports **Wine** Release Candidate versions (which are typically not included in the main Gentoo Overlay).
 
 Customisations, on top of the stock Gentoo package: ```app-eselect/eselect-wine```; include:
 * Provides more detailed error messages.
 * Supports more verbose output about operations.
 * Handles multiple variants - for more eselect wine operations.
-* Avoids using globbing for symbolic link validity tests.
+* Handles multiple live versions, of ```app-emulation/wine-staging:9999_p*``` / ```app-emulation/wine-vanilla:9999_p*``` - which all can all be installed simulatenously on a single system.
+* Live package versions of ```app-emulation/wine-staging:9999_p*``` / ```app-emulation/wine-vanilla:9999_p*``` are stored with Git metadata support (SHA-1 commit hash and Git commit date).
+* Avoids using shell globbing for symbolic link validity tests.
 * Features an unset option to allow detection and removal of hanging / orphaned symbolic links (associated with this module / not associated with any installed packages).
 * Has a bundled manual page entry.
 
@@ -86,7 +88,7 @@ app-emulation/wine-vanilla:${PV} : Free implementation of Windows(tm) on Unix (m
 ***
 
 ### Custom GL lib switcher implementation package set
-These packages are masked and are NOT extensively tested (but I use them personally!) Loosely based off the Arch-Linux GL lib switcher.
+These packages are masked and are NOT extensively tested (but I use them personally!) Loosely based off the Arch-Linux GL lib switcher. Has some rudimentary support for **PRIMUS** setups.
 
 	app-eselect/eselect-opengl : Gentoo OpenGL implementation switcher (heavily customised)
 	media-libs/mesa : OpenGL-like graphic library for Linux (patched version - to work with custom eselect-opengl switcher)
@@ -108,6 +110,7 @@ See [Gentoo Wiki: Fontconfig (Infinality)](https://wiki.gentoo.org/wiki/Fontconf
 
 See [Arch Wiki: Infinality](https://wiki.archlinux.org/index.php/Infinality "Arch Wiki: Infinality").
 
+_todo_: update to support latest build. See [Arch AUR freetype2-infinality-ultimate package](https://aur.archlinux.org/packages/freetype2-infinality-ultimate/)
 ***
 
 Credit to the Arch AUR firefox-kde-opensuse PKGBUILD script used as the main basis for the  www-client/firefox-kde-opensuse (OpenSUSE KDE patchset) ebuild.
