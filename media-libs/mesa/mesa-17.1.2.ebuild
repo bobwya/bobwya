@@ -42,9 +42,9 @@ for card in "${VIDEO_CARDS[@]}"; do
 done
 
 IUSE="${IUSE_VIDEO_CARDS}
-	bindist +classic d3d9 debug +dri3 +egl +gallium +gbm gles1 gles2 +llvm
-	+nptl opencl osmesa pax_kernel openmax pic selinux vaapi valgrind vdpau
-	vulkan wayland xvmc xa"
+	bindist +classic d3d9 debug +dri3 +egl +gallium +gbm gles1 gles2 unwind
+	+llvm +nptl opencl osmesa pax_kernel openmax pic selinux vaapi valgrind
+	vdpau vulkan wayland xvmc xa"
 
 REQUIRED_USE="
 	d3d9?   ( dri3 gallium )
@@ -72,12 +72,12 @@ REQUIRED_USE="
 	video_cards_r300?   ( gallium x86? ( llvm ) amd64? ( llvm ) )
 	video_cards_r600?   ( gallium )
 	video_cards_radeonsi?   ( gallium llvm )
+	video_cards_vc4? ( gallium )
 	video_cards_vivante? ( gallium gbm )
 	video_cards_vmware? ( gallium )
-	${PYTHON_REQUIRED_USE}
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.74"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.77"
 # keep correct libdrm and dri2proto dep
 # keep blocks in rdepend for binpkg
 RDEPEND="
@@ -86,8 +86,9 @@ RDEPEND="
 	abi_x86_32? ( !app-emulation/emul-linux-x86-opengl[-abi_x86_32(-)] )
 	classic? ( app-eselect/eselect-mesa )
 	gallium? ( app-eselect/eselect-mesa )
-	=app-eselect/eselect-opengl-1.3.2
+	=app-eselect/eselect-opengl-1.3.3
 	>=dev-libs/expat-2.1.0-r3:=[${MULTILIB_USEDEP}]
+	>=sys-libs/zlib-1.2.8[${MULTILIB_USEDEP}]
 	>=x11-libs/libX11-1.6.2:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libxshmfence-1.1:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libXdamage-1.1.4-r1:=[${MULTILIB_USEDEP}]
@@ -95,13 +96,11 @@ RDEPEND="
 	>=x11-libs/libXxf86vm-1.1.3:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libxcb-1.9.3:=[${MULTILIB_USEDEP}]
 	x11-libs/libXfixes:=[${MULTILIB_USEDEP}]
+	unwind? ( sys-libs/libunwind[${MULTILIB_USEDEP}] )
 	llvm? (
 		video_cards_radeonsi? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
-			vulkan? (
-				|| (
-					sys-devel/llvm:4[${MULTILIB_USEDEP}]
-					>=sys-devel/llvm-3.9.0:0[${MULTILIB_USEDEP}] ) )
+			vulkan? ( >=sys-devel/llvm-3.9.0:=[${MULTILIB_USEDEP}] )
 		)
 		video_cards_r600? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
@@ -109,11 +108,7 @@ RDEPEND="
 		video_cards_radeon? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
 		)
-		|| (
-			sys-devel/llvm:4[${MULTILIB_USEDEP}]
-			>=sys-devel/llvm-3.6.0:0[${MULTILIB_USEDEP}]
-		)
-		<sys-devel/llvm-5:=[${MULTILIB_USEDEP}]
+		>=sys-devel/llvm-3.6.0:=[${MULTILIB_USEDEP}]
 	)
 	opencl? (
 				app-eselect/eselect-opencl
@@ -148,6 +143,7 @@ RDEPEND="${RDEPEND}
 # FIXME: kill the sys-devel/llvm[video_cards_radeon] compat once
 # LLVM < 3.9 is out of the game
 DEPEND="${RDEPEND}
+	${PYTHON_DEPS}
 	llvm? (
 		video_cards_radeonsi? ( || (
 			sys-devel/llvm[llvm_targets_AMDGPU]
@@ -155,15 +151,9 @@ DEPEND="${RDEPEND}
 		) )
 	)
 	opencl? (
-		|| (
-			sys-devel/llvm:4[${MULTILIB_USEDEP}]
-			>=sys-devel/llvm-3.6.0:0[${MULTILIB_USEDEP}]
-		)
-		|| (
-			sys-devel/clang:4[${MULTILIB_USEDEP}]
-			>=sys-devel/clang-3.6.0:0[${MULTILIB_USEDEP}]
-		)
-		>=sys-devel/gcc-4.6
+				>=sys-devel/llvm-3.6.0:=[${MULTILIB_USEDEP}]
+				>=sys-devel/clang-3.6.0:=[${MULTILIB_USEDEP}]
+				>=sys-devel/gcc-4.6
 	)
 	sys-devel/gettext
 	virtual/pkgconfig
@@ -181,7 +171,6 @@ DEPEND="${RDEPEND}
 [[ ${PV} == 9999 ]] && DEPEND+="
 	sys-devel/bison
 	sys-devel/flex
-	${PYTHON_DEPS}
 	$(python_gen_any_dep ">=dev-python/mako-0.7.3[\${PYTHON_USEDEP}]")
 "
 
@@ -207,14 +196,13 @@ pkg_setup() {
 	fi
 
 	if use llvm || use opencl; then
-		LLVM_MAX_SLOT=4 llvm_pkg_setup
+		llvm_pkg_setup
 	fi
 	python-any-r1_pkg_setup
 }
 
 src_prepare() {
 	[[ ${PV} == 9999 ]] && eautoreconf
-
 	eapply_user
 	default
 }
@@ -247,13 +235,13 @@ multilib_src_configure() {
 	fi
 
 	if use egl; then
-		myconf+=" --with-egl-platforms=x11$(use wayland && echo ",wayland")$(use gbm && echo ",drm")"
+		myconf+=" --with-egl-platforms=x11,surfaceless$(use wayland && echo ",wayland")$(use gbm && echo ",drm")"
 	fi
 
 	if use gallium; then
 		myconf+="
 			$(use_enable d3d9 nine)
-			$(use_enable llvm gallium-llvm)
+			$(use_enable llvm)
 			$(use_enable openmax omx)
 			$(use_enable vaapi va)
 			$(use_enable vdpau)
@@ -330,6 +318,7 @@ multilib_src_configure() {
 		$(use_enable gles1) \
 		$(use_enable gles2) \
 		$(use_enable nptl glx-tls) \
+		$(use_enable unwind libunwind) \
 		--enable-valgrind=$(usex valgrind auto no) \
 		--enable-llvm-shared-libs \
 		--with-dri-drivers=${DRI_DRIVERS} \

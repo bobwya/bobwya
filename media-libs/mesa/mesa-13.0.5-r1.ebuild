@@ -73,7 +73,6 @@ REQUIRED_USE="
 	video_cards_r600?   ( gallium )
 	video_cards_radeonsi?   ( gallium llvm )
 	video_cards_vmware? ( gallium )
-	${PYTHON_REQUIRED_USE}
 "
 
 LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.72"
@@ -85,7 +84,7 @@ RDEPEND="
 	abi_x86_32? ( !app-emulation/emul-linux-x86-opengl[-abi_x86_32(-)] )
 	classic? ( app-eselect/eselect-mesa )
 	gallium? ( app-eselect/eselect-mesa )
-	=app-eselect/eselect-opengl-1.3.2
+	=app-eselect/eselect-opengl-1.3.3
 	>=dev-libs/expat-2.1.0-r3:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libX11-1.6.2:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libxshmfence-1.1:=[${MULTILIB_USEDEP}]
@@ -147,6 +146,7 @@ RDEPEND="${RDEPEND}
 # FIXME: kill the sys-devel/llvm[video_cards_radeon] compat once
 # LLVM < 3.9 is out of the game
 DEPEND="${RDEPEND}
+	${PYTHON_DEPS}
 	llvm? (
 		video_cards_radeonsi? ( || (
 			sys-devel/llvm[llvm_targets_AMDGPU]
@@ -174,7 +174,6 @@ DEPEND="${RDEPEND}
 [[ ${PV} == 9999 ]] && DEPEND+="
 	sys-devel/bison
 	sys-devel/flex
-	${PYTHON_DEPS}
 	$(python_gen_any_dep ">=dev-python/mako-0.7.3[\${PYTHON_USEDEP}]")
 "
 
