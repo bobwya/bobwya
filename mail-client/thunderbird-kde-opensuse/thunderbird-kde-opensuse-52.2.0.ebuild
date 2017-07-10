@@ -18,7 +18,7 @@ MOZ_PN="thunderbird"
 MOZ_PV="${PV/_beta/b}"
 
 # Patches
-PATCHFF="firefox-52.0-patches-08"
+PATCHFF="firefox-52.2-patches-01"
 
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
@@ -58,7 +58,7 @@ ASM_DEPEND=">=dev-lang/yasm-1.1"
 CDEPEND="
 	>=dev-libs/nss-3.28.3
 	>=dev-libs/nspr-4.13.1
-	crypt? ( x11-plugins/enigmail[-thunderbird(-)] )
+	crypt? ( >=x11-plugins/enigmail-1.9.7 )
 	"
 
 DEPEND="rust? ( dev-lang/rust )
@@ -336,7 +336,7 @@ src_install() {
 	fi
 
 	# Required in order to use plugins and even run thunderbird on hardened.
-	pax-mark pm "${ED}"${MOZILLA_FIVE_HOME}/{thunderbird,thunderbird-bin,plugin-container}
+	pax-mark m "${ED}"${MOZILLA_FIVE_HOME}/{thunderbird,thunderbird-bin,plugin-container}
 
 	if use minimal; then
 		rm -r "${ED}"/usr/include "${ED}"${MOZILLA_FIVE_HOME}/{idl,include,lib,sdk} || \
