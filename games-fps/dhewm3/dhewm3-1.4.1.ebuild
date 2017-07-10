@@ -16,7 +16,7 @@ else
 	fi
 	MY_PV="${PV/_rc/_RC}"
 	MY_P="${PN}-${MY_PV}"
-	SRC_URI="https://github.com/dhewm/${PN}/archive/${MY_PV}.tar.gz"
+	SRC_URI="https://github.com/dhewm/${PN}/archive/${MY_PV}.tar.gz -> ${MY_P}.tar.gz"
 	S="${WORKDIR}/${MY_P}"
 fi
 
@@ -60,6 +60,6 @@ src_install() {
 
 pkg_postinst() {
 	einfo "Install game data files to \"${ROOT%/}/usr/share/${PN}\" ."
-	ewarn "${PN} is only compatible with Doom 3 (mod) data files."
+	ewarn "${PN} is only compatible with Doom 3 (/mod) data files."
 	ewarn
 }

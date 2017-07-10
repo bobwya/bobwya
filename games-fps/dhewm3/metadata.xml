@@ -7,6 +7,6 @@ You will need to supply your own game assets from Doom 3 and/or compatible mod(s
 </longdescription>
   <use>
     <flag name='dedicated'>install only as a dedicated game server</flag>
-	<flag name="sdl2">Enable support SDL2</flag>
+	<flag name="sdl2">Enable support for SDL2 - enable SDL1 support if this flag is disabled</flag>
   </use>
 </pkgmetadata>
