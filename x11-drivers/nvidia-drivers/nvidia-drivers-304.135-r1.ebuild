@@ -42,7 +42,7 @@ COMMON="
 		x11-libs/pangox-compat
 	)
 	X? (
-		=app-eselect/eselect-opengl-1.3.2
+		=app-eselect/eselect-opengl-1.3.3
 	)
 "
 DEPEND="${COMMON}
@@ -72,8 +72,7 @@ QA_PREBUILT="opt/* usr/lib*"
 
 S=${WORKDIR}/
 
-pkg_pretend() {
-
+nvidia_drivers_versions_check() {
 	if use amd64 && has_multilib_profile && \
 		[[ "${DEFAULT_ABI}" != "amd64" ]]; then
 		eerror "This ebuild doesn't currently support changing your default ABI"
@@ -109,7 +108,13 @@ pkg_pretend() {
 	use kernel_linux && check_extra_config
 }
 
+pkg_pretend() {
+	nvidia_drivers_versions_check
+}
+
 pkg_setup() {
+	nvidia_drivers_versions_check
+
 	# try to turn off distcc and ccache for people that have a problem with it
 	export DISTCC_DISABLE=1
 	export CCACHE_DISABLE=1
@@ -174,6 +179,11 @@ src_prepare() {
 	cat <<- EOF > "${S}"/nvidia.icd
 		/usr/$(get_libdir)/libnvidia-opencl.so
 	EOF
+
+	local man_file
+	for man_file in "${NV_MAN}"/*1.gz; do
+		gunzip $man_file || die "cat"
+	done
 
 	# Allow user patches so they can support RC kernels and whatever else
 	default
@@ -279,26 +289,26 @@ src_install() {
 	fi
 
 	# NVIDIA kernel <-> userspace driver config lib
-	donvidia ${NV_OBJ}/libnvidia-cfg.so ${NV_SOVER}
+	donvidia "${NV_OBJ}"/libnvidia-cfg.so ${NV_SOVER}
 
 	if use kernel_linux; then
 		# NVIDIA video decode <-> CUDA
-		donvidia ${NV_OBJ}/libnvcuvid.so ${NV_SOVER}
+		donvidia "${NV_OBJ}"/libnvcuvid.so ${NV_SOVER}
 	fi
 
 	if use X; then
 		# Xorg DDX driver
 		insinto /usr/$(get_libdir)/xorg/modules/drivers
-		doins ${NV_X11}/nvidia_drv.so
+		doins "${NV_X11}"/nvidia_drv.so
 
 		# Xorg GLX driver
-		donvidia ${NV_X11}/libglx.so ${NV_SOVER} \
+		donvidia "${NV_X11}"/libglx.so ${NV_SOVER} \
 			/usr/$(get_libdir)/xorg/nvidia/extensions
 
 		# XvMC driver
-		dolib.a ${NV_X11}/libXvMCNVIDIA.a || \
+		dolib.a "${NV_X11}"/libXvMCNVIDIA.a || \
 			die "failed to install libXvMCNVIDIA.so"
-		donvidia ${NV_X11}/libXvMCNVIDIA.so ${NV_SOVER}
+		donvidia "${NV_X11}"/libXvMCNVIDIA.so ${NV_SOVER}
 		dosym libXvMCNVIDIA.so.${NV_SOVER} \
 			/usr/$(get_libdir)/libXvMCNVIDIA_dynamic.so.1 || \
 			die "failed to create libXvMCNVIDIA_dynamic.so symlink"
@@ -308,41 +318,41 @@ src_install() {
 	if use kernel_linux; then
 		insinto /etc/OpenCL/vendors
 		doins nvidia.icd
-		donvidia ${NV_OBJ}/libnvidia-opencl.so ${NV_SOVER}
+		donvidia "${NV_OBJ}"/libnvidia-opencl.so ${NV_SOVER}
 	fi
 
 	# Documentation
-	dohtml ${NV_DOC}/html/*
+	dodoc -r "${NV_DOC}"/html
 	if use kernel_FreeBSD; then
-		dodoc "${NV_DOC}/README"
-		use X && doman "${NV_MAN}/nvidia-xconfig.1"
-		use tools && doman "${NV_MAN}/nvidia-settings.1"
+		dodoc "${NV_DOC}"/README
+		use X && doman "${NV_MAN}"/nvidia-xconfig.1
+		use tools && doman "${NV_MAN}"/nvidia-settings.1
 	else
 		# Docs
-		newdoc "${NV_DOC}/README.txt" README
-		dodoc "${NV_DOC}/NVIDIA_Changelog"
-		doman "${NV_MAN}/nvidia-smi.1.gz"
-		use X && doman "${NV_MAN}/nvidia-xconfig.1.gz"
-		use tools && doman "${NV_MAN}/nvidia-settings.1.gz"
-		doman "${NV_MAN}/nvidia-cuda-proxy-control.1.gz"
+		newdoc "${NV_DOC}"/README.txt README
+		dodoc "${NV_DOC}"/NVIDIA_Changelog
+		doman "${NV_MAN}"/nvidia-smi.1
+		use X && doman "${NV_MAN}"/nvidia-xconfig.1
+		use tools && doman "${NV_MAN}"/nvidia-settings.1
+		doman "${NV_MAN}"/nvidia-cuda-proxy-control.1
 	fi
 
 	# Helper Apps
 	exeinto /opt/bin/
 
 	if use X; then
-		doexe ${NV_OBJ}/nvidia-xconfig
+		doexe "${NV_OBJ}"/nvidia-xconfig
 	fi
 
 	if use kernel_linux; then
-		doexe ${NV_OBJ}/nvidia-debugdump
-		doexe ${NV_OBJ}/nvidia-cuda-proxy-control
-		doexe ${NV_OBJ}/nvidia-cuda-proxy-server
-		doexe ${NV_OBJ}/nvidia-smi
+		doexe "${NV_OBJ}"/nvidia-debugdump
+		doexe "${NV_OBJ}"/nvidia-cuda-proxy-control
+		doexe "${NV_OBJ}"/nvidia-cuda-proxy-server
+		doexe "${NV_OBJ}"/nvidia-smi
 		newinitd "${FILESDIR}/nvidia-smi.init" nvidia-smi
 	fi
 
-	dobin ${NV_OBJ}/nvidia-bug-report.sh
+	dobin "${NV_OBJ}"/nvidia-bug-report.sh
 
 	# Desktop entries for nvidia-settings
 	if use tools; then
@@ -362,7 +372,7 @@ src_install() {
 
 		# There is no icon in the FreeBSD tarball.
 		use kernel_FreeBSD || \
-			doicon ${NV_OBJ}/nvidia-settings.png
+			doicon "${NV_OBJ}"/nvidia-settings.png
 
 		domenu "${FILESDIR}"/nvidia-settings.desktop
 
@@ -392,37 +402,37 @@ src_install-libs() {
 	local inslibdir=$(get_libdir)
 	local GL_ROOT="/usr/$(get_libdir)/opengl/nvidia/lib"
 	local CL_ROOT="/usr/$(get_libdir)/OpenCL/vendors/nvidia"
-	local libdir=${NV_OBJ}
+	local nv_libdir="${NV_OBJ}"
 
 	if use kernel_linux && has_multilib_profile && \
 			[[ ${ABI} == "x86" ]] ; then
-		libdir=${NV_OBJ}/32
+		nv_libdir="${NV_OBJ}"/32
 	fi
 
 	if use X; then
 		# The GLX libraries
-		donvidia ${libdir}/libGL.so ${NV_SOVER} ${GL_ROOT}
-		donvidia ${libdir}/libnvidia-glcore.so ${NV_SOVER}
+		donvidia "${nv_libdir}"/libGL.so ${NV_SOVER} ${GL_ROOT}
+		donvidia "${nv_libdir}"/libnvidia-glcore.so ${NV_SOVER}
 		if use kernel_FreeBSD; then
-			donvidia ${libdir}/libnvidia-tls.so ${NV_SOVER} ${GL_ROOT}
+			donvidia "${nv_libdir}"/libnvidia-tls.so ${NV_SOVER} ${GL_ROOT}
 		else
-			donvidia ${libdir}/tls/libnvidia-tls.so ${NV_SOVER} ${GL_ROOT}
+			donvidia "${nv_libdir}"/tls/libnvidia-tls.so ${NV_SOVER} ${GL_ROOT}
 		fi
 
 		# VDPAU
-		donvidia ${libdir}/libvdpau_nvidia.so ${NV_SOVER}
+		donvidia "${nv_libdir}"/libvdpau_nvidia.so ${NV_SOVER}
 	fi
 
 	# NVIDIA monitoring library
 	if use kernel_linux; then
-		donvidia ${libdir}/libnvidia-ml.so ${NV_SOVER}
+		donvidia "${nv_libdir}"/libnvidia-ml.so ${NV_SOVER}
 	fi
 
 	# CUDA & OpenCL
 	if use kernel_linux; then
-		donvidia ${libdir}/libcuda.so ${NV_SOVER}
-		donvidia ${libdir}/libnvidia-compiler.so ${NV_SOVER}
-		donvidia ${libdir}/libOpenCL.so 1.0.0 ${CL_ROOT}
+		donvidia "${nv_libdir}"/libcuda.so ${NV_SOVER}
+		donvidia "${nv_libdir}"/libnvidia-compiler.so ${NV_SOVER}
+		donvidia "${nv_libdir}"/libOpenCL.so 1.0.0 ${CL_ROOT}
 	fi
 }
 
