@@ -660,20 +660,22 @@ pkg_preinst() {
 }
 
 pkg_postinst() {
-	local wine_git_commit wine_git_date
+	local wine_git_commit wine_git_date wine_git_commit_option wine_git_date_option
 	if [[ "${PV}" == "9999" ]]; then
 		pushd "${S}" || die "pushd failed"
 		wine_git_commit="$(git rev-parse HEAD || die "git rev-parse failed")"
-		wine_git_date="$(git show -s --format=%ci "${wine_git_commit}" || die "git show failed")"
+		wine_git_date="$(git show -s --format=%cd "${wine_git_commit}" || die "git show failed")"
 		# shellcheck disable=SC2089
-		[[ -z "${wine_git_commit}" ]] || wine_git_commit="--commit='${wine_git_commit}'"
+		[[ -z "${wine_git_commit}" ]] || wine_git_commit_option="--commit="
 		# shellcheck disable=SC2089
-		[[ -z "${wine_git_date}" ]]   || wine_git_date="--date='${wine_git_date}'"
+		[[ -z "${wine_git_date}" ]] || wine_git_date_option="--date="
 		popd
 	fi
 	# shellcheck disable=SC2086,SC2090
-	eselect wine register ${wine_git_commit} ${wine_git_date} --verbose --wine --staging "${P}" || die "eselect wine register failed"
-	eselect wine update --verbose --all --if-unset || die "eselect wine update failed"
+	eselect wine register ${wine_git_commit_option}"${wine_git_commit}" ${wine_git_date_option}"${wine_git_date}" --verbose --wine --staging "${P}" \
+		|| die "eselect wine register failed"
+	eselect wine update --verbose --all --if-unset \
+		|| die "eselect wine update failed"
 
 	if ! use gecko; then
 		ewarn "Without Wine Gecko, wine prefixes will not have a default"
@@ -695,8 +697,10 @@ pkg_postinst() {
 }
 
 pkg_prerm() {
-	eselect wine deregister --verbose --wine --staging "${P}" || die "eselect wine deregister failed"
-	eselect wine update --verbose --all --if-unset || die "eselect wine update failed"
+	eselect wine deregister --verbose --wine --staging "${P}" \
+		|| die "eselect wine deregister failed"
+	eselect wine update --verbose --all --if-unset \
+		|| die "eselect wine update failed"
 }
 
 pkg_postrm() {
