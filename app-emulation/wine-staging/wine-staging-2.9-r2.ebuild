@@ -48,12 +48,8 @@ STAGING_HELPER_P="wine-staging-git-helper-0.1.7"
 STAGING_HELPER_PN="${STAGING_HELPER_P%-*}"
 STAGING_HELPER_PV="${STAGING_HELPER_P##*-}"
 STAGING_HELPER_SCRIPT="${WORKDIR}/${STAGING_HELPER_P}/${STAGING_HELPER_PN}.sh"
-GST_P="wine-1.8-gstreamer-1.0"
 DESCRIPTION="Free implementation of Windows(tm) on Unix, with Wine Staging patchset"
 HOMEPAGE="http://www.winehq.org/"
-SRC_URI="${SRC_URI}
-	gstreamer? ( https://dev.gentoo.org/~np-hardass/distfiles/${MY_PN}/${GST_P}.patch.bz2 )
-	"
 
 if [[ ${MY_PV} == "9999" ]]; then
 	STAGING_EGIT_REPO_URI="git://github.com/wine-compholio/wine-staging.git"
@@ -696,11 +692,6 @@ pkg_postinst() {
 		ewarn "implementation of .NET.  Many windows applications rely upon"
 		ewarn "the existence of a .NET implementation, so you will likely need"
 		ewarn "to install an external one, using winetricks."
-	fi
-	if [[ ! -z "${GST_P}" ]] && use gstreamer; then
-		ewarn "This package uses a Gentoo specific patchset to provide "
-		ewarn "gstreamer:1.0 API / ABI support.  Any bugs related to GStreamer"
-		ewarn "should be filed at Gentoo's bugzilla, not upstream's."
 	fi
 }
 
