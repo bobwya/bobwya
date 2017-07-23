@@ -92,6 +92,7 @@ src_prepare() {
 	use pulseaudio	&& PATCHES+=( "${FILESDIR}/${PN}-2.6.14-optional-pulse.patch" )
 	use opus		&& PATCHES+=( "${FILESDIR}/${PN}-2.6.14-opus_check.patch" )
 	use nvenc		&& PATCHES+=( "${FILESDIR}/${PN}-2.6.14-fix_nvenc_check.patch" )
+	use x264		&& PATCHES+=( "${FILESDIR}/${PN}-2.6.15-fix_build_with_cmake_3.9.0.patch" )
 	default
 }
 
