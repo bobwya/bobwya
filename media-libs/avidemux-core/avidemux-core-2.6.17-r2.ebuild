@@ -55,7 +55,18 @@ DEPEND="
 "
 S="${WORKDIR}/${MY_P}"
 
+pkg_pretend() {
+	if has_version '>=dev-util/cmake-3.9.0'; then
+		ewarn "If you are upgrading from a previous revision of this package"
+		ewarn "please unmerge the previously installed version first:"
+		ewarn "  emerge --unmerge ${CATEGORY}/${PN}"
+		ewarn ""
+	fi
+}
+
 src_prepare() {
+	local PATCHES=( "${FILESDIR}/${PN}-2.6.15-fix_installed_files_cmake_3.9.0.patch" )
+
 	export build_directory="buildCore" cmake_directory="avidemux_core"
 	mkdir "${S%/}/${build_directory}" || die "mkdir failed"
 	if use system-ffmpeg; then
@@ -89,7 +100,7 @@ src_prepare() {
 	# Filter problematic compiler flags.
 	filter-flags -fwhole-program -flto
 
-	eapply_user
+	default
 }
 
 src_configure() {
