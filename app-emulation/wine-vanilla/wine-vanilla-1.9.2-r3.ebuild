@@ -54,7 +54,6 @@ else
 fi
 unset -v last_component minor_version major_version rc_version stable_version version_component_count
 
-GST_P="wine-1.8-gstreamer-1.0"
 DESCRIPTION="Free implementation of Windows(tm) on Unix, without any external patchsets"
 HOMEPAGE="http://www.winehq.org/"
 
