@@ -414,6 +414,13 @@ src_prepare() {
 		PATCHES+=( "${FILESDIR}/${MY_PN}-2.6-osmesa-configure_support_recent_versions.patch" ) #429386
 	fi
 	use cups && PATCHES+=( "${FILESDIR}/${MY_PN}-cups-2.2-cupsgetppd-build-fix.patch" ) # https://bugs.winehq.org/show_bug.cgi?id=40851
+	if [[ ${MY_PV} != "9999" ]]; then
+		use gstreamer && PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
+	else
+		# only apply gstreamer:1.0 patch to older versions of wine, using gstreamer:0.1 API/ABI
+		grep -q "gstreamer-0.10" "${S}/configure" &>/dev/null || unset GST_P
+		[[ ! -z "${GST_P}" ]] && use gstreamer && PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
+	fi
 	#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
 	ebegin "(subshell) script: \"${FILESDIR}/${MY_PN}-multilib-portage-sed.sh\" ..."
 	(
@@ -638,10 +645,6 @@ multilib_src_install_all() {
 	done
 }
 
-pkg_preinst() {
-	gnome2_icon_savelist
-}
-
 pkg_postinst() {
 	local wine_git_commit wine_git_date wine_git_commit_option wine_git_date_option
 
@@ -687,6 +690,5 @@ pkg_prerm() {
 }
 
 pkg_postrm() {
-
 	xdg_mimeinfo_database_update
 }
