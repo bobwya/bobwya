@@ -13,6 +13,7 @@ The external Wine Staging patchset may be optionally applied when building Wine.
 	</longdescription>
 	<use>
 		<flag name="capi">Enable ISDN support via <pkg>net-libs/libcapi</pkg>.</flag>
+		<flag name="cuda">Apply Wine Staging patches for Nvidia CUDA support.</flag>
 		<flag name="custom-cflags">Bypass strip-flags; use at your own peril.</flag>
 		<flag name="dos">Pull in <pkg>games-emulation/dosbox</pkg> to run DOS applications.</flag>
 		<flag name="gecko">Add support for the Gecko engine when using iexplore</flag>
@@ -24,7 +25,7 @@ The external Wine Staging patchset may be optionally applied when building Wine.
 		<flag name="osmesa">Add support for OpenGL in bitmaps using libOSMesa.</flag>
 		<flag name="pcap">Support packet capture software (e.g. wireshark).</flag>
 		<flag name="perl">Install helpers written in perl (winedump/winemaker).</flag>
-		<flag name="pipelight">Apply Wine-Staging patches for Pipelight/Silverlight support.</flag>
+		<flag name="pipelight">Apply Wine Staging patches for Pipelight/Silverlight support.</flag>
 		<flag name="prelink">Run prelink on DLLs during build;
 			For Gentoo hardened, do not disable if you do not know what this means as it can break things at runtime.</flag>
 		<flag name="realtime">Pull in <pkg>sys-auth/rtkit</pkg> for low-latency pulseaudio support.</flag>
@@ -33,9 +34,10 @@ The external Wine Staging patchset may be optionally applied when building Wine.
 		<flag name="samba">Add support for NTLM auth. see
 			http://wiki.winehq.org/NtlmAuthSetupGuide and
 			http://wiki.winehq.org/NtlmSigningAndSealing.</flag>
-		<flag name="staging">Apply Wine-Staging patches for advanced feature support that haven't made it into upstream Wine yet</flag>
+		<flag name="staging">Apply Wine Staging patches for advanced feature support that haven't made it into upstream Wine yet</flag>
 		<flag name="themes">Support GTK+:3 window theming through Wine Staging.</flag>
 		<flag name="udev">Use <pkg>virtual/libudev</pkg> to provide plug and play support.</flag>
+		<flag name="vulkan">Apply Wine Staging patches for Vulkan support.</flag>
 	</use>
 	<upstream>
 		<remote-id type="github">wine-compholio/wine-staging</remote-id>
