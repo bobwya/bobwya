@@ -533,10 +533,6 @@ multilib_src_install_all() {
 	done
 }
 
-pkg_preinst() {
-	gnome2_icon_savelist
-}
-
 pkg_postinst() {
 	local wine_git_commit wine_git_date wine_git_commit_option wine_git_date_option
 
@@ -577,6 +573,5 @@ pkg_prerm() {
 }
 
 pkg_postrm() {
-
 	xdg_mimeinfo_database_update
 }
