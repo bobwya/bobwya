@@ -35,14 +35,21 @@ src_unpack() {
 }
 
 src_prepare() {
-	sed -i '/^prefix = /{s,/local,,g}' "${S}/src/Makefile" "${S}/lib/libpe/Makefile"
-	sed -i '/^#define DEFAULT_PLUGINS_PATH /{s,/local,,g}' "${S}/src/config.c"
 	local PATCHES
 	if [[ "${PV}" == "0.80" ]]; then
 		PATCHES+=(
+			"${FILESDIR}/${PN}-0.80-fix_destdir_and_prefix.patch"
 			"${FILESDIR}/${PN}-0.80-fix_compatibility_with_openssl_1.1.0.patch"
 			"${FILESDIR}/${PN}-0.80-remove_const_qualifier_from_parent_scope.patch"
 		)
 	fi
 	default
+}
+
+src_compile() {
+	emake DESTDIR="${D}" prefix="${EPREFIX}/usr"
+}
+
+src_install() {
+	emake DESTDIR="${D}" prefix="${EPREFIX}/usr" install
 }
