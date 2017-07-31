@@ -1,0 +1,69 @@
+From 98f5f22f91f02821be1604bbce61efb45f7e3696 Mon Sep 17 00:00:00 2001
+From: Jardel Weyrich <jweyrich@gmail.com>
+Date: Thu, 12 Jan 2017 16:45:24 -0200
+Subject: [PATCH 1/2] Make pehash compatible with OpenSSL 1.1.0.
+
+---
+ src/pehash.c | 24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
+
+diff --git a/src/pehash.c b/src/pehash.c
+index e03a0a9..619a1ef 100644
+--- a/src/pehash.c
++++ b/src/pehash.c
+@@ -215,13 +215,25 @@ static void calc_hash(const char *alg_name, const unsigned char *data, size_t si
+ 	unsigned char md_value[EVP_MAX_MD_SIZE];
+ 	unsigned int md_len;
+ 
+-	EVP_MD_CTX md_ctx;
++// See https://wiki.openssl.org/index.php/1.1_API_Changes
++#if OPENSSL_VERSION_NUMBER < 0x10100000L
++	EVP_MD_CTX md_ctx_auto;
++	EVP_MD_CTX *md_ctx = &md_ctx_auto;
++#else
++	EVP_MD_CTX *md_ctx = EVP_MD_CTX_new();
++#endif
++
+ 	// FIXME: Handle errors - Check return values.
+-	EVP_MD_CTX_init(&md_ctx);
+-	EVP_DigestInit_ex(&md_ctx, md, NULL);
+-	EVP_DigestUpdate(&md_ctx, data, size);
+-	EVP_DigestFinal_ex(&md_ctx, md_value, &md_len);
+-	EVP_MD_CTX_cleanup(&md_ctx);
++	EVP_MD_CTX_init(md_ctx);
++	EVP_DigestInit_ex(md_ctx, md, NULL);
++	EVP_DigestUpdate(md_ctx, data, size);
++	EVP_DigestFinal_ex(md_ctx, md_value, &md_len);
++
++#if OPENSSL_VERSION_NUMBER < 0x10100000L
++	EVP_MD_CTX_cleanup(md_ctx);
++#else
++	EVP_MD_CTX_free(md_ctx);
++#endif
+ 
+ 	for (unsigned int i=0; i < md_len; i++)
+ 		sprintf(&output[i * 2], "%02x", md_value[i]);
+
+From 3fc1d6ac863cfb596e8e9263e03871aec8c00d22 Mon Sep 17 00:00:00 2001
+From: Jardel Weyrich <jweyrich@gmail.com>
+Date: Thu, 19 Jan 2017 00:14:31 -0200
+Subject: [PATCH 2/2] Make pesec compatible with OpenSSL 1.1.0.
+
+---
+ src/pesec.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/pesec.c b/src/pesec.c
+index 470af17..a10f963 100644
+--- a/src/pesec.c
++++ b/src/pesec.c
+@@ -225,7 +225,9 @@ static int parse_pkcs7_data(const options_t *options, const CRYPT_DATA_BLOB *blo
+ 	PKCS7 *p7 = NULL;
+ 	BIO *in = NULL;
+ 
++#if OPENSSL_VERSION_NUMBER < 0x10100000L
+ 	CRYPTO_malloc_init();
++#endif
+ 	ERR_load_crypto_strings();
+ 	OpenSSL_add_all_algorithms();
+ 
