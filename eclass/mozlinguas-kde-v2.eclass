@@ -126,29 +126,29 @@ MOZ_TOO_REGIONALIZED_FOR_L10N=( fy-NL ga-IE gu-IN hi-IN hy-AM nb-NO nn-NO pa-IN 
 # Add l10n_* to IUSE according to available language packs
 # No language packs for alphas and betas
 if ! [[ -n ${MOZ_GENERATE_LANGPACKS} ]]; then
-	if ! [[ ${PV} =~ alpha|beta ]] || [[ -n ${MOZ_FORCE_UPSTREAM_L10N} ]]; then
-		[[ -z ${MOZ_FTP_URI} ]] && [[ -z ${MOZ_HTTP_URI} ]] && die "No URI set to download langpacks, please set one of MOZ_{FTP,HTTP}_URI"
-		for x in "${MOZ_LANGS[@]}" ; do
-			# en and en_US are handled internally
-			if [[ ${x} == en ]] || [[ ${x} == en-US ]]; then
-				continue
-			fi
-			# strip region subtag if $x is in the list
-			if has ${x} "${MOZ_TOO_REGIONALIZED_FOR_L10N[@]}"; then
-				xflag=${x%%-*}
-			else
-				xflag=${x}
-			fi
-			SRC_URI+=" l10n_${xflag/[_@]/-}? ("
-			[[ -n ${MOZ_FTP_URI} ]] && SRC_URI+="
-				${MOZ_FTP_URI}/${MOZ_LANGPACK_PREFIX}${x}${MOZ_LANGPACK_SUFFIX} -> ${MOZ_P}-${x}${MOZ_LANGPACK_UNOFFICIAL:+.unofficial}.xpi"
-			[[ -n ${MOZ_HTTP_URI} ]] && SRC_URI+="
-				${MOZ_HTTP_URI}/${MOZ_LANGPACK_PREFIX}${x}${MOZ_LANGPACK_SUFFIX} -> ${MOZ_P}-${x}${MOZ_LANGPACK_UNOFFICIAL:+.unofficial}.xpi"
-			SRC_URI+=" )"
-			IUSE+=" l10n_${xflag/[_@]/-}"
-			# We used to do some magic if specific/generic locales were missing, but
-			# we stopped doing that due to bug 325195.
-		done
+	if ! [[ ${PV} =~ alpha ]] || { [[ ${PN} == seamonkey ]] && ! [[ ${PV} =~ alpha|beta ]] ; } || [[ -n ${MOZ_FORCE_UPSTREAM_L10N} ]]; then
+	[[ -z ${MOZ_FTP_URI} ]] && [[ -z ${MOZ_HTTP_URI} ]] && die "No URI set to download langpacks, please set one of MOZ_{FTP,HTTP}_URI"
+	for x in "${MOZ_LANGS[@]}" ; do
+		# en and en_US are handled internally
+		if [[ ${x} == en ]] || [[ ${x} == en-US ]]; then
+			continue
+		fi
+		# strip region subtag if $x is in the list
+		if has ${x} "${MOZ_TOO_REGIONALIZED_FOR_L10N[@]}"; then
+			xflag=${x%%-*}
+		else
+			xflag=${x}
+		fi
+		SRC_URI+=" l10n_${xflag/[_@]/-}? ("
+		[[ -n ${MOZ_FTP_URI} ]] && SRC_URI+="
+			${MOZ_FTP_URI}/${MOZ_LANGPACK_PREFIX}${x}${MOZ_LANGPACK_SUFFIX} -> ${MOZ_P}-${x}${MOZ_LANGPACK_UNOFFICIAL:+.unofficial}.xpi"
+		[[ -n ${MOZ_HTTP_URI} ]] && SRC_URI+="
+			${MOZ_HTTP_URI}/${MOZ_LANGPACK_PREFIX}${x}${MOZ_LANGPACK_SUFFIX} -> ${MOZ_P}-${x}${MOZ_LANGPACK_UNOFFICIAL:+.unofficial}.xpi"
+		SRC_URI+=" )"
+		IUSE+=" l10n_${xflag/[_@]/-}"
+		# We used to do some magic if specific/generic locales were missing, but
+		# we stopped doing that due to bug 325195.
+	done
 	fi
 else
 	for x in "${MOZ_LANGS[@]}" ; do
