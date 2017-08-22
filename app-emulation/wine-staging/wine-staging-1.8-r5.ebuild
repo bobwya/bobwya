@@ -20,7 +20,6 @@ if [[ "${last_component}" =~ ^p[[:digit:]]+$ ]]; then
 	: $(( --version_component_count ))
 fi
 MY_P="${MY_PN}-${MY_PV}"
-STAGING_SUFFIX=""
 if [[ ${MY_PV} == "9999" ]]; then
 	#KEYWORDS=""
 	EGIT_REPO_URI="git://source.winehq.org/git/wine.git http://source.winehq.org/git/wine.git"
@@ -38,12 +37,11 @@ else
 	else
 		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.x/${MY_P}.tar.xz -> ${MY_P}.tar.xz"
 	fi
-	((major_version == 1 && minor_version == 8)) && STAGING_SUFFIX="-unofficial"
 fi
 unset -v last_component minor_version major_version stable_version version_component_count
 
 STAGING_P="wine-staging-${MY_PV}"
-STAGING_DIR="${WORKDIR}/${STAGING_P}${STAGING_SUFFIX}"
+STAGING_DIR="${WORKDIR}/${STAGING_P}"
 STAGING_HELPER_P="wine-staging-git-helper-0.1.7"
 STAGING_HELPER_PN="${STAGING_HELPER_P%-*}"
 STAGING_HELPER_PV="${STAGING_HELPER_P##*-}"
@@ -60,16 +58,17 @@ if [[ "${MY_PV}" == "9999" ]]; then
 		https://github.com/bobwya/${STAGING_HELPER_PN}/archive/${STAGING_HELPER_PV}.tar.gz -> ${STAGING_HELPER_P}.tar.gz"
 else
 	SRC_URI="${SRC_URI}
-		https://github.com/wine-compholio/wine-staging/archive/v${MY_PV}${STAGING_SUFFIX}.tar.gz -> ${STAGING_P}.tar.gz"
+		https://github.com/wine-compholio/wine-staging/archive/v${MY_PV}.tar.gz -> ${STAGING_P}.tar.gz"
 fi
 
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cuda cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl test themes +threads +truetype udev +udisks v4l vaapi vulkan +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cuda cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl test themes +threads +truetype +udisks v4l vaapi +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
+	mono? ( abi_x86_32 )
 	osmesa? ( opengl )
 	test? ( abi_x86_32 )" # osmesa-opengl #286560 # X-truetype #551124
 
@@ -123,7 +122,6 @@ COMMON_DEPEND="
 		x11-libs/gtk+:3[${MULTILIB_USEDEP}]
 	)
 	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
-	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
 	vaapi? ( x11-libs/libva[X,${MULTILIB_USEDEP}] )
@@ -154,8 +152,8 @@ RDEPEND="${COMMON_DEPEND}
 	!app-emulation/wine:0
 	>=app-eselect/eselect-wine-1.5
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
-	gecko? ( app-emulation/wine-gecko:2.47[abi_x86_32?,abi_x86_64?] )
-	mono? ( app-emulation/wine-mono:4.7.1 )
+	gecko? ( app-emulation/wine-gecko:2.40[abi_x86_32?,abi_x86_64?] )
+	mono? ( app-emulation/wine-mono:4.5.6 )
 	perl? (
 		dev-lang/perl
 		dev-perl/XML-Simple
@@ -406,12 +404,15 @@ src_prepare() {
 		"${FILESDIR}/${MY_PN}-1.8_winecfg_detailed_version.patch"
 		"${FILESDIR}/${MY_PN}-1.5.26-winegcc.patch" #260726
 		"${FILESDIR}/${MY_PN}-1.6-memset-O3.patch" #480508
+		"${FILESDIR}/${MY_PN}-sysmacros.patch" #580046
+		"${FILESDIR}/${MY_PN}-1.8-gnutls-3.5-compat.patch" #587028
 		"${FILESDIR}/${MY_PN}-1.8-multislot-apploader.patch"
 	)
 	# shellcheck disable=SC2016
 	if ! grep -q 'WINE_CHECK_SONAME(OSMesa,OSMesaGetProcAddress,,,\[$X_LIBS -lm $X_EXTRA_LIBS\])' "${S}/configure.ac"; then
 		PATCHES+=( "${FILESDIR}/${MY_PN}-2.6-osmesa-configure_support_recent_versions.patch" ) #429386
 	fi
+	use cups && PATCHES+=( "${FILESDIR}/${MY_PN}-cups-2.2-cupsgetppd-build-fix.patch" ) # https://bugs.winehq.org/show_bug.cgi?id=40851
 	if [[ ${MY_PV} != "9999" ]]; then
 		use gstreamer && PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
 	else
@@ -434,7 +435,6 @@ src_prepare() {
 	local -a STAGING_EXCLUDE_PATCHSETS=( "configure-OSMesa" "winhlp32-Flex_Workaround" )
 	use cuda || STAGING_EXCLUDE_PATCHSETS+=( "nvapi-Stub_DLL" "nvcuda-CUDA_Support" "nvcuvid-CUDA_Video_Support" "nvencodeapi-Video_Encoder" )
 	use pipelight || STAGING_EXCLUDE_PATCHSETS+=( "Pipelight" )
-	use vulkan || STAGING_EXCLUDE_PATCHSETS+=( "vulkan-Vulkan_Implementation" )
 
 	# Process Wine Staging exluded patchsets
 	local indices=( ${!STAGING_EXCLUDE_PATCHSETS[*]} )
@@ -445,13 +445,6 @@ src_prepare() {
 			unset -v STAGING_EXCLUDE_PATCHSETS["${indices[i]}"]
 		fi
 	done
-
-	# Disable Upstream (Wine Staging) about tab customisation, for winecfg utility, to support our own version
-	if [[ -f "${STAGING_DIR}/patches/winecfg-Staging/0001-winecfg-Add-staging-tab-for-CSMT.patch" ]]; then
-		sed -i '/SetDlgItemTextA(hDlg, IDC_ABT_PANEL_TEXT, PACKAGE_VERSION " (Staging)");/{s/PACKAGE_VERSION " (Staging)"/PACKAGE_VERSION/}' \
-			"${STAGING_DIR}/patches/winecfg-Staging/0001-winecfg-Add-staging-tab-for-CSMT.patch" \
-			|| die "sed failed"
-	fi
 
 	# Launch wine-staging patcher in a subshell, using epatch as a backend, and gitapply.sh as a backend for binary patches
 	ebegin "Running Wine-Staging patch installer"
@@ -467,9 +460,6 @@ src_prepare() {
 	# Apply Staging branding to reported Wine version...
 	sed -r -i -e '/^AC_INIT\(.*\)$/{s/\[Wine\]/\[Wine \(Staging\)\]/}' "${S}/configure.ac" || die "sed failed"
 	sed -r -i -e 's/Wine (\(Staging\) |)/Wine \(Staging\) /' "${S}/VERSION" || die "sed failed"
-	if [[ ! -z "${STAGING_SUFFIX}" ]]; then
-		sed -i -e 's/(Staging)/(Staging'"${STAGING_SUFFIX}"')/' "${S}/libs/wine/Makefile.in" || die "sed failed"
-	fi
 
 	default
 	eautoreconf
@@ -545,7 +535,6 @@ multilib_src_configure() {
 		$(use_with scanner sane)
 		$(use_enable test tests)
 		$(use_with truetype freetype)
-		$(use_with udev)
 		$(use_with udisks dbus)
 		$(use_with v4l)
 		$(use_with vaapi va)
