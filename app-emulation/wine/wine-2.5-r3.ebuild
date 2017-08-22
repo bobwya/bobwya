@@ -55,11 +55,8 @@ STAGING_HELPER_P="wine-staging-git-helper-0.1.7"
 STAGING_HELPER_PN="${STAGING_HELPER_P%-*}"
 STAGING_HELPER_PV="${STAGING_HELPER_P##*-}"
 STAGING_HELPER_SCRIPT="${WORKDIR}/${STAGING_HELPER_P}/${STAGING_HELPER_PN}.sh"
-GST_P="wine-1.8-gstreamer-1.0"
 DESCRIPTION="Free implementation of Windows(tm) on Unix, with optional Wine Staging patchset"
 HOMEPAGE="http://www.winehq.org/"
-SRC_URI="${SRC_URI}
-	gstreamer? ( https://dev.gentoo.org/~np-hardass/distfiles/${MY_PN}/${GST_P}.patch.bz2 )"
 
 if [[ "${MY_PV}" == "9999" ]]; then
 	STAGING_EGIT_REPO_URI="git://github.com/wine-compholio/wine-staging.git"
@@ -167,7 +164,7 @@ COMMON_DEPEND="
 RDEPEND="${COMMON_DEPEND}
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
 	gecko? ( app-emulation/wine-gecko:2.47[abi_x86_32?,abi_x86_64?] )
-	mono? ( app-emulation/wine-mono:4.7.1 )
+	mono? ( app-emulation/wine-mono:4.7.0 )
 	perl? (
 		dev-lang/perl
 		dev-perl/XML-Simple
@@ -423,13 +420,6 @@ src_prepare() {
 	if ! grep -q 'WINE_CHECK_SONAME(OSMesa,OSMesaGetProcAddress,,,\[$X_LIBS -lm $X_EXTRA_LIBS\])' "${S}/configure.ac"; then
 		PATCHES+=( "${FILESDIR}/${MY_PN}-2.6-osmesa-configure_support_recent_versions.patch" ) #429386
 	fi
-	if [[ ${MY_PV} != "9999" ]]; then
-		use gstreamer && PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
-	else
-		# only apply gstreamer:1.0 patch to older versions of wine, using gstreamer:0.1 API/ABI
-		grep -q "gstreamer-0.10" "${S}/configure" &>/dev/null || unset GST_P
-		[[ ! -z "${GST_P}" ]] && use gstreamer && PATCHES+=( "${WORKDIR}/${GST_P}.patch" )
-	fi
 	#395615 - run bash/sed script, combining both versions of the multilib-portage.patch
 	ebegin "(subshell) script: \"${FILESDIR}/${MY_PN}-multilib-portage-sed.sh\" ..."
 	(
@@ -662,11 +652,6 @@ pkg_postinst() {
 		ewarn "implementation of .NET.  Many windows applications rely upon"
 		ewarn "the existence of a .NET implementation, so you will likely need"
 		ewarn "to install an external one, using winetricks."
-	fi
-	if [[ ! -z "${GST_P}" ]] && use gstreamer; then
-		ewarn "This package uses a Gentoo specific patchset to provide "
-		ewarn "gstreamer:1.0 API / ABI support.  Any bugs related to GStreamer"
-		ewarn "should be filed at Gentoo's bugzilla, not upstream's."
 	fi
 }
 pkg_postrm() {
