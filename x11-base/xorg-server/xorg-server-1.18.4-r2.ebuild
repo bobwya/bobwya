@@ -5,16 +5,16 @@ EAPI=5
 
 XORG_DOC=doc
 inherit xorg-3 multilib versionator flag-o-matic
-EGIT_REPO_URI="git://anongit.freedesktop.org/xorg/xserver"
+EGIT_REPO_URI="https://anongit.freedesktop.org/git/xorg/xserver.git"
 
 DESCRIPTION="X.Org X servers"
 SLOT="0/${PV}"
-KEYWORDS=""
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~arm-linux ~x86-linux"
 
-IUSE_SERVERS="dmx kdrive wayland xephyr xnest xorg xvfb"
-IUSE="${IUSE_SERVERS} debug fop glamor ipv6 libressl minimal selinux +suid systemd +udev unwind xcsecurity"
+IUSE_SERVERS="dmx kdrive xephyr xnest xorg xvfb"
+IUSE="${IUSE_SERVERS} fop glamor ipv6 libressl minimal selinux +suid systemd tslib +udev unwind wayland"
 
-CDEPEND="=app-eselect/eselect-opengl-1.3.3
+CDEPEND="=app-eselect/eselect-opengl-1.3.3-r1
 	!libressl? ( dev-libs/openssl:0= )
 	libressl? ( dev-libs/libressl )
 	>=x11-apps/iceauth-1.0.2
@@ -25,7 +25,7 @@ CDEPEND="=app-eselect/eselect-opengl-1.3.3
 	>=x11-libs/libpciaccess-0.12.901
 	>=x11-libs/libXau-1.0.4
 	>=x11-libs/libXdmcp-1.0.2
-	>=x11-libs/libXfont2-2.0.1
+	>=x11-libs/libXfont-1.4.2
 	>=x11-libs/libxkbfile-1.0.4
 	>=x11-libs/libxshmfence-1.1
 	>=x11-libs/pixman-0.27.2
@@ -56,24 +56,27 @@ CDEPEND="=app-eselect/eselect-opengl-1.3.3
 		x11-libs/libXv
 	)
 	xephyr? (
-		x11-libs/libxcb[xkb]
+		x11-libs/libxcb
 		x11-libs/xcb-util
 		x11-libs/xcb-util-image
 		x11-libs/xcb-util-keysyms
 		x11-libs/xcb-util-renderutil
 		x11-libs/xcb-util-wm
 	)
+	xnest? (
+		x11-libs/xcb-util-keysyms
+	)
 	!minimal? (
 		>=x11-libs/libX11-1.1.5
 		>=x11-libs/libXext-1.0.5
 		>=media-libs/mesa-11.0.6-r1
 	)
+	tslib? ( >=x11-libs/tslib-1.0 )
 	udev? ( >=virtual/udev-150 )
 	unwind? ( sys-libs/libunwind )
 	wayland? (
 		>=dev-libs/wayland-1.3.0
 		media-libs/libepoxy
-		>=dev-libs/wayland-protocols-1.1
 	)
 	>=x11-apps/xinit-1.3.3-r1
 	systemd? (
@@ -104,7 +107,7 @@ DEPEND="${CDEPEND}
 	>=x11-proto/xf86rushproto-1.1.2
 	>=x11-proto/xf86vidmodeproto-2.2.99.1
 	>=x11-proto/xineramaproto-1.1.3
-	>=x11-proto/xproto-7.0.31
+	>=x11-proto/xproto-7.0.28
 	>=x11-proto/presentproto-1.0
 	>=x11-proto/dri2proto-2.8
 	>=x11-proto/dri3proto-1.0
@@ -144,6 +147,7 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-1.12-unloadsubmodule.patch
 	# needed for new eselect-opengl, bug #541232
 	"${FILESDIR}"/${PN}-1.18-support-multiple-Files-sections.patch
+	"${FILESDIR}"/${PN}-1.18-sysmacros.patch #580044
 )
 
 pkg_pretend() {
@@ -152,24 +156,20 @@ pkg_pretend() {
 		die "Sorry, but gcc earlier than 4.0 will not work for xorg-server."
 }
 
-pkg_setup() {
-	if use wayland && ! use glamor; then
-		ewarn "glamor is necessary for acceleration under Xwayland."
-		ewarn "Performance may be unacceptable without it."
-	fi
-}
-
 src_configure() {
 	# localstatedir is used for the log location; we need to override the default
 	#	from ebuild.sh
 	# sysconfdir is used for the xorg.conf location; same applies
 	XORG_CONFIGURE_OPTIONS=(
 		$(use_enable ipv6)
-		$(use_enable debug)
 		$(use_enable dmx)
 		$(use_enable glamor)
 		$(use_enable kdrive)
+		$(use_enable kdrive kdrive-kbd)
+		$(use_enable kdrive kdrive-mouse)
+		$(use_enable kdrive kdrive-evdev)
 		$(use_enable suid install-setuid)
+		$(use_enable tslib)
 		$(use_enable unwind libunwind)
 		$(use_enable wayland xwayland)
 		$(use_enable !minimal record)
@@ -177,7 +177,6 @@ src_configure() {
 		$(use_enable !minimal dri)
 		$(use_enable !minimal dri2)
 		$(use_enable !minimal glx)
-		$(use_enable xcsecurity)
 		$(use_enable xephyr)
 		$(use_enable xnest)
 		$(use_enable xorg)
