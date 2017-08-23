@@ -4,7 +4,7 @@
 EAPI=6
 WANT_AUTOCONF="2.1"
 MOZ_ESR=""
-MOZ_LIGHTNING_VER="5.4.1"
+MOZ_LIGHTNING_VER="5.4.3"
 MOZ_LIGHTNING_GDATA_VER="3.3"
 
 # This list can be updated using scripts/get_langs.sh from the mozilla overlay
@@ -18,7 +18,7 @@ MOZ_PN="thunderbird"
 MOZ_PV="${PV/_beta/b}"
 
 # Patches
-PATCHFF="firefox-52.2-patches-01"
+PATCHFF="firefox-52.2-patches-02"
 
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
@@ -34,13 +34,13 @@ MOZ_P="${MOZ_PN}-${MOZ_PV}"
 MOZCONFIG_OPTIONAL_GTK2ONLY=1
 MOZCONFIG_OPTIONAL_WIFI=1
 
-inherit flag-o-matic toolchain-funcs mozconfig-kde-v6.52 makeedit autotools pax-utils check-reqs nsplugins mozlinguas-kde-v2 fdo-mime gnome2-utils mercurial
+inherit flag-o-matic toolchain-funcs mozconfig-kde-v6.53 makeedit autotools pax-utils check-reqs nsplugins mozlinguas-kde-v2 xdg-utils gnome2-utils mercurial
 
 DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="http://www.mozilla.com/en-US/thunderbird
 	${EHG_REPO_URI}"
 
-KEYWORDS="~amd64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist crypt hardened kde ldap lightning +minimal mozdom rust selinux"
@@ -336,7 +336,7 @@ src_install() {
 	fi
 
 	# Required in order to use plugins and even run thunderbird on hardened.
-	pax-mark m "${ED}"${MOZILLA_FIVE_HOME}/{thunderbird,thunderbird-bin,plugin-container}
+	pax-mark pm "${ED}"${MOZILLA_FIVE_HOME}/{thunderbird,thunderbird-bin,plugin-container}
 
 	if use minimal; then
 		rm -r "${ED}"/usr/include "${ED}"${MOZILLA_FIVE_HOME}/{idl,include,lib,sdk} || \
@@ -368,7 +368,7 @@ pkg_preinst() {
 }
 
 pkg_postinst() {
-	fdo-mime_desktop_database_update
+	xdg_desktop_database_update
 	gnome2_icon_cache_update
 
 	elog
@@ -386,6 +386,6 @@ pkg_postinst() {
 }
 
 pkg_postrm() {
-	fdo-mime_desktop_database_update
+	xdg_desktop_database_update
 	gnome2_icon_cache_update
 }
