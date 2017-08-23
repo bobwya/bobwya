@@ -6,7 +6,7 @@ EAPI=6
 
 DESCRIPTION="Manage active wine version"
 HOMEPAGE="https://github.com/bobwya/wine.eselect"
-SRC_URI="https://github.com/bobwya/wine.eselect/archive/${PV}.tar.gz -> ${P}.tar.gz"
+SRC_URI="https://github.com/bobwya/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="GPL-2+"
 SLOT="0"
