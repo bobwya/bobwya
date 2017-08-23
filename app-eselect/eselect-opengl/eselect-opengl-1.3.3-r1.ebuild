@@ -7,7 +7,6 @@ inherit multilib
 
 DESCRIPTION="Utility to change the OpenGL interface being used"
 HOMEPAGE="https://www.gentoo.org/"
-MY_PN="opengl.eselect"
 
 # Source:
 # http://www.opengl.org/registry/api/glext.h
@@ -15,7 +14,7 @@ MY_PN="opengl.eselect"
 GLEXT="85"
 GLXEXT="34"
 
-SRC_URI="https://github.com/bobwya/${MY_PN}/archive/${PV}.tar.gz"
+SRC_URI="https://github.com/bobwya/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -30,8 +29,6 @@ RDEPEND=">=app-admin/eselect-1.2.4
 		 !<x11-drivers/ati-drivers-14.9-r2
 		 !=x11-drivers/ati-drivers-14.12
 		 !<=app-emulation/emul-linux-x86-opengl-20140508"
-
-S="${WORKDIR}/${MY_PN}-${PV}"
 
 pkg_preinst() {
 	# we may be moving the config file, so get it early
@@ -64,15 +61,15 @@ pkg_postinst() {
 src_prepare() {
 	# don't die on Darwin users
 	if [[ ${CHOST} == *-darwin* ]] ; then
-		sed -i -e 's/libGL\.so/libGL.dylib/' ${MY_PN} || die "sed failed"
+		sed -i -e 's/libGL\.so/libGL.dylib/' opengl.eselect || die "sed failed"
 	fi
 	eapply_user
 }
 
 src_install() {
 	insinto "/usr/share/eselect/modules"
-	doins "${MY_PN}"
-	doman "${MY_PN}.5"
+	doins "opengl.eselect"
+	doman "opengl.eselect.5"
 }
 
 pkg_postinst() {
