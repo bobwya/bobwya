@@ -42,8 +42,8 @@ PDEPEND="
 
 MULTILIB_CHOST_TOOLS=( /usr/bin/fc-cache )
 
-pkg_setup() {
-	DOC_CONTENTS=$(sed -e 's:${EROOT}:'"${EROOT}"':' "${FILESDIR}"/doc.txt)
+get_documentation() {
+	sed -e 's:${EROOT}:'"${EROOT}"':' "${FILESDIR}/doc.txt"
 }
 
 src_prepare() {
@@ -105,6 +105,8 @@ multilib_src_install() {
 		insinto /etc/fonts
 		doins fonts.conf
 	fi
+	DOC_CONTENTS="$(get_documentation)"
+	readme.gentoo_create_doc
 }
 
 multilib_src_install_all() {
