@@ -9,21 +9,22 @@ PYTHON_COMPAT=( python{2_7,3_{4,5,6}} )
 
 inherit cmake-utils flag-o-matic python-any-r1
 
-SLOT="2.6"
+SLOT="0"
 
 DESCRIPTION="Avidemux is a simple cross-platform video editor (plugins component)"
 HOMEPAGE="http://fixounet.free.fr/${PN}"
 
 MY_PN="${PN%-plugins}"
 if [[ "${PV}" == *9999* ]]; then
-	MY_P="${P}"
-	KEYWORDS=""
-	EGIT_REPO_URI="https://github.com/mean00/${MY_PN}2.git git://github.com/mean00/${MY_PN}2.git"
 	inherit git-r3
+	MY_P="${P}"
+	EGIT_REPO_URI="https://github.com/mean00/${MY_PN}2.git"
+	SRC_URI=""
+	KEYWORDS=""
 else
 	MY_P="${MY_PN}_${PV}"
-	KEYWORDS="~amd64"
 	SRC_URI="mirror://sourceforge/${MY_PN}/${MY_PN}/${PV}/${MY_P}.tar.gz"
+	KEYWORDS="~amd64"
 fi
 
 # Multiple licenses because of all the bundled stuff.
@@ -34,8 +35,9 @@ IUSE="aac aften alsa amr a52 cli cpu_flags_x86_mmx debug dts fontconfig fribidi 
 REQUIRED_USE="|| ( cli gtk qt4 qt5 )
 			!amd64? ( !nvenc )"
 RDEPEND="
-	~media-libs/avidemux-core-${PV}:${SLOT}[vdpau?]
-	~media-video/avidemux-${PV}:${SLOT}[cli?,gtk?,opengl?,qt4?,qt5?]
+	!media-libs/avidemux-core:2.6
+	~media-libs/avidemux-core-${PV}:0[vdpau?]
+	~media-video/avidemux-${PV}:0[cli?,gtk?,opengl?,qt4?,qt5?]
 	>=dev-lang/spidermonkey-1.5-r2:0=
 	dev-libs/libxml2:2
 	media-libs/libpng:0=
