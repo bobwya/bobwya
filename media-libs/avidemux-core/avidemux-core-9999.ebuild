@@ -9,21 +9,22 @@ PLOCALES="ca cs da de el en es eu fr hu it ja pl pt_BR ru sr sr@latin tr zh_TW"
 
 inherit cmake-utils flag-o-matic
 
-SLOT="2.6"
+SLOT="0"
 
 DESCRIPTION="Avidemux is a simple cross-platform video editor (core libraries component)"
 HOMEPAGE="http://fixounet.free.fr/${PN}"
 
 MY_PN="${PN%-core}"
 if [[ "${PV}" == *9999* ]]; then
-	MY_P="${P}"
-	KEYWORDS=""
-	EGIT_REPO_URI="https://github.com/mean00/${MY_PN}2.git git://github.com/mean00/${MY_PN}2.git"
 	inherit git-r3
+	MY_P="${P}"
+	EGIT_REPO_URI="https://github.com/mean00/${MY_PN}2.git"
+	SRC_URI=""
+	KEYWORDS=""
 else
 	MY_P="${MY_PN}_${PV}"
-	KEYWORDS="~amd64"
 	SRC_URI="mirror://sourceforge/${MY_PN}/${MY_PN}/${PV}/${MY_P}.tar.gz"
+	KEYWORDS="~amd64"
 fi
 
 # Multiple licenses because of all the bundled stuff.
@@ -32,7 +33,8 @@ LICENSE="GPL-1 GPL-2 MIT PSF-2 public-domain"
 IUSE="debug nls sdl system-ffmpeg vaapi vdpau xv"
 
 COMMON_DEPEND="
-	!<media-video/avidemux-${PV}:${SLOT}
+	!media-libs/avidemux-core:2.6
+	!<media-video/avidemux-${PV}:0
 	dev-db/sqlite:3
 	sdl? (
 		|| ( media-libs/libsdl:0

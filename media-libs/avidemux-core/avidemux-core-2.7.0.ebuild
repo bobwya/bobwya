@@ -67,8 +67,6 @@ pkg_pretend() {
 }
 
 src_prepare() {
-	local PATCHES=( "${FILESDIR}/${PN}-2.6.15-fix_installed_files_cmake_3.9.0.patch" )
-
 	export build_directory="buildCore" cmake_directory="avidemux_core"
 	mkdir "${S%/}/${build_directory}" || die "mkdir failed"
 	if use system-ffmpeg; then
@@ -102,7 +100,7 @@ src_prepare() {
 	# Filter problematic compiler flags.
 	filter-flags -fwhole-program -flto
 
-	eapply_user
+	default
 }
 
 src_configure() {
