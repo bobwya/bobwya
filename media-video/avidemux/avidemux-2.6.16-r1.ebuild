@@ -9,25 +9,26 @@ PLOCALES="ca cs da de el en es eu fr hu it ja pl pt_BR ru sr sr@latin tr zh_TW"
 
 inherit cmake-utils flag-o-matic l10n versionator
 
-SLOT="2.6"
+SLOT="0"
 
 DESCRIPTION="Avidemux is a simple cross-platform video editor"
 HOMEPAGE="http://fixounet.free.fr/${PN}"
 
 MY_PN="${PN}"
 if [[ "${PV}" == *9999* ]]; then
-	MY_P="${P}"
-	KEYWORDS=""
-	EGIT_REPO_URI="https://github.com/mean00/${MY_PN}2.git git://github.com/mean00/${MY_PN}2.git"
 	inherit git-r3
+	MY_P="${P}"
 	MY_PV="${PV}"
+	KEYWORDS=""
+	EGIT_REPO_URI="https://github.com/mean00/${MY_PN}2.git"
+
 else
 	MY_P="${MY_PN}_${PV}"
-	KEYWORDS="~amd64"
-	SRC_URI="mirror://sourceforge/${MY_PN}/${MY_PN}/${PV}/${MY_P}.tar.gz"
 	version_components=( $(get_version_components) )
 	MY_PV="${version_components[0]}${version_components[1]}"
 	unset -v version_components
+	SRC_URI="mirror://sourceforge/${MY_PN}/${MY_PN}/${PV}/${MY_P}.tar.gz"
+	KEYWORDS="~amd64"
 fi
 
 # Multiple licenses because of all the bundled stuff.
@@ -37,7 +38,8 @@ IUSE="cli debug gtk opengl nls qt4 qt5 sdl vaapi vdpau xv"
 
 REQUIRED_USE="|| ( cli gtk qt4 qt5 )"
 DEPEND="
-	~media-libs/avidemux-core-${PV}:${SLOT}[nls?,sdl?,vaapi?,vdpau?,xv?]
+	!media-video/avidemux:2.6
+	~media-libs/avidemux-core-${PV}:0[nls?,sdl?,vaapi?,vdpau?,xv?]
 	gtk? ( x11-libs/gtk+:3 )
 	opengl? ( virtual/opengl:0 )
 	qt4? (	>=dev-qt/qtcore-4.8.3:4
@@ -49,7 +51,7 @@ DEPEND="
 	vaapi? ( x11-libs/libva:0 )
 	"
 RDEPEND="$DEPEND"
-PDEPEND="~media-libs/avidemux-plugins-${PV}:${SLOT}[cli?,gtk?,opengl?,qt4?,qt5?]"
+PDEPEND="~media-libs/avidemux-plugins-${PV}:0=[cli?,gtk?,opengl?,qt4?,qt5?]"
 
 S="${WORKDIR}/${MY_P}"
 
