@@ -572,7 +572,7 @@ pkg_postinst() {
 }
 
 pkg_prerm() {
-	eselect wine deregister --verbose --wine --vanilla "${P}" \
+	eselect wine deregister --force --verbose --wine --vanilla "${P}" \
 		|| die "eselect wine deregister --force --wine --vanilla \"${P}\" failed"
 }
 
