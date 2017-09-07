@@ -18,22 +18,22 @@ RDEPEND="app-admin/eselect
 		!!app-emulation/wine:0"
 
 pkg_pretend() {
-	ewarn "If updating ${CATEGORY}/${PN} from version 1.4 (or earlier)"
+	ewarn "If updating the ${CATEGORY}/${PN} package from version 1.4 (or earlier)"
 	ewarn "the eselect configuration ABI has changed."
 	ewarn "Please run the tool:"
 	ewarn " \"${FILESDIR}/update_symlinks.sh\""
 	ewarn "once - immediately after you have updated this package."
 	ewarn
 
-	ewarn "${CATEGORY}/${PN}::bobwya is not compatible with the ::gentoo implementation"
-	ewarn "of the multislotted Wine packages:"
+	ewarn "The ${CATEGORY}/${PN}::bobwya package is not compatible with the ::gentoo implementation"
+	ewarn "of multislotted Wine, specifically the packages:"
 	ewarn " * app-emulation/wine-desktop-common::gentoo"
 	ewarn " * app-emulation/wine-any::gentoo"
 	ewarn " * app-emulation/wine-d3d9::gentoo"
-	ewarn " * app-emulation/wine-staging::bobwya"
+	ewarn " * app-emulation/wine-staging::gentoo"
 	ewarn " * app-emulation/wine-vanilla::gentoo"
 	ewarn
-	ewarn "${CATEGORY}/${PN}::bobwya is only designed to be used with the packages:"
+	ewarn "The ${CATEGORY}/${PN}::bobwya package is only designed to be used with the packages:"
 	ewarn " * app-emulation/wine-desktop-common::bobwya"
 	ewarn " * app-emulation/wine-staging::bobwya"
 	ewarn " * app-emulation/wine-vanilla::bobwya"
