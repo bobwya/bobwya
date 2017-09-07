@@ -11,3 +11,8 @@ x11-base/xorg-server
 
 # Mask patched nvidia proprietary drivers
 x11-drivers/nvidia-drivers
+
+# Mask avidemux packages, with SLOT="2.6", in main Gentoo tree
+media-libs/avidemux-core:2.6
+media-libs/avidemux-plugins:2.6
+media-video/avidemux:2.6

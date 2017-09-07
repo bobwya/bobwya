@@ -4,5 +4,5 @@ app-emulation/wine-gecko
 app-emulation/wine-mono
 app-emulation/wine-vanilla
 app-emulation/wine-staging
-app-eselect/wine
+app-eselect/eselect-wine
 virtual/wine
