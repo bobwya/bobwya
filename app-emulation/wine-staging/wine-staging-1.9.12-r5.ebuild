@@ -670,7 +670,7 @@ pkg_postinst() {
 }
 
 pkg_prerm() {
-	eselect wine deregister --verbose --wine --staging "${P}" \
+	eselect wine deregister --force --verbose --wine --staging "${P}" \
 		|| die "eselect wine deregister --force --wine --staging \"${P}\" failed"
 }
 
