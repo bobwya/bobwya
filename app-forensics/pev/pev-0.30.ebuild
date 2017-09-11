@@ -1,11 +1,11 @@
 # Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+# shellcheck disable=SC2034
 EAPI=6
 
 if [[ ${PV} == "9999" ]]; then
-	EGIT_REPO_URI="https://github.com/merces/${PN}.git
-				   git://github.com/merces/${PN}.git"
+	EGIT_REPO_URI="https://github.com/merces/${PN}.git"
 	inherit git-r3
 else
 	SRC_URI="https://github.com/merces/${PN}/archive/v${PV}.tar.gz"
