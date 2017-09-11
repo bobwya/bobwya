@@ -12,13 +12,11 @@ SLOT="0"
 KEYWORDS="~amd64 ~x86"
 IUSE=""
 
-DEPEND=""
-RDEPEND="net-dialup/lrzsz"
+DEPEND="sys-libs/readline:0="
+RDEPEND="${DEPEND}
+		net-dialup/lrzsz"
 
-PATCHES=(
-	"${FILESDIR}/${PN}-0.3-fix-error-unused-result.patch"
-	"${FILESDIR}/${PN}-0.3-makefile-fix.patch"
-)
+PATCHES=( "${FILESDIR}/${PN}-0.5-makefile-fix.patch" )
 
 src_install() {
 	emake BIN="${D}${EROOT%/}/usr/bin" COPT="${CFLAGS}" install
