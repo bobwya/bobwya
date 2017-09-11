@@ -22,7 +22,7 @@ fi
 MY_P="${MY_PN}-${MY_PV}"
 if [[ ${MY_PV} == "9999" ]]; then
 	#KEYWORDS=""
-	EGIT_REPO_URI="git://source.winehq.org/git/wine.git http://source.winehq.org/git/wine.git"
+	EGIT_REPO_URI="https://source.winehq.org/git/wine.git"
 	inherit git-r3
 	SRC_URI=""
 else
@@ -55,7 +55,7 @@ fi
 unset -v last_component minor_version major_version rc_version stable_version version_component_count
 
 DESCRIPTION="Free implementation of Windows(tm) on Unix, without any external patchsets"
-HOMEPAGE="http://www.winehq.org/"
+HOMEPAGE="https://www.winehq.org/"
 
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
@@ -371,7 +371,7 @@ src_prepare() {
 		sed -i '/^MimeType/d' "${S}/loader/wine.desktop" || die "sed failed" #117785
 	fi
 
-	# hi-res default icon, #472990, http://bugs.winehq.org/show_bug.cgi?id=24652
+	# hi-res default icon, #472990, https://bugs.winehq.org/show_bug.cgi?id=24652
 	cp "${EROOT%/}/usr/share/wine/icons/oic_winlogo.ico" dlls/user32/resources/ || die "cp failed"
 
 	l10n_get_locales > "${S}/po/LINGUAS" || die "l10n_get_locales failed" # Make Wine respect LINGUAS
