@@ -26,14 +26,14 @@ For this Wine variant - the external Wine Staging patchset is always applied whe
 		<flag name="pcap">Support packet capture software (e.g. wireshark).</flag>
 		<flag name="perl">Install helpers written in perl (winedump/winemaker).</flag>
 		<flag name="pipelight">Apply Wine Staging patches for Pipelight/Silverlight support.</flag>
-		<flag name="prelink">Run prelink on DLLs during build;
-			For Gentoo hardened, do not disable if you do not know what this means as it can break things at runtime.</flag>
+		<flag name="prelink">Run prelink on DLLs during build.</flag>
 		<flag name="realtime">Pull in <pkg>sys-auth/rtkit</pkg> for low-latency pulseaudio support.</flag>
 		<flag name="run-exes">Use Wine to open and run .EXE and .MSI files.</flag>
 		<flag name="s3tc">Pull in <pkg>media-libs/libtxc_dxtn</pkg> for DXTn texture compression, needed for many games.</flag>
-		<flag name="samba">Add support for NTLM auth. see
-			http://wiki.winehq.org/NtlmAuthSetupGuide and
-			http://wiki.winehq.org/NtlmSigningAndSealing.</flag>
+		<flag name="samba">Add support for NTLM auth. See:
+			https://web.archive.org/web/20160108123008/http://wiki.winehq.org:80/NtlmAuthSetupGuide and
+			https://web.archive.org/web/20150906013746/http://wiki.winehq.org/NtlmSigningAndSealing
+			(these pages are not currently in the updated WineHQ Wiki).</flag>
 		<flag name="themes">Support GTK+:3 window theming through Wine Staging.</flag>
 		<flag name="udev">Use <pkg>virtual/libudev</pkg> to provide plug and play support.</flag>
 		<flag name="vulkan">Apply Wine Staging patches for Vulkan support.</flag>
