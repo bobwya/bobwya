@@ -1,17 +1,18 @@
 # Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+# shellcheck disable=SC2034
 EAPI=6
 VIRTUALX_REQUIRED="pgo"
 WANT_AUTOCONF="2.1"
 MOZ_ESR=1
 
 # This list can be updated with scripts/get_langs.sh from the mozilla overlay
-MOZ_LANGS=( ach af an ar as ast az bg bn-BD bn-IN br bs ca cak cs cy da de dsb
-el en en-GB en-US en-ZA eo es-AR es-CL es-ES es-MX et eu fa ff fi fr fy-NL ga-IE
-gd gl gn gu-IN he hi-IN hr hsb hu hy-AM id is it ja ka kab kk km kn ko lij lt lv
-mai mk ml mr ms nb-NO nl nn-NO or pa-IN pl pt-BR pt-PT rm ro ru si sk sl son sq
-sr sv-SE ta te th tr uk uz vi xh zh-CN zh-TW )
+MOZ_LANGS=( "ach" "af" "an" "ar" "as" "ast" "az" "bg" "bn-BD" "bn-IN" "br" "bs" "ca" "cak" "cs" "cy" "da" "de" "dsb"
+"el" "en" "en-GB" "en-US" "en-ZA" "eo" "es-AR" "es-CL" "es-ES" "es-MX" "et" "eu" "fa" "ff" "fi" "fr" "fy-NL" "ga-IE"
+"gd" "gl" "gn" "gu-IN" "he" "hi-IN" "hr" "hsb" "hu" "hy-AM" "id" "is" "it" "ja" "ka" "kab" "kk" "km" "kn" "ko" "lij" "lt" "lv"
+"mai" "mk" "ml" "mr" "ms" "nb-NO" "nl" "nn-NO" "or" "pa-IN" "pl" "pt-BR" "pt-PT" "rm" "ro" "ru" "si" "sk" "sl" "son" "sq"
+"sr" "sv-SE" "ta" "te" "th" "tr" "uk" "uz" "vi" "xh" "zh-CN" "zh-TW" )
 
 # Convert the ebuild version to the upstream mozilla version, used by mozlinguas
 MOZ_PN="firefox"
@@ -29,7 +30,7 @@ PATCH="${MOZ_PN}-52.0-patches-07"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-EHG_REPO_URI="http://www.rosenauer.org/hg/mozilla"
+EHG_REPO_URI="https://www.rosenauer.org/hg/mozilla"
 
 MOZCONFIG_OPTIONAL_GTK2ONLY=1
 #MOZCONFIG_OPTIONAL_QT5=1
@@ -38,8 +39,8 @@ MOZCONFIG_OPTIONAL_WIFI=1
 inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mozconfig-kde-v6.52 pax-utils xdg-utils autotools virtualx mozlinguas-kde-v2 mercurial
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
-HOMEPAGE="http://www.mozilla.com/firefox
-	${EHG_REPO_URI}"
+HOMEPAGE="https://www.mozilla.com/firefox
+	https://www.rosenauer.org/hg/mozilla"
 
 KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
 
@@ -49,6 +50,7 @@ IUSE="bindist egl +gmp-autoupdate hardened hwaccel jack kde pgo rust selinux tes
 RESTRICT="!bindist? ( bindist )"
 
 PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCH}.tar.xz )
+# shellcheck disable=SC2124
 SRC_URI="${SRC_URI}
 	${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz
 	${PATCH_URIS[@]}"
@@ -150,6 +152,7 @@ src_unpack() {
 src_prepare() {
 	# Default to our patchset
 	local PATCHES=( "${WORKDIR}/firefox" )
+	PATCHES+=( "${FILESDIR}/${PN}-fix_lto.patch" )
 	if use kde; then
 		sed -i -e 's:@BINPATH@/defaults/pref/kde.js:@RESPATH@/browser/@PREF_DIR@/kde.js:' \
 			"${EHG_CHECKOUT_DIR}/firefox-kde.patch" || die "sed failed"
@@ -223,7 +226,7 @@ src_prepare() {
 
 	# Need to update jemalloc's configure
 	cd "${S}"/memory/jemalloc/src || die "cd failed"
-	WANT_AUTOCONF= eautoconf
+	WANT_AUTOCONF='' eautoconf
 }
 
 src_configure() {
@@ -409,7 +412,7 @@ PROFILE_EOF
 	fi
 
 	# Required in order to use plugins and even run firefox on hardened.
-	pax-mark m "${ED}"${MOZILLA_FIVE_HOME}/{firefox,firefox-bin,plugin-container}
+	pax-mark m "${ED}${MOZILLA_FIVE_HOME}"/{firefox,firefox-bin,plugin-container}
 }
 
 pkg_preinst() {
@@ -420,7 +423,7 @@ pkg_preinst() {
 	if use pulseaudio && has_version ">=media-sound/apulse-0.1.9"; then
 		einfo "APULSE found - Generating library symlinks for sound support"
 		local lib
-		pushd "${ED}"${MOZILLA_FIVE_HOME} &>/dev/null || die "pushd failed"
+		pushd "${ED}${MOZILLA_FIVE_HOME}" &>/dev/null || die "pushd failed"
 		for lib in ../apulse/libpulse{.so{,.0},-simple.so{,.0}} ; do
 			# a quickpkg rolled by hand will grab symlinks as part of the package,
 			# so we need to avoid creating them if they already exist.
