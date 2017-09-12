@@ -1,12 +1,13 @@
 # Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+# shellcheck disable=SC2034
 EAPI=6
 
 inherit java-utils-2
 
 DESCRIPTION="Java-based tools to rename TV shows, download subtitles, and validate checksums"
-HOMEPAGE="http://filebot.sourceforge.net/"
+HOMEPAGE="https://www.filebot.net/"
 
 MY_PN="FileBot"
 SRC_URI="https://downloads.sourceforge.net/project/${PN}/${PN}/${MY_PN}_${PV}/${MY_PN}_${PV}-portable.tar.xz"
