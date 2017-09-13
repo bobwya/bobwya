@@ -628,10 +628,8 @@ multilib_src_install_all() {
 	use abi_x86_64 && pax-mark psmr "${D%/}/usr/bin/wine64"{,-preloader} #255055
 
 	if use abi_x86_64 && ! use abi_x86_32; then
-		pushd "/usr/bin/" || die "pushd failed"
-		dosym wine{64,}           #404331
-		dosym wine{64,}-preloader #404331
-		popd || die "popd failed"
+		dosym "wine64" "/usr/bin/wine"                     #404331
+		dosym "wine64-preloader" "/usr/bin/wine-preloader" #404331
 	fi
 
 	# respect LINGUAS when installing man pages, #469418
