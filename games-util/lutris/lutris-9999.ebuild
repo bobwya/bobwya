@@ -1,6 +1,7 @@
 # Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+# shellcheck disable=SC2034
 EAPI=6
 
 PYTHON_COMPAT=( python3_{4,5,6} )
