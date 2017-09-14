@@ -6,6 +6,6 @@
 It works in conjunction with Wine's builtin mscoree.dll, and it is not intended to be useful for any other purpose.
 	</longdescription>
 	<upstream>
-		<remote-id type="github">makewokherd/wine-mono</remote-id>
+		<remote-id type="github">madewokherd/wine-mono</remote-id>
 	</upstream>
 </pkgmetadata>
