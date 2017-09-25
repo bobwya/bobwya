@@ -327,9 +327,17 @@ wine_git_unpack() {
 
 pkg_pretend() {
 	if use oss && ! use kernel_FreeBSD && ! has_version '>=media-sound/oss-4'; then
-		eerror "You cannot build wine with USE=+oss without having support from a FreeBSD kernel"
+		eerror "You cannot build ${CATEGORY}/${PN} with USE=+oss without having support from a FreeBSD kernel"
 		eerror "or >=media-sound/oss-4 (only available through an Overlay)."
 		die "USE=+oss currently unsupported on this system."
+	fi
+
+	local unsupported_freetype='>=media-libs/freetype-2.8.1'
+	if use truetype && has_version ${unsupported_freetype}; then
+		eerror "You cannot build or run ${CATEGORY}/${PN} using the installed version of media-libs/freetype."
+		eerror "See: https://bugs.winehq.org/show_bug.cgi?id=43715"
+		eerror "See: https://bugs.winehq.org/show_bug.cgi?id=43716"
+		die "USE=+truetype unsupported with ${unsupported_freetype}."
 	fi
 
 	ewarn "Hence forth the ${CATEGORY}/${PN} package is split into 4 seperate packages."
