@@ -18,13 +18,6 @@ RDEPEND="app-admin/eselect
 		!!app-emulation/wine:0"
 
 pkg_pretend() {
-	ewarn "If updating the ${CATEGORY}/${PN} package from version 1.4 (or earlier)"
-	ewarn "the eselect configuration ABI has changed."
-	ewarn "Please run the tool:"
-	ewarn " \"${FILESDIR}/update_symlinks.sh\""
-	ewarn "once - immediately after you have updated this package."
-	ewarn
-
 	ewarn "The ${CATEGORY}/${PN}::bobwya package is not compatible with the ::gentoo implementation"
 	ewarn "of multislotted Wine, specifically the packages:"
 	ewarn " * app-emulation/wine-desktop-common::gentoo"
