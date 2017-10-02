@@ -5,7 +5,7 @@
 EAPI=6
 VIRTUALX_REQUIRED="pgo"
 WANT_AUTOCONF="2.1"
-MOZ_ESR=""
+MOZ_ESR=1
 
 # This list can be updated with scripts/get_langs.sh from the mozilla overlay
 MOZ_LANGS=( "ach" "af" "an" "ar" "as" "ast" "az" "bg" "bn-BD" "bn-IN" "br" "bs" "ca" "cak" "cs" "cy" "da" "de" "dsb"
@@ -26,26 +26,27 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${MOZ_PN}-55.0-patches-09"
+PATCH="${MOZ_PN}-52.0-patches-07"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
 EHG_REPO_URI="https://www.rosenauer.org/hg/mozilla"
 
+MOZCONFIG_OPTIONAL_GTK2ONLY=1
 #MOZCONFIG_OPTIONAL_QT5=1
 MOZCONFIG_OPTIONAL_WIFI=1
 
-inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mozconfig-kde-v6.55 pax-utils xdg-utils autotools virtualx mozlinguas-kde-v2 mercurial
+inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mozconfig-kde-v6.52 pax-utils xdg-utils autotools virtualx mozlinguas-kde-v2 mercurial
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.com/firefox
 	https://www.rosenauer.org/hg/mozilla"
 
-KEYWORDS="~amd64 ~x86"
+KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist egl +gmp-autoupdate hardened hwaccel jack kde nsplugin pgo selinux test"
+IUSE="bindist egl eme-free +gmp-autoupdate hardened hwaccel jack kde pgo rust selinux test"
 RESTRICT="!bindist? ( bindist )"
 
 PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCH}.tar.xz )
@@ -58,15 +59,15 @@ ASM_DEPEND=">=dev-lang/yasm-1.1"
 
 RDEPEND="
 	jack? ( virtual/jack )
-	>=dev-libs/nss-3.32
-	>=dev-libs/nspr-4.16
+	>=dev-libs/nss-3.28.3
+	>=dev-libs/nspr-4.13.1
 	selinux? ( sec-policy/selinux-mozilla )
 	kde? ( kde-misc/kmozillahelper:=  )
 	!!www-client/firefox"
 
 DEPEND="${RDEPEND}
 	pgo? ( >=sys-devel/gcc-4.5 )
-	>=virtual/rust-1.15.1
+	rust? ( virtual/rust )
 	amd64? ( ${ASM_DEPEND} virtual/opengl )
 	x86? ( ${ASM_DEPEND} virtual/opengl )"
 
@@ -107,6 +108,11 @@ pkg_setup() {
 		einfo
 		ewarn "You will do a double build for profile guided optimization."
 		ewarn "This will result in your build taking at least twice as long as before."
+	fi
+
+	if use rust; then
+		einfo
+		ewarn "This is very experimental, should only be used by those developing firefox."
 	fi
 }
 
@@ -217,6 +223,10 @@ src_prepare() {
 	# Must run autoconf in js/src
 	cd "${S}"/js/src || die "cd failed"
 	eautoconf old-configure.in
+
+	# Need to update jemalloc's configure
+	cd "${S}"/memory/jemalloc/src || die "cd failed"
+	WANT_AUTOCONF='' eautoconf
 }
 
 src_configure() {
@@ -238,6 +248,8 @@ src_configure() {
 	# enable JACK, bug 600002
 	mozconfig_use_enable jack
 
+	use eme-free && mozconfig_annotate '+eme-free' --disable-eme
+
 	# It doesn't compile on alpha without this LDFLAGS
 	use alpha && append-ldflags "-Wl,--no-relax"
 
@@ -253,6 +265,8 @@ src_configure() {
 
 	mozconfig_annotate '' --enable-extensions="${MEXTENSIONS}"
 
+	mozconfig_use_enable rust
+
 	# Allow for a proper pgo build
 	if use pgo; then
 		echo "mk_add_options PROFILE_GEN_SCRIPT='EXTRA_TEST_ARGS=10 \$(MAKE) -C \$(MOZ_OBJDIR) pgo-profile-run'" >> "${S}/.mozconfig"
@@ -264,8 +278,12 @@ src_configure() {
 	# Finalize and report settings
 	mozconfig_final
 
+	if [[ $(gcc-major-version) -lt 4 ]]; then
+		append-cxxflags -fno-stack-protector
+	fi
+
 	# workaround for funky/broken upstream configure...
-	SHELL="${SHELL:-${EPREFIX}/bin/bash}" \
+	SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 	emake -f client.mk configure
 }
 
@@ -291,10 +309,10 @@ src_compile() {
 		shopt -u nullglob
 		[[ -n "${cards}" ]] && addpredict "${cards}"
 
-		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX}/bin/bash}" \
+		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 		virtx emake -f client.mk profiledbuild || die "virtx emake failed"
 	else
-		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX}/bin/bash}" \
+		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 		emake -f client.mk realbuild
 	fi
 
@@ -326,12 +344,6 @@ src_install() {
 		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
 		|| die "echo failed"
 
-	if use nsplugin; then
-		echo "pref(\"plugin.load_flash_only\", false);" >> \
-			"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
-			|| die "echo failed"
-	fi
-
 	if use kde; then
 		# Add our kde prefs for firefox
 		cp "${EHG_CHECKOUT_DIR}/MozillaFirefox/kde.js" \
@@ -339,16 +351,13 @@ src_install() {
 			|| die "cp failed"
 	fi
 
-	if use gmp-autoupdate; then
-		local plugin
-		for plugin in "${GMP_PLUGIN_LIST[@]}"; do
-			echo "pref(\"media.${plugin}.autoupdate\", false);" >> \
-				"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
-				|| die "echo failed"
-		done
-	fi
+	use gmp-autoupdate || use eme-free || for plugin in "${GMP_PLUGIN_LIST[@]}" ; do
+		echo "pref(\"media.${plugin}.autoupdate\", false);" >> \
+			"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
+			|| die "echo failed"
+	done
 
-	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX}/bin/bash}" \
+	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 	emake DESTDIR="${D}" install
 
 	# Install language packs
@@ -430,7 +439,7 @@ pkg_postinst() {
 	xdg_desktop_database_update
 	gnome2_icon_cache_update
 
-	if ! use gmp-autoupdate; then
+	if ! use gmp-autoupdate && ! use eme-free; then
 		elog "USE='-gmp-autoupdate' has disabled the following plugins from updating or"
 		elog "installing into new profiles:"
 		local plugin
