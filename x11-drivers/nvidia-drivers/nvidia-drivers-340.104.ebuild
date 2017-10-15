@@ -53,6 +53,7 @@ COMMON="
 "
 DEPEND="
 	${COMMON}
+	app-arch/xz-utils
 	kernel_linux? (
 		virtual/linux-sources
 		virtual/pkgconfig
@@ -63,17 +64,18 @@ RDEPEND="
 	acpi? ( sys-power/acpid )
 	X? (
 		<x11-base/xorg-server-1.19.99:=
-		>=x11-libs/libX11-1.6.2[${MULTILIB_USEDEP}]
-		>=x11-libs/libXext-1.3.2[${MULTILIB_USEDEP}]
 		>=x11-libs/libvdpau-0.3-r1[${MULTILIB_USEDEP}]
 		sys-libs/zlib[${MULTILIB_USEDEP}]
-		x11-libs/libXvMC[${MULTILIB_USEDEP}]
+		multilib? (
+			>=x11-libs/libX11-1.6.2[${MULTILIB_USEDEP}]
+			>=x11-libs/libXext-1.3.2[${MULTILIB_USEDEP}]
+		)
 	)
 "
 
 QA_PREBUILT="opt/* usr/lib*"
-
-S="${WORKDIR}/"
+S="${WORKDIR}"
+NVIDIA_SETTINGS_SRC_DIR="${S%/}/${P/drivers/settings}/src"
 
 nvidia_drivers_versions_check() {
 	if use amd64 && has_multilib_profile && \
@@ -150,20 +152,15 @@ pkg_setup() {
 
 	if use driver && use kernel_linux; then
 		MODULE_NAMES="nvidia(video:${S}/kernel)"
+		use uvm && MODULE_NAMES+=" nvidia-uvm(video:${S}/kernel/uvm)"
 
 		# This needs to run after MODULE_NAMES (so that the eclass checks
 		# whether the kernel supports loadable modules) but before BUILD_PARAMS
 		# is set (so that KV_DIR is populated).
 		linux-mod_pkg_setup
 
-		BUILD_PARAMS=(
-			"IGNORE_CC_MISMATCH=yes"
-			"V=1"
-			"SYSSRC=${KV_DIR}"
-			"SYSSRC=${KV_DIR}"
-			"SYSOUT=${KV_OUT_DIR}"
-			"CC=$(tc-getBUILD_CC)"
-		)
+		BUILD_PARAMS="IGNORE_CC_MISMATCH=yes V=1 SYSSRC=${KV_DIR} \
+			SYSOUT=${KV_OUT_DIR} CC=$(tc-getBUILD_CC)"
 
 		# linux-mod_src_compile calls set_arch_to_kernel, which
 		# sets the ARCH to x86 but NVIDIA's wrapping Makefile
@@ -214,9 +211,8 @@ src_prepare() {
 	while IFS= read -r -d '' man_file; do
 		gunzip "${man_file}" || die "gunzip failed"
 	done < <(find "${NV_MAN}" -type f -name "*1.gz" -print0 -exec false {} + \
-				&& die "find failed - no compressed manpage files matched in directory \"${NV_MAN}\""
-			)
-
+		&& die "find failed - no compressed manpage files matched in directory \"${NV_MAN}\""
+	)
 	# Allow user patches so they can support RC kernels and whatever else
 	default
 }
@@ -235,14 +231,21 @@ src_compile() {
 	fi
 
 	if use tools; then
-		local myemakeargs=(
-			"AR=$(tc-getAR)"
+		local -a mybaseemakeargs myemakeargs
+		mybaseemakeargs=(
 			"CC=$(tc-getCC)"
+		)
+
+		myemakeargs=( "${mybaseemakeargs[@]}" )
+		myemakeargs+=(
+			"AR=$(tc-getAR)"
 			"RANLIB=$(tc-getRANLIB)"
 		)
-		emake -C "${S}/nvidia-settings-${PV}/src" clean
+		emake -C "${NVIDIA_SETTINGS_SRC_DIR}" clean
 		# shellcheck disable=SC2068
-		emake -C "${S}/nvidia-settings-${PV}/src" ${myemakeargs[@]} libXNVCtrl.a
+		emake -C "${NVIDIA_SETTINGS_SRC_DIR}" ${myemakeargs[@]} libXNVCtrl.a
+
+		myemakeargs=( "${mybaseemakeargs[@]}" )
 		myemakeargs+=(
 			"LD=$(tc-getCC)"
 			"LIBDIR=$(get_libdir)"
@@ -252,7 +255,7 @@ src_compile() {
 			"NV_USE_BUNDLED_LIBJANSSON=0"
 		)
 		# shellcheck disable=SC2068
-		emake ${myemakeargs[@]} -C "${S}/nvidia-settings-${PV}/src"
+		emake -C "${NVIDIA_SETTINGS_SRC_DIR}" ${myemakeargs[@]}
 	fi
 }
 
@@ -364,8 +367,8 @@ src_install() {
 	fi
 
 	if use tools; then
-		local myemakeinstallargs
-		myemakeinstallargs=(
+		local -a myemakeargs
+		myemakeargs=(
 			"GTK3_AVAILABLE=$(usex gtk3 1 0)"
 			"LIBDIR=${D}/usr/$(get_libdir)"
 			"NV_USE_BUNDLED_LIBJANSSON=0"
@@ -374,13 +377,13 @@ src_install() {
 			"DO_STRIP="
 		)
 		# shellcheck disable=SC2068
-		emake ${myemakeinstallargs[@]} -C "${S}/nvidia-settings-${PV}/src/" DESTDIR="${D}" install
+		emake -C "${NVIDIA_SETTINGS_SRC_DIR}" DESTDIR="${D}" ${myemakeargs[@]} install
 
 		if use static-libs; then
-			dolib.a "${S}/nvidia-settings-${PV}/src/libXNVCtrl/libXNVCtrl.a"
+			dolib.a "${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl/libXNVCtrl.a"
 
 			insinto "/usr/include/NVCtrl"
-			doins "${S}/nvidia-settings-${PV}/src/libXNVCtrl"/*.h
+			doins "${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl"/*.h
 		fi
 
 		insinto "/usr/share/nvidia/"

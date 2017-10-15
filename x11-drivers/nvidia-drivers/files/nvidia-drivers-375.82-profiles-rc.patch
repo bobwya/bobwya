@@ -1,5 +1,5 @@
---- a/nvidia-application-profiles-375.66-rc
-+++ b/nvidia-application-profiles-375.66-rc
+--- a/nvidia-application-profiles-375.82-rc
++++ b/nvidia-application-profiles-375.82-rc
 @@ -48,7 +48,7 @@
          {
            "name" : "NoEnforceShaderInputOutputMatching",

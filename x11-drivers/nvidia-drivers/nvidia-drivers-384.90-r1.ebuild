@@ -78,8 +78,8 @@ RDEPEND="
 "
 
 QA_PREBUILT="opt/* usr/lib*"
-
-S="${WORKDIR}/"
+S="${WORKDIR}"
+NVIDIA_SETTINGS_SRC_DIR="${S%/}/${P/drivers/settings}/src"
 
 nvidia_drivers_versions_check() {
 	if use amd64 && has_multilib_profile && \
@@ -90,11 +90,11 @@ nvidia_drivers_versions_check() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 13; then
+		if kernel_is ge 4 14; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.13"
-			ewarn "<sys-kernel/vanilla-sources-4.13"
+			ewarn "<sys-kernel/gentoo-sources-4.14"
+			ewarn "<sys-kernel/vanilla-sources-4.14"
 		elif use kms && kernel_is lt 4 2; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -177,15 +177,8 @@ pkg_setup() {
 		# is set (so that KV_DIR is populated).
 		linux-mod_pkg_setup
 
-		BUILD_PARAMS=(
-			"IGNORE_CC_MISMATCH=yes"
-			"V=1"
-			"SYSSRC=${KV_DIR}"
-			"SYSSRC=${KV_DIR}"
-			"SYSOUT=${KV_OUT_DIR}"
-			"CC=$(tc-getBUILD_CC)"
-			"NV_VERBOSE=1"
-		)
+		BUILD_PARAMS="IGNORE_CC_MISMATCH=yes V=1 SYSSRC=${KV_DIR} \
+			SYSOUT=${KV_OUT_DIR} CC=$(tc-getBUILD_CC) NV_VERBOSE=1"
 
 		# linux-mod_src_compile calls set_arch_to_kernel, which
 		# sets the ARCH to x86 but NVIDIA's wrapping Makefile
@@ -226,16 +219,15 @@ src_prepare() {
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
 		ewarn "need support with these patches, contact the PaX team."
-		PATCHES+=( "${FILESDIR}/${PN}-375.20-pax-r1.patch" )
+		PATCHES+=( "${FILESDIR}/${PN}-384.47-pax-r1.patch" )
 	fi
 
 	local man_file
 	while IFS= read -r -d '' man_file; do
 		gunzip "${man_file}" || die "gunzip failed"
 	done < <(find "${NV_MAN}" -type f -name "*1.gz" -print0 -exec false {} + \
-				&& die "find failed - no compressed manpage files matched in directory \"${NV_MAN}\""
-			)
-
+		&& die "find failed - no compressed manpage files matched in directory \"${NV_MAN}\""
+	)
 	# Allow user patches so they can support RC kernels and whatever else
 	default
 
@@ -259,16 +251,23 @@ src_compile() {
 	fi
 
 	if use tools; then
-		local myemakeargs=(
-			"AR=$(tc-getAR)"
+		local -a mybaseemakeargs myemakeargs
+		mybaseemakeargs=(
 			"CC=$(tc-getCC)"
-			"RANLIB=$(tc-getRANLIB)"
 			"LIBDIR=$(get_libdir)"
 			"NV_VERBOSE=1"
 			"DO_STRIP="
 		)
+
+		myemakeargs=( "${mybaseemakeargs[@]}" )
+		myemakeargs+=(
+			"AR=$(tc-getAR)"
+			"RANLIB=$(tc-getRANLIB)"
+		)
 		# shellcheck disable=SC2068
-		emake -C "${S}/nvidia-settings-${PV}/src" ${myemakeargs[@]} build-xnvctrl
+		emake -C "${NVIDIA_SETTINGS_SRC_DIR}" ${myemakeargs[@]} build-xnvctrl
+
+		myemakeargs=( "${mybaseemakeargs[@]}" )
 		myemakeargs+=(
 			"LD=$(tc-getCC)"
 			"GTK3_AVAILABLE=$(usex gtk3 1 0)"
@@ -276,7 +275,7 @@ src_compile() {
 			"NV_USE_BUNDLED_LIBJANSSON=0"
 		)
 		# shellcheck disable=SC2068
-		emake ${myemakeargs[@]} -C "${S}/nvidia-settings-${PV}/src"
+		emake -C "${NVIDIA_SETTINGS_SRC_DIR}" ${myemakeargs[@]}
 	fi
 }
 
@@ -393,8 +392,8 @@ src_install() {
 	fi
 
 	if use tools; then
-		local myemakeinstallargs
-		myemakeinstallargs=(
+		local -a myemakeargs
+		myemakeargs=(
 			"GTK3_AVAILABLE=$(usex gtk3 1 0)"
 			"LIBDIR=${D}/usr/$(get_libdir)"
 			"NV_USE_BUNDLED_LIBJANSSON=0"
@@ -403,13 +402,13 @@ src_install() {
 			"DO_STRIP="
 		)
 		# shellcheck disable=SC2068
-		emake ${myemakeinstallargs[@]} -C "${S}/nvidia-settings-${PV}/src/" DESTDIR="${D}" install
+		emake -C "${NVIDIA_SETTINGS_SRC_DIR}" DESTDIR="${D}" ${myemakeargs[@]} install
 
 		if use static-libs; then
-			dolib.a "${S}/nvidia-settings-${PV}/src/libXNVCtrl/libXNVCtrl.a"
+			dolib.a "${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl/libXNVCtrl.a"
 
 			insinto "/usr/include/NVCtrl"
-			doins "${S}/nvidia-settings-${PV}/src/libXNVCtrl"/*.h
+			doins "${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl"/*.h
 		fi
 
 		insinto "/usr/share/nvidia/"
