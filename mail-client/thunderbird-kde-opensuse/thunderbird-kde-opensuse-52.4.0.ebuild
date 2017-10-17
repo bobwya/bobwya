@@ -5,7 +5,7 @@
 EAPI=6
 WANT_AUTOCONF="2.1"
 MOZ_ESR=""
-MOZ_LIGHTNING_VER="5.4.3"
+MOZ_LIGHTNING_VER="5.4.4"
 MOZ_LIGHTNING_GDATA_VER="3.3"
 
 # This list can be updated using scripts/get_langs.sh from the mozilla overlay
@@ -19,7 +19,7 @@ MOZ_PN="thunderbird"
 MOZ_PV="${PV/_beta/b}"
 
 # Patches
-PATCHFF="firefox-52.2-patches-03"
+PATCHFF="firefox-52.4-patches-02"
 
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
@@ -35,7 +35,7 @@ MOZ_P="${MOZ_PN}-${MOZ_PV}"
 MOZCONFIG_OPTIONAL_GTK2ONLY=1
 MOZCONFIG_OPTIONAL_WIFI=1
 
-inherit flag-o-matic toolchain-funcs mozconfig-kde-v6.53 makeedit autotools pax-utils check-reqs nsplugins mozlinguas-kde-v2 xdg-utils gnome2-utils mercurial
+inherit flag-o-matic toolchain-funcs mozconfig-kde-v6.52 makeedit autotools pax-utils check-reqs nsplugins mozlinguas-kde-v2 xdg-utils gnome2-utils mercurial
 
 DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.com/en-US/thunderbird
@@ -242,12 +242,12 @@ src_configure() {
 	fi
 
 	# workaround for funky/broken upstream configure...
-	SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
+	SHELL="${SHELL:-${EPREFIX}/bin/bash}" \
 	emake V=1 -f client.mk configure
 }
 
 src_compile() {
-	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL}" \
+	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX}/bin/bash}" \
 	emake V=1 -f client.mk
 }
 
