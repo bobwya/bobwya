@@ -50,7 +50,7 @@ unset -v last_component minor_version major_version rc_version stable_version ve
 STAGING_P="wine-staging-${MY_PV}"
 STAGING_DIR="${WORKDIR}/${STAGING_P}"
 
-GENTOO_WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20171006"
+GENTOO_WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20171021"
 GENTOO_WINE_EBUILD_COMMON_PN="${GENTOO_WINE_EBUILD_COMMON_P%-*}"
 GENTOO_WINE_EBUILD_COMMON_PV="${GENTOO_WINE_EBUILD_COMMON_P##*-}"
 
