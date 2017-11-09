@@ -90,11 +90,11 @@ nvidia_drivers_versions_check() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 13; then
+		if kernel_is ge 4 14; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.13"
-			ewarn "<sys-kernel/vanilla-sources-4.13"
+			ewarn "<sys-kernel/gentoo-sources-4.14"
+			ewarn "<sys-kernel/vanilla-sources-4.14"
 		elif use kms && kernel_is lt 4 2; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -215,6 +215,7 @@ pkg_setup() {
 
 src_prepare() {
 	local -a PATCHES
+	use tools && PATCHES+=( "${FILESDIR}/${P}-linker.patch" )
 	if use pax_kernel; then
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
@@ -254,6 +255,8 @@ src_compile() {
 		local -a mybaseemakeargs myemakeargs
 		mybaseemakeargs=(
 			"CC=$(tc-getCC)"
+			"LD=$(tc-getCC)"
+			"NVLD=$(tc-getLD)"
 			"LIBDIR=$(get_libdir)"
 			"NV_VERBOSE=1"
 			"DO_STRIP="
@@ -269,7 +272,6 @@ src_compile() {
 
 		myemakeargs=( "${mybaseemakeargs[@]}" )
 		myemakeargs+=(
-			"LD=$(tc-getCC)"
 			"GTK3_AVAILABLE=$(usex gtk3 1 0)"
 			"NVML_ENABLED=0"
 			"NV_USE_BUNDLED_LIBJANSSON=0"
@@ -488,7 +490,7 @@ src_install-libs() {
 
 		if use wayland && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then
 			NV_GLX_LIBRARIES+=(
-				"libnvidia-egl-wayland.so.1.0.1" .
+				"libnvidia-egl-wayland.so.1.0.2" .
 			)
 		fi
 

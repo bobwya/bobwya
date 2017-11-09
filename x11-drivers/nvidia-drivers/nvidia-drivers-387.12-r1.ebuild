@@ -215,7 +215,7 @@ pkg_setup() {
 
 src_prepare() {
 	local -a PATCHES
-	use tools && PATCHES+=( "${FILESDIR}/${PN}-387.12-linker.patch" )
+	use tools && PATCHES+=( "${FILESDIR}/${P}-linker.patch" )
 	if use pax_kernel; then
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"

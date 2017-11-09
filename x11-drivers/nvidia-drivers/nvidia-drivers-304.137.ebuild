@@ -84,11 +84,11 @@ nvidia_drivers_versions_check() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 10; then
+		if kernel_is ge 4 13; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.10"
-			ewarn "<sys-kernel/vanilla-sources-4.10"
+			ewarn "<sys-kernel/gentoo-sources-4.13"
+			ewarn "<sys-kernel/vanilla-sources-4.13"
 		fi
 	fi
 
