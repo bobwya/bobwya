@@ -54,7 +54,7 @@ else
 fi
 unset -v last_component minor_version major_version rc_version stable_version version_component_count
 
-GENTOO_WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20171021"
+GENTOO_WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20171106"
 GENTOO_WINE_EBUILD_COMMON_PN="${GENTOO_WINE_EBUILD_COMMON_P%-*}"
 GENTOO_WINE_EBUILD_COMMON_PV="${GENTOO_WINE_EBUILD_COMMON_P##*-}"
 
