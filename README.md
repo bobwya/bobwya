@@ -23,7 +23,7 @@ Testing and updating of these ebuild package build scripts is irregular. So YMMV
 	media-video/h264enc : h264enc is an advanced and powerful interactive menu-driven shell script written for the GNU/Linux operating system to encode video files
 	net-dialup/dterm : dterm is a simple terminal emulator for serial connections.
 	net-dns/ndjbdns : Fork of djbdns, a collection of DNS client/server software.
-	net-p2p/eiskaltdcpp  :  EiskaltDC++ is a cross-platform program that uses the Direct Connect and ADC protocols.i
+	net-p2p/eiskaltdcpp  :  EiskaltDC++ is a cross-platform program that uses the Direct Connect and ADC protocols.
 	sys-apps/cpuid : Utility to get detailed information about CPU(s) using the CPUID instruction.
 	sys-apps/hw-probe : A tool to probe system hardware, check operability and upload results.
 	sys-fs/exfat-nofuse : Non-fuse kernel driver for exFat and VFat file systems.
