@@ -9,11 +9,8 @@ Testing and updating of these ebuild package build scripts is irregular. So YMMV
 -------------------------
 
 	app-arch/unshield : Tool and library to extract CAB files from InstallShield installers.
-	app-backup/fsarchiver : Flexible filesystem archiver for backup and deployment tool.
 	app-benchmarks/i7z : A better Intel i7 (and now i3, i5) CPU reporting tool for Linux.
-	app-crypt/chntpw : Offline NT Password & Registry Editor.
 	app-forensics/pev : PE file analysis toolkit - for examining Windows PE binary files.
-	app-text/hunspell : Hunspell is the spell checker of LibreOffice, OpenOffice.org, Mozilla Firefox 3 & Thunderbird, Google Chrome, etc.
 	dev-cpp/pion : C++ framework for building lightweight HTTP interfaces.
 	games-fps/dhewm3 : Doom 3 GPL source modification (with updates including SDL2 support).
 	games-util/lutris : Lutris is an open gaming platform for Linux. It helps you install and manage your games in a unified interface.
@@ -21,18 +18,19 @@ Testing and updating of these ebuild package build scripts is irregular. So YMMV
 	mail-client/thunderbird-kde-opensuse : Thunderbird mail client, with OpenSUSE Patchset for better KDE Desktop integration. 
 	media-libs/avidemux-core : Avidemux is a free open-source program designed for multi-purpose video editing and processing (core libraries).
 	media-libs/avidemux-plugins : Avidemux is a free open-source program designed for multi-purpose video editing and processing (plugins).
-	media-tv/freetuxtv : freetuxtv GTK+ WebTV and Web Radio player for Linux.
 	media-video/avidemux : Avidemux is a free open-source program designed for multi-purpose video editing and processing (main frontends).
-	media-video/filebot-bin : FileBot tool for organizing and renaming your movies, tv shows or anime, and music. (java jar)
-	media-video/handbrake : Handbrake A/V Conversion Tool
+	media-video/filebot : Java-based tools to rename TV shows, download subtitles, and validate checksums.
 	media-video/h264enc : h264enc is an advanced and powerful interactive menu-driven shell script written for the GNU/Linux operating system to encode video files
 	net-dialup/dterm : dterm is a simple terminal emulator for serial connections.
-	net-p2p/eiskaltdcpp  :  EiskaltDC++ is a cross-platform program that uses the Direct Connect and ADC protocols.
-	sys-apps/uksmstat : Simple tool to monitor and control UKSM.
-	sys-auth/pam_kwallet : PAM integration to automatically unlock kwallet when logging into a KDE4 Desktop Session.
-	sys-auth/polkit-explorer : Polkit Explorer reads in a Polkit .policy file, parses its XML contents, and presents the information it contains, on a more human-readable GUI window.
-	x11-apps/starfield : Reminiscence to the screensaver that shipped, with Windows, until WinXP...
+	net-dns/ndjbdns : Fork of djbdns, a collection of DNS client/server software.
+	net-p2p/eiskaltdcpp  :  EiskaltDC++ is a cross-platform program that uses the Direct Connect and ADC protocols.i
+	sys-apps/cpuid : Utility to get detailed information about CPU(s) using the CPUID instruction.
+	sys-apps/hw-probe : A tool to probe system hardware, check operability and upload results.
+	sys-fs/exfat-nofuse : Non-fuse kernel driver for exFat and VFat file systems.
+	sys-fs/exfat-utils-nofuse : exFAT filesystem utilities (without fuse).
 	www-client/firefox-kde-opensuse : Firefox web browser, with OpenSUSE Patchset, for better KDE Desktop integration.
+	x11-apps/starfield : Reminiscence to the screensaver that shipped, with Windows, until Windows XP.
+
 
 ### Customised Wine package set
 -------------------------------
