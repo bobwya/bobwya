@@ -5,7 +5,7 @@ EAPI=6
 
 PLOCALES="be bg cs de el en es eu fr hu it pl pt_BR ru sk sr sr@latin sv_SE uk vi zh_CN"
 
-inherit cmake-utils l10n fdo-mime gnome2-utils
+inherit cmake-utils l10n gnome2-utils xdg-utils
 
 DESCRIPTION="Qt based client for DirectConnect and ADC protocols, based on DC++ library"
 HOMEPAGE="https://github.com/eiskaltdcpp/eiskaltdcpp"
@@ -189,11 +189,11 @@ pkg_preinst() {
 }
 
 pkg_postinst() {
-	fdo-mime_desktop_database_update
+	xdg-utils_desktop_database_update
 	gnome2_icon_cache_update
 }
 
 pkg_postrm() {
-	fdo-mime_desktop_database_update
+	xdg-utils_desktop_database_update
 	gnome2_icon_cache_update
 }
