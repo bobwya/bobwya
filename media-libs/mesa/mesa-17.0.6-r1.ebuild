@@ -12,7 +12,7 @@ OPENGL_DIR="${PN}"
 MY_P="${P/_/-}"
 
 DESCRIPTION="OpenGL-like graphic library for Linux"
-HOMEPAGE="https://www.mesa3d.org/
+HOMEPAGE="https://www.mesa3d.org/ https://mesa.freedesktop.org/
 		https://mesa.freedesktop.org/"
 if [[ "${PV}" == "9999" ]]; then
 	inherit git-r3
@@ -110,8 +110,8 @@ RDEPEND="
 			sys-devel/llvm:4[${MULTILIB_USEDEP}]
 			>=sys-devel/llvm-3.6.0:0[${MULTILIB_USEDEP}]
 		)
+		<sys-devel/llvm-5:=[${MULTILIB_USEDEP}]
 	)
-	<sys-devel/llvm-5:=[${MULTILIB_USEDEP}]
 	opencl? (
 		app-eselect/eselect-opencl
 		dev-libs/libclc
@@ -144,19 +144,25 @@ RDEPEND="${RDEPEND}
 	video_cards_radeonsi? ( ${LIBDRM_DEPSTRING}[video_cards_amdgpu] )
 "
 
-# FIXME: kill the sys-devel/llvm[video_cards_radeon] compat once
-# LLVM < 3.9 is out of the game
 DEPEND="${RDEPEND}
 	${PYTHON_DEPS}
 	llvm? (
-		video_cards_radeonsi? ( || (
-			sys-devel/llvm[llvm_targets_AMDGPU]
-			sys-devel/llvm[video_cards_radeon]
-		) )
+		video_cards_radeonsi? (
+			|| (
+				sys-devel/llvm[llvm_targets_AMDGPU]
+				sys-devel/llvm[video_cards_radeon]
+			)
+		)
 	)
 	opencl? (
-		>=sys-devel/llvm-3.6.0:=[${MULTILIB_USEDEP}]
-		>=sys-devel/clang-3.6.0:=[${MULTILIB_USEDEP}]
+		|| (
+			sys-devel/llvm:4[${MULTILIB_USEDEP}]
+			>=sys-devel/llvm-3.6.0:0[${MULTILIB_USEDEP}]
+		)
+		|| (
+			sys-devel/clang:4[${MULTILIB_USEDEP}]
+			>=sys-devel/clang-3.6.0:0[${MULTILIB_USEDEP}]
+		)
 		>=sys-devel/gcc-4.6
 	)
 	sys-devel/gettext
@@ -211,6 +217,17 @@ driver_enable() {
 	fi
 }
 
+llvm_check_depends() {
+	local flags="${MULTILIB_USEDEP}"
+	if use video_cards_r600 || use video_cards_radeon || use video_cards_radeonsi; then
+		flags+=",llvm_targets_AMDGPU(-)"
+	fi
+	if use opencl; then
+		has_version "sys-devel/clang[${flags}]" || return 1
+	fi
+	has_version "sys-devel/llvm[${flags}]"
+}
+
 pkg_setup() {
 	# warning message for bug 459306
 	if use llvm && has_version sys-devel/llvm[!debug=]; then
@@ -218,7 +235,7 @@ pkg_setup() {
 		ewarn "detected! This can cause problems. For details, see bug 459306."
 	fi
 
-	if use llvm || use opencl; then
+	if use llvm; then
 		LLVM_MAX_SLOT=4 llvm_pkg_setup
 	fi
 	python-any-r1_pkg_setup

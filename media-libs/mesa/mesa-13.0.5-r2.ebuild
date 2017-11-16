@@ -13,7 +13,7 @@ MY_P="${P/_/-}"
 FOLDER="${PV/_rc*/}"
 
 DESCRIPTION="OpenGL-like graphic library for Linux"
-HOMEPAGE="https://www.mesa3d.org/
+HOMEPAGE="https://www.mesa3d.org/ https://mesa.freedesktop.org/
 		https://mesa.freedesktop.org/"
 if [[ "${PV}" == "9999" ]]; then
 	inherit git-r3
@@ -103,8 +103,8 @@ RDEPEND="
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
 		)
 		>=sys-devel/llvm-3.6.0:0=[${MULTILIB_USEDEP}]
+		<sys-devel/llvm-5:=[${MULTILIB_USEDEP}]
 	)
-	<sys-devel/llvm-5:=[${MULTILIB_USEDEP}]
 	nettle? ( dev-libs/nettle:=[${MULTILIB_USEDEP}] )
 	!nettle? (
 		gcrypt? ( dev-libs/libgcrypt:=[${MULTILIB_USEDEP}] )
@@ -145,15 +145,15 @@ RDEPEND="${RDEPEND}
 	video_cards_radeonsi? ( ${LIBDRM_DEPSTRING}[video_cards_amdgpu] )
 "
 
-# FIXME: kill the sys-devel/llvm[video_cards_radeon] compat once
-# LLVM < 3.9 is out of the game
 DEPEND="${RDEPEND}
 	${PYTHON_DEPS}
 	llvm? (
-		video_cards_radeonsi? ( || (
-			sys-devel/llvm[llvm_targets_AMDGPU]
-			sys-devel/llvm[video_cards_radeon]
-		) )
+		video_cards_radeonsi? (
+			|| (
+				sys-devel/llvm[llvm_targets_AMDGPU]
+				sys-devel/llvm[video_cards_radeon]
+			)
+		)
 	)
 	opencl? (
 		>=sys-devel/llvm-3.4.2:0=[${MULTILIB_USEDEP}]
@@ -210,6 +210,17 @@ driver_enable() {
 			driver_array+=",${driver}"
 		done
 	fi
+}
+
+llvm_check_depends() {
+	local flags="${MULTILIB_USEDEP}"
+	if use video_cards_r600 || use video_cards_radeon || use video_cards_radeonsi; then
+		flags+=",llvm_targets_AMDGPU(-)"
+	fi
+	if use opencl; then
+		has_version "sys-devel/clang[${flags}]" || return 1
+	fi
+	has_version "sys-devel/llvm[${flags}]"
 }
 
 pkg_setup() {
