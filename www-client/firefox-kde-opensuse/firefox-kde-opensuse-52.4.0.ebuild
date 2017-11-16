@@ -157,13 +157,17 @@ src_prepare() {
 		sed -i -e 's:@BINPATH@/defaults/pref/kde.js:@RESPATH@/browser/@PREF_DIR@/kde.js:' \
 			"${EHG_CHECKOUT_DIR}/firefox-kde.patch" || die "sed failed"
 		# Gecko/toolkit OpenSUSE KDE integration patchset
-		PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-kde.patch" )
-		PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-language.patch" )
-		PATCHES+=( "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch" )
+		PATCHES+=(
+			"${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
+			"${EHG_CHECKOUT_DIR}/mozilla-language.patch"
+			"${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
+		)
 		# Firefox OpenSUSE KDE integration patchset
-		PATCHES+=( "${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch" )
-		PATCHES+=( "${EHG_CHECKOUT_DIR}/firefox-kde.patch" )
-		PATCHES+=( "${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch" )
+		PATCHES+=(
+			"${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
+			"${EHG_CHECKOUT_DIR}/firefox-kde.patch"
+			"${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
+		)
 		# Uncomment the next line to enable KDE support debugging (additional console output)...
 		#PATCHES+=( "${FILESDIR}/firefox-kde-opensuse-kde-debug.patch" )
 		# Uncomment the following patch line to force Plasma/Qt file dialog for Firefox...

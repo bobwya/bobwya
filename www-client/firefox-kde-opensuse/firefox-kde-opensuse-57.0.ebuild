@@ -26,7 +26,7 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${MOZ_PN}-56.0-patches-07"
+PATCH="${MOZ_PN}-57.0-patches-01"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
@@ -35,7 +35,8 @@ EHG_REPO_URI="https://www.rosenauer.org/hg/mozilla"
 #MOZCONFIG_OPTIONAL_QT5=1
 MOZCONFIG_OPTIONAL_WIFI=1
 
-inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mozconfig-kde-v6.56 pax-utils xdg-utils autotools virtualx mozlinguas-kde-v2 mercurial
+inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mozconfig-kde-v6.57 pax-utils xdg-utils autotools mercurial \
+	virtualx mozlinguas-v2
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.com/firefox
@@ -45,7 +46,7 @@ KEYWORDS="~amd64 ~x86"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist egl eme-free +gmp-autoupdate hardened hwaccel jack kde nsplugin pgo selinux test"
+IUSE="bindist egl eme-free +gmp-autoupdate hardened hwaccel jack kde nsplugin pgo +screenshot selinux test"
 RESTRICT="!bindist? ( bindist )"
 
 PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCH}.tar.xz )
@@ -58,17 +59,17 @@ ASM_DEPEND=">=dev-lang/yasm-1.1"
 
 RDEPEND="
 	jack? ( virtual/jack )
-	>=dev-libs/nss-3.32.1
-	>=dev-libs/nspr-4.16
+	>=dev-libs/nss-3.33
+	>=dev-libs/nspr-4.17
 	selinux? ( sec-policy/selinux-mozilla )
 	kde? ( kde-misc/kmozillahelper:=  )
 	!!www-client/firefox"
 
 DEPEND="${RDEPEND}
 	pgo? ( >=sys-devel/gcc-4.5 )
-	>=virtual/rust-1.17.1
-	>=dev-util/cargo-0.17.1
-	amd64? ( ${ASM_DEPEND} virtual/opengl )
+	amd64? ( ${ASM_DEPEND} virtual/opengl
+			>=sys-devel/llvm-4.0.1
+			>=sys-devel/clang-4.0.1 )
 	x86? ( ${ASM_DEPEND} virtual/opengl )"
 
 S="${WORKDIR}/firefox-${MOZ_PV}"
@@ -86,6 +87,9 @@ fi
 
 pkg_setup() {
 	moz_pkgsetup
+
+	# Build stylo
+	use amd64 &&  export BINDGEN_CFLAGS=$(pkg-config --cflags nspr pixman-1 | xargs)
 
 	# Avoid PGO profiling problems due to enviroment leakage
 	# These should *always* be cleaned up anyway
@@ -154,7 +158,6 @@ src_prepare() {
 		# Gecko/toolkit OpenSUSE KDE integration patchset
 		PATCHES+=(
 			"${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
-			"${EHG_CHECKOUT_DIR}/mozilla-language.patch"
 			"${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
 		)
 		# Firefox OpenSUSE KDE integration patchset
@@ -330,6 +333,12 @@ src_install() {
 		cat "${FILESDIR}"/gentoo-hwaccel-prefs.js-1 >> \
 		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
 		|| die "cat failed"
+	fi
+
+	if ! use screenshot; then
+		echo "pref(\"extensions.screenshots.disabled\", true);" >> \
+			"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
+			|| die "echo failed"
 	fi
 
 	echo "pref(\"extensions.autoDisableScopes\", 3);" >> \
