@@ -380,6 +380,43 @@ src_prepare() {
 	)
 	eend $? || die "(subshell) script: \"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/scripts/${MY_PN}-multilib-portage-sed.sh\"."
 
+	local -a array_locale_man=( "de" "fr" "pl" )
+
+	# respect LINGUAS when installing man pages, #469418
+	local makefile_in sed_expression
+	# shellcheck disable=SC2068
+	for locale_man in ${array_locale_man[@]}; do
+		# shellcheck disable=SC2086
+		use linguas_${locale_man} && continue
+
+		sed_expression="${sed_expression}s/[\-\_[:alnum:]]*\.${locale_man}\.UTF-8\.man\.in//g;"
+	done
+	[[ -z "${sed_expression}" ]] || while IFS= read -r -d '' makefile_in; do
+		sed -i -e "${sed_expression}" "${makefile_in}" || die "sed failed"
+	done < <(find "${S%/}"/{loader,programs,server,tools} -type f -name "Makefile.in" -printf '%p\0' -exec false {} + \
+				&& die "find failed - no Makefile.in file matches in \"${S}\""
+			)
+
+	# generate wine64 man pages for 64-bit bit only installation, #617864
+	if use abi_x86_64 && ! use abi_x86_32; then
+		local -r loader_directory="${S%/}/loader"
+		local man_in
+		# shellcheck disable=SC2068
+		for locale_man in ${array_locale_man[@]}; do
+			# shellcheck disable=SC2086
+			use linguas_${locale_man} || continue
+
+			man_in="wine.${locale_man}.UTF-8.man.in"
+			mv	"${loader_directory}/${man_in}" "${loader_directory}/${man_in/#wine/wine64}" \
+				|| die "mv failed"
+		done
+		man_in="wine.man.in"
+		mv	"${loader_directory}/${man_in}" "${loader_directory}/${man_in/#wine/wine64}" \
+			|| die "mv failed"
+		sed -i -e '/wine\(\.[\_[:alpha:]]\+\.UTF-8\|\)\.man\.in/{s/wine\./wine64\./g}' "${loader_directory}/Makefile.in" \
+			|| die "sed failed"
+	fi
+
 	default
 
 	eapply_bin
@@ -543,20 +580,7 @@ multilib_src_install_all() {
 			&& die "find failed - no binary file matches in \"${D%/}${MY_PREFIX}/bin\""
 			)
 
-	# respect LINGUAS when installing man pages, #469418
-	local locale_man locale_man_directory
-	for locale_man in "de" "fr" "pl"; do
-		while IFS= read -r -d '' locale_man_directory; do
-			use linguas_${locale_man} && continue
-
-			rm -r "${locale_man_directory}" || die "rm failed"
-		done < <(find "${D%/}${MY_MANDIR}" -mindepth 1 -maxdepth 1 -type d \
-			\( -name "${locale_man}" -o -name "${locale_man}.*" \) -print0 -exec false {} + \
-				&& die "find failed - no \"${locale_man}\" locale manpage directory matches in \"${D%/}${MY_MANDIR}\""
-			)
-	done
 }
-
 pkg_postinst() {
 	local wine_git_commit wine_git_date
 
