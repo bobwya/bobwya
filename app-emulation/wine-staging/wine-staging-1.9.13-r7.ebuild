@@ -45,7 +45,7 @@ unset -v last_component minor_version major_version stable_version version_compo
 STAGING_P="wine-staging-${MY_PV}"
 STAGING_DIR="${WORKDIR}/${STAGING_P}${STAGING_SUFFIX}"
 
-GENTOO_WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20171021"
+GENTOO_WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20171106"
 GENTOO_WINE_EBUILD_COMMON_PN="${GENTOO_WINE_EBUILD_COMMON_P%-*}"
 GENTOO_WINE_EBUILD_COMMON_PV="${GENTOO_WINE_EBUILD_COMMON_P##*-}"
 
@@ -420,12 +420,12 @@ src_prepare() {
 			"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.18-freetype-2.8.1-segfault.patch"    # 631676
 			"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.18-freetype-2.8.1-drop-glyphs.patch" # 631676
 		)
-		PATCHES_BIN+=( "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.18-freetype-2.8.1-implmenet_minimum_em_size_required_by_opentype_1.8.2.patch" ) #631376
+		PATCHES_BIN+=( "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.18-freetype-2.8.1-implement_minimum_em_size_required_by_opentype_1.8.2.patch" ) #631376
 	fi
 	use osmesa && PATCHES+=( "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.7-osmesa-configure_support_recent_versions.patch" ) #429386
 
 	# https://bugs.winehq.org/show_bug.cgi?id=40851
-	use cups && PATCHES+=( "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.9.14-cup-2.2-cupsgetppd-build-fix.patch" )
+	use cups && PATCHES+=( "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.9.14-cups-2.2-cupsgetppd-build-fix.patch" )
 
 	[[ "${MY_PV}" == "9999" ]] && sieve_patchset_array_by_git_commit "${S}" "PATCHES" "PATCHES_BIN"
 
@@ -472,6 +472,43 @@ src_prepare() {
 	sed -r -i -e '/^AC_INIT\(.*\)$/{s/\[Wine\]/\[Wine Staging\]/}' "${S}/configure.ac" || die "sed failed"
 	if [[ ! -z "${STAGING_SUFFIX}" ]]; then
 		sed -i -e 's/Staging/Staging'"${STAGING_SUFFIX}"'/' "${S}/libs/wine/Makefile.in" || die "sed failed"
+	fi
+
+	local -a array_locale_man=( "de" "fr" "pl" )
+
+	# respect LINGUAS when installing man pages, #469418
+	local makefile_in sed_expression
+	# shellcheck disable=SC2068
+	for locale_man in ${array_locale_man[@]}; do
+		# shellcheck disable=SC2086
+		use linguas_${locale_man} && continue
+
+		sed_expression="${sed_expression}s/[\-\_[:alnum:]]*\.${locale_man}\.UTF-8\.man\.in//g;"
+	done
+	[[ -z "${sed_expression}" ]] || while IFS= read -r -d '' makefile_in; do
+		sed -i -e "${sed_expression}" "${makefile_in}" || die "sed failed"
+	done < <(find "${S%/}"/{loader,programs,server,tools} -type f -name "Makefile.in" -printf '%p\0' -exec false {} + \
+				&& die "find failed - no Makefile.in file matches in \"${S}\""
+			)
+
+	# generate wine64 man pages for 64-bit bit only installation, #617864
+	if use abi_x86_64 && ! use abi_x86_32; then
+		local -r loader_directory="${S%/}/loader"
+		local man_in
+		# shellcheck disable=SC2068
+		for locale_man in ${array_locale_man[@]}; do
+			# shellcheck disable=SC2086
+			use linguas_${locale_man} || continue
+
+			man_in="wine.${locale_man}.UTF-8.man.in"
+			mv	"${loader_directory}/${man_in}" "${loader_directory}/${man_in/#wine/wine64}" \
+				|| die "mv failed"
+		done
+		man_in="wine.man.in"
+		mv	"${loader_directory}/${man_in}" "${loader_directory}/${man_in/#wine/wine64}" \
+			|| die "mv failed"
+		sed -i -e '/wine\(\.[\_[:alpha:]]\+\.UTF-8\|\)\.man\.in/{s/wine\./wine64\./g}' "${loader_directory}/Makefile.in" \
+			|| die "sed failed"
 	fi
 
 	default
@@ -640,20 +677,7 @@ multilib_src_install_all() {
 			&& die "find failed - no binary file matches in \"${D%/}${MY_PREFIX}/bin\""
 			)
 
-	# respect LINGUAS when installing man pages, #469418
-	local locale_man locale_man_directory
-	for locale_man in "de" "fr" "pl"; do
-		while IFS= read -r -d '' locale_man_directory; do
-			use linguas_${locale_man} && continue
-
-			rm -r "${locale_man_directory}" || die "rm failed"
-		done < <(find "${D%/}${MY_MANDIR}" -mindepth 1 -maxdepth 1 -type d \
-			\( -name "${locale_man}" -o -name "${locale_man}.*" \) -print0 -exec false {} + \
-				&& die "find failed - no \"${locale_man}\" locale manpage directory matches in \"${D%/}${MY_MANDIR}\""
-			)
-	done
 }
-
 pkg_postinst() {
 	local wine_git_commit wine_git_date
 
