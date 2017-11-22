@@ -534,8 +534,8 @@ multilib_src_install_all() {
 		dosym "wine64" "/usr/bin/wine"                     #404331
 		dosym "wine64-preloader" "/usr/bin/wine-preloader" #404331
 	fi
-
 }
+
 pkg_postinst() {
 	xdg_mimeinfo_database_update
 
