@@ -379,12 +379,8 @@ src_install() {
 		# shellcheck disable=SC2068
 		emake -C "${NVIDIA_SETTINGS_SRC_DIR}" DESTDIR="${D}" ${myemakeargs[@]} install
 
-		if use static-libs; then
-			dolib.a "${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl/libXNVCtrl.a"
-
-			insinto "/usr/include/NVCtrl"
-			doins "${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl"/*.h
-		fi
+		insinto "/usr/include/NVCtrl"
+		doins "${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl"/*.h
 
 		insinto "/usr/share/nvidia/"
 		doins "nvidia-application-profiles-${PV}-key-documentation"
@@ -422,14 +418,17 @@ src_install() {
 }
 
 src_install-libs() {
-	local inslibdir nv_libdir CL_ROOT GL_ROOT
+	local inslibdir nv_libdir nv_static_libdir CL_ROOT GL_ROOT
 	inslibdir="$(get_libdir)"
 	GL_ROOT="/usr/$(get_libdir)/opengl/nvidia/lib"
 	CL_ROOT="/usr/$(get_libdir)/OpenCL/vendors/nvidia"
-	nv_libdir="${NV_OBJ}"
-
 	if use kernel_linux && has_multilib_profile && [[ "${ABI}" == "x86" ]]; then
 		nv_libdir="${NV_OBJ}/32"
+		nv_static_libdir="${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl/32"
+	else
+
+		nv_libdir="${NV_OBJ}"
+		nv_static_libdir="${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl"
 	fi
 
 	if use X; then

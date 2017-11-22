@@ -215,12 +215,12 @@ pkg_setup() {
 
 src_prepare() {
 	local -a PATCHES
-	use tools && PATCHES+=( "${FILESDIR}/${P}-linker.patch" )
+	PATCHES+=( "${FILESDIR}/${P}-profiles-rc.patch" )
 	if use pax_kernel; then
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
 		ewarn "need support with these patches, contact the PaX team."
-		PATCHES+=( "${FILESDIR}/${PN}-384.47-pax-r1.patch" )
+		PATCHES+=( "${FILESDIR}/${PN}-375.20-pax-r1.patch" )
 	fi
 
 	local man_file
@@ -232,9 +232,17 @@ src_prepare() {
 	# Allow user patches so they can support RC kernels and whatever else
 	default
 
-	if ! [ -f nvidia_icd.json ]; then
+	if [ ! -f nvidia_icd.json ]; then
 		cp "nvidia_icd.json.template" "nvidia_icd.json" || die "cp failed"
 		sed -i -e 's:__NV_VK_ICD__:libGLX_nvidia.so.0:g' "nvidia_icd.json" || die "sed failed"
+	fi
+
+	# FIXME: horrible hack!
+	if use tools && has_multilib_profile && use multilib && use abi_x86_32; then
+		pushd "${NVIDIA_SETTINGS_SRC_DIR}" || die "pushd failed"
+		rsync -ach "libXNVCtrl/" "libXNVCtrl/32/" || die "rsync failed"
+		eapply "${FILESDIR}/${PN}-make_libxnvctrl_multilib.patch"
+		popd || die "popd failed"
 	fi
 }
 
@@ -255,8 +263,6 @@ src_compile() {
 		local -a mybaseemakeargs myemakeargs
 		mybaseemakeargs=(
 			"CC=$(tc-getCC)"
-			"LD=$(tc-getCC)"
-			"NVLD=$(tc-getLD)"
 			"LIBDIR=$(get_libdir)"
 			"NV_VERBOSE=1"
 			"DO_STRIP="
@@ -269,9 +275,14 @@ src_compile() {
 		)
 		# shellcheck disable=SC2068
 		emake -C "${NVIDIA_SETTINGS_SRC_DIR}" ${myemakeargs[@]} build-xnvctrl
+		if has_multilib_profile && use multilib && use abi_x86_32; then
+			# shellcheck disable=SC2068
+			emake -C "${NVIDIA_SETTINGS_SRC_DIR}" ${myemakeargs[@]} build-xnvctrl32
+		fi
 
 		myemakeargs=( "${mybaseemakeargs[@]}" )
 		myemakeargs+=(
+			"LD=$(tc-getCC)"
 			"GTK3_AVAILABLE=$(usex gtk3 1 0)"
 			"NVML_ENABLED=0"
 			"NV_USE_BUNDLED_LIBJANSSON=0"
@@ -406,12 +417,8 @@ src_install() {
 		# shellcheck disable=SC2068
 		emake -C "${NVIDIA_SETTINGS_SRC_DIR}" DESTDIR="${D}" ${myemakeargs[@]} install
 
-		if use static-libs; then
-			dolib.a "${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl/libXNVCtrl.a"
-
-			insinto "/usr/include/NVCtrl"
-			doins "${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl"/*.h
-		fi
+		insinto "/usr/include/NVCtrl"
+		doins "${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl"/*.h
 
 		insinto "/usr/share/nvidia/"
 		doins "nvidia-application-profiles-${PV}-key-documentation"
@@ -449,14 +456,17 @@ src_install() {
 }
 
 src_install-libs() {
-	local inslibdir nv_libdir CL_ROOT GL_ROOT
+	local inslibdir nv_libdir nv_static_libdir CL_ROOT GL_ROOT
 	inslibdir="$(get_libdir)"
 	GL_ROOT="/usr/$(get_libdir)/opengl/nvidia/lib"
 	CL_ROOT="/usr/$(get_libdir)/OpenCL/vendors/nvidia"
-	nv_libdir="${NV_OBJ}"
-
 	if use kernel_linux && has_multilib_profile && [[ "${ABI}" == "x86" ]]; then
 		nv_libdir="${NV_OBJ}/32"
+		nv_static_libdir="${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl/32"
+	else
+
+		nv_libdir="${NV_OBJ}"
+		nv_static_libdir="${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl"
 	fi
 
 	if use X; then
@@ -490,7 +500,7 @@ src_install-libs() {
 
 		if use wayland && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then
 			NV_GLX_LIBRARIES+=(
-				"libnvidia-egl-wayland.so.1.0.2" .
+				"libnvidia-egl-wayland.so.${NV_SOVER}" .
 			)
 		fi
 
@@ -516,6 +526,8 @@ src_install-libs() {
 		xargs -n2 <<<"${NV_GLX_LIBRARIES[@]}" | while read -r nv_LIB nv_DEST; do
 			donvidia "${nv_libdir}/${nv_LIB}" "${nv_DEST}"
 		done
+
+		use static-libs && dolib.a "${nv_static_libdir}/libXNVCtrl.a"
 	fi
 }
 

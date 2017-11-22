@@ -1,0 +1,28 @@
+diff -u1rN a/libXNVCtrl/32/Makefile b/libXNVCtrl/32/Makefile
+--- a/libXNVCtrl/32/Makefile	2017-10-26 08:22:53.000000000 +0100
++++ b/libXNVCtrl/32/Makefile	2017-11-22 01:18:17.786540465 +0000
+@@ -42,2 +42,3 @@
+ CFLAGS += $(X_CFLAGS)
++CFLAGS += -m32
+ CFLAGS += -I .
+diff -u1rN a/Makefile b/Makefile
+--- a/Makefile	2017-10-26 08:22:52.000000000 +0100
++++ b/Makefile	2017-11-22 01:16:34.546138900 +0000
+@@ -115,2 +115,4 @@
+ XNVCTRL_ARCHIVE         ?= $(XNVCTRL_DIR)/libXNVCtrl.a
++XNVCTRL32_DIR           ?= libXNVCtrl/32
++XNVCTRL32_ARCHIVE       ?= $(XNVCTRL32_DIR)/libXNVCtrl.a
+ XCONFIG_PARSER_DIR      ?= XF86Config-parser
+@@ -323,2 +325,8 @@
+ 
++# define the rule to build $(XNVCTRL32_ARCHIVE)
++$(XNVCTRL32_ARCHIVE): build-xnvctrl32
++
++build-xnvctrl32:
++	@$(MAKE) -C $(XNVCTRL32_DIR) -f $(XNVCTRL_MAKEFILE)
++
+ clean clobber:
+@@ -329,2 +337,3 @@
+ 	@$(MAKE) -C $(XNVCTRL_DIR) -f $(XNVCTRL_MAKEFILE) clean
++	@$(MAKE) -C $(XNVCTRL32_DIR) -f $(XNVCTRL_MAKEFILE) clean
+ 
