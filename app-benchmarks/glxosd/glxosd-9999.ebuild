@@ -1,6 +1,7 @@
 # Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+# shellcheck disable=SC2034
 EAPI=6
 
 inherit cmake-multilib multilib toolchain-funcs
@@ -43,18 +44,21 @@ S="${WORKDIR}/${MY_P}"
 src_prepare() {
 	local cmakelists_file
 	while IFS= read -r -d '' cmakelists_file; do
+		# shellcheck disable=SC2016
 		sed -i  -e 's|lib/\${CMAKE_LIBRARY_ARCHITECTURE}|\${CMAKE_LIBRARY_PATH}|g' "${cmakelists_file}" \
 			|| die "sed failed"
 	done< <(find "${S%/}/src" -type f -name "CMakeLists.txt" -printf '%p\0' -exec false {} + \
 				&& die "find failed - no CMakeLists.txt file matches in \"${S}\""
 			)
+	# shellcheck disable=SC2016
 	sed -i  -e '\|^get_filename_component(OUTPUT_DIR \"bin/\" ABSOLUTE)|{s|\"bin/\"|${OUTPUT_DIR}|}' \
 		"${S}/CMakeLists.txt" || die "sed failed"
 	cmake-utils_src_prepare
 }
 
 multilib_src_configure() {
-	local libdir="$(get_libdir)"
+	local libdir
+	libdir="$(get_libdir)"
 	local -a mycmakeargs=(
 		"-DCMAKE_C_FLAGS=${CFLAGS}"
 		"-DCMAKE_CXX_FLAGS=${CXXFLAGS}"
