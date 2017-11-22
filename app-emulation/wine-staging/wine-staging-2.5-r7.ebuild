@@ -157,7 +157,7 @@ COMMON_DEPEND="
 
 RDEPEND="${COMMON_DEPEND}
 	!app-emulation/wine:0
-	>=app-eselect/eselect-wine-1.5.2
+	>=app-eselect/eselect-wine-1.5.3
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
 	gecko? ( app-emulation/wine-gecko:2.47[abi_x86_32?,abi_x86_64?] )
 	mono? ( app-emulation/wine-mono:4.7.0 )
@@ -681,9 +681,9 @@ multilib_src_install_all() {
 		make_wrapper "${binary_file}-${WINE_VARIANT}" "${MY_PREFIX}/bin/${binary_file}"
 	done < <(find "${D%/}${MY_PREFIX}/bin" -mindepth 1 -maxdepth 1 \( -type f -o -type l \) -printf '%f\0' -exec false {} + \
 			&& die "find failed - no binary file matches in \"${D%/}${MY_PREFIX}/bin\""
-			)
-
+		)
 }
+
 pkg_postinst() {
 	local wine_git_commit wine_git_date
 
