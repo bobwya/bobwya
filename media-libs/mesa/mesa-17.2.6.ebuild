@@ -59,7 +59,7 @@ REQUIRED_USE="
 	video_cards_intel?  ( classic )
 	video_cards_i915?   ( || ( classic gallium ) )
 	video_cards_i965?   ( classic )
-	video_cards_imx?    ( gallium video_cards_vivante )
+	video_cards_imx?    ( gallium )
 	video_cards_nouveau? ( || ( classic gallium ) )
 	video_cards_radeon? ( || ( classic gallium )
 						  gallium? ( x86? ( llvm ) amd64? ( llvm ) ) )
@@ -74,7 +74,7 @@ REQUIRED_USE="
 	video_cards_vmware? ( gallium )
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.88"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.82"
 # keep correct libdrm and dri2proto dep
 # keep blocks in rdepend for binpkg
 # shellcheck disable=SC2124
@@ -147,9 +147,9 @@ RDEPEND="${RDEPEND}
 
 # Please keep the LLVM dependency block separate. Since LLVM is slotted,
 # we need to *really* make sure we're only using one slot.
+LLVM_MAX_SLOT="5"
 LLVM_DEPSTR="
 	|| (
-		sys-devel/llvm:6[${MULTILIB_USEDEP}]
 		sys-devel/llvm:5[${MULTILIB_USEDEP}]
 		sys-devel/llvm:4[${MULTILIB_USEDEP}]
 		>=sys-devel/llvm-3.9.0:0[${MULTILIB_USEDEP}]
@@ -218,9 +218,6 @@ DEPEND="${RDEPEND}
 	>=x11-proto/xextproto-7.2.1-r1:=[${MULTILIB_USEDEP}]
 	>=x11-proto/xf86driproto-2.1.1-r1:=[${MULTILIB_USEDEP}]
 	>=x11-proto/xf86vidmodeproto-2.3.1-r1:=[${MULTILIB_USEDEP}]
-	vulkan? (
-		$(python_gen_any_dep ">=dev-python/mako-0.7.3[\${PYTHON_USEDEP}]")
-	)
 "
 
 [[ "${PV}" == "9999" ]] && DEPEND+="
@@ -323,7 +320,7 @@ multilib_src_configure() {
 		myeconfargs+=(
 			"$(use_enable d3d9 nine)"
 			"$(use_enable llvm)"
-			"$(use_enable openmax omx-bellagio)"
+			"$(use_enable openmax omx)"
 			"$(use_enable vaapi va)"
 			"$(use_enable vdpau)"
 			"$(use_enable xa)"
