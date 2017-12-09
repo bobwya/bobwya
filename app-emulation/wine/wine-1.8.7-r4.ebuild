@@ -22,7 +22,8 @@ else
 	last_component="$( get_version_component_range $((version_component_count)) )"
 	if [[ "${last_component}" =~ ^rc[[:digit:]]+$ ]]; then
 		rc_version=1
-		MY_PV=$(replace_version_separator $((--version_component_count)) '''-''')
+		: $(( --version_component_count ))
+		MY_PV=$(replace_version_separator $((version_component_count)) '''-''')
 		MY_P="${MY_PN}-${MY_PV}"
 		#KEYWORDS=""
 	else
@@ -32,20 +33,22 @@ else
 	major_version=$(get_major_version)
 	minor_version=$(get_version_component_range 2)
 	stable_version=$(( (major_version == 1 && (minor_version % 2 == 0)) || (major_version >= 2 && minor_version == 0) ))
-	if (( stable_version && rc_version )); then
-		# Pull Wine RC stable versions from alternate Github repostiory...
+	base_version=$(( stable_version && (version_component_count == 2) ))
+	if (( stable_version && rc_version && !base_version )); then
+		# Pull Wine RC intermediate stable versions from alternate Github repository...
 		STABLE_PREFIX="wine-stable"
 		MY_P="${STABLE_PREFIX}-${MY_P}"
 		SRC_URI="https://github.com/mstefani/wine-stable/archive/${MY_PN}-${MY_PV}.tar.gz -> ${MY_P}.tar.gz"
 	elif (( (major_version < 2) || ((version_component_count == 2) && (major_version == 2) && (minor_version == 0)) )); then
+		# The base Wine 2.0 release tarball was bzip2 compressed - switching to xz shortly after...
 		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.${minor_version}/${MY_P}.tar.bz2 -> ${MY_P}.tar.bz2"
-	elif (( (major_version == 2) && (minor_version == 0) )); then
+	elif (( (major_version >= 2) && (minor_version == 0) )); then
 		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.0/${MY_P}.tar.xz -> ${MY_P}.tar.xz"
 	else
 		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.x/${MY_P}.tar.xz -> ${MY_P}.tar.xz"
 	fi
 fi
-unset -v last_component minor_version major_version rc_version stable_version version_component_count
+unset -v base_version last_component minor_version major_version rc_version stable_version version_component_count
 
 GENTOO_WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20171106"
 GENTOO_WINE_EBUILD_COMMON_PN="${GENTOO_WINE_EBUILD_COMMON_P%-*}"
