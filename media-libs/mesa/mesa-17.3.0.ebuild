@@ -6,11 +6,10 @@ EAPI=6
 
 PYTHON_COMPAT=( python2_7 )
 
-inherit autotools multilib-minimal python-any-r1 pax-utils
+inherit autotools llvm multilib-minimal python-any-r1 pax-utils
 OPENGL_DIR="${PN}"
 
 MY_P="${P/_/-}"
-FOLDER="${PV/_rc*/}"
 
 DESCRIPTION="OpenGL-like graphic library for Linux"
 HOMEPAGE="https://www.mesa3d.org/ https://mesa.freedesktop.org/
@@ -21,7 +20,7 @@ if [[ "${PV}" == "9999" ]]; then
 	EGIT_CHECKOUT_DIR="${WORKDIR}/${MY_P}"
 	SRC_URI=""
 else
-	SRC_URI="https://mesa.freedesktop.org/archive/${FOLDER}/${MY_P}.tar.xz"
+	SRC_URI="https://mesa.freedesktop.org/archive/${MY_P}.tar.xz"
 	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~arm-linux ~x86-linux ~sparc-solaris ~x64-solaris ~x86-solaris"
 fi
 
@@ -31,7 +30,7 @@ RESTRICT="!bindist? ( bindist )"
 
 AMD_CARDS=( "r100" "r200" "r300" "r600" "radeon" "radeonsi" )
 INTEL_CARDS=( "i915" "i965" "intel" )
-VIDEO_CARDS=( "freedreno" "nouveau" "vc4" "vmware" )
+VIDEO_CARDS=( "freedreno" "imx" "nouveau" "vc4" "virgl" "vivante" "vmware" )
 VIDEO_CARDS+=( "${AMD_CARDS[@]}" )
 VIDEO_CARDS+=( "${INTEL_CARDS[@]}" )
 for card in "${VIDEO_CARDS[@]}"; do
@@ -39,12 +38,11 @@ for card in "${VIDEO_CARDS[@]}"; do
 done
 
 IUSE="${IUSE_VIDEO_CARDS}
-	bindist +classic d3d9 debug +dri3 +egl +gallium +gbm gcrypt gles1 gles2
-	libressl +llvm +nettle +nptl opencl osmesa pax_kernel openmax openssl pic
-	selinux vaapi valgrind vdpau vulkan wayland xvmc xa"
+	bindist +classic d3d9 debug +dri3 +egl +gallium +gbm gles1 gles2 unwind
+	+llvm +nptl opencl osmesa pax_kernel openmax pic selinux vaapi valgrind
+	vdpau vulkan wayland xvmc xa"
 
 REQUIRED_USE="
-	|| ( gcrypt libressl nettle openssl )
 	d3d9?   ( dri3 gallium )
 	llvm?   ( gallium )
 	opencl? ( gallium llvm )
@@ -61,6 +59,7 @@ REQUIRED_USE="
 	video_cards_intel?  ( classic )
 	video_cards_i915?   ( || ( classic gallium ) )
 	video_cards_i965?   ( classic )
+	video_cards_imx?    ( gallium )
 	video_cards_nouveau? ( || ( classic gallium ) )
 	video_cards_radeon? ( || ( classic gallium )
 						  gallium? ( x86? ( llvm ) amd64? ( llvm ) ) )
@@ -69,10 +68,13 @@ REQUIRED_USE="
 	video_cards_r300?   ( gallium x86? ( llvm ) amd64? ( llvm ) )
 	video_cards_r600?   ( gallium )
 	video_cards_radeonsi?   ( gallium llvm )
+	video_cards_vc4? ( gallium )
+	video_cards_virgl? ( gallium )
+	video_cards_vivante? ( gallium gbm )
 	video_cards_vmware? ( gallium )
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.72"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.85"
 # keep correct libdrm and dri2proto dep
 # keep blocks in rdepend for binpkg
 # shellcheck disable=SC2124
@@ -84,6 +86,7 @@ RDEPEND="
 	gallium? ( app-eselect/eselect-mesa )
 	=app-eselect/eselect-opengl-1.3.3-r1
 	>=dev-libs/expat-2.1.0-r3:=[${MULTILIB_USEDEP}]
+	>=sys-libs/zlib-1.2.8[${MULTILIB_USEDEP}]
 	>=x11-libs/libX11-1.6.2:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libxshmfence-1.1:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libXdamage-1.1.4-r1:=[${MULTILIB_USEDEP}]
@@ -91,10 +94,15 @@ RDEPEND="
 	>=x11-libs/libXxf86vm-1.1.3:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libxcb-1.9.3:=[${MULTILIB_USEDEP}]
 	x11-libs/libXfixes:=[${MULTILIB_USEDEP}]
+	unwind? ( sys-libs/libunwind[${MULTILIB_USEDEP}] )
 	llvm? (
 		video_cards_radeonsi? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
-			vulkan? ( >=sys-devel/llvm-3.9.0:=[${MULTILIB_USEDEP}] )
+			vulkan? (
+				|| (
+					sys-devel/llvm:4[${MULTILIB_USEDEP}]
+					>=sys-devel/llvm-3.9.0:0[${MULTILIB_USEDEP}] )
+			)
 		)
 		video_cards_r600? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
@@ -102,16 +110,7 @@ RDEPEND="
 		video_cards_radeon? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
 		)
-		>=sys-devel/llvm-3.6.0:0=[${MULTILIB_USEDEP}]
-		<sys-devel/llvm-5:=[${MULTILIB_USEDEP}]
-	)
-	nettle? ( dev-libs/nettle:=[${MULTILIB_USEDEP}] )
-	!nettle? (
-		gcrypt? ( dev-libs/libgcrypt:=[${MULTILIB_USEDEP}] )
-		!gcrypt? (
-			libressl? ( dev-libs/libressl:=[${MULTILIB_USEDEP}] )
-			!libressl? ( dev-libs/openssl:=[${MULTILIB_USEDEP}] )
-		)
+		>=sys-devel/llvm-3.6.0:=[${MULTILIB_USEDEP}]
 	)
 	opencl? (
 		app-eselect/eselect-opencl
@@ -120,21 +119,22 @@ RDEPEND="
 	)
 	openmax? ( >=media-libs/libomxil-bellagio-0.9.3:=[${MULTILIB_USEDEP}] )
 	vaapi? (
-		>=x11-libs/libva-1.6.0:=[${MULTILIB_USEDEP}]
+		>=x11-libs/libva-1.7.3:=[${MULTILIB_USEDEP}]
 		video_cards_nouveau? ( !<=x11-libs/libva-vdpau-driver-0.7.4-r3 )
 	)
 	vdpau? ( >=x11-libs/libvdpau-1.1:=[${MULTILIB_USEDEP}] )
-	wayland? ( >=dev-libs/wayland-1.2.0:=[${MULTILIB_USEDEP}] )
+	wayland? (
+		>=dev-libs/wayland-1.11.0:=[${MULTILIB_USEDEP}]
+		>=dev-libs/wayland-protocols-1.8
+	)
 	xvmc? ( >=x11-libs/libXvMC-1.0.8:=[${MULTILIB_USEDEP}] )
-	${LIBDRM_DEPSTRING}[video_cards_freedreno?,video_cards_nouveau?,video_cards_vc4?,video_cards_vmware?,${MULTILIB_USEDEP}]
+	${LIBDRM_DEPSTRING}[video_cards_freedreno?,video_cards_nouveau?,video_cards_vc4?,video_cards_vivante?,video_cards_vmware?,${MULTILIB_USEDEP}]
+	video_cards_intel? (
+		!video_cards_i965? ( ${LIBDRM_DEPSTRING}[video_cards_intel] )
+	)
+	video_cards_i915? ( ${LIBDRM_DEPSTRING}[video_cards_intel] )
 "
 
-# shellcheck disable=SC2068
-for card in ${INTEL_CARDS[@]}; do
-	RDEPEND="${RDEPEND}
-		video_cards_${card}? ( ${LIBDRM_DEPSTRING}[video_cards_intel] )
-	"
-done
 # shellcheck disable=SC2068
 for card in ${AMD_CARDS[@]}; do
 	RDEPEND="${RDEPEND}
@@ -145,19 +145,64 @@ RDEPEND="${RDEPEND}
 	video_cards_radeonsi? ( ${LIBDRM_DEPSTRING}[video_cards_amdgpu] )
 "
 
-DEPEND="${RDEPEND}
-	${PYTHON_DEPS}
+# Please keep the LLVM dependency block separate. Since LLVM is slotted,
+# we need to *really* make sure we're only using one slot.
+LLVM_DEPSTR="
+	|| (
+		sys-devel/llvm:5[${MULTILIB_USEDEP}]
+		sys-devel/llvm:4[${MULTILIB_USEDEP}]
+		>=sys-devel/llvm-3.9.0:0[${MULTILIB_USEDEP}]
+	)
+	<sys-devel/llvm-6:=[${MULTILIB_USEDEP}]
+"
+LLVM_DEPSTR_AMDGPU="${LLVM_DEPSTR//]/,llvm_targets_AMDGPU(-)]}"
+CLANG_DEPSTR="${LLVM_DEPSTR//llvm/clang}"
+CLANG_DEPSTR_AMDGPU="${CLANG_DEPSTR//]/,llvm_targets_AMDGPU(-)]}"
+RDEPEND="${RDEPEND}
 	llvm? (
-		video_cards_radeonsi? (
-			|| (
-				sys-devel/llvm[llvm_targets_AMDGPU]
-				sys-devel/llvm[video_cards_radeon]
+		opencl? (
+			video_cards_r600? (
+				${CLANG_DEPSTR_AMDGPU}
+			)
+			!video_cards_r600? (
+				video_cards_radeonsi? (
+					${CLANG_DEPSTR_AMDGPU}
+				)
+				!video_cards_radeonsi? (
+					video_cards_radeon? (
+						${CLANG_DEPSTR_AMDGPU}
+					)
+					!video_cards_radeon? (
+						${CLANG_DEPSTR}
+					)
+				)
+			)
+		)
+		!opencl? (
+			video_cards_r600? (
+				${LLVM_DEPSTR_AMDGPU}
+			)
+			!video_cards_r600? (
+				video_cards_radeonsi? (
+					${LLVM_DEPSTR_AMDGPU}
+				)
+				!video_cards_radeonsi? (
+					video_cards_radeon? (
+						${LLVM_DEPSTR_AMDGPU}
+					)
+					!video_cards_radeon? (
+						${LLVM_DEPSTR}
+					)
+				)
 			)
 		)
 	)
+"
+unset {LLVM,CLANG}_DEPSTR{,_AMDGPU}
+
+DEPEND="${RDEPEND}
+	${PYTHON_DEPS}
 	opencl? (
-		>=sys-devel/llvm-3.4.2:0=[${MULTILIB_USEDEP}]
-		>=sys-devel/clang-3.4.2:0=[${MULTILIB_USEDEP}]
 		>=sys-devel/gcc-4.6
 	)
 	sys-devel/gettext
@@ -172,6 +217,9 @@ DEPEND="${RDEPEND}
 	>=x11-proto/xextproto-7.2.1-r1:=[${MULTILIB_USEDEP}]
 	>=x11-proto/xf86driproto-2.1.1-r1:=[${MULTILIB_USEDEP}]
 	>=x11-proto/xf86vidmodeproto-2.3.1-r1:=[${MULTILIB_USEDEP}]
+	vulkan? (
+		$(python_gen_any_dep ">=dev-python/mako-0.7.3[\${PYTHON_USEDEP}]")
+	)
 "
 
 [[ "${PV}" == "9999" ]] && DEPEND+="
@@ -230,6 +278,9 @@ pkg_setup() {
 		ewarn "detected! This can cause problems. For details, see bug 459306."
 	fi
 
+	if use llvm; then
+		llvm_pkg_setup
+	fi
 	python-any-r1_pkg_setup
 }
 
@@ -281,6 +332,7 @@ multilib_src_configure() {
 
 		driver_enable GALLIUM_DRIVERS swrast
 		driver_enable GALLIUM_DRIVERS video_cards_vc4 vc4
+		driver_enable GALLIUM_DRIVERS video_cards_virgl virgl
 		driver_enable GALLIUM_DRIVERS video_cards_vivante etnaviv
 		driver_enable GALLIUM_DRIVERS video_cards_vmware svga
 		driver_enable GALLIUM_DRIVERS video_cards_nouveau nouveau
@@ -309,9 +361,7 @@ multilib_src_configure() {
 
 	if use vulkan; then
 		driver_enable VULKAN_DRIVERS video_cards_i965 intel
-		if has_version '>=sys-devel-llvm-3.9.0'; then
-			driver_enable VULKAN_DRIVERS video_cards_radeonsi radeon
-		fi
+		driver_enable VULKAN_DRIVERS video_cards_radeonsi radeon
 	fi
 	# x86 hardened pax_kernel needs glx-rts, bug 240956
 	if [[ "${ABI}" == "x86" ]]; then
@@ -336,7 +386,6 @@ multilib_src_configure() {
 		"--enable-dri"
 		"--enable-glx"
 		"--enable-shared-glapi"
-		"--disable-shader-cache"
 		"$(use_enable !bindist texture-float)"
 		"$(use_enable d3d9 nine)"
 		"$(use_enable debug)"
@@ -346,12 +395,12 @@ multilib_src_configure() {
 		"$(use_enable gles1)"
 		"$(use_enable gles2)"
 		"$(use_enable nptl glx-tls)"
+		"$(use_enable unwind libunwind)"
 		"--enable-valgrind=$(usex valgrind auto no)"
 		"--enable-llvm-shared-libs"
 		"--with-dri-drivers=${DRI_DRIVERS}"
 		"--with-gallium-drivers=${GALLIUM_DRIVERS}"
 		"--with-vulkan-drivers=${VULKAN_DRIVERS}"
-		"--with-sha1=$(usex nettle libnettle "$(usex gcrypt libgcrypt libcrypto)")"
 		"PYTHON2=${PYTHON}"
 	)
 	# shellcheck disable=SC2068,SC2128
@@ -448,10 +497,6 @@ multilib_src_install_all() {
 	# Install config file for eselect mesa
 	insinto /usr/share/mesa
 	newins "${FILESDIR}/eselect-mesa.conf.9.2" "eselect-mesa.conf"
-	if use vulkan; then
-		rm "${ED%/}/usr/include/vulkan"/{vulkan.h,vk_platform.h} || die "rm failed"
-	fi
-
 }
 
 multilib_src_test() {
@@ -494,13 +539,8 @@ pkg_postinst() {
 	# warn about patent encumbered texture-float
 	if use !bindist; then
 		elog "USE=\"bindist\" was not set. Potentially patent encumbered code was"
-		elog "enabled. Please see patents.txt for an explanation."
-	fi
-
-	if ! has_version "media-libs/libtxc_dxtn"; then
-		elog "Note that in order to have full S3TC support, it is necessary to install"
-		elog "media-libs/libtxc_dxtn as well. This may be necessary to get nice"
-		elog "textures in some apps, and some others even require this to run."
+		elog "enabled. Please see /usr/share/doc/${P}/patents.txt.bz2 for an"
+		elog "explanation."
 	fi
 
 	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix various issues"
