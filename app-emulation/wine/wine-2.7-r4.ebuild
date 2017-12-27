@@ -148,7 +148,7 @@ COMMON_DEPEND="
 	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
-	vaapi? ( x11-libs/libva[X,${MULTILIB_USEDEP}] )
+	vaapi? ( x11-libs/libva:=[drm,X?,${MULTILIB_USEDEP}] )
 	xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
 	xinerama? ( x11-libs/libXinerama[${MULTILIB_USEDEP}] )
 	xml? (
