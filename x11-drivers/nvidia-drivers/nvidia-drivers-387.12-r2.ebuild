@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -6,7 +6,7 @@ EAPI=6
 inherit flag-o-matic linux-info linux-mod multilib-minimal nvidia-driver \
 	portability toolchain-funcs unpacker user udev
 
-NV_URI="https://http.download.nvidia.com/XFree86/"
+NV_URI="https://download.nvidia.com/XFree86/"
 X86_NV_PACKAGE="NVIDIA-Linux-x86-${PV}"
 AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
 ARM_NV_PACKAGE="NVIDIA-Linux-armv7l-gnueabihf-${PV}"
@@ -215,7 +215,13 @@ pkg_setup() {
 
 src_prepare() {
 	local -a PATCHES
-	use tools && PATCHES+=( "${FILESDIR}/${P}-linker.patch" )
+	if use tools; then
+		rsync -achv "${FILESDIR}/nvidia-settings-linker.patch" "${WORKDIR}"/ \
+			|| die "rsync failed"
+		sed -i -e 's:@PV@:'"${PV}"':g' "${WORKDIR}/nvidia-settings-linker.patch" \
+			|| die "sed failed"
+		PATCHES+=( "${WORKDIR}/nvidia-settings-linker.patch" )
+	fi
 	if use pax_kernel; then
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"

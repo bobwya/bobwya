@@ -90,11 +90,11 @@ nvidia_drivers_versions_check() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 12; then
+		if kernel_is ge 4 15; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.12"
-			ewarn "<sys-kernel/vanilla-sources-4.12"
+			ewarn "<sys-kernel/gentoo-sources-4.15"
+			ewarn "<sys-kernel/vanilla-sources-4.15"
 		elif use kms && kernel_is lt 4 2; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -499,7 +499,7 @@ src_install-libs() {
 
 		if use wayland && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then
 			NV_GLX_LIBRARIES+=(
-				"libnvidia-egl-wayland.so.1.0.2" .
+				"libnvidia-egl-wayland.so.1.0.1" .
 			)
 		fi
 
