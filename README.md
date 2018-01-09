@@ -1,6 +1,7 @@
 bobwya
 ======
 
+![https://travis-ci.org/bobwya/bobwya](https://travis-ci.org/bobwya/bobwya.svg?branch=master) ![https://tldrlegal.com/license/gnu-general-public-license-v2](http://img.shields.io/:license-gpl-red.svg)
 
 Gentoo Overlay containing various packages I have been unable to find @ Gentoo Portage Overlays website or elsewhere.
 Testing and updating of these ebuild package build scripts is irregular. So YMMV - you have been warned!
@@ -40,83 +41,7 @@ Now Gentoo has the most awesome Wine support of any GNU/Linux distribution!
 
 Note: the **::bobwya Overlay** Wine packages _do_ _not_ support the **Gallium 9** / **D3D9** patchset. This is purely down to lack of a testing system, which doesn't use the Nvidia Proprietary graphics driver.
 
-Customisations, on top of the stock Gentoo ebuilds for: ```app-emulation/wine:0```; include:
-* Customised **winecfg** utility - with clearer **Wine**/**Wine Staging** version information displayed in the **about** tab.
-* Supports all **Wine** releases back to version 1.8.
-  Uses custom Gentoo 11-part patchset: ```wine-1.8-gstreamer-1.0_{01,02,03,04,05,06,07,08,09,10,11}.patch``` to provide: GStreamer 1.0 support; for all these older versions of **Wine**.
-  Includes various additional backported patches to allow building **Wine**/**Wine Staging** against newer system libraries.
-* USE **+staging** supports live building against **Wine Staging** Git commits or branches.
-* USE **+staging** supports live building against **Wine** Git commits or branches. In the event that **Wine Staging** is unsupported for the specified commit - a helper utility will walk the **Wine** and **Wine Staging** Git trees. This helper utility will determine (automatically) the closest (date/time based) **Wine** Git commit which supports the **Wine Staging** patchset and display this to the user.
-* Supports **Wine** Release Candidate version mangling.
-
-Customisations, on top of the stock Gentoo ebuilds for: ```app-emulation/wine-desktop-common```:
-* BASH script which generates a full selection of Wine desktop files, with broad locale support.
-* BASH/awk script to extract scalable icons from the current Wine Git tree.
-  The awk script (optionally) overlays Wine icon on Wine places icons
-* BASH script to regenerate Makefile.
-
-Customisations, on top of the stock Gentoo ebuilds for: ```app-emulation/wine-gecko```:
-* Supports **Wine Gecko** beta versions.
-
-Customisations, on top of the stock Gentoo ebuilds for: ```app-emulation/wine-staging:${PV}```; include:
-* Customised **winecfg** utility - with clearer **Wine Staging** version information displayed in the **about** tab.
-* Supports all **Wine Staging** releases back to version 1.8.
-  Uses custom Gentoo 11-part patchset: ```wine-1.8-gstreamer-1.0_{01,02,03,04,05,06,07,08,09,10,11}.patch``` to provide: GStreamer 1.0 support; for all these older versions of **Wine Staging**.
-  Includes various additional backported patches to allow building **Wine Staging** against newer system libraries.
-* Supports live building against **Wine Staging** Git commits or branches.
-* Supports live building against **Wine** Git commits or branches. In the event that **Wine Staging** is unsupported for the specified commit - a helper utility will walk the **Wine** and **Wine Staging** Git trees. This helper utility will determine (automatically) the closest (date/time based) **Wine** Git commit which supports the **Wine Staging** patchset.
-
-Customisations, on top of the stock Gentoo ebuilds for: ```app-emulation/wine-vanilla:${PV}```; include:
-* Customised **winecfg** utility - with clearer **Wine** version information displayed in the **about** tab.
-* Supports all **Wine** releases back to version 1.8.
-  Uses custom Gentoo 11-part patchset: ```wine-1.8-gstreamer-1.0_{01,02,03,04,05,06,07,08,09,10,11}.patch``` to provide: GStreamer 1.0 support; for all these older versions of **Wine**.
-  Includes various additional backported patches to allow building **Wine** against newer system libraries.
-* Supports **Wine** Release Candidate versions (which are typically not included in the main Gentoo Overlay).
-
-Customisations, on top of the stock Gentoo package: ```app-eselect/eselect-wine```; include:
-* Provides more detailed error messages.
-* Supports more verbose output about operations.
-* Handles specifying multiple Wine variants - for a larger set of **eselect wine** operations.
-* Handles simultaneous installation of _multiple_ live versions, of ```app-emulation/wine-staging:9999_p*``` / ```app-emulation/wine-vanilla:9999_p*``` - on a single system.
-* Live package versions of ```app-emulation/wine-staging:9999_p*``` / ```app-emulation/wine-vanilla:9999_p*``` stored **eselect** data includes Git metadata support (SHA-1 commit hash and Git commit date).
-* Avoids using shell globbing for symbolic link validity tests.
-* Features an unset option to allow detection and removal of hanging / orphaned symbolic links (associated with this module / not associated with any installed packages).
-* Allows creation of ```/usr/lib{32,64}/wine``` symbolic links to allow building 3rd party applications (e.g. **wineasio**) against any installed version of Wine.
-* Supplies a manual page entry.
-
-**********************************************************************************************************************
-
-Full listing of all **::bobwya Overlay** Wine package set:
-```
-app-eselect/eselect-wine : Manage active Wine version for multislot Wine variants.
-app-emulation/wine:0 : Free implementation of Windows(tm) on Unix (single-slot version, supporting vanilla Wine & Wine Staging patchset).
-app-emulation/wine-desktop-common : Core desktop menu entries and icons for Wine (shared by all app-emulation/wine[-staging|-vanilla] packages).
-app-emulation/wine-gecko : A Mozilla Gecko based version of Internet Explorer for Wine (multi-slot version - shared by all app-emulation/wine[-staging|-vanilla] packages).
-app-emulation/wine-mono : Wine Mono is a replacement for the .NET runtime and class libraries in Wine (multi-slot version - shared by all app-emulation/wine[-staging|-vanilla] packages).
-app-emulation/wine-staging:${PV} : Free implementation of Windows(tm) on Unix (multi-slot version, only supports Wine with Wine Staging patchset automatically applied).
-app-emulation/wine-vanilla:${PV} : Free implementation of Windows(tm) on Unix (multi-slot version, only supports vanilla Wine).
-```
-
-**********************************************************************************************************************
-
-The Wine packages in the **::bobwya Overlay** are not compatible with the main **::gentoo** Wine packages.
-It is highly recommended to mask the main **::gentoo** Wine packages, e.g.:
-
-```
-echo -e \
-'app-emulation/wine::gentoo\n'\
-'app-emulation/wine-any::gentoo\n'\
-'app-emulation/wine-d3d9::gentoo\n'\
-'app-emulation/wine-desktop-common::gentoo\n'\
-'app-emulation/wine-gecko::gentoo\n'\
-'app-emulation/wine-mono::gentoo\n'\
-'app-emulation/wine-staging::gentoo\n'\
-'app-emulation/wine-vanilla::gentoo\n'\
-'virtual/wine::gentoo\n'\
-  >> /etc/portage/package.mask/gentoo_wine
-```
-
-Using a mixture of Wine packages from **::bobwya** and **::gentoo** is not supported!
+See: [Wiki: Wine Packages](https://github.com/bobwya/bobwya/wiki/Wine-Packages) for more information.
 
 ### Custom GL lib switcher implementation package set
 -----------------------------------------------------
