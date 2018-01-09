@@ -1,7 +1,7 @@
 bobwya
 ======
 
-![https://travis-ci.org/bobwya/bobwya](https://travis-ci.org/bobwya/bobwya.svg?branch=master) ![https://tldrlegal.com/license/gnu-general-public-license-v2](http://img.shields.io/:license-gpl-red.svg)
+[![Build Status](https://travis-ci.org/bobwya/bobwya.svg?branch=master)](https://travis-ci.org/bobwya/bobwya) [![License](http://img.shields.io/:license-gpl-red.svg)](https://tldrlegal.com/license/gnu-general-public-license-v2)
 
 Gentoo Overlay containing various packages I have been unable to find @ Gentoo Portage Overlays website or elsewhere.
 Testing and updating of these ebuild package build scripts is irregular. So YMMV - you have been warned!
