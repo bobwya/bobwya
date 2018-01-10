@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -37,14 +37,18 @@ DEPEND="virtual/jpeg:*
 	sys-libs/zlib"
 RDEPEND="${DEPEND}"
 
+src_prepare() {
+	CMAKE_USE_DIR="${S}/neo"
+	default
+}
+
 src_configure() {
-	local CMAKE_USE_DIR="${S}/neo"
 	mycmakeargs=(
 		"-DDEDICATED=ON"
-		$(cmake-utils_use sdl2 SDL2)
-		$(cmake-utils_use_disable dedicated CORE)
-		$(cmake-utils_use_disable dedicated BASE)
-		$(cmake-utils_use_disable dedicated D3XP)
+		"-DSDL2=$(usex sdl2)"
+		"-DCORE=$(usex !dedicated)"
+		"-DBASE=$(usex !dedicated)"
+		"-DD3XP=$(usex !dedicated)"
 	)
 	cmake-utils_src_configure
 }
