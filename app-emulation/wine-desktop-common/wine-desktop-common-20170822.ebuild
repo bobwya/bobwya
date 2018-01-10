@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -44,7 +44,7 @@ QA_DESKTOP_FILE="/usr/share/applications/wine-browsecdrive.desktop
 "
 
 pkg_pretend() {
-	einfo ">=${CATEGORY}/${PN}-20170822 introduces a full set of scalable icons"
+	einfo ">=${CATEGORY}/${PN}-20180822 introduces a full set of scalable icons"
 	einfo "and desktop files for all Wine builtin utilities and helpers."
 	einfo "If your DE menus shows the older low-resolution icons for Wine desktop"
 	einfo "entries - then you may want to purge these older, lower resolution png icons:"
