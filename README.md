@@ -1,15 +1,17 @@
 bobwya
 ======
 
-[![Build Status](https://travis-ci.org/bobwya/bobwya.svg?branch=master)](https://travis-ci.org/bobwya/bobwya) [![License](http://img.shields.io/:license-gpl-red.svg)](https://tldrlegal.com/license/gnu-general-public-license-v2)
+[![Build Status](https://travis-ci.org/bobwya/bobwya.svg?branch=master)](https://travis-ci.org/bobwya/bobwya) [![License](http://img.shields.io/:license-gpl-green.svg)](https://tldrlegal.com/license/gnu-general-public-license-v2)
 
 Gentoo Overlay containing various packages I have been unable to find @ Gentoo Portage Overlays website or elsewhere.
 Testing and updating of these ebuild package build scripts is irregular. So YMMV - you have been warned!
+
 
 ### Main Overlay packages
 -------------------------
 
 	app-arch/unshield : Tool and library to extract CAB files from InstallShield installers.
+	app-benchmarks/glxosd : GLXOSD is an extensible on-screen display (OSD)/overlay for OpenGL applications running on Linux with X11 which aims to provide similar functionality to MSI Afterburner/RivaTuner OSD.
 	app-benchmarks/i7z : A better Intel i7 (and now i3, i5) CPU reporting tool for Linux.
 	app-forensics/pev : PE file analysis toolkit - for examining Windows PE binary files.
 	dev-cpp/pion : C++ framework for building lightweight HTTP interfaces.
@@ -24,7 +26,6 @@ Testing and updating of these ebuild package build scripts is irregular. So YMMV
 	media-video/h264enc : h264enc is an advanced and powerful interactive menu-driven shell script written for the GNU/Linux operating system to encode video files
 	net-dialup/dterm : dterm is a simple terminal emulator for serial connections.
 	net-dns/ndjbdns : Fork of djbdns, a collection of DNS client/server software.
-	net-p2p/eiskaltdcpp  :  EiskaltDC++ is a cross-platform program that uses the Direct Connect and ADC protocols.
 	sys-apps/cpuid : Utility to get detailed information about CPU(s) using the CPUID instruction.
 	sys-apps/hw-probe : A tool to probe system hardware, check operability and upload results.
 	sys-fs/exfat-nofuse : Non-fuse kernel driver for exFat and VFat file systems.
@@ -36,17 +37,16 @@ Testing and updating of these ebuild package build scripts is irregular. So YMMV
 ### Customised Wine package set
 -------------------------------
 
-These packages are based heavily on NP's hard work - packaging Wine in the main Gentoo Portage tree. Thanks for his hardwork on this!
-Now Gentoo has the most awesome Wine support of any GNU/Linux distribution!
-
-Note: the **::bobwya Overlay** Wine packages _do_ _not_ support the **Gallium 9** / **D3D9** patchset. This is purely down to lack of a testing system, which doesn't use the Nvidia Proprietary graphics driver.
+These Wine packages are more than a cosmetic fork of the main Gentoo Portage and other Overlay Wine packages. So don't "mix and match" these!
 
 See: [Wiki: Wine Packages](https://github.com/bobwya/bobwya/wiki/Wine-Packages) for more information.
+
+Note: the **::bobwya Overlay** Wine packages _do_ _not_ support the **Gallium 9** / **D3D9** patchset. This is purely down to testing systems only using the Nvidia Proprietary graphics driver.
 
 ### Custom GL lib switcher implementation package set
 -----------------------------------------------------
 
-These packages are masked and are NOT extensively tested (but I use them personally!) Loosely based off the Arch-Linux GL lib switcher. Has some rudimentary support for **PRIMUS** setups.
+These packages are masked and are NOT extensively tested (but I use them personally!) Loosely based off the Arch-Linux GL lib switcher. Has some rudimentary support for **PRIMUS** setups. The **x11-drivers/nvidia-drivers** package is customised to support the **GLXOSD** fork in the **::bobwya** Overlay. 
 
 	app-eselect/eselect-opengl : Gentoo OpenGL implementation switcher (heavily customised)
 	media-libs/mesa : OpenGL-like graphic library for Linux (patched version - to work with custom eselect-opengl switcher)
