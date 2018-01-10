@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -173,6 +173,7 @@ src_prepare() {
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox-kde-opensuse/)
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
+	PATCHES+=( "${FILESDIR}/${PN}-57.0-pkcs11-backport.patch" )
 
 	# Enable gnomebreakpad
 	if use debug; then
