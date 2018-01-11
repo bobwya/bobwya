@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -19,7 +19,7 @@ MOZ_PN="thunderbird"
 MOZ_PV="${PV/_beta/b}"
 
 # Patches
-PATCHFF="firefox-52.4-patches-02"
+PATCHFF="firefox-52.5-patches-02"
 
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
@@ -41,10 +41,11 @@ DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE 
 HOMEPAGE="https://www.mozilla.com/en-US/thunderbird
 	https://www.rosenauer.org/hg/mozilla"
 
-KEYWORDS="~amd64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha ~amd64 ~arm ~ppc ~ppc64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist crypt hardened kde ldap lightning +minimal mozdom rust selinux"
+REQUIRED_USE="kde? ( || ( amd64 x86 ) )"
 RESTRICT="!bindist? ( bindist )"
 
 PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCHFF}.tar.xz )
@@ -71,7 +72,12 @@ DEPEND="rust? ( dev-lang/rust )
 RDEPEND="${CDEPEND}
 	selinux? ( sec-policy/selinux-thunderbird )
 	crypt? ( >=x11-plugins/enigmail-1.9.8.3-r1 )
-	kde? ( kde-misc/kmozillahelper )
+	amd64? (
+		kde? ( kde-misc/kmozillahelper:= )
+	)
+	x86? (
+		kde? ( kde-misc/kmozillahelper:= )
+	)
 	!!mail-client/thunderbird"
 
 S="${WORKDIR}/${MOZ_P}"
