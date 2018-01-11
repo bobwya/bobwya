@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -15,7 +15,7 @@ if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
 else
 	SRC_URI="https://github.com/linuxhw/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="-* ~amd64 ~arm64 ~x86 ~amd64-fbsd ~x86-fbsd ~x86-solaris"
+	KEYWORDS="-* ~amd64 ~ppc ~x86 ~amd64-linux ~arm-linux ~x86-linux"
 fi
 
 LICENSE="LGPL-2"
