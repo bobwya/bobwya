@@ -1,40 +1,35 @@
-# Copyright 1999-2015 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=5
+EAPI=6
 
-inherit eutils flag-o-matic qt4-r2 toolchain-funcs
+inherit flag-o-matic toolchain-funcs
 
 DESCRIPTION="A better i7 (and now i3, i5) reporting tool for Linux"
+HOMEPAGE="https://github.com/bobwya/i7z"
 
-if [[ ${PV} == "9999" ]] ; then
-		HOMEPAGE="https://github.com/bobwya/i7z"
-		EGIT_REPO_URI="git://github.com/bobwya/i7z.git"
-		EGIT_BRANCH="master"
-		inherit git-r3
-		SRC_URI=""
-		#KEYWORDS=""
+if [[ "${PV}" == "9999" ]]; then
+	EGIT_REPO_URI="git://github.com/bobwya/i7z.git"
+	EGIT_BRANCH="master"
+	EGIT_CHECKOUT_DIR="${S}"
+	inherit git-r3
+	SRC_URI=""
+	#KEYWORDS=""
 fi
 
 LICENSE="GPL-2"
 SLOT="0"
-IUSE="X"
+IUSE=""
 
 RDEPEND="
-	sys-libs/ncurses:*
-	X? ( dev-qt/qtgui:4 )"
+	sys-libs/ncurses:*"
 DEPEND="${RDEPEND}"
 
-src_compile() {
-	emake
-	if use X; then
-		cd GUI
-		eqmake4 ${PN}_GUI.pro
-		emake clean && emake
-	fi
+src_unpack() {
+	default
+	[[ "${PV}" == "9999" ]] && git-r3_src_unpack
 }
 
 src_install() {
 	emake DESTDIR="${ED}" docdir=/usr/share/doc/${PF} install
-	use X && dosbin GUI/i7z_GUI
 }
