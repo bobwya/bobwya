@@ -98,6 +98,9 @@ REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 RESTRICT="test"
 
 COMMON_DEPEND="
+	!x86-fbsd? (
+		staging? ( sys-apps/attr[${MULTILIB_USEDEP}] )
+	)
 	>=app-emulation/wine-desktop-common-20170822
 	X? (
 		x11-libs/libXcursor[${MULTILIB_USEDEP}]
@@ -107,7 +110,9 @@ COMMON_DEPEND="
 		x11-libs/libXxf86vm[${MULTILIB_USEDEP}]
 	)
 	alsa? ( media-libs/alsa-lib[${MULTILIB_USEDEP}] )
-	capi? ( net-libs/libcapi[${MULTILIB_USEDEP}] )
+	!x86-fbsd? (
+		capi? ( net-libs/libcapi[${MULTILIB_USEDEP}] )
+	)
 	cups? ( net-print/cups:=[${MULTILIB_USEDEP}] )
 	fontconfig? ( media-libs/fontconfig:=[${MULTILIB_USEDEP}] )
 	gphoto2? ( media-libs/libgphoto2:=[${MULTILIB_USEDEP}] )
@@ -121,7 +126,9 @@ COMMON_DEPEND="
 	ldap? ( net-nds/openldap:=[${MULTILIB_USEDEP}] )
 	mp3? ( >=media-sound/mpg123-1.5.0[${MULTILIB_USEDEP}] )
 	ncurses? ( >=sys-libs/ncurses-5.2:0=[${MULTILIB_USEDEP}] )
-	netapi? ( net-fs/samba[netapi(+),${MULTILIB_USEDEP}] )
+	!x86-fbsd? (
+		netapi? ( net-fs/samba[netapi(+),${MULTILIB_USEDEP}] )
+	)
 	nls? ( sys-devel/gettext[${MULTILIB_USEDEP}] )
 	odbc? ( dev-db/unixODBC:=[${MULTILIB_USEDEP}] )
 	openal? ( media-libs/openal:=[${MULTILIB_USEDEP}] )
@@ -136,14 +143,15 @@ COMMON_DEPEND="
 	pulseaudio? ( media-sound/pulseaudio[${MULTILIB_USEDEP}] )
 	scanner? ( media-gfx/sane-backends:=[${MULTILIB_USEDEP}] )
 	ssl? ( net-libs/gnutls:=[${MULTILIB_USEDEP}] )
-	staging? ( sys-apps/attr[${MULTILIB_USEDEP}] )
 	themes? (
 		dev-libs/glib:2[${MULTILIB_USEDEP}]
 		x11-libs/cairo[${MULTILIB_USEDEP}]
 		x11-libs/gtk+:3[${MULTILIB_USEDEP}]
 	)
 	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
-	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
+	!x86-fbsd? (
+		udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
+	)
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
 	vaapi? ( x11-libs/libva:=[drm,X?,${MULTILIB_USEDEP}] )
 	xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
@@ -170,7 +178,12 @@ COMMON_DEPEND="
 	)"
 
 RDEPEND="${COMMON_DEPEND}
-	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
+	!x86-fbsd? (
+		dos? ( >=games-emulation/dosbox-0.74_p20160629 )
+		samba? ( >=net-fs/samba-3.0.25[winbind] )
+		s3tc? ( >=media-libs/libtxc_dxtn-1.0.1-r1[${MULTILIB_USEDEP}] )
+		udisks? ( sys-fs/udisks:2 )
+	)
 	gecko? ( app-emulation/wine-gecko:2.44[abi_x86_32?,abi_x86_64?] )
 	mono? ( app-emulation/wine-mono:4.6.0 )
 	perl? (
@@ -180,18 +193,19 @@ RDEPEND="${COMMON_DEPEND}
 	pulseaudio? (
 		realtime? ( sys-auth/rtkit )
 	)
-	s3tc? ( >=media-libs/libtxc_dxtn-1.0.1-r1[${MULTILIB_USEDEP}] )
-	samba? ( >=net-fs/samba-3.0.25[winbind] )
 	selinux? ( sec-policy/selinux-wine )
-	udisks? ( sys-fs/udisks:2 )"
+"
 
 # tools/make_requests requires perl
 DEPEND="${COMMON_DEPEND}
+	!x86-fbsd? (
+		>=sys-kernel/linux-headers-2.6
+		prelink? ( sys-devel/prelink )
+	)
 	dev-util/patchbin
 	dev-lang/perl
 	dev-perl/XML-Simple
 	>=sys-devel/flex-2.5.33
-	>=sys-kernel/linux-headers-2.6
 	virtual/pkgconfig
 	virtual/yacc
 	X? (
@@ -199,7 +213,6 @@ DEPEND="${COMMON_DEPEND}
 		x11-proto/xextproto
 		x11-proto/xf86vidmodeproto
 	)
-	prelink? ( sys-devel/prelink )
 	xinerama? ( x11-proto/xineramaproto )"
 
 S="${WORKDIR}/${MY_P}"
