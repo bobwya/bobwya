@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -28,7 +28,7 @@ RDEPEND=">=app-admin/eselect-1.2.4
 		 !<x11-proto/glproto-1.4.17-r1
 		 !<x11-drivers/ati-drivers-14.9-r2
 		 !=x11-drivers/ati-drivers-14.12
-		 !<=app-emulation/emul-linux-x86-opengl-20140508"
+		 !<=app-emulation/emul-linux-x86-opengl-20180508"
 
 pkg_preinst() {
 	# we may be moving the config file, so get it early
