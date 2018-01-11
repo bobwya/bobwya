@@ -1,0 +1,34 @@
+diff -u1rN a/src/mainwindow.cpp b/src/mainwindow.cpp
+--- a/src/mainwindow.cpp	2018-01-10 14:37:40.975655365 +0000
++++ b/src/mainwindow.cpp	2018-01-10 14:43:29.018502341 +0000
+@@ -41,3 +41,2 @@
+ #include "mainmodel.h"
+-#include "adslabel.h"
+ #include "ticker.h"
+@@ -217,16 +216,2 @@
+     QString out = sender()->property("out").toString();
+-    if (QFile::exists(out))
+-    {
+-        QString url = sender()->property("url").toString();
+-        int h = sender()->property("h").toInt();
+-        int m = sender()->property("m").toInt();
+-        QHBoxLayout *l = static_cast<QHBoxLayout *>(ui->ads->layout());
+-        for (int i = l->count() - 1; i >= 0; --i)
+-            if (static_cast<AdsLabel *>(l->itemAt(i)->widget())->url() == url)
+-                l->takeAt(i)->widget()->deleteLater();
+-        if (l->count() > m)
+-            l->takeAt(0)->widget()->deleteLater();
+-        l->addWidget(new AdsLabel(out, url, h, ui->ads), 1);
+-        ui->ads->show();
+-    }
+     sender()->deleteLater();
+--- a/winewizard.pro	2018-01-10 15:14:30.257139448 +0000
++++ b/winewizard.pro	2018-01-10 15:19:04.156234105 +0000
+@@ -80,3 +80,2 @@
+     src/setupwizard.cpp \
+-    src/adslabel.cpp \
+     src/aboutdialog.cpp \
+@@ -122,3 +121,2 @@
+     src/setupwizard.h \
+-    src/adslabel.h \
+     src/aboutdialog.h \
