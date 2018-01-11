@@ -42,11 +42,12 @@ DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE inte
 HOMEPAGE="https://www.mozilla.com/firefox
 	https://www.rosenauer.org/hg/mozilla"
 
-KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~ia64 ~ppc ~ppc64 ~x86 ~amd64-linux ~x86-linux"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist +gmp-autoupdate hardened hwaccel jack kde pgo rust selinux test"
+REQUIRED_USE="kde? ( || ( amd64 x86 ) )"
 RESTRICT="!bindist? ( bindist )"
 
 PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCH}.tar.xz )
@@ -62,7 +63,12 @@ RDEPEND="
 	>=dev-libs/nss-3.28.3
 	>=dev-libs/nspr-4.13.1
 	selinux? ( sec-policy/selinux-mozilla )
-	kde? ( kde-misc/kmozillahelper:=  )
+	amd64? (
+		kde? ( kde-misc/kmozillahelper:=  )
+	)
+	x86? (
+		kde? ( kde-misc/kmozillahelper:=  )
+	)
 	!!www-client/firefox"
 
 DEPEND="${RDEPEND}
