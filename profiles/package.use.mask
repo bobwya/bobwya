@@ -1,0 +1,9 @@
+# Copyright 1999-2018 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+
+# global masking of >=dev-libs/icu-59
+>=www-client/firefox-kde-opensuse-56.0 system-icu
+
+# rust on mozilla packages is experimental
+mail-client/thunderbird-kde-opensuse	rust
+www-client/firefox-kde-opensuse			rust

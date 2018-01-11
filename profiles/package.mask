@@ -1,18 +1,12 @@
+# Copyright 1999-2018 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+
 # Mask all packages required by custom GL implementation switcher
-
-# Mask re-written (out-of-tree) GL implementation switcher
 app-eselect/eselect-opengl
-
-# Mask patched mesa versions
 media-libs/mesa
-
-# Mask patched xorg-server versions
 x11-base/xorg-server
-
-# Mask patched nvidia proprietary drivers
 x11-drivers/nvidia-drivers
 
-# Mask avidemux packages, with SLOT="2.6", in main Gentoo tree
-media-libs/avidemux-core:2.6
-media-libs/avidemux-plugins:2.6
-media-video/avidemux:2.6
+# Mask due to dependency on global package.use.mask:
+# media-libs/freetype infinality
+=media-libs/fontconfig-ultimate-2016.04.23
