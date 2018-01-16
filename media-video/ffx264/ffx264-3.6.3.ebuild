@@ -23,5 +23,5 @@ src_compile() {
 }
 
 src_install() {
-	emake install PREFIX="${D}${EPREFIX}usr"
+	emake install PREFIX="${ED}usr"
 }
