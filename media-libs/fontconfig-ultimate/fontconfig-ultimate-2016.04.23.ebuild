@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -47,11 +47,6 @@ create_fontconf_symlinks() {
 	popd || die "popd"
 }
 
-pkg_setup() {
-	DISABLE_AUTOFORMATTING="1"
-	DOC_CONTENTS=$(sed -e 's:${EROOT}:'"${EROOT}"':' "${FILESDIR}"/doc.txt)
-}
-
 src_prepare() {
 	pushd "${S}/fontconfig_patches/fonts-settings" || die "pushd"
 	rm -f ${blacklist_font_conf} || die "rm"
@@ -89,6 +84,8 @@ src_install() {
 	insinto /usr/share/eselect-lcdfilter/env.d
 	doins "${T}/${eselect_envfile}"
 
+	local	DISABLE_AUTOFORMATTING="1" \
+			DOC_CONTENTS=$(sed -e 's:${EROOT}:'"${EROOT}"':' "${FILESDIR}"/doc.txt)
 	readme.gentoo_create_doc
 
 	unset -f create_fontconf_symlinks
