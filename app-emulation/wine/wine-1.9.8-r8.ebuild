@@ -20,16 +20,14 @@ if [[ "${MY_PV}" == "9999" ]]; then
 	inherit git-r3
 	SRC_URI=""
 else
+	KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
 	last_component="$( get_version_component_range $((version_component_count)) )"
+	rc_version=0
 	if [[ "${last_component}" =~ ^rc[[:digit:]]+$ ]]; then
 		rc_version=1
 		: $(( --version_component_count ))
 		MY_PV=$(replace_version_separator $((version_component_count)) '''-''')
 		MY_P="${MY_PN}-${MY_PV}"
-		#KEYWORDS=""
-	else
-		rc_version=0
-		KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
 	fi
 	major_version=$(get_major_version)
 	minor_version=$(get_version_component_range 2)
@@ -59,7 +57,7 @@ GENTOO_WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20171106"
 GENTOO_WINE_EBUILD_COMMON_PN="${GENTOO_WINE_EBUILD_COMMON_P%-*}"
 GENTOO_WINE_EBUILD_COMMON_PV="${GENTOO_WINE_EBUILD_COMMON_P##*-}"
 
-WINE_STAGING_GIT_HELPER_P="wine-staging-git-helper-0.1.8"
+WINE_STAGING_GIT_HELPER_P="wine-staging-git-helper-0.1.9"
 WINE_STAGING_GIT_HELPER_PN="${WINE_STAGING_GIT_HELPER_P%-*}"
 WINE_STAGING_GIT_HELPER_PV="${WINE_STAGING_GIT_HELPER_P##*-}"
 
@@ -93,7 +91,7 @@ REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	s3tc? ( staging )
 	themes? ( staging )
 	vaapi? ( staging )
-	vulkan? ( staging )" # osmesa-opengl #286560 # X-truetype #551124
+	vulkan? ( staging )" #286560 osmesa-opengl  #551124 X-truetype
 
 # FIXME: the test suite is unsuitable for us; many tests require net access
 # or fail due to Xvfb's opengl limitations.
@@ -285,13 +283,13 @@ wine_gcc_specific_pretests() {
 	gcc_major_version=$(gcc-major-version)
 	gcc_minor_version=$(gcc-minor-version)
 
-	# bug #549768
+	#549768 sys-devel/gcc-5 miscompiles ms_abi functions (breaks app-emulation/wine)
 	if (( using_abi_x86_64 && (gcc_major_version == 5 && gcc_minor_version <= 2) )); then
 		ebegin "(subshell): checking for =sys-devel/gcc-5.1.x , =sys-devel/gcc-5.2.0 MS X86_64 ABI compiler bug ..."
-		( # Run in a subshell to prevent "Aborted" message
-			$(tc-getCC) -O2 "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/files/pr66838.c" -o "${T}/pr66838" || die "cc compilation failed: pr66838 test"
-			"${T}"/pr66838 &>/dev/null || die "pr66838 test failed"
-		)
+		$(tc-getCC) -O2 "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/files/pr66838.c" -o "${T}/pr66838" \
+			|| die "cc compilation failed: pr66838 test"
+		# Run in a subshell to prevent "Aborted" message
+		( "${T}"/pr66838 || false ) >/dev/null 2>&1
 		if ! eend $?; then
 			eerror "(subshell): =sys-devel/gcc-5.1.x , =sys-devel/gcc-5.2.0 MS X86_64 ABI compiler bug detected."
 			eerror "64-bit wine cannot be built with =sys-devel/gcc-5.1 or initial patchset of =sys-devel/gcc-5.2.0."
@@ -304,13 +302,11 @@ wine_gcc_specific_pretests() {
 		fi
 	fi
 
-	# bug #574044
+	#574044 sys-devel/gcc-5.3.0 miscompiles app-emulation/wine
 	if (( using_abi_x86_64 && (gcc_major_version == 5) && (gcc_minor_version == 3) )); then
 		ebegin "(subshell): checking for =sys-devel/gcc-5.3.0 X86_64 misaligned stack compiler bug ..."
-		( # Compile in a subshell to prevent "Aborted" message
-			$(tc-getCC) -O2 -mincoming-stack-boundary=3 "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/files/pr69140.c" -o "${T}"/pr69140 &>/dev/null \
-				|| die "pr69140 test failed"
-		)
+		# Compile in a subshell to prevent "Aborted" message
+		( $(tc-getCC) -O2 -mincoming-stack-boundary=3 "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/files/pr69140.c" -o "${T}/pr69140" ) >/dev/null 2>&1
 		if ! eend $?; then
 			eerror "(subshell): =sys-devel/gcc-5.3.0 X86_64 misaligned stack compiler bug detected."
 			eerror "Please re-emerge the latest =sys-devel/gcc-5.3.0 ebuild,"
@@ -327,9 +323,8 @@ wine_generic_compiler_pretests() {
 
 	if use abi_x86_64; then
 		ebegin "(subshell): checking compiler support for (64-bit) builtin_ms_va_list ..."
-		( # Compile in a subshell to prevent "Aborted" message
-			$(tc-getCC) -O2 "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/files/builtin_ms_va_list.c" -o "${T}"/builtin_ms_va_list &>/dev/null || die "test for builtin_ms_va_list support failed"
-		)
+		# Compile in a subshell to prevent "Aborted" message
+		( $(tc-getCC) -O2 "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/files/builtin_ms_va_list.c" -o "${T}/builtin_ms_va_list" >/dev/null 2>&1 )
 		if ! eend $?; then
 			eerror "(subshell): $(tc-getCC) does not support builtin_ms_va_list."
 			eerror "Please re-emerge using a compiler (version) that supports building 64-bit Wine."
@@ -346,9 +341,6 @@ pkg_pretend() {
 		eerror "or >=media-sound/oss-4 (only available through an Overlay)."
 		die "USE=+oss currently unsupported on this system."
 	fi
-
-	einfo "For information about the packaging of Wine in the ::bobwya Overlay"
-	einfo "please read the Github homepage overview: https://github.com/bobwya/bobwya"
 }
 
 pkg_setup() {
@@ -367,11 +359,11 @@ src_unpack() {
 		elif [[ ! -z "${EGIT_STAGING_COMMIT:-${EGIT_STAGING_BRANCH}}" ]]; then
 			# References are relative to Wine Staging git tree (checkout Wine Staging git tree first)
 			# Use env variables "EGIT_STAGING_COMMIT" or "EGIT_STAGING_BRANCH" to reference Wine Staging git tree
-			# Use git-r3 internal functions for secondary Wine Staging repository. See #588604
+			#588604 Use git-r3 internal functions for secondary Wine Staging repository
 			ebegin "(subshell): Wine Staging git reference specified. Building Wine git with Wine Staging patchset ..."
 			(
 				# shellcheck source=/dev/null
-				source "${WORKDIR%/}/${WINE_STAGING_GIT_HELPER_P%/}/${WINE_STAGING_GIT_HELPER_PN}.sh" || die
+				source "${WORKDIR%/}/${WINE_STAGING_GIT_HELPER_P%/}/${WINE_STAGING_GIT_HELPER_PN}.sh" || exit 1
 				if [[ ! -z "${EGIT_STAGING_COMMIT}" ]]; then
 					ewarn "Building Wine against Wine Staging git commit EGIT_STAGING_COMMIT=\"${EGIT_STAGING_COMMIT}\" ."
 					git-r3_fetch "${STAGING_EGIT_REPO_URI}" "${EGIT_STAGING_COMMIT}"
@@ -389,11 +381,11 @@ src_unpack() {
 		else
 			# References are relative to Wine git tree (post-checkout Wine Staging git tree)
 			# Use env variables "EGIT_WINE_COMMIT" or "EGIT_WINE_BRANCH" to reference Wine git tree
-			# Use git-r3 internal functions for secondary Wine Staging repository. See #588604
+			#588604 Use git-r3 internal functions for secondary Wine Staging repository
 			ebegin "(subshell): Wine git reference specified or inferred. Building Wine git with with Wine Staging patchset ..."
 			(
 				# shellcheck source=/dev/null
-				source "${WORKDIR%/}/${WINE_STAGING_GIT_HELPER_P%/}/${WINE_STAGING_GIT_HELPER_PN}.sh" || die
+				source "${WORKDIR%/}/${WINE_STAGING_GIT_HELPER_P%/}/${WINE_STAGING_GIT_HELPER_PN}.sh" || exit 1
 				wine_git_unpack "${S}"
 				wine_commit="${EGIT_VERSION}"
 				wine_target_commit="${wine_commit}"
@@ -403,7 +395,8 @@ src_unpack() {
 				if ! walk_wine_staging_git_tree "${STAGING_DIR}" "${S}" "${wine_commit}" "wine_staging_commit" ; then
 					find_closest_wine_commit "${STAGING_DIR}" "${S}" "wine_commit" "wine_staging_commit" "wine_commit_offset" \
 						&& display_closest_wine_commit_message "${wine_commit}" "${wine_staging_commit}" "${wine_commit_offset}"
-					die "Failed to find Wine Staging git commit corresponding to supplied Wine git commit \"${wine_target_commit}\" ."
+					ewarn "Failed to find Wine Staging git commit corresponding to supplied Wine git commit \"${wine_target_commit}\" ."
+					exit 1
 				fi
 				einfo "Building Wine Staging commit \"${wine_staging_commit}\" corresponding to Wine commit \"${wine_target_commit}\" ..."
 			)
@@ -425,7 +418,7 @@ src_prepare() {
 	}
 
 	local md5hash
-	md5hash="$(md5sum server/protocol.def || die "md5sum")"
+	md5hash="$(md5sum server/protocol.def)" || die "md5sum failed"
 	[[ ! -z "${STABLE_PREFIX}" ]] && sed -i -e 's/[\-\.[:alnum:]]\+$/'"${MY_PV}"'/' "${S}/VERSION"
 	local -a PATCHES PATCHES_BIN
 	PATCHES+=(
@@ -437,8 +430,8 @@ src_prepare() {
 	)
 	if use truetype; then
 		PATCHES+=(
-			"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.18-freetype-2.8.1-segfault.patch"    # 631676
-			"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.18-freetype-2.8.1-drop-glyphs.patch" # 631676
+			"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.18-freetype-2.8.1-segfault.patch"    #631676
+			"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.18-freetype-2.8.1-drop-glyphs.patch" #631676
 		)
 		PATCHES_BIN+=( "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.18-freetype-2.8.1-implement_minimum_em_size_required_by_opentype_1.8.2.patch" ) #631376
 	fi
@@ -453,7 +446,7 @@ src_prepare() {
 	ebegin "(subshell) script: \"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/scripts/${MY_PN}-multilib-portage-sed.sh\" ..."
 	(
 		# shellcheck disable=SC1090
-		source "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/scripts/${MY_PN}-multilib-portage-sed.sh" || die
+		source "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/scripts/${MY_PN}-multilib-portage-sed.sh"
 	)
 	eend $? || die "(subshell) script: \"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/scripts/${MY_PN}-multilib-portage-sed.sh\"."
 
@@ -483,7 +476,7 @@ src_prepare() {
 		(
 			# shellcheck disable=SC2068
 			set -- DESTDIR="${S}" --backend=epatch --no-autoconf --all ${STAGING_EXCLUDE_PATCHSETS[@]/#/-W }
-			cd "${STAGING_DIR}/patches" || die "cd failed"
+			cd "${STAGING_DIR}/patches" || { eerror "cd failed"; exit 1; }
 			# shellcheck source=/dev/null
 			source "${STAGING_DIR}/patches/patchinstall.sh"
 		)
@@ -496,50 +489,42 @@ src_prepare() {
 		fi
 	fi
 
-	local -a array_locale_man=( "de" "fr" "pl" ) \
-		array_disabled_locale_man \
-		array_enabled_locale_man \
-		array_l10n_locales
+	disable_man_file() {
+		(($# == 3))	|| die "invalid number of arguments: ${#} (3)"
+		local makefile="${1}" man_file="${2}" locale
+		[[ "${3}" = "en" ]] || locale="\.${3}\.UTF-8"
 
-	array_l10n_locales=( $(l10n_get_locales) )
+		sed -i -e "\|${man_file}${locale}\.man\.in|d" "${makefile}" || die "sed failed"
+	}
 
-	local locale_man makefile_in sed_expression
-	# disable non en-locale manpages using L10N #643576
-	# shellcheck disable=SC2068
-	for locale_man in ${array_locale_man[@]}; do
-		# shellcheck disable=SC2086
-		if has "${locale_man}" ${array_l10n_locales[@]}; then
-			array_enabled_locale_man+=( "${locale_man}" )
-		else
-			array_disabled_locale_man+=( "${locale_man}" )
-		fi
-	done
-
-	# respect LINGUAS/L10N when installing man pages, #469418
-	# shellcheck disable=SC2068
-	for locale_man in ${array_disabled_locale_man[@]}; do
-		sed_expression="${sed_expression}s/[\-\_[:alnum:]]*\.${locale_man}\.UTF-8\.man\.in//g;"
-	done
-	[[ -z "${sed_expression}" ]] || while IFS= read -r -d '' makefile_in; do
-		sed -i -e "${sed_expression}" "${makefile_in}" || die "sed failed"
-	done < <(find "${S%/}"/{loader,programs,server,tools} -type f -name "Makefile.in" -printf '%p\0' -exec false {} + \
-				&& die "find failed - no Makefile.in file matches in \"${S}\""
-			)
-
-	# generate wine64 man pages for 64-bit bit only installation, #617864
+	#617864 Generate wine64 man pages for 64-bit bit only installation
 	if use abi_x86_64 && ! use abi_x86_32; then
-		local -r loader_directory="${S%/}/loader"
-		local man_in
-		# shellcheck disable=SC2068
-		for locale_man in ${array_enabled_locale_man[@]}; do
-			man_in="wine.${locale_man}.UTF-8.man.in"
-			mv	"${loader_directory}/${man_in}" "${loader_directory}/${man_in/#wine/wine64}" \
-				|| die "mv failed"
+		find "${S%/}/loader" -type f -name "wine.*man.in" -exec sh -c 'mv "${1}" "${1/\/wine./\/wine64.}"' sh "{}" \; \
+			|| die "find (mv) failed"
+		sed -i -e '\|wine\.[^[:blank:]]*man\.in|{s|wine\.|wine64\.|g}' "${S%/}/loader/Makefile.in" \
+			|| die "sed failed"
+	fi
+
+	#469418 Respect LINGUAS/L10N when building man pages
+	local makefile_in
+	find "${S}" -type f -name "Makefile.in" -exec egrep -q "^MANPAGES" "{}" \; -printf '%p\0' 2>/dev/null \
+		| while IFS= read -r -d '' makefile_in; do
+			l10n_for_each_disabled_locale_do disable_man_file "${makefile_in}" ""
 		done
-		man_in="wine.man.in"
-		mv	"${loader_directory}/${man_in}" "${loader_directory}/${man_in/#wine/wine64}" \
-			|| die "mv failed"
-		sed -i -e '/wine\(\.[\_[:alpha:]]\+\.UTF-8\|\)\.man\.in/{s/wine\./wine64\./g}' "${loader_directory}/Makefile.in" \
+
+	# Don't build winedump,winemaker if not using perl
+	if ! use perl; then
+		# winedump calls function_grep.pl, and winemaker is a perl script
+		local tools
+		for tool in "winedump" "winemaker"; do
+			sed -i -e '\|WINE_CONFIG_TOOL(tools/'"${tool}"',[^[:blank:]]*)$|d' "${S%/}/configure.ac" \
+				|| die "sed failed"
+		done
+	fi
+
+	#551124 Only build wineconsole, if either of X or ncurses is installed
+	if ! use X && ! use ncurses; then
+		sed -i -e '\|WINE_CONFIG_PROGRAM(wineconsole,[^[:blank:]]*)$|d' "${S%/}/configure.ac" \
 			|| die "sed failed"
 	fi
 
@@ -549,7 +534,7 @@ src_prepare() {
 	eautoreconf
 
 	# Modification of the server protocol requires regenerating the server requests
-	if ! md5sum -c - <<<"${md5hash}" &>/dev/null; then
+	if ! md5sum -c - <<<"${md5hash}" >/dev/null 2>&1; then
 		einfo "server/protocol.def was patched; running tools/make_requests"
 		tools/make_requests || die "tools/make_requests failed" #432348
 	fi
@@ -558,7 +543,7 @@ src_prepare() {
 		sed -i '/^MimeType/d' "${S}/loader/wine.desktop" || die "sed failed" #117785
 	fi
 
-	# hi-res default icon, #472990, https://bugs.winehq.org/show_bug.cgi?id=24652
+	#472990 use hi-res default icon, https://bugs.winehq.org/show_bug.cgi?id=24652
 	cp "${EROOT%/}/usr/share/wine/icons/oic_winlogo.ico" dlls/user32/resources/ || die "cp failed"
 
 	l10n_get_locales > "${S}/po/LINGUAS" || die "l10n_get_locales failed" # Make Wine respect LINGUAS
@@ -622,8 +607,8 @@ multilib_src_configure() {
 	)
 
 	local PKG_CONFIG AR RANLIB
-	# Avoid crossdev's i686-pc-linux-gnu-pkg-config if building wine32 on amd64; #472038
-	# set AR and RANLIB to make QA scripts happy; #483342
+	#472038 Avoid crossdev's i686-pc-linux-gnu-pkg-config if building wine32 on amd64
+	#483342 set AR and RANLIB to make QA scripts happy
 	tc-export PKG_CONFIG AR RANLIB
 
 	if use amd64; then
@@ -668,28 +653,19 @@ multilib_src_install_all() {
 
 	prune_libtool_files --all
 
-	if ! use perl; then  # winedump calls function_grep.pl, and winemaker is a perl script
-		rm "${D%/}/usr/bin"/{wine{dump,maker},function_grep.pl} || die "rm failed"
-		rm "${D%/}/usr/share/man/man1/wine"{dump,maker}.1 || die "rm failed"
-	fi
-
-	# Remove wineconsole if neither backend is installed #551124
-	if ! use X && ! use ncurses; then
-		rm "${D%/}/usr/bin/wineconsole"* || die "rm failed"
-		rm "${D%/}/usr/share/man/man1/wineconsole"* || die "rm failed"
-
-		rm_wineconsole() {
-			rm "/usr/$(get_libdir)/wine"/{,fakedlls/}wineconsole.exe* || die "rm failed"
-		}
-		multilib_foreach_abi rm_wineconsole
-	fi
-
 	use abi_x86_32 && pax-mark psmr "${D%/}/usr/bin/wine"{,-preloader}   #255055
 	use abi_x86_64 && pax-mark psmr "${D%/}/usr/bin/wine64"{,-preloader} #255055
 
 	if use abi_x86_64 && ! use abi_x86_32; then
-		dosym "wine64" "/usr/bin/wine"                     #404331
-		dosym "wine64-preloader" "/usr/bin/wine-preloader" #404331
+		#404331
+		dosym "wine64" "/usr/bin/wine"
+		dosym "wine64-preloader" "/usr/bin/wine-preloader"
+
+		# Symlink wine manpage - for all active locales
+		local manpage manpage_target="wine64.1"
+		while IFS= read -r -d '' manpage; do
+			dosym "${manpage_target}" "${manpage/%${manpage_target}/${manpage_target/64/}}"
+		done < <(find "/usr/share/man" -type f -name "${manpage_target}" -printf '%p\0' 2>/dev/null)
 	fi
 }
 
@@ -709,7 +685,7 @@ pkg_postinst() {
 		ewarn "to install an external one, using winetricks."
 	fi
 	if use staging; then
-		ewarn "This version of Wine Staging does not support the CMST patchset."
+		ewarn "This version of Wine Staging does not support the CSMT patchset."
 	fi
 }
 pkg_postrm() {
