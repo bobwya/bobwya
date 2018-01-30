@@ -35,8 +35,8 @@ EHG_REPO_URI="https://www.rosenauer.org/hg/mozilla"
 #MOZCONFIG_OPTIONAL_QT5=1
 MOZCONFIG_OPTIONAL_WIFI=1
 
-inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mozconfig-kde-v6.57 pax-utils xdg-utils autotools mercurial \
-	virtualx mozlinguas-v2
+inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mercurial mozconfig-kde-v6.57 pax-utils xdg-utils autotools \
+	virtualx mozlinguas-kde-v2
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.com/firefox

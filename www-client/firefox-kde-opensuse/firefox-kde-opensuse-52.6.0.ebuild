@@ -46,7 +46,7 @@ KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~ia64 ~ppc ~ppc64 ~x86 ~amd64-linux ~x86-lin
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist +gmp-autoupdate hardened hwaccel jack kde pgo rust selinux test"
+IUSE="bindist eme-free +gmp-autoupdate hardened hwaccel jack kde pgo rust selinux test"
 REQUIRED_USE="kde? ( || ( amd64 x86 ) )"
 RESTRICT="!bindist? ( bindist )"
 
@@ -73,7 +73,7 @@ RDEPEND="
 
 DEPEND="${RDEPEND}
 	pgo? ( >=sys-devel/gcc-4.5 )
-	rust? ( dev-lang/rust )
+	rust? ( virtual/rust )
 	amd64? ( ${ASM_DEPEND} virtual/opengl )
 	x86? ( ${ASM_DEPEND} virtual/opengl )"
 
@@ -181,6 +181,7 @@ src_prepare() {
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox-kde-opensuse/)
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
+	rm -f "${WORKDIR}"/firefox/2007_fix_nvidia_latest.patch
 
 	# Enable gnomebreakpad
 	if use debug; then
@@ -257,6 +258,8 @@ src_configure() {
 
 	# enable JACK, bug 600002
 	mozconfig_use_enable jack
+
+	use eme-free && mozconfig_annotate '+eme-free' --disable-eme
 
 	# It doesn't compile on alpha without this LDFLAGS
 	use alpha && append-ldflags "-Wl,--no-relax"
@@ -359,14 +362,11 @@ src_install() {
 			|| die "cp failed"
 	fi
 
-	if use gmp-autoupdate; then
-		local plugin
-		for plugin in "${GMP_PLUGIN_LIST[@]}"; do
-			echo "pref(\"media.${plugin}.autoupdate\", false);" >> \
-				"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
-				|| die "echo failed"
-		done
-	fi
+	use gmp-autoupdate || use eme-free || for plugin in "${GMP_PLUGIN_LIST[@]}" ; do
+		echo "pref(\"media.${plugin}.autoupdate\", false);" >> \
+			"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
+			|| die "echo failed"
+	done
 
 	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
 	emake DESTDIR="${D}" install
@@ -450,7 +450,7 @@ pkg_postinst() {
 	xdg_desktop_database_update
 	gnome2_icon_cache_update
 
-	if ! use gmp-autoupdate; then
+	if ! use gmp-autoupdate && ! use eme-free; then
 		elog "USE='-gmp-autoupdate' has disabled the following plugins from updating or"
 		elog "installing into new profiles:"
 		local plugin
