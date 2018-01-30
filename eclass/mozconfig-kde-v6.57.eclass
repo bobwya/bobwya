@@ -169,6 +169,7 @@ DEPEND="app-arch/zip
 	sys-apps/findutils
 	pulseaudio? ( media-sound/pulseaudio )
 	>=virtual/rust-1.19.0
+	<virtual/rust-1.23.0
 	dev-util/cargo
 	${RDEPEND}"
 
