@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 #
 # @ECLASS: mozcoreconf-kde-v4.eclass
@@ -210,9 +210,6 @@ mozconfig_init() {
 	if [[ $(gcc-major-version) -ge 6 ]]; then
 		append-cxxflags -fno-delete-null-pointer-checks -fno-lifetime-dse -fno-schedule-insns2
 	fi
-
-	# Go a little faster; use less RAM
-	append-flags "$MAKEEDIT_FLAGS"
 
 	# Use the MOZILLA_FIVE_HOME for the rpath
 	append-ldflags -Wl,-rpath="${MOZILLA_FIVE_HOME}",--enable-new-dtags
