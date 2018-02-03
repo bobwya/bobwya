@@ -5,45 +5,6 @@
 # Node ID 22374473d24f4b4877e50f0b49da3174a70f79ab
 # Parent  fcb1865dca35554b6d8e9afe017bc7b74c413c72
 Bug 1357391 - Implement a PKCS#11 management API r=kmag,zombie
-
-diff --git a/browser/components/extensions/ext-browser.json b/browser/components/extensions/ext-browser.json
---- a/browser/components/extensions/ext-browser.json
-+++ b/browser/components/extensions/ext-browser.json
-@@ -117,16 +117,24 @@
-     "url": "chrome://browser/content/ext-pageAction.js",
-     "schema": "chrome://browser/content/schemas/page_action.json",
-     "scopes": ["addon_parent"],
-     "manifest": ["page_action"],
-     "paths": [
-       ["pageAction"]
-     ]
-   },
-+  "pkcs11": {
-+    "url": "chrome://browser/content/ext-pkcs11.js",
-+    "schema": "chrome://browser/content/schemas/pkcs11.json",
-+    "scopes": ["addon_parent"],
-+    "paths": [
-+      ["pkcs11"]
-+    ]
-+  },
-   "geckoProfiler": {
-     "url": "chrome://browser/content/ext-geckoProfiler.js",
-     "schema": "chrome://browser/content/schemas/geckoProfiler.json",
-     "scopes": ["addon_parent"],
-     "paths": [
-       ["geckoProfiler"]
-     ]
-   },
-diff --git a/browser/components/extensions/ext-pkcs11.js b/browser/components/extensions/ext-pkcs11.js
-new file mode 100644
---- /dev/null
-+++ b/browser/components/extensions/ext-pkcs11.js
-@@ -0,0 +1,145 @@
-+"use strict";
-+
-+XPCOMUtils.defineLazyModuleGetters(this, {
-+  ctypes: "resource://gre/modules/ctypes.jsm",
-+  NativeManifests: "resource://gre/modules/NativeManifests.jsm",
 +  OS: "resource://gre/modules/osfile.jsm",
 +});
 +
