@@ -5,19 +5,6 @@
 # Node ID 22374473d24f4b4877e50f0b49da3174a70f79ab
 # Parent  fcb1865dca35554b6d8e9afe017bc7b74c413c72
 Bug 1357391 - Implement a PKCS#11 management API r=kmag,zombie
-+  OS: "resource://gre/modules/osfile.jsm",
-+});
-+
-+XPCOMUtils.defineLazyServiceGetter(this,
-+  "pkcs11db",
-+  "@mozilla.org/security/pkcs11moduledb;1",
-+  "nsIPKCS11ModuleDB");
-+
-+var {DefaultMap} = ExtensionUtils;
-+
-+const findModuleByPath = function(path) {
-+  let modules = pkcs11db.listModules();
-+  for (let module of XPCOMUtils.IterSimpleEnumerator(modules, Ci.nsIPKCS11Module)) {
 +    if (module && module.libName === path) {
 +      return module;
 +    }
