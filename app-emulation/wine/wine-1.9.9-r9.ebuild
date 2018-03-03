@@ -78,9 +78,8 @@ fi
 LICENSE="LGPL-2.1"
 SLOT="0"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cuda cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test themes +threads +truetype +udisks v4l vaapi vulkan +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cuda cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test themes +threads +truetype +udisks v4l vaapi +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
-	!amd64? ( !vulkan )
 	X? ( truetype )
 	cuda? ( staging )
 	elibc_glibc? ( threads )
@@ -90,8 +89,7 @@ REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	test? ( abi_x86_32 )
 	s3tc? ( staging )
 	themes? ( staging )
-	vaapi? ( staging )
-	vulkan? ( staging )" #286560 osmesa-opengl  #551124 X-truetype
+	vaapi? ( staging )" #286560 osmesa-opengl  #551124 X-truetype
 
 # FIXME: the test suite is unsuitable for us; many tests require net access
 # or fail due to Xvfb's opengl limitations.
@@ -213,7 +211,6 @@ DEPEND="${COMMON_DEPEND}
 		x11-proto/xextproto
 		x11-proto/xf86vidmodeproto
 	)
-	amd64? ( vulkan? ( >=media-libs/vulkan-loader-1.0.30[X,${MULTILIB_USEDEP}] ) )
 	xinerama? ( x11-proto/xineramaproto )"
 
 S="${WORKDIR}/${MY_P}"
@@ -458,7 +455,6 @@ src_prepare() {
 		use gstreamer && STAGING_EXCLUDE_PATCHSETS+=( "quartz-NULL_TargetFormat" )
 		use cuda || STAGING_EXCLUDE_PATCHSETS+=( "nvapi-Stub_DLL" "nvcuda-CUDA_Support" "nvcuvid-CUDA_Video_Support" "nvencodeapi-Video_Encoder" )
 		use pipelight || STAGING_EXCLUDE_PATCHSETS+=( "Pipelight" )
-		use vulkan || STAGING_EXCLUDE_PATCHSETS+=( "vulkan-Vulkan_Implementation" )
 
 		# Process Wine Staging exluded patchsets
 		local indices=( ${!STAGING_EXCLUDE_PATCHSETS[*]} )
@@ -684,6 +680,10 @@ pkg_postinst() {
 		ewarn "implementation of .NET.  Many windows applications rely upon"
 		ewarn "the existence of a .NET implementation, so you will likely need"
 		ewarn "to install an external one, using winetricks."
+	fi
+	if use amd64 && use staging; then
+		einfo "This version of Wine Staging has support for an experimental Vulkan translation layer."
+		einfo "This optional runtime support requires package: >=media-libs/vulkan-loader-1.0.30"
 	fi
 	if use staging; then
 		ewarn "This version of Wine Staging does not support the CSMT patchset."

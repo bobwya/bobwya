@@ -78,7 +78,7 @@ fi
 LICENSE="LGPL-2.1"
 SLOT="0"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cuda cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl staging test themes +threads +truetype udev +udisks v4l vaapi vulkan +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cuda cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner sdl2 selinux +ssl staging test themes +threads +truetype udev +udisks v4l vaapi vulkan +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	!amd64? ( !vulkan )
 	X? ( truetype )
@@ -90,8 +90,7 @@ REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	test? ( abi_x86_32 )
 	s3tc? ( staging )
 	themes? ( staging )
-	vaapi? ( staging )
-	vulkan? ( staging )" #286560 osmesa-opengl  #551124 X-truetype
+	vaapi? ( staging )" #286560 osmesa-opengl  #551124 X-truetype
 
 # FIXME: the test suite is unsuitable for us; many tests require net access
 # or fail due to Xvfb's opengl limitations.
@@ -144,6 +143,7 @@ COMMON_DEPEND="
 	png? ( media-libs/libpng:0=[${MULTILIB_USEDEP}] )
 	pulseaudio? ( media-sound/pulseaudio[${MULTILIB_USEDEP}] )
 	scanner? ( media-gfx/sane-backends:=[${MULTILIB_USEDEP}] )
+	sdl2? ( media-libs/libsdl2[haptic,joystick,${MULTILIB_USEDEP}] )
 	ssl? ( net-libs/gnutls:=[${MULTILIB_USEDEP}] )
 	themes? (
 		dev-libs/glib:2[${MULTILIB_USEDEP}]
@@ -157,6 +157,9 @@ COMMON_DEPEND="
 	)
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
 	vaapi? ( x11-libs/libva:=[drm,X?,${MULTILIB_USEDEP}] )
+	amd64? (
+		vulkan? ( media-libs/vulkan-loader[X,${MULTILIB_USEDEP}] )
+	)
 	xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
 	xinerama? ( x11-libs/libXinerama[${MULTILIB_USEDEP}] )
 	xml? (
@@ -216,7 +219,6 @@ DEPEND="${COMMON_DEPEND}
 		x11-proto/xextproto
 		x11-proto/xf86vidmodeproto
 	)
-	amd64? ( vulkan? ( >=media-libs/vulkan-loader-1.0.30[X,${MULTILIB_USEDEP}] ) )
 	xinerama? ( x11-proto/xineramaproto )"
 
 S="${WORKDIR}/${MY_P}"
@@ -531,7 +533,6 @@ src_prepare() {
 		use gstreamer && STAGING_EXCLUDE_PATCHSETS+=( "quartz-NULL_TargetFormat" )
 		use cuda || STAGING_EXCLUDE_PATCHSETS+=( "nvapi-Stub_DLL" "nvcuda-CUDA_Support" "nvcuvid-CUDA_Video_Support" "nvencodeapi-Video_Encoder" )
 		use pipelight || STAGING_EXCLUDE_PATCHSETS+=( "Pipelight" )
-		use vulkan || STAGING_EXCLUDE_PATCHSETS+=( "vulkan-Vulkan_Implementation" )
 
 		# Process Wine Staging exluded patchsets
 		local indices=( ${!STAGING_EXCLUDE_PATCHSETS[*]} )
@@ -671,11 +672,13 @@ multilib_src_configure() {
 		$(use_with pulseaudio pulse)
 		$(use_with threads pthread)
 		$(use_with scanner sane)
+		$(use_with sdl2 sdl)
 		$(use_enable test tests)
 		$(use_with truetype freetype)
 		$(use_with udev)
 		$(use_with udisks dbus)
 		$(use_with v4l)
+		$(use_with vulkan)
 		$(use_with X x)
 		$(use_with X xfixes)
 		$(use_with xcomposite)
