@@ -22,11 +22,13 @@ However Wine can optionally use native Windows DLLs if they are available.Wine p
 		<flag name="prelink">Run prelink on DLLs during build.</flag>
 		<flag name="realtime">Pull in <pkg>sys-auth/rtkit</pkg> for low-latency pulseaudio support.</flag>
 		<flag name="run-exes">Use Wine to open and run .EXE and .MSI files.</flag>
+		<flag name="sdl2">Enable controller and joystick support using <pkg>media-libs/libsdl2</pkg>.</flag>
 		<flag name="samba">Add support for NTLM auth. See:
 			https://web.archive.org/web/20160108123008/http://wiki.winehq.org:80/NtlmAuthSetupGuide and
 			https://web.archive.org/web/20150906013746/http://wiki.winehq.org/NtlmSigningAndSealing
 			(these pages are not currently in the updated WineHQ Wiki).</flag>
 		<flag name="udev">Use <pkg>virtual/libudev</pkg> to provide plug and play support.</flag>
+		<flag name="vulkan">Enable Vulkan layer graphics support using <pkg>media-libs/vulkan-loader</pkg>.</flag>
 	</use>
 	<upstream>
 		<remote-id type="github">wine-mirror/wine</remote-id>
