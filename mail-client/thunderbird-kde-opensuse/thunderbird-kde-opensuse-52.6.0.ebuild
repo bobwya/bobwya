@@ -5,7 +5,7 @@
 EAPI=6
 WANT_AUTOCONF="2.1"
 MOZ_ESR=""
-MOZ_LIGHTNING_VER="5.4.5"
+MOZ_LIGHTNING_VER="5.4.5.2"
 MOZ_LIGHTNING_GDATA_VER="3.3"
 
 # This list can be updated using scripts/get_langs.sh from the mozilla overlay
@@ -35,7 +35,7 @@ MOZ_P="${MOZ_PN}-${MOZ_PV}"
 MOZCONFIG_OPTIONAL_GTK2ONLY=1
 MOZCONFIG_OPTIONAL_WIFI=1
 
-inherit flag-o-matic toolchain-funcs mozconfig-kde-v6.52 makeedit autotools pax-utils check-reqs nsplugins mozlinguas-kde-v2 xdg-utils gnome2-utils mercurial
+inherit flag-o-matic toolchain-funcs mozconfig-kde-v6.52 autotools pax-utils check-reqs nsplugins mozlinguas-kde-v2 xdg-utils gnome2-utils mercurial
 
 DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.com/en-US/thunderbird
@@ -136,6 +136,7 @@ src_prepare() {
 	local -a PATCHES
 	PATCHES+=( "${FILESDIR}/1000_fix_gentoo_preferences.patch" )
 
+	rm -f "${WORKDIR}/firefox/2007_fix_nvidia_latest.patch" || die "rm failed"
 	pushd "${S}/mozilla" &>/dev/null || die "pushd failed"
 	if use kde; then
 		# Gecko/toolkit OpenSUSE KDE integration patchset
