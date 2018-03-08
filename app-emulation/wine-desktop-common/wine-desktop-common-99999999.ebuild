@@ -25,37 +25,28 @@ IUSE=""
 
 RDEPEND=""
 
-# These use a non-standard "Wine" category, which is provided by
-# /etc/xdg/applications-merged/wine.menu
-QA_DESKTOP_FILE="/usr/share/applications/wine-browsecdrive.desktop
-/usr/share/applications/wine-cmd.desktop
-/usr/share/applications/wine-control.desktop
-/usr/share/applications/wine-explorer.desktop
-/usr/share/applications/wine-iexplore.desktop
-/usr/share/applications/wine-mime-msi.desktop
-/usr/share/applications/wine-msiexec.desktop
-/usr/share/applications/wine-oleview.desktop
-/usr/share/applications/wine-regedit.desktop
-/usr/share/applications/wine-taskmgr.desktop
-/usr/share/applications/wine-uninstaller.desktop
-/usr/share/applications/wine-wineboot.desktop
-/usr/share/applications/wine-winecfg.desktop
-/usr/share/applications/wine-winefile.desktop
-/usr/share/applications/wine-winhelp.desktop
-/usr/share/applications/wine-wordpad.desktop
+# These desktop files use a non-standard "Wine" category,
+# which is provided by: /etc/xdg/applications-merged/winehq-wine.menu
+QA_DESKTOP_FILE="
+usr/share/applications/winehq-oleview.desktop
+usr/share/applications/winehq-regedit.desktop
+usr/share/applications/winehq-winemine.desktop
+usr/share/applications/winehq-winhelp.desktop
+usr/share/applications/winehq-wordpad.desktop
+usr/share/applications/winehq-msiexec.desktop
+usr/share/applications/winehq-mime-msi.desktop
+usr/share/applications/winehq-browsecdrive.desktop
+usr/share/applications/winehq-notepad.desktop
+usr/share/applications/winehq-uninstaller.desktop
+usr/share/applications/winehq-wineboot.desktop
+usr/share/applications/winehq-explorer.desktop
+usr/share/applications/winehq-winecfg.desktop
+usr/share/applications/winehq-winefile.desktop
+usr/share/applications/winehq-control.desktop
+usr/share/applications/winehq-cmd.desktop
+usr/share/applications/winehq-iexplore.desktop
+usr/share/applications/winehq-taskmgr.desktop
 "
-
-pkg_pretend() {
-	einfo ">=${CATEGORY}/${PN}-20180822 introduces a full set of scalable icons"
-	einfo "and desktop files for all Wine builtin utilities and helpers."
-	einfo "If your DE menus shows the older low-resolution icons for Wine desktop"
-	einfo "entries - then you may want to purge these older, lower resolution png icons:"
-	einfo "from your local user XDG directories, e.g.:"
-	einfo
-	einfo "find \"\${HOME}/.local/share/icons/hicolor\" -type f -iregex \".*\(iexplore\|notepad\|wordpad\)\.0\.png\""
-	einfo "# find \"\${HOME}/.local/share/icons/hicolor\" -type f -iregex \".*\(iexplore\|notepad\|wordpad\)\.0\.png\" | xargs rm"
-	einfo
-}
 
 pkg_preinst() {
 	gnome2_icon_savelist
