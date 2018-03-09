@@ -32,7 +32,7 @@ else
 		MY_PV="${MY_PV}${minor_version/pre/m}"
 		MY_P="${MY_P}${minor_version/pre/m}"
 	fi
-	SRC_URI="https://github.com/phoronix-test-suite/${PN}/archive/v${MY_PV}.tar.gz -> ${MY_P}"
+	SRC_URI="https://github.com/phoronix-test-suite/${PN}/archive/v${MY_PV}.tar.gz -> ${MY_P}.tar.gz"
 	S="${WORKDIR}/${MY_P}"
 	unset -v minor_version major_version
 fi
