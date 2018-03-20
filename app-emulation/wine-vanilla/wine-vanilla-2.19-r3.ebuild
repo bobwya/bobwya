@@ -380,8 +380,8 @@ src_prepare() {
 		# Not all manpages are translated - so always install all English locale manpages
 		[[ "${3}" = "en" ]] && return
 
-		local makefile="${1}" man_file="${2}" locale="\.${3}\.UTF-8"
-		sed -i -e "\|${man_file}${locale}\.man\.in|d" "${makefile}" || die "sed failed"
+		local makefile="${1}" man_file="${2}" locale="\\.${3}\\.UTF-8"
+		sed -i -e "\\|${man_file}${locale}\\.man\\.in|d" "${makefile}" || die "sed failed"
 	}
 
 	#617864 Generate wine64 man pages for 64-bit bit only installation
@@ -460,45 +460,45 @@ multilib_src_configure() {
 		"--localstatedir=${MY_LOCALSTATEDIR}"
 		"--mandir=${MY_MANDIR}"
 		"--sysconfdir=/etc/wine"
-		$(use_with alsa)
-		$(use_with capi)
-		$(use_with lcms cms)
-		$(use_with cups)
-		$(use_with ncurses curses)
-		$(use_with fontconfig)
-		$(use_with ssl gnutls)
-		$(use_enable gecko mshtml)
-		$(use_with gphoto2 gphoto)
-		$(use_with gsm)
-		$(use_with gstreamer)
+		"$(use_with alsa)"
+		"$(use_with capi)"
+		"$(use_with lcms cms)"
+		"$(use_with cups)"
+		"$(use_with ncurses curses)"
+		"$(use_with fontconfig)"
+		"$(use_with ssl gnutls)"
+		"$(use_enable gecko mshtml)"
+		"$(use_with gphoto2 gphoto)"
+		"$(use_with gsm)"
+		"$(use_with gstreamer)"
 		--without-hal
-		$(use_with jpeg)
-		$(use_with ldap)
-		$(use_enable mono mscoree)
-		$(use_with mp3 mpg123)
-		$(use_with netapi)
-		$(use_with nls gettext)
-		$(use_with openal)
-		$(use_with opencl)
-		$(use_with opengl)
-		$(use_with osmesa)
-		$(use_with oss)
-		$(use_with pcap)
-		$(use_with png)
-		$(use_with pulseaudio pulse)
-		$(use_with threads pthread)
-		$(use_with scanner sane)
-		$(use_enable test tests)
-		$(use_with truetype freetype)
-		$(use_with udev)
-		$(use_with udisks dbus)
-		$(use_with v4l)
-		$(use_with X x)
-		$(use_with X xfixes)
-		$(use_with xcomposite)
-		$(use_with xinerama)
-		$(use_with xml)
-		$(use_with xml xslt)
+		"$(use_with jpeg)"
+		"$(use_with ldap)"
+		"$(use_enable mono mscoree)"
+		"$(use_with mp3 mpg123)"
+		"$(use_with netapi)"
+		"$(use_with nls gettext)"
+		"$(use_with openal)"
+		"$(use_with opencl)"
+		"$(use_with opengl)"
+		"$(use_with osmesa)"
+		"$(use_with oss)"
+		"$(use_with pcap)"
+		"$(use_with png)"
+		"$(use_with pulseaudio pulse)"
+		"$(use_with threads pthread)"
+		"$(use_with scanner sane)"
+		"$(use_enable test tests)"
+		"$(use_with truetype freetype)"
+		"$(use_with udev)"
+		"$(use_with udisks dbus)"
+		"$(use_with v4l)"
+		"$(use_with X x)"
+		"$(use_with X xfixes)"
+		"$(use_with xcomposite)"
+		"$(use_with xinerama)"
+		"$(use_with xml)"
+		"$(use_with xml xslt)"
 	)
 
 	local PKG_CONFIG AR RANLIB
@@ -507,7 +507,7 @@ multilib_src_configure() {
 	tc-export PKG_CONFIG AR RANLIB
 
 	if use amd64; then
-		if [[ ${ABI} == amd64 ]]; then
+		if [[ "${ABI}" == "amd64" ]]; then
 			myconf+=( --enable-win64 )
 		else
 			myconf+=( --disable-win64 )

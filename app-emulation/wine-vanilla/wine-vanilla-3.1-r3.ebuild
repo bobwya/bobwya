@@ -71,11 +71,11 @@ SRC_URI="${SRC_URI}
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap +png prelink pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test +threads +truetype udev +udisks v4l vulkan +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gssapi gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap +png prelink pulseaudio +realtime +run-exes samba scanner selinux +ssl test +threads +truetype udev +udisks v4l +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
-	!amd64? ( !vulkan )
 	X? ( truetype )
 	elibc_glibc? ( threads )
+	gssapi? ( kerberos )
 	osmesa? ( opengl )
 	test? ( abi_x86_32 )" #286560 osmesa-opengl  #551124 X-truetype
 
@@ -101,6 +101,7 @@ COMMON_DEPEND="
 	fontconfig? ( media-libs/fontconfig:=[${MULTILIB_USEDEP}] )
 	gphoto2? ( media-libs/libgphoto2:=[${MULTILIB_USEDEP}] )
 	gsm? ( media-sound/gsm:=[${MULTILIB_USEDEP}] )
+	gssapi? ( virtual/krb5:0=[${MULTILIB_USEDEP}] )
 	gstreamer? (
 		media-libs/gstreamer:1.0[${MULTILIB_USEDEP}]
 		media-plugins/gst-plugins-meta:1.0[${MULTILIB_USEDEP}]
@@ -127,7 +128,6 @@ COMMON_DEPEND="
 	png? ( media-libs/libpng:0=[${MULTILIB_USEDEP}] )
 	pulseaudio? ( media-sound/pulseaudio[${MULTILIB_USEDEP}] )
 	scanner? ( media-gfx/sane-backends:=[${MULTILIB_USEDEP}] )
-	sdl2? ( media-libs/libsdl2[haptic,joystick,${MULTILIB_USEDEP}] )
 	ssl? ( net-libs/gnutls:=[${MULTILIB_USEDEP}] )
 	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
 	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
@@ -135,9 +135,6 @@ COMMON_DEPEND="
 		udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
 	)
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
-	amd64? (
-		vulkan? ( media-libs/vulkan-loader[X,${MULTILIB_USEDEP}] )
-	)
 	xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
 	xinerama? ( x11-libs/libXinerama[${MULTILIB_USEDEP}] )
 	xml? (
@@ -386,8 +383,8 @@ src_prepare() {
 		# Not all manpages are translated - so always install all English locale manpages
 		[[ "${3}" = "en" ]] && return
 
-		local makefile="${1}" man_file="${2}" locale="\.${3}\.UTF-8"
-		sed -i -e "\|${man_file}${locale}\.man\.in|d" "${makefile}" || die "sed failed"
+		local makefile="${1}" man_file="${2}" locale="\\.${3}\\.UTF-8"
+		sed -i -e "\\|${man_file}${locale}\\.man\\.in|d" "${makefile}" || die "sed failed"
 	}
 
 	#617864 Generate wine64 man pages for 64-bit bit only installation
@@ -466,48 +463,47 @@ multilib_src_configure() {
 		"--localstatedir=${MY_LOCALSTATEDIR}"
 		"--mandir=${MY_MANDIR}"
 		"--sysconfdir=/etc/wine"
-		$(use_with alsa)
-		$(use_with capi)
-		$(use_with lcms cms)
-		$(use_with cups)
-		$(use_with ncurses curses)
-		$(use_with fontconfig)
-		$(use_with ssl gnutls)
-		$(use_enable gecko mshtml)
-		$(use_with gphoto2 gphoto)
-		$(use_with gsm)
-		$(use_with gstreamer)
+		"$(use_with alsa)"
+		"$(use_with capi)"
+		"$(use_with lcms cms)"
+		"$(use_with cups)"
+		"$(use_with ncurses curses)"
+		"$(use_with fontconfig)"
+		"$(use_with ssl gnutls)"
+		"$(use_enable gecko mshtml)"
+		"$(use_with gphoto2 gphoto)"
+		"$(use_with gsm)"
+		"$(use_with gssapi)"
+		"$(use_with gstreamer)"
 		--without-hal
-		$(use_with jpeg)
-		$(use_with kerberos krb5)
-		$(use_with ldap)
-		$(use_enable mono mscoree)
-		$(use_with mp3 mpg123)
-		$(use_with netapi)
-		$(use_with nls gettext)
-		$(use_with openal)
-		$(use_with opencl)
-		$(use_with opengl)
-		$(use_with osmesa)
-		$(use_with oss)
-		$(use_with pcap)
-		$(use_with png)
-		$(use_with pulseaudio pulse)
-		$(use_with threads pthread)
-		$(use_with scanner sane)
-		$(use_with sdl2 sdl)
-		$(use_enable test tests)
-		$(use_with truetype freetype)
-		$(use_with udev)
-		$(use_with udisks dbus)
-		$(use_with v4l)
-		$(use_with vulkan)
-		$(use_with X x)
-		$(use_with X xfixes)
-		$(use_with xcomposite)
-		$(use_with xinerama)
-		$(use_with xml)
-		$(use_with xml xslt)
+		"$(use_with jpeg)"
+		"$(use_with kerberos krb5)"
+		"$(use_with ldap)"
+		"$(use_enable mono mscoree)"
+		"$(use_with mp3 mpg123)"
+		"$(use_with netapi)"
+		"$(use_with nls gettext)"
+		"$(use_with openal)"
+		"$(use_with opencl)"
+		"$(use_with opengl)"
+		"$(use_with osmesa)"
+		"$(use_with oss)"
+		"$(use_with pcap)"
+		"$(use_with png)"
+		"$(use_with pulseaudio pulse)"
+		"$(use_with threads pthread)"
+		"$(use_with scanner sane)"
+		"$(use_enable test tests)"
+		"$(use_with truetype freetype)"
+		"$(use_with udev)"
+		"$(use_with udisks dbus)"
+		"$(use_with v4l)"
+		"$(use_with X x)"
+		"$(use_with X xfixes)"
+		"$(use_with xcomposite)"
+		"$(use_with xinerama)"
+		"$(use_with xml)"
+		"$(use_with xml xslt)"
 	)
 
 	local PKG_CONFIG AR RANLIB
@@ -516,7 +512,7 @@ multilib_src_configure() {
 	tc-export PKG_CONFIG AR RANLIB
 
 	if use amd64; then
-		if [[ ${ABI} == amd64 ]]; then
+		if [[ "${ABI}" == "amd64" ]]; then
 			myconf+=( --enable-win64 )
 		else
 			myconf+=( --disable-win64 )
