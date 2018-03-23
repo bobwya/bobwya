@@ -26,26 +26,26 @@ IUSE=""
 RDEPEND=""
 
 # These desktop files use a non-standard "Wine" category,
-# which is provided by: /etc/xdg/applications-merged/winehq-wine.menu
+# which is provided by: /etc/xdg/applications-merged/wine.menu
 QA_DESKTOP_FILE="
-usr/share/applications/winehq-oleview.desktop
-usr/share/applications/winehq-regedit.desktop
-usr/share/applications/winehq-winemine.desktop
-usr/share/applications/winehq-winhelp.desktop
-usr/share/applications/winehq-wordpad.desktop
-usr/share/applications/winehq-msiexec.desktop
-usr/share/applications/winehq-mime-msi.desktop
-usr/share/applications/winehq-browsecdrive.desktop
-usr/share/applications/winehq-notepad.desktop
-usr/share/applications/winehq-uninstaller.desktop
-usr/share/applications/winehq-wineboot.desktop
-usr/share/applications/winehq-explorer.desktop
-usr/share/applications/winehq-winecfg.desktop
-usr/share/applications/winehq-winefile.desktop
-usr/share/applications/winehq-control.desktop
-usr/share/applications/winehq-cmd.desktop
-usr/share/applications/winehq-iexplore.desktop
-usr/share/applications/winehq-taskmgr.desktop
+usr/share/applications/wineoleview.desktop
+usr/share/applications/wineregedit.desktop
+usr/share/applications/winemine.desktop
+usr/share/applications/winewinhelp.desktop
+usr/share/applications/winewordpad.desktop
+usr/share/applications/winemsiexec.desktop
+usr/share/applications/winemime-msi.desktop
+usr/share/applications/winebrowsecdrive.desktop
+usr/share/applications/winenotepad.desktop
+usr/share/applications/wineuninstaller.desktop
+usr/share/applications/wineboot.desktop
+usr/share/applications/wineexplorer.desktop
+usr/share/applications/winecfg.desktop
+usr/share/applications/winefile.desktop
+usr/share/applications/winecontrol.desktop
+usr/share/applications/winecmd.desktop
+usr/share/applications/wineiexplore.desktop
+usr/share/applications/winetaskmgr.desktop
 "
 
 pkg_preinst() {
