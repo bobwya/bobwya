@@ -14,32 +14,28 @@ MOZ_LANGS=( "ach" "af" "an" "ar" "as" "ast" "az" "bg" "bn-BD" "bn-IN" "br" "bs" 
 "mai" "mk" "ml" "mr" "ms" "nb-NO" "nl" "nn-NO" "or" "pa-IN" "pl" "pt-BR" "pt-PT" "rm" "ro" "ru" "si" "sk" "sl" "son" "sq"
 "sr" "sv-SE" "ta" "te" "th" "tr" "uk" "uz" "vi" "xh" "zh-CN" "zh-TW" )
 
-# Convert the ebuild version to the upstream mozilla version, used by mozlinguas
-MOZ_PN="firefox"
-MOZ_PV="${PV/_alpha/a}" # Handle alpha for SRC_URI
-MOZ_PV="${MOZ_PV/_beta/b}" # Handle beta for SRC_URI
-MOZ_PV="${MOZ_PV/_rc/rc}" # Handle rc for SRC_URI
-
-if [[ ${MOZ_ESR} == 1 ]]; then
-	# ESR releases have slightly different version numbers
-	MOZ_PV="${MOZ_PV}esr"
-fi
-
 # Patch version
+MOZ_PN="firefox"
+MOZ_PV="${PV}"
+[[ ${MOZ_ESR} == 1 ]] && MOZ_PV="${MOZ_PV}esr"
 PATCH="${MOZ_PN}-58.0-patches-02"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
-
-# Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-EHG_REPO_URI="https://www.rosenauer.org/hg/mozilla"
+MOZ_HG_HTTP_URI="https://hg.mozilla.org/releases/mozilla-release/archive/"
 
 #MOZCONFIG_OPTIONAL_QT5=1
 MOZCONFIG_OPTIONAL_WIFI=1
 
 inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mercurial mozconfig-kde-v6.58 \
-		pax-utils xdg-utils autotools mozlinguas-kde-v2
+	pax-utils xdg-utils autotools mozlinguas-kde-v2 versionator
+
+HG_PV="$(replace_all_version_separators '_' "${MOZ_PV}")"
+HG_P="${MOZ_PN^^}_${HG_PV}_RELEASE"
+
+# Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
+EHG_REPO_URI="https://www.rosenauer.org/hg/mozilla"
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
-HOMEPAGE="https://www.mozilla.com/firefox
+HOMEPAGE="https://www.mozilla.org/en-US/firefox/
 	https://www.rosenauer.org/hg/mozilla"
 
 KEYWORDS="~amd64 ~x86"
@@ -52,7 +48,7 @@ RESTRICT="!bindist? ( bindist )"
 PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCH}.tar.xz )
 # shellcheck disable=SC2124
 SRC_URI="${SRC_URI}
-	${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz
+	${MOZ_HG_HTTP_URI}/${HG_P}.tar.bz2
 	${PATCH_URIS[@]}"
 
 ASM_DEPEND=">=dev-lang/yasm-1.1"
@@ -71,7 +67,7 @@ DEPEND="${RDEPEND}
 	amd64? ( ${ASM_DEPEND} virtual/opengl )
 	x86? ( ${ASM_DEPEND} virtual/opengl )"
 
-S="${WORKDIR}/firefox-${MOZ_PV}"
+S="${WORKDIR}/mozilla-unified-${HG_P}"
 
 QA_PRESTRIPPED="usr/lib*/${MOZ_PN}/firefox"
 
@@ -357,9 +353,6 @@ PROFILE_EOF
 		insinto "/usr/share/icons/hicolor/${size}x${size}/apps"
 		newins "${icon_path}/default${size}.png" "${icon}.png"
 	done
-	# The 128x128 icon has a different name
-	insinto "/usr/share/icons/hicolor/128x128/apps"
-	newins "${icon_path}/mozicon128.png" "${icon}.png"
 	# Install a 48x48 icon into /usr/share/pixmaps for legacy DEs
 	newicon "${icon_path}/content/icon48.png" "${icon}.png"
 	newmenu "${FILESDIR}/icon/${MOZ_PN}.desktop" "${MOZ_PN}.desktop"
