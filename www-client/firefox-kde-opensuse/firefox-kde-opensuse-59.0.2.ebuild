@@ -18,14 +18,19 @@ MOZ_LANGS=( "ach" "af" "an" "ar" "as" "ast" "az" "bg" "bn-BD" "bn-IN" "br" "bs" 
 MOZ_PN="firefox"
 MOZ_PV="${PV}"
 [[ ${MOZ_ESR} == 1 ]] && MOZ_PV="${MOZ_PV}esr"
-PATCH="${MOZ_PN}-58.0-patches-02"
+PATCH="${MOZ_PN}-59.0-patches-01"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
+MOZ_HG_DIR="mozilla-release"
+MOZ_HG_HTTP_URI="https://hg.mozilla.org/releases/${MOZ_HG_DIR}/archive/"
 
 #MOZCONFIG_OPTIONAL_QT5=1
 MOZCONFIG_OPTIONAL_WIFI=1
 
 inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mercurial mozconfig-kde-v6.58 \
 	pax-utils xdg-utils autotools mozlinguas-kde-v2 versionator
+
+HG_PV="$(replace_all_version_separators '_' "${MOZ_PV}")"
+HG_P="${MOZ_PN^^}_${HG_PV}_RELEASE"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
 EHG_REPO_URI="https://www.rosenauer.org/hg/mozilla"
@@ -44,15 +49,16 @@ RESTRICT="!bindist? ( bindist )"
 PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCH}.tar.xz )
 # shellcheck disable=SC2124
 SRC_URI="${SRC_URI}
-	${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz
+	${MOZ_HG_HTTP_URI}/${HG_P}.tar.bz2 -> firefox-${MOZ_PV}.tar.bz2
 	${PATCH_URIS[@]}"
 
 ASM_DEPEND=">=dev-lang/yasm-1.1"
 
 RDEPEND="
+	system-icu? ( >=dev-libs/icu-60.2 )
 	jack? ( virtual/jack )
-	>=dev-libs/nss-3.34.1
-	>=dev-libs/nspr-4.17
+	>=dev-libs/nss-3.35
+	>=dev-libs/nspr-4.18
 	selinux? ( sec-policy/selinux-mozilla )
 	kde? ( kde-misc/kmozillahelper:=  )
 	!!www-client/firefox"
@@ -63,7 +69,7 @@ DEPEND="${RDEPEND}
 	amd64? ( ${ASM_DEPEND} virtual/opengl )
 	x86? ( ${ASM_DEPEND} virtual/opengl )"
 
-S="${WORKDIR}/${MOZ_PN}-${MOZ_PV}"
+S="${WORKDIR}/${MOZ_HG_DIR}-${HG_P}"
 
 QA_PRESTRIPPED="usr/lib*/${MOZ_PN}/firefox"
 
@@ -132,7 +138,6 @@ src_unpack() {
 src_prepare() {
 	# Default to our patchset
 	local PATCHES=( "${WORKDIR}/firefox" )
-	PATCHES+=( "${FILESDIR}/${PN}-fix_lto.patch" )
 	if use kde; then
 		sed -i -e 's:@BINPATH@/defaults/pref/kde.js:@RESPATH@/browser/@PREF_DIR@/kde.js:' \
 			"${EHG_CHECKOUT_DIR}/firefox-kde.patch" || die "sed failed"
@@ -145,7 +150,6 @@ src_prepare() {
 		PATCHES+=(
 			"${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
 			"${EHG_CHECKOUT_DIR}/firefox-kde.patch"
-			"${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
 		)
 		# Uncomment the next line to enable KDE support debugging (additional console output)...
 		#PATCHES+=( "${FILESDIR}/firefox-kde-opensuse-kde-debug.patch" )
@@ -227,7 +231,8 @@ src_configure() {
 	# enable JACK, bug 600002
 	mozconfig_use_enable jack
 
-	use eme-free && mozconfig_annotate '+eme-free' --disable-eme
+	# Enable/Disable eme support
+	mozconfig_use_enable eme-free eme
 
 	# It doesn't compile on alpha without this LDFLAGS
 	use alpha && append-ldflags "-Wl,--no-relax"
@@ -237,6 +242,9 @@ src_configure() {
 		append-ldflags "-Wl,-z,relro,-z,now"
 		mozconfig_use_enable hardened hardening
 	fi
+
+	# Only available on mozilla-overlay for experimentation -- Removed in Gentoo repo per bug 571180
+	#use egl && mozconfig_annotate 'Enable EGL as GL provider' --with-gl-provider=EGL
 
 	# egl build error #571180
 	use egl && mozconfig_annotate 'Enable EGL as GL provider' --with-gl-provider=EGL
@@ -338,7 +346,7 @@ sticky_pref("devtools.theme", "dark");
 PROFILE_EOF
 
 	else
-		sizes="16 22 24 32 256"
+		sizes="16 22 24 32 48 64 128 256"
 		icon_path="${S}/browser/branding/official"
 		icon="${MOZ_PN}"
 		name="Mozilla Firefox"
@@ -350,7 +358,7 @@ PROFILE_EOF
 		newins "${icon_path}/default${size}.png" "${icon}.png"
 	done
 	# Install a 48x48 icon into /usr/share/pixmaps for legacy DEs
-	newicon "${icon_path}/content/icon48.png" "${icon}.png"
+	newicon "${icon_path}/default48.png" "${icon}.png"
 	newmenu "${FILESDIR}/icon/${MOZ_PN}.desktop" "${MOZ_PN}.desktop"
 	sed -i -e "s:@NAME@:${name}:" -e "s:@ICON@:${icon}:" \
 		"${ED}/usr/share/applications/${MOZ_PN}.desktop" || die "sed failed"

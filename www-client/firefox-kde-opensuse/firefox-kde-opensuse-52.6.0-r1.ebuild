@@ -20,21 +20,16 @@ MOZ_PV="${PV}"
 [[ ${MOZ_ESR} == 1 ]] && MOZ_PV="${MOZ_PV}esr"
 PATCH="${MOZ_PN}-52.0-patches-07"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
-MOZ_HG_HTTP_URI="https://hg.mozilla.org/releases/mozilla-release/archive/"
 
 #MOZCONFIG_OPTIONAL_QT5=1
 MOZCONFIG_OPTIONAL_WIFI=1
+MOZCONFIG_OPTIONAL_GTK2ONLY=1
 
 inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mercurial mozconfig-kde-v6.52 \
-	pax-utils xdg-utils autotools mozlinguas-kde-v2 versionator
-
-HG_PV="$(replace_all_version_separators '_' "${MOZ_PV}")"
-HG_P="${MOZ_PN^^}_${HG_PV}_RELEASE"
+	pax-utils xdg-utils autotools mozlinguas-kde-v2 virtualx versionator
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
 EHG_REPO_URI="https://www.rosenauer.org/hg/mozilla"
-
-MOZCONFIG_OPTIONAL_GTK2ONLY=1
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.org/en-US/firefox/
@@ -51,7 +46,7 @@ RESTRICT="!bindist? ( bindist )"
 PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCH}.tar.xz )
 # shellcheck disable=SC2124
 SRC_URI="${SRC_URI}
-	${MOZ_HG_HTTP_URI}/${HG_P}.tar.bz2
+	${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz
 	${PATCH_URIS[@]}"
 
 ASM_DEPEND=">=dev-lang/yasm-1.1"
@@ -75,7 +70,7 @@ DEPEND="${RDEPEND}
 	amd64? ( ${ASM_DEPEND} virtual/opengl )
 	x86? ( ${ASM_DEPEND} virtual/opengl )"
 
-S="${WORKDIR}/mozilla-unified-${HG_P}"
+S="${WORKDIR}/${MOZ_PN}-${MOZ_PV}"
 
 QA_PRESTRIPPED="usr/lib*/${MOZ_PN}/firefox"
 
@@ -156,6 +151,7 @@ src_unpack() {
 src_prepare() {
 	# Default to our patchset
 	local PATCHES=( "${WORKDIR}/firefox" )
+	PATCHES+=( "${FILESDIR}/${PN}-52.4.0-fix_lto.patch" )
 	PATCHES+=( "${FILESDIR}/${PN}-fix_lto.patch" )
 	if use kde; then
 		sed -i -e 's:@BINPATH@/defaults/pref/kde.js:@RESPATH@/browser/@PREF_DIR@/kde.js:' \
@@ -179,6 +175,7 @@ src_prepare() {
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox-kde-opensuse/)
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
+	rm -f "${WORKDIR}"/firefox/2007_fix_nvidia_latest.patch
 
 	# Enable gnomebreakpad
 	if use debug; then
