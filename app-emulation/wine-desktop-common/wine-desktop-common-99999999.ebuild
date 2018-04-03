@@ -28,24 +28,24 @@ RDEPEND=""
 # These desktop files use a non-standard "Wine" category,
 # which is provided by: /etc/xdg/applications-merged/wine.menu
 QA_DESKTOP_FILE="
-usr/share/applications/wineoleview.desktop
-usr/share/applications/wineregedit.desktop
-usr/share/applications/winemine.desktop
-usr/share/applications/winewinhelp.desktop
-usr/share/applications/winewordpad.desktop
-usr/share/applications/winemsiexec.desktop
-usr/share/applications/winemime-msi.desktop
-usr/share/applications/winebrowsecdrive.desktop
-usr/share/applications/winenotepad.desktop
-usr/share/applications/wineuninstaller.desktop
-usr/share/applications/wineboot.desktop
-usr/share/applications/wineexplorer.desktop
-usr/share/applications/winecfg.desktop
-usr/share/applications/winefile.desktop
-usr/share/applications/winecontrol.desktop
-usr/share/applications/winecmd.desktop
-usr/share/applications/wineiexplore.desktop
-usr/share/applications/winetaskmgr.desktop
+usr/share/wineuninstaller.desktop
+usr/share/winecfg.desktop
+usr/share/winecontrol.desktop
+usr/share/wineexplorer.desktop
+usr/share/winetaskmgr.desktop
+usr/share/winefile.desktop
+usr/share/winemine.desktop
+usr/share/winewordpad.desktop
+usr/share/winemsiexec.desktop
+usr/share/wineiexplore.desktop
+usr/share/winewinhelp.desktop
+usr/share/winenotepad.desktop
+usr/share/wineoleview.desktop
+usr/share/wineregedit.desktop
+usr/share/wine-mime-msi.desktop
+usr/share/winebrowsecdrive.desktop
+usr/share/wineboot.desktop
+usr/share/winecmd.desktop
 "
 
 pkg_preinst() {
