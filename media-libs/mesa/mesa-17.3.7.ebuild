@@ -150,6 +150,7 @@ RDEPEND="${RDEPEND}
 
 # Please keep the LLVM dependency block separate. Since LLVM is slotted,
 # we need to *really* make sure we're only using one slot.
+LLVM_MAX_SLOT="5"
 LLVM_DEPSTR="
 	|| (
 		sys-devel/llvm:5[${MULTILIB_USEDEP}]
