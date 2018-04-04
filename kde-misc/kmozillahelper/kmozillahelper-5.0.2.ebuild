@@ -52,7 +52,7 @@ src_prepare() {
 	# install of Mozilla applications (Firefox)
 	# See https://github.com/bobwya/bobwya/issues/7#issuecomment-201817441
 	local PATCHES=(
-		"${FILESDIR}/${PN}-4.9.9-dont_run_as_root.patch"
+		"${FILESDIR}/${PN}-4.9.12-dont_run_as_root.patch"
 	)
 	default
 }
