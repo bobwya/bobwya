@@ -28,24 +28,24 @@ RDEPEND=""
 # These desktop files use a non-standard "Wine" category,
 # which is provided by: /etc/xdg/applications-merged/wine.menu
 QA_DESKTOP_FILE="
-usr/share/wine-iexplore.desktop
-usr/share/wine-explorer.desktop
-usr/share/wine-cmd.desktop
-usr/share/wine-winecfg.desktop
-usr/share/wine-notepad.desktop
-usr/share/wine-wordpad.desktop
-usr/share/wine-regedit.desktop
-usr/share/wine-uninstaller.desktop
-usr/share/wine-msiexec.desktop
-usr/share/wine-winhelp.desktop
-usr/share/wine-wineboot.desktop
+usr/share/wineuninstaller.desktop
+usr/share/winecfg.desktop
+usr/share/winecontrol.desktop
+usr/share/wineexplorer.desktop
+usr/share/winetaskmgr.desktop
+usr/share/winefile.desktop
+usr/share/winemine.desktop
+usr/share/winewordpad.desktop
+usr/share/winemsiexec.desktop
+usr/share/wineiexplore.desktop
+usr/share/winewinhelp.desktop
+usr/share/winenotepad.desktop
+usr/share/wineoleview.desktop
+usr/share/wineregedit.desktop
 usr/share/wine-mime-msi.desktop
-usr/share/wine-winemine.desktop
-usr/share/wine-control.desktop
-usr/share/wine-winefile.desktop
-usr/share/wine-taskmgr.desktop
-usr/share/wine-browsecdrive.desktop
-usr/share/wine-oleview.desktop
+usr/share/winebrowsecdrive.desktop
+usr/share/wineboot.desktop
+usr/share/winecmd.desktop
 "
 
 pkg_preinst() {
