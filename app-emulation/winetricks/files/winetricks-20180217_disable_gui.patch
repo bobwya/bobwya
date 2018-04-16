@@ -1,0 +1,53 @@
+diff --git a/src/winetricks b/src/winetricks
+index ad2cf52..8bc0e08 100755
+--- a/src/winetricks
++++ b/src/winetricks
+@@ -3141,24 +3141,6 @@ winetricks_early_wine()
+     WINEDEBUG=-all "$WINE" "$@" 2> "$W_TMP_EARLY"/early_wine.err.txt | ( sed 's/.*1h.=//' | tr -d '\r' | grep -v -e "Module not found" -e "Could not load wine-gecko" || true)
+ }
+ 
+-winetricks_detect_gui()
+-{
+-    if test -x "$(which zenity 2>/dev/null)"; then
+-        WINETRICKS_GUI=zenity
+-
+-        WINETRICKS_MENU_HEIGHT=500
+-        WINETRICKS_MENU_WIDTH=1010
+-    elif test -x "$(which kdialog 2>/dev/null)"; then
+-        echo "Zenity not found!  Using kdialog as poor substitute."
+-        WINETRICKS_GUI=kdialog
+-    else
+-        echo "No arguments given, so tried to start GUI, but zenity not found."
+-        echo "Please install zenity if you want a graphical interface, or "
+-        echo "run with --help for more options."
+-        exit 1
+-    fi
+-}
+-
+ # Detect which sudo to use
+ winetricks_detect_sudo()
+ {
+@@ -5174,7 +5156,6 @@ winetricks_handle_option()
+     case "$1" in
+         --country=*) W_COUNTRY="${1##--country=}" ;;
+         --force) WINETRICKS_FORCE=1;;
+-        --gui) winetricks_detect_gui;;
+         -h|--help) winetricks_usage ; exit 0 ;;
+         --isolate) WINETRICKS_OPT_SHAREDPREFIX=0 ;;
+         -k|--keep_isos) WINETRICKS_OPT_KEEPISOS=1 ;;
+@@ -5210,6 +5191,7 @@ then
+     WINETRICKS_OPT_SHAREDPREFIX=${WINETRICKS_OPT_SHAREDPREFIX:-1}
+ 
+     # Handle options before init, to avoid starting wine for --help or --version
++    [[ -z "${1}" ]] && winetricks_handle_option "-h"
+     while winetricks_handle_option "$1"
+     do
+         shift
+@@ -19729,7 +19711,6 @@ then
+             fi
+             # GUI case
+             # No non-option arguments given, so read them from GUI, and loop until user quits
+-            winetricks_detect_gui
+             winetricks_detect_sudo
+             while true
+             do
