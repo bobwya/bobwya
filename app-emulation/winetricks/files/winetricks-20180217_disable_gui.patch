@@ -1,5 +1,5 @@
 diff --git a/src/winetricks b/src/winetricks
-index ad2cf52..8bc0e08 100755
+index ad2cf52..348717d 100755
 --- a/src/winetricks
 +++ b/src/winetricks
 @@ -3141,24 +3141,6 @@ winetricks_early_wine()
@@ -27,7 +27,23 @@ index ad2cf52..8bc0e08 100755
  # Detect which sudo to use
  winetricks_detect_sudo()
  {
-@@ -5174,7 +5156,6 @@ winetricks_handle_option()
+@@ -5100,7 +5082,6 @@ Jedes Verb installiert eine Anwendung oder ändert eine Einstellung.
+ 
+ Optionen:
+     --force           Nicht prüfen ob Pakete bereits installiert wurden
+-    --gui             GUI Diagnosen anzeigen, auch wenn von der Kommandozeile gestartet
+     --isolate         Jedes Programm oder Spiel in eigener Bottle (WINEPREFIX) installieren
+ -k, --keep_isos       ISOs local speichern (erlaubt spätere Installation ohne Disk)
+     --no-clean        Temp Verzeichnisse nicht löschen (nützlich beim debuggen)
+@@ -5136,7 +5117,6 @@ Executes given verbs.  Each verb installs an application or changes a setting.
+ Options:
+     --country=CC      Set country code to CC and don't detect your IP address
+     --force           Don't check whether packages were already installed
+-    --gui             Show gui diagnostics even when driven by commandline
+     --isolate         Install each app or game in its own bottle (WINEPREFIX)
+     --self-update     Update this application to the last version
+     --update-rollback Rollback the last self update
+@@ -5174,7 +5154,6 @@ winetricks_handle_option()
      case "$1" in
          --country=*) W_COUNTRY="${1##--country=}" ;;
          --force) WINETRICKS_FORCE=1;;
@@ -35,7 +51,7 @@ index ad2cf52..8bc0e08 100755
          -h|--help) winetricks_usage ; exit 0 ;;
          --isolate) WINETRICKS_OPT_SHAREDPREFIX=0 ;;
          -k|--keep_isos) WINETRICKS_OPT_KEEPISOS=1 ;;
-@@ -5210,6 +5191,7 @@ then
+@@ -5210,6 +5189,7 @@ then
      WINETRICKS_OPT_SHAREDPREFIX=${WINETRICKS_OPT_SHAREDPREFIX:-1}
  
      # Handle options before init, to avoid starting wine for --help or --version
@@ -43,7 +59,7 @@ index ad2cf52..8bc0e08 100755
      while winetricks_handle_option "$1"
      do
          shift
-@@ -19729,7 +19711,6 @@ then
+@@ -19729,7 +19709,6 @@ then
              fi
              # GUI case
              # No non-option arguments given, so read them from GUI, and loop until user quits
