@@ -25,9 +25,8 @@ else
 	minor_version="$(get_version_component_range 4)"
 	MY_PV="${major_version}"
 	MY_P="${PN}-${MY_PV}"
-	if [ -z "${minor_version}" ]; then
-		KEYWORDS="~amd64 ~x86"
-	else
+	KEYWORDS="~amd64 ~x86"
+	if [ ! -z "${minor_version}" ]; then
 		KEYWORDS=""
 		MY_PV="${MY_PV}${minor_version/pre/m}"
 		MY_P="${MY_P}${minor_version/pre/m}"
