@@ -10,7 +10,6 @@ NV_URI="https://download.nvidia.com/XFree86/"
 X86_NV_PACKAGE="NVIDIA-Linux-x86-${PV}"
 AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
 ARM_NV_PACKAGE="NVIDIA-Linux-armv7l-gnueabihf-${PV}"
-X86_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86-${PV}"
 AMD64_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86_64-${PV}"
 
 DESCRIPTION="NVIDIA Accelerated Graphics Driver"
@@ -218,7 +217,7 @@ src_prepare() {
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
 		ewarn "need support with these patches, contact the PaX team."
-		PATCHES+=( "${FILESDIR}/${PN}-375.20-pax-r1.patch" )
+		PATCHES+=( "${FILESDIR}/${PN}-384.47-pax-r1.patch" )
 	fi
 
 	local man_file
@@ -234,13 +233,14 @@ src_prepare() {
 		cp "nvidia_icd.json.template" "nvidia_icd.json" || die "cp failed"
 		sed -i -e 's:__NV_VK_ICD__:libGLX_nvidia.so.0:g' "nvidia_icd.json" || die "sed failed"
 	fi
-
-	# FIXME: horrible hack!
-	if use tools && has_multilib_profile && use multilib && use abi_x86_32; then
-		pushd "${NVIDIA_SETTINGS_SRC_DIR}" || die "pushd failed"
-		rsync -ach "libXNVCtrl/" "libXNVCtrl/32/" || die "rsync failed"
-		eapply "${FILESDIR}/${PN}-make_libxnvctrl_multilib.patch"
-		popd || die "popd failed"
+	if use tools; then
+		# FIXME: horrible hack!
+		if has_multilib_profile && use multilib && use abi_x86_32; then
+			pushd "${NVIDIA_SETTINGS_SRC_DIR}" || die "pushd failed"
+			rsync -ach "libXNVCtrl/" "libXNVCtrl/32/" || die "rsync failed"
+			eapply "${FILESDIR}/${PN}-make_libxnvctrl_multilib.patch"
+			popd || die "popd failed"
+		fi
 	fi
 }
 

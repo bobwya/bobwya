@@ -4,29 +4,23 @@
 # shellcheck disable=SC2034
 EAPI=6
 inherit flag-o-matic linux-info linux-mod multilib-minimal nvidia-driver \
-	portability toolchain-funcs unpacker user udev
+	portability toolchain-funcs unpacker user versionator udev
+
+MM_PV="$(get_version_component_range "1-2")"
+DL_PV="$(replace_all_version_separators '')"
 
 NV_URI="https://download.nvidia.com/XFree86/"
-X86_NV_PACKAGE="NVIDIA-Linux-x86-${PV}"
 AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
-ARM_NV_PACKAGE="NVIDIA-Linux-armv7l-gnueabihf-${PV}"
-X86_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86-${PV}"
-AMD64_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86_64-${PV}"
-
 DESCRIPTION="NVIDIA Accelerated Graphics Driver"
 HOMEPAGE="https://www.nvidia.com/ https://www.nvidia.com/Download/Find.aspx"
 SRC_URI="
-	amd64-fbsd? ( ${NV_URI%/}/FreeBSD-x86_64/${PV}/${AMD64_FBSD_NV_PACKAGE}.tar.gz )
-	amd64? ( ${NV_URI%/}/Linux-x86_64/${PV}/${AMD64_NV_PACKAGE}.run )
-	arm? ( ${NV_URI%/}/Linux-32bit-ARM/${PV}/${ARM_NV_PACKAGE}.run )
-	x86-fbsd? ( ${NV_URI%/}/FreeBSD-x86/${PV}/${X86_FBSD_NV_PACKAGE}.tar.gz )
-	x86? ( ${NV_URI%/}/Linux-x86/${PV}/${X86_NV_PACKAGE}.run )
-	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${PV}.tar.bz2 )
+	amd64? ( "https://developer.nvidia.com/linux-${DL_PV}-64-bit" -> ${AMD64_NV_PACKAGE}.run )
+	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${MM_PV}.tar.bz2 )
 "
 
 LICENSE="GPL-2 NVIDIA-r2"
 SLOT="0/${PV%.*}"
-KEYWORDS="-* ~amd64 ~x86 ~amd64-fbsd ~x86-fbsd"
+KEYWORDS="-* ~amd64"
 RESTRICT="bindist mirror"
 EMULTILIB_PKG="true"
 
@@ -79,7 +73,7 @@ RDEPEND="
 
 QA_PREBUILT="opt/* usr/lib*"
 S="${WORKDIR}"
-NVIDIA_SETTINGS_SRC_DIR="${S%/}/${P/drivers/settings}/src"
+NVIDIA_SETTINGS_SRC_DIR="${S%/}/${PN/drivers/settings}-${MM_PV}/src"
 
 nvidia_drivers_versions_check() {
 	if use amd64 && has_multilib_profile && \
@@ -90,11 +84,11 @@ nvidia_drivers_versions_check() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 15; then
+		if kernel_is ge 4 17; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.15"
-			ewarn "<sys-kernel/vanilla-sources-4.15"
+			ewarn "<sys-kernel/gentoo-sources-4.17"
+			ewarn "<sys-kernel/vanilla-sources-4.17"
 		elif use kms && kernel_is lt 4 2; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -215,11 +209,18 @@ pkg_setup() {
 
 src_prepare() {
 	local -a PATCHES
+	if use tools; then
+		rsync -achv "${FILESDIR}/nvidia-settings-linker.patch" "${WORKDIR}"/ \
+			|| die "rsync failed"
+		sed -i -e 's:@PV@:'"${MM_PV}"':g' "${WORKDIR}/nvidia-settings-linker.patch" \
+			|| die "sed failed"
+		PATCHES+=( "${WORKDIR}/nvidia-settings-linker.patch" )
+	fi
 	if use pax_kernel; then
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
 		ewarn "need support with these patches, contact the PaX team."
-		PATCHES+=( "${FILESDIR}/${PN}-375.20-pax-r1.patch" )
+		PATCHES+=( "${FILESDIR}/${PN}-384.47-pax-r1.patch" )
 	fi
 
 	local man_file
@@ -235,13 +236,14 @@ src_prepare() {
 		cp "nvidia_icd.json.template" "nvidia_icd.json" || die "cp failed"
 		sed -i -e 's:__NV_VK_ICD__:libGLX_nvidia.so.0:g' "nvidia_icd.json" || die "sed failed"
 	fi
-
-	# FIXME: horrible hack!
-	if use tools && has_multilib_profile && use multilib && use abi_x86_32; then
-		pushd "${NVIDIA_SETTINGS_SRC_DIR}" || die "pushd failed"
-		rsync -ach "libXNVCtrl/" "libXNVCtrl/32/" || die "rsync failed"
-		eapply "${FILESDIR}/${PN}-make_libxnvctrl_multilib.patch"
-		popd || die "popd failed"
+	if use tools; then
+		# FIXME: horrible hack!
+		if has_multilib_profile && use multilib && use abi_x86_32; then
+			pushd "${NVIDIA_SETTINGS_SRC_DIR}" || die "pushd failed"
+			rsync -ach "libXNVCtrl/" "libXNVCtrl/32/" || die "rsync failed"
+			eapply "${FILESDIR}/${PN}-make_libxnvctrl_multilib.patch"
+			popd || die "popd failed"
+		fi
 	fi
 }
 
@@ -262,6 +264,8 @@ src_compile() {
 		local -a mybaseemakeargs myemakeargs
 		mybaseemakeargs=(
 			"CC=$(tc-getCC)"
+			"LD=$(tc-getCC)"
+			"NVLD=$(tc-getLD)"
 			"LIBDIR=$(get_libdir)"
 			"NV_VERBOSE=1"
 			"DO_STRIP="
@@ -281,7 +285,6 @@ src_compile() {
 
 		myemakeargs=( "${mybaseemakeargs[@]}" )
 		myemakeargs+=(
-			"LD=$(tc-getCC)"
 			"GTK3_AVAILABLE=$(usex gtk3 1 0)"
 			"NVML_ENABLED=0"
 			"NV_USE_BUNDLED_LIBJANSSON=0"
@@ -470,10 +473,10 @@ src_install-libs() {
 
 	if use X; then
 		NV_GLX_LIBRARIES=(
-			"libEGL.so.$(usex compat "${NV_SOVER}" 1)" "${GL_ROOT}"
+			"libEGL.so.$(usex compat "${NV_SOVER}" 1.1.0)" "${GL_ROOT}"
 			"libEGL_nvidia.so.${NV_SOVER}" "${GL_ROOT}"
-			"libGL.so.$(usex compat "${NV_SOVER}" 1.0.0)" "${GL_ROOT}"
-			"libGLESv1_CM.so.1" "${GL_ROOT}"
+			"libGL.so.$(usex compat "${NV_SOVER}" 1.7.0)" "${GL_ROOT}"
+			"libGLESv1_CM.so.1.2.0" "${GL_ROOT}"
 			"libGLESv1_CM_nvidia.so.${NV_SOVER}" "${GL_ROOT}"
 			"libGLX.so.0" "${GL_ROOT}"
 			"libGLX_nvidia.so.${NV_SOVER}" "${GL_ROOT}"
@@ -488,18 +491,19 @@ src_install-libs() {
 			"libnvidia-fbc.so.${NV_SOVER}" .
 			"libnvidia-opencl.so.${NV_SOVER}" .
 			"libnvidia-ptxjitcompiler.so.${NV_SOVER}" .
-			"libGLESv2.so.2" "${GL_ROOT}"
+			"libGLESv2.so.2.1.0" "${GL_ROOT}"
 			"libGLESv2_nvidia.so.${NV_SOVER}" "${GL_ROOT}"
 			"libvdpau_nvidia.so.${NV_SOVER}" .
 			"libnvidia-eglcore.so.${NV_SOVER}" .
 			"libnvidia-glcore.so.${NV_SOVER}" .
 			"libnvidia-glsi.so.${NV_SOVER}" .
+			"libnvidia-glvkspirv.so.${NV_SOVER}" .
 			"libnvidia-ifr.so.${NV_SOVER}" .
 		)
 
 		if use wayland && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then
 			NV_GLX_LIBRARIES+=(
-				"libnvidia-egl-wayland.so.1.0.1" .
+				"libnvidia-egl-wayland.so.1.0.3" .
 			)
 		fi
 

@@ -242,13 +242,14 @@ src_prepare() {
 		cp "nvidia_icd.json.template" "nvidia_icd.json" || die "cp failed"
 		sed -i -e 's:__NV_VK_ICD__:libGLX_nvidia.so.0:g' "nvidia_icd.json" || die "sed failed"
 	fi
-
-	# FIXME: horrible hack!
-	if use tools && has_multilib_profile && use multilib && use abi_x86_32; then
-		pushd "${NVIDIA_SETTINGS_SRC_DIR}" || die "pushd failed"
-		rsync -ach "libXNVCtrl/" "libXNVCtrl/32/" || die "rsync failed"
-		eapply "${FILESDIR}/${PN}-make_libxnvctrl_multilib.patch"
-		popd || die "popd failed"
+	if use tools; then
+		# FIXME: horrible hack!
+		if has_multilib_profile && use multilib && use abi_x86_32; then
+			pushd "${NVIDIA_SETTINGS_SRC_DIR}" || die "pushd failed"
+			rsync -ach "libXNVCtrl/" "libXNVCtrl/32/" || die "rsync failed"
+			eapply "${FILESDIR}/${PN}-make_libxnvctrl_multilib.patch"
+			popd || die "popd failed"
+		fi
 	fi
 }
 
