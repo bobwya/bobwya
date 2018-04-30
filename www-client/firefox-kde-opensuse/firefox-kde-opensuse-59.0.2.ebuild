@@ -36,7 +36,7 @@ HG_P="${MOZ_PN^^}_${HG_PV}_RELEASE"
 EHG_REPO_URI="https://www.rosenauer.org/hg/mozilla"
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
-HOMEPAGE="https://www.mozilla.org/en-US/firefox/
+HOMEPAGE="https://www.mozilla.com/firefox
 	https://www.rosenauer.org/hg/mozilla"
 
 KEYWORDS="~amd64 ~x86"
@@ -45,6 +45,9 @@ SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist egl eme-free +gmp-autoupdate hardened hwaccel jack kde +screenshot selinux test"
 RESTRICT="!bindist? ( bindist )"
+
+SDIR="release"
+[[ ${PV} = *_beta* ]] && SDIR="beta"
 
 PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCH}.tar.xz )
 # shellcheck disable=SC2124
@@ -232,7 +235,7 @@ src_configure() {
 	mozconfig_use_enable jack
 
 	# Enable/Disable eme support
-	mozconfig_use_enable eme-free eme
+	use eme-free && mozconfig_annotate '+eme-free' --disable-eme
 
 	# It doesn't compile on alpha without this LDFLAGS
 	use alpha && append-ldflags "-Wl,--no-relax"
@@ -242,9 +245,6 @@ src_configure() {
 		append-ldflags "-Wl,-z,relro,-z,now"
 		mozconfig_use_enable hardened hardening
 	fi
-
-	# Only available on mozilla-overlay for experimentation -- Removed in Gentoo repo per bug 571180
-	#use egl && mozconfig_annotate 'Enable EGL as GL provider' --with-gl-provider=EGL
 
 	# egl build error #571180
 	use egl && mozconfig_annotate 'Enable EGL as GL provider' --with-gl-provider=EGL
@@ -266,12 +266,12 @@ src_configure() {
 
 	# workaround for funky/broken upstream configure...
 	SHELL="${SHELL:-${EPREFIX}/bin/bash}" MOZ_NOSPAM=1 \
-	./mach configure || die "sed failed"
+	./mach configure || die "mach configure failed"
 }
 
 src_compile() {
 	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX}/bin/bash}" MOZ_NOSPAM=1 \
-	./mach build -v || die "sed failed"
+	./mach build || die "mach build failed"
 }
 
 src_install() {
@@ -282,7 +282,7 @@ src_install() {
 
 	# Add our default prefs for firefox
 	local pkg_default_pref_dir="dist/bin/browser/defaults/preferences"
-	cp "${FILESDIR}"/gentoo-default-prefs.js-1 \
+	cp "${FILESDIR}"/gentoo-default-prefs.js-2 \
 		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
 		|| die "cp failed"
 
@@ -321,7 +321,7 @@ src_install() {
 
 	cd "${S}"
 	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX}/bin/bash}" MOZ_NOSPAM=1 \
-	DESTDIR="${D}" ./mach install -v
+	DESTDIR="${D}" ./mach install
 
 	# Install language packs
 	mozlinguas_kde_src_install
