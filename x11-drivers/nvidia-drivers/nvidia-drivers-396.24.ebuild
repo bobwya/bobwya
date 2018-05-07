@@ -4,23 +4,23 @@
 # shellcheck disable=SC2034
 EAPI=6
 inherit flag-o-matic linux-info linux-mod multilib-minimal nvidia-driver \
-	portability toolchain-funcs unpacker user versionator udev
-
-MM_PV="$(get_version_component_range "1-2")"
-DL_PV="$(replace_all_version_separators '')"
+	portability toolchain-funcs unpacker user udev
 
 NV_URI="https://download.nvidia.com/XFree86/"
 AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
+AMD64_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86_64-${PV}"
+
 DESCRIPTION="NVIDIA Accelerated Graphics Driver"
 HOMEPAGE="https://www.nvidia.com/ https://www.nvidia.com/Download/Find.aspx"
 SRC_URI="
-	amd64? ( "https://developer.nvidia.com/linux-${DL_PV}-64-bit" -> ${AMD64_NV_PACKAGE}.run )
-	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${MM_PV}.tar.bz2 )
+	amd64-fbsd? ( ${NV_URI%/}/FreeBSD-x86_64/${PV}/${AMD64_FBSD_NV_PACKAGE}.tar.gz )
+	amd64? ( ${NV_URI%/}/Linux-x86_64/${PV}/${AMD64_NV_PACKAGE}.run )
+	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${PV}.tar.bz2 )
 "
 
 LICENSE="GPL-2 NVIDIA-r2"
 SLOT="0/${PV%.*}"
-KEYWORDS="-* ~amd64"
+KEYWORDS="-* ~amd64 ~amd64-fbsd"
 RESTRICT="bindist mirror"
 EMULTILIB_PKG="true"
 
@@ -73,7 +73,7 @@ RDEPEND="
 
 QA_PREBUILT="opt/* usr/lib*"
 S="${WORKDIR}"
-NVIDIA_SETTINGS_SRC_DIR="${S%/}/${PN/drivers/settings}-${MM_PV}/src"
+NVIDIA_SETTINGS_SRC_DIR="${S%/}/${P/drivers/settings}/src"
 
 nvidia_drivers_versions_check() {
 	if use amd64 && has_multilib_profile && \
@@ -212,7 +212,7 @@ src_prepare() {
 	if use tools; then
 		rsync -achv "${FILESDIR}/nvidia-settings-linker.patch" "${WORKDIR}"/ \
 			|| die "rsync failed"
-		sed -i -e 's:@PV@:'"${MM_PV}"':g' "${WORKDIR}/nvidia-settings-linker.patch" \
+		sed -i -e 's:@PV@:'"${PV}"':g' "${WORKDIR}/nvidia-settings-linker.patch" \
 			|| die "sed failed"
 		PATCHES+=( "${WORKDIR}/nvidia-settings-linker.patch" )
 	fi
