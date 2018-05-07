@@ -59,7 +59,7 @@ REQUIRED_USE="
 	video_cards_intel?  ( classic )
 	video_cards_i915?   ( || ( classic gallium ) )
 	video_cards_i965?   ( classic )
-	video_cards_imx?    ( gallium )
+	video_cards_imx?    ( gallium video_cards_vivante )
 	video_cards_nouveau? ( || ( classic gallium ) )
 	video_cards_radeon? ( || ( classic gallium )
 						  gallium? ( x86? ( llvm ) amd64? ( llvm ) ) )
@@ -81,7 +81,6 @@ LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.85"
 RDEPEND="
 	!<x11-base/xorg-server-1.16.4-r6
 	!<=x11-proto/xf86driproto-2.0.3
-	abi_x86_32? ( !app-emulation/emul-linux-x86-opengl[-abi_x86_32(-)] )
 	classic? ( app-eselect/eselect-mesa )
 	gallium? ( app-eselect/eselect-mesa )
 	=app-eselect/eselect-opengl-1.3.3-r1
@@ -110,7 +109,6 @@ RDEPEND="
 		video_cards_radeon? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
 		)
-		>=sys-devel/llvm-3.6.0:=[${MULTILIB_USEDEP}]
 	)
 	opencl? (
 		app-eselect/eselect-opencl
@@ -289,8 +287,8 @@ pkg_setup() {
 }
 
 src_prepare() {
-	[[ "${PV}" == "9999" ]] && eautoreconf
 	default
+	[[ "${PV}" == "9999" ]] && eautoreconf
 }
 
 multilib_src_configure() {
@@ -461,7 +459,7 @@ multilib_src_install() {
 					rm "${library}" || die "Failed to remove ${library}"
 				fi
 			done
-			popd
+			popd || die "popd failed"
 		)
 		eend $? || die "(subshell): moving DRI/Gallium drivers failed"
 	fi

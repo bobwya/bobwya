@@ -30,7 +30,7 @@ RESTRICT="!bindist? ( bindist )"
 
 AMD_CARDS=( "r100" "r200" "r300" "r600" "radeon" "radeonsi" )
 INTEL_CARDS=( "i915" "i965" "intel" )
-VIDEO_CARDS=( "freedreno" "imx" "nouveau" "vc4" "vivante" "vmware" )
+VIDEO_CARDS=( "freedreno" "imx" "nouveau" "vc4" "virgl" "vivante" "vmware" )
 VIDEO_CARDS+=( "${AMD_CARDS[@]}" )
 VIDEO_CARDS+=( "${INTEL_CARDS[@]}" )
 for card in "${VIDEO_CARDS[@]}"; do
@@ -59,7 +59,7 @@ REQUIRED_USE="
 	video_cards_intel?  ( classic )
 	video_cards_i915?   ( || ( classic gallium ) )
 	video_cards_i965?   ( classic )
-	video_cards_imx?    ( gallium )
+	video_cards_imx?    ( gallium video_cards_vivante )
 	video_cards_nouveau? ( || ( classic gallium ) )
 	video_cards_radeon? ( || ( classic gallium )
 						  gallium? ( x86? ( llvm ) amd64? ( llvm ) ) )
@@ -69,18 +69,18 @@ REQUIRED_USE="
 	video_cards_r600?   ( gallium )
 	video_cards_radeonsi?   ( gallium llvm )
 	video_cards_vc4? ( gallium )
+	video_cards_virgl? ( gallium )
 	video_cards_vivante? ( gallium gbm )
 	video_cards_vmware? ( gallium )
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.77"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.89"
 # keep correct libdrm and dri2proto dep
 # keep blocks in rdepend for binpkg
 # shellcheck disable=SC2124
 RDEPEND="
 	!<x11-base/xorg-server-1.16.4-r6
 	!<=x11-proto/xf86driproto-2.0.3
-	abi_x86_32? ( !app-emulation/emul-linux-x86-opengl[-abi_x86_32(-)] )
 	classic? ( app-eselect/eselect-mesa )
 	gallium? ( app-eselect/eselect-mesa )
 	=app-eselect/eselect-opengl-1.3.3-r1
@@ -97,11 +97,6 @@ RDEPEND="
 	llvm? (
 		video_cards_radeonsi? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
-			vulkan? (
-				|| (
-					sys-devel/llvm:4[${MULTILIB_USEDEP}]
-					>=sys-devel/llvm-3.9.0:0[${MULTILIB_USEDEP}] )
-			)
 		)
 		video_cards_r600? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
@@ -109,7 +104,6 @@ RDEPEND="
 		video_cards_radeon? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
 		)
-		>=sys-devel/llvm-3.6.0:=[${MULTILIB_USEDEP}]
 	)
 	opencl? (
 		app-eselect/eselect-opencl
@@ -125,7 +119,10 @@ RDEPEND="
 		video_cards_nouveau? ( !<=x11-libs/libva-vdpau-driver-0.7.4-r3 )
 	)
 	vdpau? ( >=x11-libs/libvdpau-1.1:=[${MULTILIB_USEDEP}] )
-	wayland? ( >=dev-libs/wayland-1.11.0:=[${MULTILIB_USEDEP}] )
+	wayland? (
+		>=dev-libs/wayland-1.11.0:=[${MULTILIB_USEDEP}]
+		>=dev-libs/wayland-protocols-1.8
+	)
 	xvmc? ( >=x11-libs/libXvMC-1.0.8:=[${MULTILIB_USEDEP}] )
 	${LIBDRM_DEPSTRING}[video_cards_freedreno?,video_cards_nouveau?,video_cards_vc4?,video_cards_vivante?,video_cards_vmware?,${MULTILIB_USEDEP}]
 "
@@ -146,19 +143,65 @@ RDEPEND="${RDEPEND}
 	video_cards_radeonsi? ( ${LIBDRM_DEPSTRING}[video_cards_amdgpu] )
 "
 
-DEPEND="${RDEPEND}
-	${PYTHON_DEPS}
+# Please keep the LLVM dependency block separate. Since LLVM is slotted,
+# we need to *really* make sure we're only using one slot.
+LLVM_DEPSTR="
+	|| (
+		sys-devel/llvm:6[${MULTILIB_USEDEP}]
+		sys-devel/llvm:5[${MULTILIB_USEDEP}]
+		sys-devel/llvm:4[${MULTILIB_USEDEP}]
+		>=sys-devel/llvm-3.9.0:0[${MULTILIB_USEDEP}]
+	)
+	sys-devel/llvm:=[${MULTILIB_USEDEP}]
+"
+LLVM_DEPSTR_AMDGPU="${LLVM_DEPSTR//]/,llvm_targets_AMDGPU(-)]}"
+CLANG_DEPSTR="${LLVM_DEPSTR//llvm/clang}"
+CLANG_DEPSTR_AMDGPU="${CLANG_DEPSTR//]/,llvm_targets_AMDGPU(-)]}"
+RDEPEND="${RDEPEND}
 	llvm? (
-		video_cards_radeonsi? (
-			|| (
-				sys-devel/llvm[llvm_targets_AMDGPU]
-				sys-devel/llvm[video_cards_radeon]
+		opencl? (
+			video_cards_r600? (
+				${CLANG_DEPSTR_AMDGPU}
+			)
+			!video_cards_r600? (
+				video_cards_radeonsi? (
+					${CLANG_DEPSTR_AMDGPU}
+				)
+				!video_cards_radeonsi? (
+					video_cards_radeon? (
+						${CLANG_DEPSTR_AMDGPU}
+					)
+					!video_cards_radeon? (
+						${CLANG_DEPSTR}
+					)
+				)
+			)
+		)
+		!opencl? (
+			video_cards_r600? (
+				${LLVM_DEPSTR_AMDGPU}
+			)
+			!video_cards_r600? (
+				video_cards_radeonsi? (
+					${LLVM_DEPSTR_AMDGPU}
+				)
+				!video_cards_radeonsi? (
+					video_cards_radeon? (
+						${LLVM_DEPSTR_AMDGPU}
+					)
+					!video_cards_radeon? (
+						${LLVM_DEPSTR}
+					)
+				)
 			)
 		)
 	)
+"
+unset {LLVM,CLANG}_DEPSTR{,_AMDGPU}
+
+DEPEND="${RDEPEND}
+	${PYTHON_DEPS}
 	opencl? (
-		>=sys-devel/llvm-3.6.0:=[${MULTILIB_USEDEP}]
-		>=sys-devel/clang-3.6.0:=[${MULTILIB_USEDEP}]
 		>=sys-devel/gcc-4.6
 	)
 	sys-devel/gettext
@@ -173,6 +216,9 @@ DEPEND="${RDEPEND}
 	>=x11-proto/xextproto-7.2.1-r1:=[${MULTILIB_USEDEP}]
 	>=x11-proto/xf86driproto-2.1.1-r1:=[${MULTILIB_USEDEP}]
 	>=x11-proto/xf86vidmodeproto-2.3.1-r1:=[${MULTILIB_USEDEP}]
+	vulkan? (
+		$(python_gen_any_dep ">=dev-python/mako-0.7.3[\${PYTHON_USEDEP}]")
+	)
 "
 
 [[ "${PV}" == "9999" ]] && DEPEND+="
@@ -238,8 +284,8 @@ pkg_setup() {
 }
 
 src_prepare() {
-	[[ "${PV}" == "9999" ]] && eautoreconf
 	default
+	[[ "${PV}" == "9999" ]] && eautoreconf
 }
 
 multilib_src_configure() {
@@ -285,6 +331,7 @@ multilib_src_configure() {
 
 		driver_enable GALLIUM_DRIVERS swrast
 		driver_enable GALLIUM_DRIVERS video_cards_vc4 vc4
+		driver_enable GALLIUM_DRIVERS video_cards_virgl virgl
 		driver_enable GALLIUM_DRIVERS video_cards_vivante etnaviv
 		driver_enable GALLIUM_DRIVERS video_cards_vmware svga
 		driver_enable GALLIUM_DRIVERS video_cards_nouveau nouveau
@@ -350,6 +397,7 @@ multilib_src_configure() {
 		"$(use_enable unwind libunwind)"
 		"--enable-valgrind=$(usex valgrind auto no)"
 		"--enable-llvm-shared-libs"
+		"--disable-opencl-icd"
 		"--with-dri-drivers=${DRI_DRIVERS}"
 		"--with-gallium-drivers=${GALLIUM_DRIVERS}"
 		"--with-vulkan-drivers=${VULKAN_DRIVERS}"
@@ -409,7 +457,7 @@ multilib_src_install() {
 					rm "${library}" || die "Failed to remove ${library}"
 				fi
 			done
-			popd
+			popd || die "popd failed"
 		)
 		eend $? || die "(subshell): moving DRI/Gallium drivers failed"
 	fi

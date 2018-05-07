@@ -74,14 +74,13 @@ REQUIRED_USE="
 	video_cards_vmware? ( gallium )
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.88"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.91"
 # keep correct libdrm and dri2proto dep
 # keep blocks in rdepend for binpkg
 # shellcheck disable=SC2124
 RDEPEND="
 	!<x11-base/xorg-server-1.16.4-r6
 	!<=x11-proto/xf86driproto-2.0.3
-	abi_x86_32? ( !app-emulation/emul-linux-x86-opengl[-abi_x86_32(-)] )
 	classic? ( app-eselect/eselect-mesa )
 	gallium? ( app-eselect/eselect-mesa )
 	=app-eselect/eselect-opengl-1.3.3-r1
@@ -92,17 +91,12 @@ RDEPEND="
 	>=x11-libs/libXdamage-1.1.4-r1:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libXext-1.3.2:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libXxf86vm-1.1.3:=[${MULTILIB_USEDEP}]
-	>=x11-libs/libxcb-1.9.3:=[${MULTILIB_USEDEP}]
+	>=x11-libs/libxcb-1.13:=[${MULTILIB_USEDEP}]
 	x11-libs/libXfixes:=[${MULTILIB_USEDEP}]
 	unwind? ( sys-libs/libunwind[${MULTILIB_USEDEP}] )
 	llvm? (
 		video_cards_radeonsi? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
-			vulkan? (
-				|| (
-					sys-devel/llvm:4[${MULTILIB_USEDEP}]
-					>=sys-devel/llvm-3.9.0:0[${MULTILIB_USEDEP}] )
-			)
 		)
 		video_cards_r600? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
@@ -110,7 +104,6 @@ RDEPEND="
 		video_cards_radeon? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
 		)
-		>=sys-devel/llvm-3.6.0:=[${MULTILIB_USEDEP}]
 	)
 	opencl? (
 		app-eselect/eselect-opencl
@@ -152,6 +145,7 @@ RDEPEND="${RDEPEND}
 # we need to *really* make sure we're only using one slot.
 LLVM_DEPSTR="
 	|| (
+		sys-devel/llvm:7[${MULTILIB_USEDEP}]
 		sys-devel/llvm:6[${MULTILIB_USEDEP}]
 		sys-devel/llvm:5[${MULTILIB_USEDEP}]
 		sys-devel/llvm:4[${MULTILIB_USEDEP}]
@@ -289,8 +283,8 @@ pkg_setup() {
 }
 
 src_prepare() {
-	[[ "${PV}" == "9999" ]] && eautoreconf
 	default
+	[[ "${PV}" == "9999" ]] && eautoreconf
 }
 
 multilib_src_configure() {
@@ -462,7 +456,7 @@ multilib_src_install() {
 					rm "${library}" || die "Failed to remove ${library}"
 				fi
 			done
-			popd
+			popd || die "popd failed"
 		)
 		eend $? || die "(subshell): moving DRI/Gallium drivers failed"
 	fi
