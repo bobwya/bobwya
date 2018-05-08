@@ -73,7 +73,6 @@ SLOT="${PV}"
 
 IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap +png prelink pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test +threads +truetype udev +udisks v4l vulkan +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
-	!amd64? ( !vulkan )
 	X? ( truetype )
 	elibc_glibc? ( threads )
 	osmesa? ( opengl )
@@ -94,9 +93,7 @@ COMMON_DEPEND="
 		x11-libs/libXxf86vm[${MULTILIB_USEDEP}]
 	)
 	alsa? ( media-libs/alsa-lib[${MULTILIB_USEDEP}] )
-	!x86-fbsd? (
-		capi? ( net-libs/libcapi[${MULTILIB_USEDEP}] )
-	)
+	capi? ( net-libs/libcapi[${MULTILIB_USEDEP}] )
 	cups? ( net-print/cups:=[${MULTILIB_USEDEP}] )
 	fontconfig? ( media-libs/fontconfig:=[${MULTILIB_USEDEP}] )
 	gphoto2? ( media-libs/libgphoto2:=[${MULTILIB_USEDEP}] )
@@ -111,9 +108,7 @@ COMMON_DEPEND="
 	ldap? ( net-nds/openldap:=[${MULTILIB_USEDEP}] )
 	mp3? ( >=media-sound/mpg123-1.5.0[${MULTILIB_USEDEP}] )
 	ncurses? ( >=sys-libs/ncurses-5.2:0=[${MULTILIB_USEDEP}] )
-	!x86-fbsd? (
-		netapi? ( net-fs/samba[netapi(+),${MULTILIB_USEDEP}] )
-	)
+	netapi? ( net-fs/samba[netapi(+),${MULTILIB_USEDEP}] )
 	nls? ( sys-devel/gettext[${MULTILIB_USEDEP}] )
 	odbc? ( dev-db/unixODBC:=[${MULTILIB_USEDEP}] )
 	openal? ( media-libs/openal:=[${MULTILIB_USEDEP}] )
@@ -131,44 +126,21 @@ COMMON_DEPEND="
 	ssl? ( net-libs/gnutls:=[${MULTILIB_USEDEP}] )
 	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
 	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
-	!x86-fbsd? (
-		udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
-	)
+	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
-	amd64? (
-		vulkan? ( media-libs/vulkan-loader[X,${MULTILIB_USEDEP}] )
-	)
+	vulkan? ( media-libs/vulkan-loader[X,${MULTILIB_USEDEP}] )
 	xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
 	xinerama? ( x11-libs/libXinerama[${MULTILIB_USEDEP}] )
 	xml? (
 		dev-libs/libxml2[${MULTILIB_USEDEP}]
 		dev-libs/libxslt[${MULTILIB_USEDEP}]
 	)
-	abi_x86_32? (
-		!app-emulation/emul-linux-x86-baselibs[-abi_x86_32(-)]
-		!<app-emulation/emul-linux-x86-baselibs-20140508-r14
-		!app-emulation/emul-linux-x86-db[-abi_x86_32(-)]
-		!<app-emulation/emul-linux-x86-db-20140508-r3
-		!app-emulation/emul-linux-x86-medialibs[-abi_x86_32(-)]
-		!<app-emulation/emul-linux-x86-medialibs-20140508-r6
-		!app-emulation/emul-linux-x86-opengl[-abi_x86_32(-)]
-		!<app-emulation/emul-linux-x86-opengl-20140508-r1
-		!app-emulation/emul-linux-x86-sdl[-abi_x86_32(-)]
-		!<app-emulation/emul-linux-x86-sdl-20140508-r1
-		!app-emulation/emul-linux-x86-soundlibs[-abi_x86_32(-)]
-		!<app-emulation/emul-linux-x86-soundlibs-20140508
-		!app-emulation/emul-linux-x86-xlibs[-abi_x86_32(-)]
-		!<app-emulation/emul-linux-x86-xlibs-20140508
-	)"
+"
 
 RDEPEND="${COMMON_DEPEND}
 	!app-emulation/wine:0
-	!x86-fbsd? (
-		dos? ( >=games-emulation/dosbox-0.74_p20160629 )
-		samba? ( >=net-fs/samba-3.0.25[winbind] )
-		udisks? ( sys-fs/udisks:2 )
-	)
 	>=app-eselect/eselect-wine-1.5.4
+	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
 	gecko? ( app-emulation/wine-gecko:2.47[abi_x86_32?,abi_x86_64?] )
 	mono? ( app-emulation/wine-mono:4.7.1 )
 	perl? (
@@ -178,21 +150,21 @@ RDEPEND="${COMMON_DEPEND}
 	pulseaudio? (
 		realtime? ( sys-auth/rtkit )
 	)
+	samba? ( >=net-fs/samba-3.0.25[winbind] )
 	selinux? ( sec-policy/selinux-wine )
+	udisks? ( sys-fs/udisks:2 )
 "
 
 # tools/make_requests requires perl
 DEPEND="${COMMON_DEPEND}
-	!x86-fbsd? (
-		>=sys-kernel/linux-headers-2.6
-		prelink? ( sys-devel/prelink )
-	)
 	dev-util/patchbin
 	dev-lang/perl
 	dev-perl/XML-Simple
 	>=sys-devel/flex-2.5.33
+	>=sys-kernel/linux-headers-2.6
 	virtual/pkgconfig
 	virtual/yacc
+	prelink? ( sys-devel/prelink )
 	X? (
 		x11-proto/inputproto
 		x11-proto/xextproto
