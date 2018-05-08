@@ -80,7 +80,6 @@ SLOT="0"
 
 IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cuda cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap pipelight +png prelink pulseaudio +realtime +run-exes s3tc samba scanner sdl2 selinux +ssl staging test themes +threads +truetype udev +udisks v4l vaapi vulkan +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
-	!amd64? ( !vulkan )
 	X? ( truetype )
 	cuda? ( staging )
 	elibc_glibc? ( threads )
@@ -97,9 +96,7 @@ REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 RESTRICT="test"
 
 COMMON_DEPEND="
-	!x86-fbsd? (
-		staging? ( sys-apps/attr[${MULTILIB_USEDEP}] )
-	)
+	staging? ( sys-apps/attr[${MULTILIB_USEDEP}] )
 	>=app-emulation/wine-desktop-common-20180412
 	X? (
 		x11-libs/libXcursor[${MULTILIB_USEDEP}]
@@ -110,9 +107,7 @@ COMMON_DEPEND="
 		x11-libs/libXxf86vm[${MULTILIB_USEDEP}]
 	)
 	alsa? ( media-libs/alsa-lib[${MULTILIB_USEDEP}] )
-	!x86-fbsd? (
-		capi? ( net-libs/libcapi[${MULTILIB_USEDEP}] )
-	)
+	capi? ( net-libs/libcapi[${MULTILIB_USEDEP}] )
 	cups? ( net-print/cups:=[${MULTILIB_USEDEP}] )
 	fontconfig? ( media-libs/fontconfig:=[${MULTILIB_USEDEP}] )
 	gphoto2? ( media-libs/libgphoto2:=[${MULTILIB_USEDEP}] )
@@ -127,9 +122,7 @@ COMMON_DEPEND="
 	ldap? ( net-nds/openldap:=[${MULTILIB_USEDEP}] )
 	mp3? ( >=media-sound/mpg123-1.5.0[${MULTILIB_USEDEP}] )
 	ncurses? ( >=sys-libs/ncurses-5.2:0=[${MULTILIB_USEDEP}] )
-	!x86-fbsd? (
-		netapi? ( net-fs/samba[netapi(+),${MULTILIB_USEDEP}] )
-	)
+	netapi? ( net-fs/samba[netapi(+),${MULTILIB_USEDEP}] )
 	nls? ( sys-devel/gettext[${MULTILIB_USEDEP}] )
 	odbc? ( dev-db/unixODBC:=[${MULTILIB_USEDEP}] )
 	openal? ( media-libs/openal:=[${MULTILIB_USEDEP}] )
@@ -152,44 +145,20 @@ COMMON_DEPEND="
 	)
 	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
 	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
-	!x86-fbsd? (
-		udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
-	)
+	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
 	vaapi? ( x11-libs/libva:=[drm,X?,${MULTILIB_USEDEP}] )
-	amd64? (
-		vulkan? ( media-libs/vulkan-loader[X,${MULTILIB_USEDEP}] )
-	)
+	vulkan? ( media-libs/vulkan-loader[X,${MULTILIB_USEDEP}] )
 	xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
 	xinerama? ( x11-libs/libXinerama[${MULTILIB_USEDEP}] )
 	xml? (
 		dev-libs/libxml2[${MULTILIB_USEDEP}]
 		dev-libs/libxslt[${MULTILIB_USEDEP}]
 	)
-	abi_x86_32? (
-		!app-emulation/emul-linux-x86-baselibs[-abi_x86_32(-)]
-		!<app-emulation/emul-linux-x86-baselibs-20140508-r14
-		!app-emulation/emul-linux-x86-db[-abi_x86_32(-)]
-		!<app-emulation/emul-linux-x86-db-20140508-r3
-		!app-emulation/emul-linux-x86-medialibs[-abi_x86_32(-)]
-		!<app-emulation/emul-linux-x86-medialibs-20140508-r6
-		!app-emulation/emul-linux-x86-opengl[-abi_x86_32(-)]
-		!<app-emulation/emul-linux-x86-opengl-20140508-r1
-		!app-emulation/emul-linux-x86-sdl[-abi_x86_32(-)]
-		!<app-emulation/emul-linux-x86-sdl-20140508-r1
-		!app-emulation/emul-linux-x86-soundlibs[-abi_x86_32(-)]
-		!<app-emulation/emul-linux-x86-soundlibs-20140508
-		!app-emulation/emul-linux-x86-xlibs[-abi_x86_32(-)]
-		!<app-emulation/emul-linux-x86-xlibs-20140508
-	)"
+"
 
 RDEPEND="${COMMON_DEPEND}
-	!x86-fbsd? (
-		dos? ( >=games-emulation/dosbox-0.74_p20160629 )
-		samba? ( >=net-fs/samba-3.0.25[winbind] )
-		s3tc? ( >=media-libs/libtxc_dxtn-1.0.1-r1[${MULTILIB_USEDEP}] )
-		udisks? ( sys-fs/udisks:2 )
-	)
+	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
 	gecko? ( app-emulation/wine-gecko:2.47[abi_x86_32?,abi_x86_64?] )
 	mono? ( app-emulation/wine-mono:4.7.1 )
 	perl? (
@@ -199,21 +168,22 @@ RDEPEND="${COMMON_DEPEND}
 	pulseaudio? (
 		realtime? ( sys-auth/rtkit )
 	)
+	s3tc? ( >=media-libs/libtxc_dxtn-1.0.1-r1[${MULTILIB_USEDEP}] )
+	samba? ( >=net-fs/samba-3.0.25[winbind] )
 	selinux? ( sec-policy/selinux-wine )
+	udisks? ( sys-fs/udisks:2 )
 "
 
 # tools/make_requests requires perl
 DEPEND="${COMMON_DEPEND}
-	!x86-fbsd? (
-		>=sys-kernel/linux-headers-2.6
-		prelink? ( sys-devel/prelink )
-	)
 	dev-util/patchbin
 	dev-lang/perl
 	dev-perl/XML-Simple
 	>=sys-devel/flex-2.5.33
+	>=sys-kernel/linux-headers-2.6
 	virtual/pkgconfig
 	virtual/yacc
+	prelink? ( sys-devel/prelink )
 	X? (
 		x11-proto/inputproto
 		x11-proto/xextproto
@@ -762,13 +732,13 @@ pkg_postinst() {
 	xdg_mimeinfo_database_update
 
 	if ! use gecko; then
-		ewarn "Without Wine Gecko, wine prefixes will not have a default"
+		ewarn "Without Wine Gecko, Wineprefixes will not have a default"
 		ewarn "implementation of iexplore.  Many older windows applications"
 		ewarn "rely upon the existence of an iexplore implementation, so"
 		ewarn "you will likely need to install an external one, using winetricks."
 	fi
 	if ! use mono; then
-		ewarn "Without Wine Mono, wine prefixes will not have a default"
+		ewarn "Without Wine Mono, Wineprefixes will not have a default"
 		ewarn "implementation of .NET.  Many windows applications rely upon"
 		ewarn "the existence of a .NET implementation, so you will likely need"
 		ewarn "to install an external one, using winetricks."
