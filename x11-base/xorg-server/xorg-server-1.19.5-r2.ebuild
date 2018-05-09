@@ -16,7 +16,7 @@ IUSE="${IUSE_SERVERS} debug +fop glamor ipv6 libressl minimal selinux +suid syst
 
 CDEPEND="=app-eselect/eselect-opengl-1.3.3-r1
 	!libressl? ( dev-libs/openssl:0= )
-	libressl? ( dev-libs/libressl )
+	libressl? ( dev-libs/libressl:0= )
 	>=x11-apps/iceauth-1.0.2
 	>=x11-apps/rgb-1.0.3
 	>=x11-apps/xauth-1.0.3
@@ -145,6 +145,7 @@ PATCHES=(
 	# needed for new eselect-opengl, bug #541232
 	"${FILESDIR}"/${PN}-1.18-support-multiple-Files-sections.patch
 	"${FILESDIR}"/${PN}-1.19.4-sysmacros.patch #633530
+	"${FILESDIR}"/${PN}-1.19.5-glx-do-not-pick-sRGB-config-for-32-bit-RGBA-visual.patch #653688
 )
 
 pkg_pretend() {
