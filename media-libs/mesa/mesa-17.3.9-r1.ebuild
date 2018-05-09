@@ -75,12 +75,8 @@ REQUIRED_USE="
 "
 
 LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.85"
-# keep correct libdrm and dri2proto dep
-# keep blocks in rdepend for binpkg
 # shellcheck disable=SC2124
 RDEPEND="
-	!<x11-base/xorg-server-1.16.4-r6
-	!<=x11-proto/xf86driproto-2.0.3
 	classic? ( app-eselect/eselect-mesa )
 	gallium? ( app-eselect/eselect-mesa )
 	=app-eselect/eselect-opengl-1.3.3-r1
@@ -210,15 +206,7 @@ DEPEND="${RDEPEND}
 	sys-devel/gettext
 	virtual/pkgconfig
 	valgrind? ( dev-util/valgrind )
-	>=x11-proto/dri2proto-2.8-r1:=[${MULTILIB_USEDEP}]
-	dri3? (
-		>=x11-proto/dri3proto-1.0:=[${MULTILIB_USEDEP}]
-		>=x11-proto/presentproto-1.0:=[${MULTILIB_USEDEP}]
-	)
-	>=x11-proto/glproto-1.4.17-r1:=[${MULTILIB_USEDEP}]
-	>=x11-proto/xextproto-7.2.1-r1:=[${MULTILIB_USEDEP}]
-	>=x11-proto/xf86driproto-2.1.1-r1:=[${MULTILIB_USEDEP}]
-	>=x11-proto/xf86vidmodeproto-2.3.1-r1:=[${MULTILIB_USEDEP}]
+	x11-base/xorg-proto
 	vulkan? (
 		$(python_gen_any_dep ">=dev-python/mako-0.7.3[\${PYTHON_USEDEP}]")
 	)

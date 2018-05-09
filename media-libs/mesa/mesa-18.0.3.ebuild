@@ -74,7 +74,7 @@ REQUIRED_USE="
 	video_cards_vmware? ( gallium )
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.91"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.89"
 # shellcheck disable=SC2124
 RDEPEND="
 	classic? ( app-eselect/eselect-mesa )
@@ -87,7 +87,7 @@ RDEPEND="
 	>=x11-libs/libXdamage-1.1.4-r1:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libXext-1.3.2:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libXxf86vm-1.1.3:=[${MULTILIB_USEDEP}]
-	>=x11-libs/libxcb-1.13:=[${MULTILIB_USEDEP}]
+	>=x11-libs/libxcb-1.9.3:=[${MULTILIB_USEDEP}]
 	x11-libs/libXfixes:=[${MULTILIB_USEDEP}]
 	unwind? ( sys-libs/libunwind[${MULTILIB_USEDEP}] )
 	llvm? (
@@ -121,12 +121,14 @@ RDEPEND="
 	)
 	xvmc? ( >=x11-libs/libXvMC-1.0.8:=[${MULTILIB_USEDEP}] )
 	${LIBDRM_DEPSTRING}[video_cards_freedreno?,video_cards_nouveau?,video_cards_vc4?,video_cards_vivante?,video_cards_vmware?,${MULTILIB_USEDEP}]
-	video_cards_intel? (
-		!video_cards_i965? ( ${LIBDRM_DEPSTRING}[video_cards_intel] )
-	)
-	video_cards_i915? ( ${LIBDRM_DEPSTRING}[video_cards_intel] )
 "
 
+# shellcheck disable=SC2068
+for card in ${INTEL_CARDS[@]}; do
+	RDEPEND="${RDEPEND}
+		video_cards_${card}? ( ${LIBDRM_DEPSTRING}[video_cards_intel] )
+	"
+done
 # shellcheck disable=SC2068
 for card in ${AMD_CARDS[@]}; do
 	RDEPEND="${RDEPEND}
@@ -141,7 +143,6 @@ RDEPEND="${RDEPEND}
 # we need to *really* make sure we're only using one slot.
 LLVM_DEPSTR="
 	|| (
-		sys-devel/llvm:7[${MULTILIB_USEDEP}]
 		sys-devel/llvm:6[${MULTILIB_USEDEP}]
 		sys-devel/llvm:5[${MULTILIB_USEDEP}]
 		sys-devel/llvm:4[${MULTILIB_USEDEP}]
@@ -308,7 +309,7 @@ multilib_src_configure() {
 		myeconfargs+=(
 			"$(use_enable d3d9 nine)"
 			"$(use_enable llvm)"
-			"$(use_enable openmax omx-bellagio)"
+			"$(use_enable openmax omx)"
 			"$(use_enable vaapi va)"
 			"$(use_enable vdpau)"
 			"$(use_enable xa)"
@@ -528,6 +529,12 @@ pkg_postinst() {
 		elog "USE=\"bindist\" was not set. Potentially patent encumbered code was"
 		elog "enabled. Please see /usr/share/doc/${P}/patents.txt.bz2 for an"
 		elog "explanation."
+	fi
+
+	if ! has_version "media-libs/libtxc_dxtn"; then
+		elog "Note that in order to have full S3TC support, it is necessary to install"
+		elog "media-libs/libtxc_dxtn as well. This may be necessary to get quality texture"
+		elog "support in some applications, and some others may require this to run."
 	fi
 
 	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix various issues"
