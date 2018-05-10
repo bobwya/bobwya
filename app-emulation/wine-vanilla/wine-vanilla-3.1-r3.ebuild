@@ -568,13 +568,13 @@ pkg_postinst() {
 		|| die "eselect wine set --force --wine --vanilla --if-unset \"${P}\" failed"
 
 	if ! use gecko; then
-		ewarn "Without Wine Gecko, wine prefixes will not have a default"
+		ewarn "Without Wine Gecko, Wineprefixes will not have a default"
 		ewarn "implementation of iexplore.  Many older windows applications"
 		ewarn "rely upon the existence of an iexplore implementation, so"
 		ewarn "you will likely need to install an external one, using winetricks."
 	fi
 	if ! use mono; then
-		ewarn "Without Wine Mono, wine prefixes will not have a default"
+		ewarn "Without Wine Mono, Wineprefixes will not have a default"
 		ewarn "implementation of .NET.  Many windows applications rely upon"
 		ewarn "the existence of a .NET implementation, so you will likely need"
 		ewarn "to install an external one, using winetricks."
