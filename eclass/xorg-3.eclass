@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: xorg-3.eclass
@@ -100,7 +100,7 @@ fi
 : ${XORG_PACKAGE_NAME:=${PN}}
 
 if [[ -n ${GIT_ECLASS} ]]; then
-	: ${EGIT_REPO_URI:="git://anongit.freedesktop.org/xorg/${XORG_MODULE}${XORG_PACKAGE_NAME} http://anongit.freedesktop.org/git/xorg/${XORG_MODULE}${XORG_PACKAGE_NAME}"}
+	: ${EGIT_REPO_URI:="https://anongit.freedesktop.org/git/xorg/${XORG_MODULE}${XORG_PACKAGE_NAME}.git"}
 elif [[ -n ${XORG_BASE_INDIVIDUAL_URI} ]]; then
 	SRC_URI="${XORG_BASE_INDIVIDUAL_URI}/${XORG_MODULE}${P}.tar.bz2"
 fi
@@ -114,7 +114,7 @@ fi
 
 # Set up autotools shared dependencies
 # Remember that all versions here MUST be stable
-XORG_EAUTORECONF_ARCHES="ppc-aix x86-winnt"
+XORG_EAUTORECONF_ARCHES=""
 EAUTORECONF_DEPEND+="
 	>=sys-devel/libtool-2.2.6a
 	sys-devel/m4"
@@ -199,26 +199,18 @@ DRI_COMMON_DEPEND="
 	x11-base/xorg-server[-minimal]
 	x11-libs/libdrm
 "
-DRI_DEPEND="
-	x11-proto/xf86driproto
-	x11-proto/glproto
-	x11-proto/dri2proto
-"
 case ${XORG_DRI} in
 	no)
 		;;
 	always)
 		COMMON_DEPEND+=" ${DRI_COMMON_DEPEND}"
-		DEPEND+=" ${DRI_DEPEND}"
 		;;
 	*)
 		COMMON_DEPEND+=" ${XORG_DRI}? ( ${DRI_COMMON_DEPEND} )"
-		DEPEND+=" ${XORG_DRI}? ( ${DRI_DEPEND} )"
 		IUSE+=" ${XORG_DRI}"
 		;;
 esac
-unset DRI_DEPEND
-unset DRI_COMMONDEPEND
+unset DRI_COMMON_DEPEND
 
 if [[ -n "${DRIVER}" ]]; then
 	COMMON_DEPEND+="
@@ -226,26 +218,13 @@ if [[ -n "${DRIVER}" ]]; then
 	"
 fi
 if [[ -n "${DRIVER}" && ${PN} == xf86-input-* ]]; then
-	DEPEND+="
-		x11-proto/inputproto
-		x11-proto/kbproto
-		x11-proto/xproto
-	"
+	DEPEND+=" x11-base/xorg-proto"
 fi
 if [[ -n "${DRIVER}" && ${PN} == xf86-video-* ]]; then
 	COMMON_DEPEND+="
 		x11-libs/libpciaccess
 	"
-	# we also needs some protos and libs in all cases
-	DEPEND+="
-		x11-proto/fontsproto
-		x11-proto/randrproto
-		x11-proto/renderproto
-		x11-proto/videoproto
-		x11-proto/xextproto
-		x11-proto/xineramaproto
-		x11-proto/xproto
-	"
+	DEPEND+=" x11-base/xorg-proto"
 fi
 
 # @ECLASS-VARIABLE: XORG_DOC
@@ -304,10 +283,6 @@ fi
 DEPEND+=" ${COMMON_DEPEND}"
 RDEPEND+=" ${COMMON_DEPEND}"
 unset COMMON_DEPEND
-
-if [[ ${XORG_MULTILIB} == yes ]]; then
-	RDEPEND+=" abi_x86_32? ( !app-emulation/emul-linux-x86-xlibs[-abi_x86_32(-)] )"
-fi
 
 debug-print "${LINENO} ${ECLASS} ${FUNCNAME}: DEPEND=${DEPEND}"
 debug-print "${LINENO} ${ECLASS} ${FUNCNAME}: RDEPEND=${RDEPEND}"

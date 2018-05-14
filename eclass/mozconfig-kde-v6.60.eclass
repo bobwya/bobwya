@@ -1,7 +1,7 @@
 # Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 #
-# @ECLASS: mozconfig-kde-v6.58.eclass
+# @ECLASS: mozconfig-kde-v6.60.eclass
 # @MAINTAINER:
 # mozilla team <mozilla@gentoo.org>
 # @BLURB: the new mozilla common configuration eclass for FF33 and newer, v6
@@ -27,7 +27,7 @@ case ${EAPI} in
 		;;
 esac
 
-inherit flag-o-matic toolchain-funcs mozcoreconf-kde-v5
+inherit flag-o-matic toolchain-funcs mozcoreconf-kde-v6
 
 # @ECLASS-VARIABLE: MOZCONFIG_OPTIONAL_WIFI
 # @DESCRIPTION:
@@ -167,9 +167,9 @@ DEPEND="app-arch/zip
 	sys-apps/findutils
 	pulseaudio? ( media-sound/pulseaudio )
 	|| (
-		( >=dev-lang/rust-1.21.0 >=dev-util/cargo-0.22.0 )
-		>=dev-lang/rust-1.21.0[extended]
-		( >=dev-lang/rust-bin-1.21.0 >=dev-util/cargo-0.22.0 )
+		( >=dev-lang/rust-1.24.0[-extended(-)] >=dev-util/cargo-0.24.0 )
+		>=dev-lang/rust-1.24.0[extended]
+		( >=dev-lang/rust-bin-1.24.0 >=dev-util/cargo-0.24.0 )
 	)
 	${RDEPEND}"
 
