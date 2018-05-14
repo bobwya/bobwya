@@ -29,7 +29,7 @@ CDEPEND="
 	dev-qt/qtcore:5
 	dev-qt/qtgui:5
 	dev-qt/qtnetwork:5
-	dev-qt/qtsingleapplication[qt5,X]
+	dev-qt/qtsingleapplication[X]
 	dev-qt/qtwidgets:5
 "
 DEPEND="${CDEPEND}
