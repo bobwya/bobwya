@@ -1,69 +1,49 @@
-diff --git a/src/winetricks b/src/winetricks
-index ad2cf52..348717d 100755
---- a/src/winetricks
-+++ b/src/winetricks
-@@ -3141,24 +3141,6 @@ winetricks_early_wine()
-     WINEDEBUG=-all "$WINE" "$@" 2> "$W_TMP_EARLY"/early_wine.err.txt | ( sed 's/.*1h.=//' | tr -d '\r' | grep -v -e "Module not found" -e "Could not load wine-gecko" || true)
- }
+--- a/src/winetricks	2018-05-14 21:42:25.570682959 +0100
++++ b/src/winetricks	2018-05-14 21:45:07.193103656 +0100
+@@ -3158,26 +3158,2 @@
  
 -winetricks_detect_gui()
 -{
 -    if test -x "$(which zenity 2>/dev/null)"; then
 -        WINETRICKS_GUI=zenity
--
+-        WINETRICKS_GUI_VERSION="$(zenity --version)"
 -        WINETRICKS_MENU_HEIGHT=500
 -        WINETRICKS_MENU_WIDTH=1010
 -    elif test -x "$(which kdialog 2>/dev/null)"; then
 -        echo "Zenity not found!  Using kdialog as poor substitute."
 -        WINETRICKS_GUI=kdialog
+-        WINETRICKS_GUI_VERSION="$(kdialog --version)"
 -    else
 -        echo "No arguments given, so tried to start GUI, but zenity not found."
 -        echo "Please install zenity if you want a graphical interface, or "
 -        echo "run with --help for more options."
 -        exit 1
 -    fi
+-
+-    # Print zenity/dialog version info for debugging:
+-    if [ ! "$WINETRICKS_SUPER_QUIET" ] ; then
+-       echo "winetricks GUI enabled, using $WINETRICKS_GUI $WINETRICKS_GUI_VERSION"
+-    fi
 -}
 -
  # Detect which sudo to use
- winetricks_detect_sudo()
- {
-@@ -5100,7 +5082,6 @@ Jedes Verb installiert eine Anwendung oder ändert eine Einstellung.
- 
- Optionen:
+@@ -5115,3 +5091,2 @@
      --force           Nicht prüfen ob Pakete bereits installiert wurden
 -    --gui             GUI Diagnosen anzeigen, auch wenn von der Kommandozeile gestartet
      --isolate         Jedes Programm oder Spiel in eigener Bottle (WINEPREFIX) installieren
- -k, --keep_isos       ISOs local speichern (erlaubt spätere Installation ohne Disk)
-     --no-clean        Temp Verzeichnisse nicht löschen (nützlich beim debuggen)
-@@ -5136,7 +5117,6 @@ Executes given verbs.  Each verb installs an application or changes a setting.
- Options:
-     --country=CC      Set country code to CC and don't detect your IP address
+@@ -5152,3 +5127,2 @@
      --force           Don't check whether packages were already installed
 -    --gui             Show gui diagnostics even when driven by commandline
      --isolate         Install each app or game in its own bottle (WINEPREFIX)
-     --self-update     Update this application to the last version
-     --update-rollback Rollback the last self update
-@@ -5174,7 +5154,6 @@ winetricks_handle_option()
-     case "$1" in
-         --country=*) W_COUNTRY="${1##--country=}" ;;
+@@ -5191,3 +5165,2 @@
          --force) WINETRICKS_FORCE=1;;
 -        --gui) winetricks_detect_gui;;
          -h|--help) winetricks_usage ; exit 0 ;;
-         --isolate) WINETRICKS_OPT_SHAREDPREFIX=0 ;;
-         -k|--keep_isos) WINETRICKS_OPT_KEEPISOS=1 ;;
-@@ -5210,6 +5189,7 @@ then
-     WINETRICKS_OPT_SHAREDPREFIX=${WINETRICKS_OPT_SHAREDPREFIX:-1}
- 
+@@ -5227,2 +5200,3 @@
      # Handle options before init, to avoid starting wine for --help or --version
 +    [[ -z "${1}" ]] && winetricks_handle_option "-h"
      while winetricks_handle_option "$1"
-     do
-         shift
-@@ -19729,7 +19709,6 @@ then
-             fi
-             # GUI case
+@@ -19672,3 +19646,2 @@
              # No non-option arguments given, so read them from GUI, and loop until user quits
 -            winetricks_detect_gui
              winetricks_detect_sudo
-             while true
-             do

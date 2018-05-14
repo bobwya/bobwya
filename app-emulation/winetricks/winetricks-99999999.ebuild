@@ -73,11 +73,11 @@ src_unpack() {
 }
 
 src_prepare() {
-	local PATCHES=()
+	local PATCHES=( "${FILESDIR}/${PN}-20180513_add_bashcomp.patch" )
 	if use gtk || use kde; then
 		winetricks_disable_gui_component "${S}/src/winetricks"
 	else
-		PATCHES+=( "${FILESDIR}/${PN}-20180217_disable_gui.patch" )
+		PATCHES+=( "${FILESDIR}/${PN}-20180513_disable_gui.patch" )
 	fi
 	default
 }
@@ -88,6 +88,7 @@ src_test() {
 
 src_install() {
 	default
+	newbashcomp "src/${PN}.bash-completion" "${PN}"
 	if use gtk || use kde; then
 		cd "${WORKDIR}/${winetricks_gentoo}" || die "cd failed"
 		domenu "winetricks.desktop"
