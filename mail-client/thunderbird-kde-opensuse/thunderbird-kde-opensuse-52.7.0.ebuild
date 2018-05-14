@@ -44,8 +44,7 @@ HOMEPAGE="https://www.mozilla.com/en-US/thunderbird
 KEYWORDS="~alpha ~amd64 ~arm ~ppc ~ppc64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist crypt hardened kde ldap lightning +minimal mozdom rust selinux"
-REQUIRED_USE="kde? ( || ( amd64 x86 ) )"
+IUSE="bindist crypt hardened kde ldap kernel_linux lightning +minimal mozdom rust selinux"
 RESTRICT="!bindist? ( bindist )"
 
 PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCHFF}.tar.xz )
@@ -72,12 +71,7 @@ DEPEND="rust? ( dev-lang/rust )
 RDEPEND="${CDEPEND}
 	selinux? ( sec-policy/selinux-thunderbird )
 	crypt? ( >=x11-plugins/enigmail-1.9.8.3-r1 )
-	amd64? (
-		kde? ( kde-misc/kmozillahelper:= )
-	)
-	x86? (
-		kde? ( kde-misc/kmozillahelper:= )
-	)
+	kde? ( kde-misc/kmozillahelper:=  )
 	!!mail-client/thunderbird"
 
 S="${WORKDIR}/${MOZ_P}"
