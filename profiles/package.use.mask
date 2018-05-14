@@ -1,6 +1,9 @@
 # Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+# Silence Repoman
+app-emulation/wine vulkan
+
 # global masking of >=dev-libs/icu-59
 >=www-client/firefox-kde-opensuse-56.0 system-icu
 
