@@ -1,0 +1,8 @@
+--- a/inxi	2018-05-15 18:17:21.446284865 +0100
++++ b/inxi	2018-05-15 06:35:52.200134999 +0100
+@@ -10215,3 +10215,4 @@
+ 			$used = $row[$cols - $back_used];
+-			$percent_used = sprintf( "%.1f", ( $used/$size )*100 ) if ($size);
++			use Scalar::Util qw(looks_like_number);
++			$percent_used = sprintf( "%.1f", ( $used/$size )*100 ) if (looks_like_number($size) && ($size));
+ 			@data = ({

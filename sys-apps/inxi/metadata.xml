@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+	<longdescription>inxi is a perl script to print system information. It was originally forked from infobash.</longdescription>
+	<upstream>
+		<remote-id type="github">smxi/inxi</remote-id>
+	</upstream>
+</pkgmetadata>
