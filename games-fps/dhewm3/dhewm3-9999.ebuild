@@ -10,13 +10,10 @@ if [[ "${PV}" == 9999 ]]; then
 	EGIT_REPO_URI="https://github.com/dhewm/${PN}.git"
 	SRC_URI=""
 else
-	MY_RC=$(get_version_component_range 4)
-	if [[ ! "${MY_RC}" =~ ^rc[[:digit:]]+$ ]]; then
-		KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
-	fi
 	MY_PV="${PV/_rc/_RC}"
 	MY_P="${PN}-${MY_PV}"
 	SRC_URI="https://github.com/dhewm/${PN}/archive/${MY_PV}.tar.gz -> ${MY_P}.tar.gz"
+	KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
 	S="${WORKDIR}/${MY_P}"
 fi
 
