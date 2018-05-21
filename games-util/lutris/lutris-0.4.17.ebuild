@@ -22,12 +22,17 @@ fi
 LICENSE="GPL-3"
 SLOT="0/0.4"
 
-RDEPEND="
-	dev-python/dbus-python[${PYTHON_USEDEP}]
+DEPEND="
 	dev-python/pygobject:3[${PYTHON_USEDEP}]
+"
+RDEPEND="
+	${DEPEND}
+	app-arch/cabextract
+	dev-python/dbus-python[${PYTHON_USEDEP}]
 	dev-python/python-evdev[${PYTHON_USEDEP}]
 	dev-python/pyyaml[${PYTHON_USEDEP}]
 	net-libs/libsoup
+	sys-process/psmisc
 	x11-apps/xrandr
 	x11-apps/xgamma"
 
