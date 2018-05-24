@@ -74,7 +74,7 @@ REQUIRED_USE="
 	video_cards_vmware? ( gallium )
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.89"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.91"
 # shellcheck disable=SC2124
 RDEPEND="
 	classic? ( app-eselect/eselect-mesa )
@@ -87,7 +87,7 @@ RDEPEND="
 	>=x11-libs/libXdamage-1.1.4-r1:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libXext-1.3.2:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libXxf86vm-1.1.3:=[${MULTILIB_USEDEP}]
-	>=x11-libs/libxcb-1.9.3:=[${MULTILIB_USEDEP}]
+	>=x11-libs/libxcb-1.13:=[${MULTILIB_USEDEP}]
 	x11-libs/libXfixes:=[${MULTILIB_USEDEP}]
 	unwind? ( sys-libs/libunwind[${MULTILIB_USEDEP}] )
 	llvm? (
@@ -143,6 +143,7 @@ RDEPEND="${RDEPEND}
 # we need to *really* make sure we're only using one slot.
 LLVM_DEPSTR="
 	|| (
+		sys-devel/llvm:7[${MULTILIB_USEDEP}]
 		sys-devel/llvm:6[${MULTILIB_USEDEP}]
 		sys-devel/llvm:5[${MULTILIB_USEDEP}]
 		sys-devel/llvm:4[${MULTILIB_USEDEP}]
