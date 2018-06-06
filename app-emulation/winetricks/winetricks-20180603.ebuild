@@ -57,8 +57,8 @@ winetricks_disable_gui_component() {
 	[[ -f "${1}" ]] || die "winetricks script file not valid: \"${1}\""
 
 	mv "${1}" "${1}.bak" || die "mv failed"
-	awk -vgtk_use="$(use gtk && echo 1 || echo 0)" \
-		-vkde_use="$(use kde && echo 1 || echo 0)" \
+	awk -vgtk_use="$(use gtk && echo 1)" \
+		-vkde_use="$(use kde && echo 1)" \
 		-f "${FILESDIR}/${PN}-disable_gui_component.awk" \
 		"${1}.bak" > "${1}" || die "awk failed"
 }
@@ -73,7 +73,10 @@ src_unpack() {
 }
 
 src_prepare() {
-	local PATCHES=( "${FILESDIR}/${PN}-20180513_add_bashcomp.patch" )
+	local PATCHES=(
+		"${FILESDIR}/${PN}-20180513_add_bashcomp.patch"
+		"${FILESDIR}/${PN}-20180603_fix_multislot_wine64_variants.patch"
+	)
 	if use gtk || use kde; then
 		winetricks_disable_gui_component "${S}/src/winetricks"
 	else
