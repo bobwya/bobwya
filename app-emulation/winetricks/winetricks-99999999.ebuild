@@ -6,7 +6,7 @@ EAPI=6
 
 inherit gnome2-utils
 
-if [[ ${PV} == "99999999" ]] ; then
+if [ "${PV}" = "99999999" ]; then
 	EGIT_REPO_URI="https://github.com/Winetricks/${PN}.git"
 	inherit git-r3
 	SRC_URI=""
@@ -75,7 +75,6 @@ src_unpack() {
 src_prepare() {
 	local PATCHES=(
 		"${FILESDIR}/${PN}-20180513_add_bashcomp.patch"
-		"${FILESDIR}/${PN}-20180603_fix_multislot_wine64_variants.patch"
 	)
 	if use gtk || use kde; then
 		winetricks_disable_gui_component "${S}/src/winetricks"

@@ -6,7 +6,7 @@ EAPI=6
 
 inherit gnome2-utils
 
-if [[ ${PV} == "99999999" ]] ; then
+if [ "${PV}" = "99999999" ]; then
 	EGIT_REPO_URI="https://github.com/Winetricks/${PN}.git"
 	inherit git-r3
 	SRC_URI=""

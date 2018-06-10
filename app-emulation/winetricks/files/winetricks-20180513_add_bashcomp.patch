@@ -262,7 +262,7 @@ index 0000000..e5ad072
 +        function get_category(array_items, category,
 +                i, verb, verbs)
 +        {
-+            for (i=1 ; i<array_items[category,0] ; ++i ) {
++            for (i=1 ; i<=array_items[category,0] ; ++i ) {
 +                verb=array_items[category,i]
 +                if (verb ~ "=")
 +                    verbs=insert_assignment_verb(verbs, verb)

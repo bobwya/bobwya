@@ -1,16 +1,25 @@
---- a/src/winetricks	2018-06-06 13:48:21.274833665 +0100
-+++ a/src/winetricks	2018-06-06 13:57:02.733665022 +0100
-@@ -4811,4 +4811,11 @@ winetricks_set_wineprefix()
-         case "$WINE" in
+diff --git a/src/winetricks b/src/winetricks
+index 872b5a6..5e36357 100755
+--- a/src/winetricks
++++ b/src/winetricks
+@@ -4821,10 +4821,16 @@ winetricks_set_wineprefix()
+         # WINE64 = wine64, available on 64-bit prefixes
+         # WINE_ARCH = the native wine for the prefix (wine for 32-bit, wine64 for 64-bit)
+         # WINE_MULTI = generic wine, new name
+-        case "$WINE" in
 -            *64) WINE64="${WINE}" ;;
 -            *) WINE64="${WINE}64" ;;
-+            *64)
-+				WINE64="${WINE}"
-+				;;
-+            *)
-+				WINE64="${WINE}64"
-+				if [ ! -e "${WINE64}" ]; then
-+					WINE64="${WINE/wine/wine64}"
-+				fi
-+				;;
-         esac
+-        esac
++        if [ "${WINE%??}64" = "$WINE" ]; then
++            WINE64="${WINE}"
++        elif which "${WINE}64" >/dev/null 2>&1; then
++            WINE64="${WINE}64"
++        else
++            # Handle case where wine binaries (or binary wrappers) have a suffix
++            WINE64="$(dirname "$WINE")/"
++            [ "$WINE64" = "./" ] && WINE64=""
++            WINE64="${WINE64}$(basename "$WINE" | sed 's/^wine/wine64/')"
++        fi
+         WINE_ARCH="${WINE64}"
+         WINE_MULTI="${WINE}"
+ 
