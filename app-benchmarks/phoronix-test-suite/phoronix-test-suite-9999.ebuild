@@ -5,7 +5,7 @@
 
 EAPI=6
 
-inherit bash-completion-r1 versionator
+inherit bash-completion-r1 fdo-mime gnome2-utils versionator
 
 DESCRIPTION="Phoronix's comprehensive, cross-platform testing and benchmark suite"
 HOMEPAGE="http://www.phoronix-test-suite.com"
@@ -83,23 +83,34 @@ check_php_config()
 
 get_optional_dependencies()
 {
-	awk '{
-		category=($0 ~ "<(GenericName|Name)>")
-		packages=($0 ~ "<(PackageName|PackageManager)>")
-		if ($0 ~ "<FileCheck>")
-			next
-		sub("^[[:blank:]]*<[^>]*>","")
-		sub("<\/[^>]*>[[:blank:]]*$", (category ? ":" : ""))
-		if ($0 ~ "^[[:blank:]]$")
-			next
-		padding=""
-		if (category)
-			padding=sprintf("%*s",25-length($0)," ")
-		else if (packages)
-			padding="\n"
-		printf("%s%s", $0, padding)
-		}' \
-		"${EROOT%/}/usr/share/phoronix-test-suite/pts-core/external-test-dependencies/xml/gentoo-packages.xml"
+	local ifield installable_packages installed package_generic_name package_names
+	local package_close_regexp="<\\/Package>" \
+		  package_generic_name_regexp="^.*<GenericName>|<\\/GenericName>.*$" \
+		  package_names_regexp="^.*<PackageName>|<\\/PackageName>.*$"
+
+	ewarn "get_optional_dependencies()"
+	while IFS=$'\n' read -r optional_packages_xmlline; do
+		ewarn "optional_packages_xmlline=${optional_packages_xmlline}"
+		if [[ "${optional_packages_xmlline}" =~ ${package_generic_name_regexp} ]]; then
+			package_generic_name="$(echo "${optional_packages_xmlline}" | sed -r "s@${package_generic_name_regexp}@@g")"
+		elif [[ "${optional_packages_xmlline}" =~ ${package_names_regexp} ]]; then
+			package_names="$(echo "${optional_packages_xmlline}" | sed -r "s@${package_names_regexp}@@g")"
+			ifield=1
+			installable_packages=""
+			while ((++ifield)); do
+				field_value="$(echo "${optional_packages_xmlline}" | awk -F -vifield="${ifield}" '[ ]+' '{ if (ifield<=NF) print $ifield }')"
+				if [[ -z "${field_value}" ]]; then
+					break
+				fi
+				if ! has_version "${field_value}"; then
+					installable_packages="${installable_packages}${installable_packages:+ }${field_value}"
+					break;
+				fi
+			done
+		elif [[ "${optional_packages_xmlline}" =~ ${package_close_regexp} && ! -z "${installable_packages}" ]]; then
+			ewarn "${package_generic_name}: ${installable_packages}"
+		fi
+	done <"${EROOT%/}/usr/share/phoronix-test-suite/pts-core/external-test-dependencies/xml/gentoo-packages.xml"
 }
 
 src_prepare() {
@@ -124,5 +135,5 @@ pkg_postinst() {
 	fdo-mime_desktop_database_update
 
 	ewarn "${PN} has the following optional package dependencies:"
-	ewarn "$(get_optional_dependencies)"
+	get_optional_dependencies
 }
