@@ -1,6 +1,9 @@
 # Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+# Mask legacy single-slotted Wine package - as it is upsetting repoman, a lot!
+app-emulation/wine
+
 # Mask all packages required by custom GL implementation switcher
 app-eselect/eselect-opengl
 media-libs/mesa
