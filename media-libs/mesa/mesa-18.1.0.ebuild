@@ -52,14 +52,14 @@ REQUIRED_USE="
 	vaapi? ( gallium )
 	vdpau? ( gallium )
 	vulkan? ( || ( video_cards_i965 video_cards_radeonsi )
-	          video_cards_radeonsi? ( llvm ) )
+			  video_cards_radeonsi? ( llvm ) )
 	wayland? ( egl gbm )
 	xa?  ( gallium )
 	video_cards_freedreno?  ( gallium )
 	video_cards_intel?  ( classic )
 	video_cards_i915?   ( || ( classic gallium ) )
 	video_cards_i965?   ( classic )
-	video_cards_imx?    ( gallium video_cards_vivante )
+	video_cards_imx?	( gallium video_cards_vivante )
 	video_cards_nouveau? ( || ( classic gallium ) )
 	video_cards_radeon? ( || ( classic gallium )
 						  gallium? ( x86? ( llvm ) amd64? ( llvm ) ) )
@@ -77,8 +77,7 @@ REQUIRED_USE="
 LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.91"
 # shellcheck disable=SC2124
 RDEPEND="
-	classic? ( app-eselect/eselect-mesa )
-	gallium? ( app-eselect/eselect-mesa )
+	!app-eselect/eselect-mesa
 	=app-eselect/eselect-opengl-1.3.3-r1
 	>=dev-libs/expat-2.1.0-r3:=[${MULTILIB_USEDEP}]
 	>=sys-libs/zlib-1.2.8[${MULTILIB_USEDEP}]
@@ -217,6 +216,7 @@ DEPEND="${RDEPEND}
 "
 
 S="${WORKDIR}/${MY_P}"
+EGIT_CHECKOUT_DIR="${S}"
 
 QA_WX_LOAD="
 x86? (
@@ -310,7 +310,7 @@ multilib_src_configure() {
 		myeconfargs+=(
 			"$(use_enable d3d9 nine)"
 			"$(use_enable llvm)"
-			"$(use_enable openmax omx)"
+			"$(use_enable openmax omx-bellagio)"
 			"$(use_enable vaapi va)"
 			"$(use_enable vdpau)"
 			"$(use_enable xa)"
@@ -399,6 +399,15 @@ multilib_src_configure() {
 multilib_src_install() {
 	emake install DESTDIR="${D}"
 
+	if use wayland; then
+
+		# These files are now provided by >=dev-libs/wayland-1.15.0
+		rm "${ED}/usr/$(get_libdir)/libwayland-egl.so" || die "rm failed"
+		rm "${ED}/usr/$(get_libdir)/libwayland-egl.so.1" || die "rm failed"
+		rm "${ED}/usr/$(get_libdir)/libwayland-egl.so.1.0.0" || die "rm failed"
+		rm "${ED}/usr/$(get_libdir)/pkgconfig/wayland-egl.pc" || die "rm failed"
+	fi
+
 	# Move lib{EGL*,GL*,OpenVG,OpenGL}.{la,a,so*} files from /usr/lib to /usr/lib/opengl/mesa/lib
 	ebegin "(subshell): moving lib{EGL*,GL*,OpenGL}.{la,a,so*} in order to implement dynamic GL switching support"
 	(
@@ -413,60 +422,6 @@ multilib_src_install() {
 		done
 	)
 	eend $? || die "(subshell): failed to move lib{EGL*,GL*,OpenGL}.{la,a,so*}"
-
-	if use classic || use gallium; then
-		ebegin "(subshell): moving DRI/Gallium drivers for dynamic switching"
-		(
-			local gallium_drivers=( i915_dri.so i965_dri.so r300_dri.so r600_dri.so swrast_dri.so )
-			keepdir "/usr/$(get_libdir)/dri"
-			dodir "/usr/$(get_libdir)/mesa"
-			# shellcheck disable=SC2068
-			for library in ${gallium_drivers[@]}; do
-				if [ -f "$(get_libdir)/gallium/${library}" ]; then
-					mv -f "${ED%/}/usr/$(get_libdir)/dri/${library}" \
-							"${ED%/}/usr/$(get_libdir)/dri/${library/_dri.so/g_dri.so}" \
-						|| die "Failed to move ${library}"
-				fi
-			done
-			if use classic; then
-				emake -C "${BUILD_DIR}/src/mesa/drivers/dri" DESTDIR="${D}" install
-			fi
-			for library in "${ED%/}/usr/$(get_libdir)/dri"/*.so; do
-				if [[ -f "${library}" || -L "${library}" ]]; then
-					mv -f "${library}" "${library/dri/mesa}" \
-						|| die "Failed to move ${library}"
-				fi
-			done
-			pushd "${ED%/}/usr/$(get_libdir)/dri" || die "pushd failed"
-			ln -s ../mesa/*.so . || die "Creating symlink failed"
-			# remove symlinks to drivers known to eselect
-			# shellcheck disable=SC2068
-			for library in ${gallium_drivers[@]}; do
-				if [[ -f "${library}" || -L "${library}" ]]; then
-					rm "${library}" || die "Failed to remove ${library}"
-				fi
-			done
-			popd || die "popd failed"
-		)
-		eend $? || die "(subshell): moving DRI/Gallium drivers failed"
-	fi
-	if use opencl; then
-		ebegin "(subshell): moving Gallium/Clover OpenCL implementation for dynamic switching"
-		(
-			local cl_dir
-			cl_dir="/usr/$(get_libdir)/OpenCL/vendors/mesa"
-			dodir "${cl_dir}"/{lib,include}
-			if [ -f "${ED%/}/usr/$(get_libdir)/libOpenCL.so" ]; then
-				mv -f "${ED%/}/usr/$(get_libdir)/libOpenCL.so"* \
-					"${ED%/}${cl_dir}"
-			fi
-			if [ -f "${ED%/}/usr/include/CL/opencl.h" ]; then
-				mv -f "${ED%/}/usr/include/CL" \
-					"${ED%/}${cl_dir}/include"
-			fi
-		)
-		eend $? || die "(subshell): moving Gallium/Clover OpenCL implementation failed"
-	fi
 
 	if use openmax; then
 		echo "XDG_DATA_DIRS=\"${EPREFIX}/usr/share/mesa/xdg\"" > "${T}/99mesaxdgomx"
@@ -483,9 +438,6 @@ multilib_src_install_all() {
 		dodoc "docs/patents.txt"
 	fi
 
-	# Install config file for eselect mesa
-	insinto /usr/share/mesa
-	newins "${FILESDIR}/eselect-mesa.conf.9.2" "eselect-mesa.conf"
 }
 
 multilib_src_test() {
@@ -506,11 +458,6 @@ pkg_postinst() {
 	echo
 	eselect opengl set --use-old "${OPENGL_DIR}"
 
-	# Select classic/gallium drivers
-	if use classic || use gallium; then
-		eselect mesa set --auto
-	fi
-
 	# Switch to mesa opencl
 	if use opencl; then
 		eselect opencl set --use-old "${PN}"
@@ -530,12 +477,6 @@ pkg_postinst() {
 		elog "USE=\"bindist\" was not set. Potentially patent encumbered code was"
 		elog "enabled. Please see /usr/share/doc/${P}/patents.txt.bz2 for an"
 		elog "explanation."
-	fi
-
-	if ! has_version "media-libs/libtxc_dxtn"; then
-		elog "Note that in order to have full S3TC support, it is necessary to install"
-		elog "media-libs/libtxc_dxtn as well. This may be necessary to get quality texture"
-		elog "support in some applications, and some others may require this to run."
 	fi
 
 	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix various issues"

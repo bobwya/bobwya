@@ -74,7 +74,7 @@ REQUIRED_USE="
 	video_cards_vmware? ( gallium )
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.85"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.89"
 # shellcheck disable=SC2124
 RDEPEND="
 	!app-eselect/eselect-mesa
@@ -92,11 +92,6 @@ RDEPEND="
 	llvm? (
 		video_cards_radeonsi? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
-			vulkan? (
-				|| (
-					sys-devel/llvm:4[${MULTILIB_USEDEP}]
-					>=sys-devel/llvm-3.9.0:0[${MULTILIB_USEDEP}] )
-			)
 		)
 		video_cards_r600? (
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
@@ -125,12 +120,14 @@ RDEPEND="
 	)
 	xvmc? ( >=x11-libs/libXvMC-1.0.8:=[${MULTILIB_USEDEP}] )
 	${LIBDRM_DEPSTRING}[video_cards_freedreno?,video_cards_nouveau?,video_cards_vc4?,video_cards_vivante?,video_cards_vmware?,${MULTILIB_USEDEP}]
-	video_cards_intel? (
-		!video_cards_i965? ( ${LIBDRM_DEPSTRING}[video_cards_intel] )
-	)
-	video_cards_i915? ( ${LIBDRM_DEPSTRING}[video_cards_intel] )
 "
 
+# shellcheck disable=SC2068
+for card in ${INTEL_CARDS[@]}; do
+	RDEPEND="${RDEPEND}
+		video_cards_${card}? ( ${LIBDRM_DEPSTRING}[video_cards_intel] )
+	"
+done
 # shellcheck disable=SC2068
 for card in ${AMD_CARDS[@]}; do
 	RDEPEND="${RDEPEND}
@@ -143,14 +140,14 @@ RDEPEND="${RDEPEND}
 
 # Please keep the LLVM dependency block separate. Since LLVM is slotted,
 # we need to *really* make sure we're only using one slot.
-LLVM_MAX_SLOT="5"
 LLVM_DEPSTR="
 	|| (
+		sys-devel/llvm:6[${MULTILIB_USEDEP}]
 		sys-devel/llvm:5[${MULTILIB_USEDEP}]
 		sys-devel/llvm:4[${MULTILIB_USEDEP}]
 		>=sys-devel/llvm-3.9.0:0[${MULTILIB_USEDEP}]
 	)
-	<sys-devel/llvm-6:=[${MULTILIB_USEDEP}]
+	sys-devel/llvm:=[${MULTILIB_USEDEP}]
 "
 LLVM_DEPSTR_AMDGPU="${LLVM_DEPSTR//]/,llvm_targets_AMDGPU(-)]}"
 CLANG_DEPSTR="${LLVM_DEPSTR//llvm/clang}"
@@ -388,6 +385,7 @@ multilib_src_configure() {
 		"$(use_enable unwind libunwind)"
 		"--enable-valgrind=$(usex valgrind auto no)"
 		"--enable-llvm-shared-libs"
+		"--disable-opencl-icd"
 		"--with-dri-drivers=${DRI_DRIVERS}"
 		"--with-gallium-drivers=${GALLIUM_DRIVERS}"
 		"--with-vulkan-drivers=${VULKAN_DRIVERS}"
