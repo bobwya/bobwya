@@ -18,7 +18,7 @@ MOZ_LANGS=( "ach" "af" "an" "ar" "as" "ast" "az" "bg" "bn-BD" "bn-IN" "br" "bs" 
 MOZ_PN="firefox"
 MOZ_PV="${PV}"
 [[ ${MOZ_ESR} == 1 ]] && MOZ_PV="${MOZ_PV}esr"
-PATCH="${MOZ_PN}-60.0-patches-01"
+PATCH="${MOZ_PN}-60.0-patches-02"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
 #MOZCONFIG_OPTIONAL_QT5=1
