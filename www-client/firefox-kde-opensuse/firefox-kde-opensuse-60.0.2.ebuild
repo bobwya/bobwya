@@ -5,7 +5,7 @@
 EAPI=6
 VIRTUALX_REQUIRED="pgo"
 WANT_AUTOCONF="2.1"
-MOZ_ESR=""
+MOZ_ESR="1"
 
 # This list can be updated with scripts/get_langs.sh from the mozilla overlay
 MOZ_LANGS=( "ach" "af" "an" "ar" "as" "ast" "az" "bg" "bn-BD" "bn-IN" "br" "bs" "ca" "cak" "cs" "cy" "da" "de" "dsb"
@@ -80,6 +80,10 @@ if [[ -z $GMP_PLUGIN_LIST ]]; then
 	GMP_PLUGIN_LIST=( gmp-gmpopenh264 gmp-widevinecdm )
 fi
 
+llvm_check_deps() {
+	has_version "sys-devel/clang:${LLVM_SLOT}"
+}
+
 pkg_setup() {
 	moz_pkgsetup
 
@@ -101,6 +105,8 @@ pkg_setup() {
 	fi
 
 	addpredict /proc/self/oom_score_adj
+
+	llvm_pkg_setup
 }
 
 pkg_pretend() {
@@ -240,9 +246,6 @@ src_configure() {
 		append-ldflags "-Wl,-z,relro,-z,now"
 		mozconfig_use_enable hardened hardening
 	fi
-
-	# egl build error #571180
-	use egl && mozconfig_annotate 'Enable EGL as GL provider' --with-gl-provider=EGL
 
 	# Setup api key for location services
 	echo -n "${_google_api_key}" > "${S}"/google-api-key

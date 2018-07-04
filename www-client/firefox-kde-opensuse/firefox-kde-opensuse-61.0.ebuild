@@ -5,7 +5,7 @@
 EAPI=6
 VIRTUALX_REQUIRED="pgo"
 WANT_AUTOCONF="2.1"
-MOZ_ESR=1
+MOZ_ESR=""
 
 # This list can be updated with scripts/get_langs.sh from the mozilla overlay
 MOZ_LANGS=( "ach" "af" "an" "ar" "as" "ast" "az" "bg" "bn-BD" "bn-IN" "br" "bs" "ca" "cak" "cs" "cy" "da" "de" "dsb"
@@ -18,30 +18,31 @@ MOZ_LANGS=( "ach" "af" "an" "ar" "as" "ast" "az" "bg" "bn-BD" "bn-IN" "br" "bs" 
 MOZ_PN="firefox"
 MOZ_PV="${PV}"
 [[ ${MOZ_ESR} == 1 ]] && MOZ_PV="${MOZ_PV}esr"
-PATCH="${MOZ_PN}-52.0-patches-07"
+PATCH="${MOZ_PN}-61.0-patches-01"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases"
 
 #MOZCONFIG_OPTIONAL_QT5=1
 MOZCONFIG_OPTIONAL_WIFI=1
-MOZCONFIG_OPTIONAL_GTK2ONLY=1
 
-inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mercurial mozconfig-kde-v6.52 \
-	pax-utils xdg-utils autotools mozlinguas-kde-v2 virtualx versionator
+inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mercurial mozconfig-kde-v6.60 \
+	pax-utils xdg-utils autotools mozlinguas-kde-v2 versionator
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
 EHG_REPO_URI="https://www.rosenauer.org/hg/mozilla"
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
-HOMEPAGE="https://www.mozilla.org/en-US/firefox/
+HOMEPAGE="https://www.mozilla.com/firefox
 	https://www.rosenauer.org/hg/mozilla"
 
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~ia64 ~ppc ~ppc64 ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~x86"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist eme-free +gmp-autoupdate hardened hwaccel jack kde pgo rust selinux test"
-REQUIRED_USE="kde? ( || ( amd64 x86 ) )"
+IUSE="bindist egl eme-free +gmp-autoupdate hardened hwaccel jack kde +screenshot selinux test"
 RESTRICT="!bindist? ( bindist )"
+
+SDIR="release"
+[[ ${PV} = *_beta* ]] && SDIR="beta"
 
 PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCH}.tar.xz )
 # shellcheck disable=SC2124
@@ -52,21 +53,17 @@ SRC_URI="${SRC_URI}
 ASM_DEPEND=">=dev-lang/yasm-1.1"
 
 RDEPEND="
+	system-icu? ( >=dev-libs/icu-60.2 )
 	jack? ( virtual/jack )
-	>=dev-libs/nss-3.28.3
-	>=dev-libs/nspr-4.13.1
+	>=dev-libs/nss-3.38
+	>=dev-libs/nspr-4.19
 	selinux? ( sec-policy/selinux-mozilla )
-	amd64? (
-		kde? ( kde-misc/kmozillahelper:=  )
-	)
-	x86? (
-		kde? ( kde-misc/kmozillahelper:=  )
-	)
+	kde? ( kde-misc/kmozillahelper:=  )
 	!!www-client/firefox"
 
 DEPEND="${RDEPEND}
-	pgo? ( >=sys-devel/gcc-4.5 )
-	rust? ( virtual/rust )
+	>=sys-devel/llvm-4.0.1
+	>=sys-devel/clang-4.0.1
 	amd64? ( ${ASM_DEPEND} virtual/opengl )
 	x86? ( ${ASM_DEPEND} virtual/opengl )"
 
@@ -82,6 +79,10 @@ MAX_OBJ_DIR_LEN="80"
 if [[ -z $GMP_PLUGIN_LIST ]]; then
 	GMP_PLUGIN_LIST=( gmp-gmpopenh264 gmp-widevinecdm )
 fi
+
+llvm_check_deps() {
+	has_version "sys-devel/clang:${LLVM_SLOT}"
+}
 
 pkg_setup() {
 	moz_pkgsetup
@@ -103,16 +104,9 @@ pkg_setup() {
 		elog "You can disable it by emerging ${PN} _with_ the bindist USE-flag"
 	fi
 
-	if use pgo; then
-		einfo
-		ewarn "You will do a double build for profile guided optimization."
-		ewarn "This will result in your build taking at least twice as long as before."
-	fi
+	addpredict /proc/self/oom_score_adj
 
-	if use rust; then
-		einfo
-		ewarn "This is very experimental, should only be used by those developing firefox."
-	fi
+	llvm_pkg_setup
 }
 
 pkg_pretend() {
@@ -121,11 +115,8 @@ pkg_pretend() {
 		ewarn " ... \"${BUILD_OBJ_DIR}\""
 	fi
 	# Ensure we have enough disk space to compile
-	if use pgo || use debug || use test; then
-		CHECKREQS_DISK_BUILD="8G"
-	else
-		CHECKREQS_DISK_BUILD="4G"
-	fi
+	CHECKREQS_DISK_BUILD="4G"
+
 	check-reqs_pkg_setup
 }
 
@@ -151,22 +142,18 @@ src_unpack() {
 src_prepare() {
 	# Default to our patchset
 	local PATCHES=( "${WORKDIR}/firefox" )
-	PATCHES+=( "${FILESDIR}/${PN}-52.4.0-fix_lto.patch" )
-	PATCHES+=( "${FILESDIR}/${PN}-fix_lto.patch" )
 	if use kde; then
 		sed -i -e 's:@BINPATH@/defaults/pref/kde.js:@RESPATH@/browser/@PREF_DIR@/kde.js:' \
 			"${EHG_CHECKOUT_DIR}/firefox-kde.patch" || die "sed failed"
 		# Gecko/toolkit OpenSUSE KDE integration patchset
 		PATCHES+=(
 			"${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
-			"${EHG_CHECKOUT_DIR}/mozilla-language.patch"
 			"${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
 		)
 		# Firefox OpenSUSE KDE integration patchset
 		PATCHES+=(
 			"${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
 			"${EHG_CHECKOUT_DIR}/firefox-kde.patch"
-			"${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
 		)
 		# Uncomment the next line to enable KDE support debugging (additional console output)...
 		#PATCHES+=( "${FILESDIR}/firefox-kde-opensuse-kde-debug.patch" )
@@ -175,7 +162,6 @@ src_prepare() {
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox-kde-opensuse/)
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
-	rm -f "${WORKDIR}"/firefox/2007_fix_nvidia_latest.patch
 
 	# Enable gnomebreakpad
 	if use debug; then
@@ -228,10 +214,6 @@ src_prepare() {
 	# Must run autoconf in js/src
 	cd "${S}"/js/src || die "cd failed"
 	eautoconf old-configure.in
-
-	# Need to update jemalloc's configure
-	cd "${S}"/memory/jemalloc/src || die "cd failed"
-	WANT_AUTOCONF='' eautoconf
 }
 
 src_configure() {
@@ -253,16 +235,17 @@ src_configure() {
 	# enable JACK, bug 600002
 	mozconfig_use_enable jack
 
+	# Enable/Disable eme support
 	use eme-free && mozconfig_annotate '+eme-free' --disable-eme
 
 	# It doesn't compile on alpha without this LDFLAGS
 	use alpha && append-ldflags "-Wl,--no-relax"
 
 	# Add full relro support for hardened
-	use hardened && append-ldflags "-Wl,-z,relro,-z,now"
-
-	# Only available on mozilla-overlay for experimentation -- Removed in Gentoo repo per bug 571180
-	#use egl && mozconfig_annotate 'Enable EGL as GL provider' --with-gl-provider=EGL
+	if use hardened; then
+		append-ldflags "-Wl,-z,relro,-z,now"
+		mozconfig_use_enable hardened hardening
+	fi
 
 	# Setup api key for location services
 	echo -n "${_google_api_key}" > "${S}"/google-api-key
@@ -270,57 +253,23 @@ src_configure() {
 
 	mozconfig_annotate '' --enable-extensions="${MEXTENSIONS}"
 
-	mozconfig_use_enable rust
-
-	# Allow for a proper pgo build
-	if use pgo; then
-		echo "mk_add_options PROFILE_GEN_SCRIPT='EXTRA_TEST_ARGS=10 \$(MAKE) -C \$(MOZ_OBJDIR) pgo-profile-run'" >> "${S}/.mozconfig"
-	fi
-
 	echo "mk_add_options MOZ_OBJDIR=${BUILD_OBJ_DIR}" >> "${S}/.mozconfig"
 	echo "mk_add_options XARGS=/usr/bin/xargs" >> "${S}/.mozconfig"
+
+	# Default mozilla_five_home no longer valid option
+	sed '/with-default-mozilla-five-home=/d' -i "${S}/.mozconfig"
 
 	# Finalize and report settings
 	mozconfig_final
 
-	if [[ $(gcc-major-version) -lt 4 ]]; then
-		append-cxxflags -fno-stack-protector
-	fi
-
 	# workaround for funky/broken upstream configure...
-	SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
-	emake -f client.mk configure
+	SHELL="${SHELL:-${EPREFIX}/bin/bash}" MOZ_NOSPAM=1 \
+	./mach configure || die "mach configure failed"
 }
 
 src_compile() {
-	if use pgo; then
-		addpredict /root
-		addpredict /etc/gconf
-		# Reset and cleanup environment variables used by GNOME/XDG
-		gnome2_environment_reset
-
-		# Firefox tries to use dri stuff when it's run, see bug 380283
-		shopt -s nullglob
-		cards=$(echo -n /dev/dri/card* | sed 's/ /:/g')
-		if test -z "${cards}"; then
-			cards=$(echo -n /dev/ati/card* /dev/nvidiactl* | sed 's/ /:/g')
-			if test -n "${cards}"; then
-				# Binary drivers seem to cause access violations anyway, so
-				# let's use indirect rendering so that the device files aren't
-				# touched at all. See bug 394715.
-				export LIBGL_ALWAYS_INDIRECT=1
-			fi
-		fi
-		shopt -u nullglob
-		[[ -n "${cards}" ]] && addpredict "${cards}"
-
-		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
-		virtx emake -f client.mk profiledbuild || die "virtx emake failed"
-	else
-		MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
-		emake -f client.mk realbuild
-	fi
-
+	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX}/bin/bash}" MOZ_NOSPAM=1 \
+	./mach build --verbose || die "mach build failed"
 }
 
 src_install() {
@@ -331,7 +280,7 @@ src_install() {
 
 	# Add our default prefs for firefox
 	local pkg_default_pref_dir="dist/bin/browser/defaults/preferences"
-	cp "${FILESDIR}"/gentoo-default-prefs.js-1 \
+	cp "${FILESDIR}"/gentoo-default-prefs.js-2 \
 		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
 		|| die "cp failed"
 
@@ -343,6 +292,12 @@ src_install() {
 		cat "${FILESDIR}"/gentoo-hwaccel-prefs.js-1 >> \
 		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
 		|| die "cat failed"
+	fi
+
+	if ! use screenshot; then
+		echo "pref(\"extensions.screenshots.disabled\", true);" >> \
+			"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
+			|| die "echo failed"
 	fi
 
 	echo "pref(\"extensions.autoDisableScopes\", 3);" >> \
@@ -362,8 +317,9 @@ src_install() {
 			|| die "echo failed"
 	done
 
-	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX%/}/bin/bash}" \
-	emake DESTDIR="${D}" install
+	cd "${S}"
+	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX}/bin/bash}" MOZ_NOSPAM=1 \
+	DESTDIR="${D}" ./mach install
 
 	# Install language packs
 	mozlinguas_kde_src_install
@@ -388,7 +344,7 @@ sticky_pref("devtools.theme", "dark");
 PROFILE_EOF
 
 	else
-		sizes="16 22 24 32 256"
+		sizes="16 22 24 32 48 64 128 256"
 		icon_path="${S}/browser/branding/official"
 		icon="${MOZ_PN}"
 		name="Mozilla Firefox"
@@ -400,7 +356,7 @@ PROFILE_EOF
 		newins "${icon_path}/default${size}.png" "${icon}.png"
 	done
 	# Install a 48x48 icon into /usr/share/pixmaps for legacy DEs
-	newicon "${icon_path}/content/icon48.png" "${icon}.png"
+	newicon "${icon_path}/default48.png" "${icon}.png"
 	newmenu "${FILESDIR}/icon/${MOZ_PN}.desktop" "${MOZ_PN}.desktop"
 	sed -i -e "s:@NAME@:${name}:" -e "s:@ICON@:${icon}:" \
 		"${ED}/usr/share/applications/${MOZ_PN}.desktop" || die "sed failed"
@@ -446,12 +402,14 @@ pkg_postinst() {
 		elog "installing into new profiles:"
 		local plugin
 		for plugin in "${GMP_PLUGIN_LIST[@]}"; do elog "\t ${plugin}" ; done
+		elog
 	fi
 
 	if use pulseaudio && has_version ">=media-sound/apulse-0.1.9"; then
 		elog "Apulse was detected at merge time on this system and so it will always be"
 		elog "used for sound.  If you wish to use pulseaudio instead please unmerge"
 		elog "media-sound/apulse."
+		elog
 	fi
 }
 
