@@ -1,12 +1,11 @@
 # Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
-
-inherit versionator
+# shellcheck disable=SC2034
+EAPI=7
 
 MY_PN="${PN/-/_}"
-MY_PV="$(replace_version_separator '_' '''-''')"
+MY_PV="${PV/_/-}"
 MY_P="${MY_PN}-${MY_PV}"
 
 DESCRIPTION="A Mozilla Gecko based version of Internet Explorer for Wine"
