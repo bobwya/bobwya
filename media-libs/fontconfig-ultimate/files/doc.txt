@@ -1,3 +1,0 @@
-1. Disable all rules but 52-infinality.conf using eselect fontconfig
-2. Enable one of the \"ultimate\" presets using eselect infinality
-3. Select ultimate lcdfilter settings using eselect lcdfilter

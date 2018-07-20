@@ -1,4 +1,0 @@
-Please make fontconfig configuration changes using
-\`eselect fontconfig\`. Any changes made to /etc/fonts/fonts.conf will be
-overwritten. If you need to reset your configuration to upstream defaults,
-delete the directory ${EROOT}etc/fonts/conf.d/ and re-emerge fontconfig.
