@@ -25,7 +25,7 @@ before_script:
     - wget "https://www.gentoo.org/dtd/metadata.dtd" -O /usr/portage/distfiles/metadata.dtd
     - ln -s $TRAVIS_BUILD_DIR/portage-portage-${PORTAGE_VER}/cnf/repos.conf /etc/portage/repos.conf
     - ln -s /usr/portage/profiles/default/linux/amd64/17.0 /etc/portage/make.profile
-    - PORTAGE_VER_UPSTREAM=$(awk '{ if (sub("^PORTAGE_VER=","",$2)) print $2 }' .travis.yml.upstream)
+    - PORTAGE_VER_UPSTREAM=$(awk '{ if (gsub("^PORTAGE_VER=\"|\"$","",$2) == 2) print $2 }' .travis.yml.upstream)
     - if [[ "${PORTAGE_VER}" != "${PORTAGE_VER_UPSTREAM}" ]]; then echo -e "\e[31m !!! .travis.yml outdated! Update available https://github.com/mrueg/repoman-travis \e[0m" > /tmp/update ; fi
     - cd travis-overlay
 script:
