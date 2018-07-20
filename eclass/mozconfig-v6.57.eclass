@@ -1,14 +1,13 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 #
-# @ECLASS: mozconfig-kde-v6.60.eclass
+# @ECLASS: mozconfig-v6.57.eclass
 # @MAINTAINER:
 # mozilla team <mozilla@gentoo.org>
 # @BLURB: the new mozilla common configuration eclass for FF33 and newer, v6
 # @DESCRIPTION:
-# This eclass is used in mozilla ebuilds (firefox-kde-opensuse, thunderbird-kde-opensuse),
-# patched with the unofficial OpenSUSE KDE patchset.
-# Providing a single location for common mozilla engine components.
+# This eclass is used in mozilla ebuilds (firefox, thunderbird, seamonkey)
+# to provide a single common place for the common mozilla engine compoments.
 #
 # The eclass provides all common dependencies as well as common use flags.
 #
@@ -27,13 +26,13 @@ case ${EAPI} in
 		;;
 esac
 
-inherit flag-o-matic toolchain-funcs mozcoreconf-kde-v6
+inherit flag-o-matic toolchain-funcs mozcoreconf-v5
 
 # @ECLASS-VARIABLE: MOZCONFIG_OPTIONAL_WIFI
 # @DESCRIPTION:
 # Set this variable before the inherit line, when an ebuild needs to provide
 # optional necko-wifi support via IUSE="wifi".  Currently this would include
-# ebuilds for firefox.
+# ebuilds for firefox, and potentially seamonkey.
 #
 # Leave the variable UNSET if necko-wifi support should not be available.
 # Set the variable to "enabled" if the use flag should be enabled by default.
@@ -53,7 +52,7 @@ inherit flag-o-matic toolchain-funcs mozcoreconf-kde-v6
 # @DESCRIPTION:
 # Set this variable before the inherit line, when an ebuild can provide
 # optional gtk3 support via IUSE="force-gtk3".  Currently this would include
-# thunderbird in the future, once support is ready for testing.
+# thunderbird and seamonkey in the future, once support is ready for testing.
 #
 # Leave the variable UNSET if gtk3 support should not be optionally available.
 # Set the variable to "enabled" if the use flag should be enabled by default.
@@ -78,7 +77,7 @@ inherit flag-o-matic toolchain-funcs mozcoreconf-kde-v6
 # @DESCRIPTION:
 # Set this variable before the inherit line, when an ebuild can provide
 # optional qt5 support via IUSE="qt5".  Currently this would include
-# ebuilds for firefox, but thunderbird could follow in the future.
+# ebuilds for firefox, but thunderbird and seamonkey could follow in the future.
 #
 # Leave the variable UNSET if qt5 support should not be available.
 # Set the variable to "enabled" if the use flag should be enabled by default.
@@ -99,11 +98,13 @@ RDEPEND=">=app-text/hunspell-1.5.4:=
 	>=x11-libs/gtk+-2.18:2
 	x11-libs/gdk-pixbuf
 	>=x11-libs/pango-1.22.0
-	>=media-libs/libpng-1.6.34:0=[apng]
+	>=media-libs/libpng-1.6.31:0=[apng]
 	>=media-libs/mesa-10.2:*
 	media-libs/fontconfig
 	>=media-libs/freetype-2.4.10
 	kernel_linux? ( !pulseaudio? ( media-libs/alsa-lib ) )
+	pulseaudio? ( || ( media-sound/pulseaudio
+		>=media-sound/apulse-0.1.9 ) )
 	virtual/freedesktop-icon-theme
 	dbus? ( >=sys-apps/dbus-0.60
 		>=dev-libs/dbus-glib-0.72 )
@@ -125,7 +126,7 @@ RDEPEND=">=app-text/hunspell-1.5.4:=
 	system-libevent? ( >=dev-libs/libevent-2.0:0= )
 	system-sqlite? ( >=dev-db/sqlite-3.20.1:3[secure-delete,debug=] )
 	system-libvpx? ( >=media-libs/libvpx-1.5.0:0=[postproc] )
-	system-harfbuzz? ( >=media-libs/harfbuzz-1.4.2:0= >=media-gfx/graphite2-1.3.9-r1 )
+	system-harfbuzz? ( >=media-libs/harfbuzz-1.3.3:0= >=media-gfx/graphite2-1.3.9-r1 )
 "
 
 if [[ -n ${MOZCONFIG_OPTIONAL_GTK3} ]]; then
@@ -166,11 +167,8 @@ DEPEND="app-arch/zip
 	>=sys-devel/binutils-2.16.1
 	sys-apps/findutils
 	pulseaudio? ( media-sound/pulseaudio )
-	|| (
-		( >=dev-lang/rust-1.24.0[-extended(-)] >=dev-util/cargo-0.24.0 )
-		>=dev-lang/rust-1.24.0[extended]
-		( >=dev-lang/rust-bin-1.24.0 >=dev-util/cargo-0.24.0 )
-	)
+	>=virtual/rust-1.19.0
+	dev-util/cargo
 	${RDEPEND}"
 
 RDEPEND+="
@@ -185,7 +183,7 @@ RDEPEND+="
 #
 # Example:
 #
-# inherit mozconfig-kde-v6.46
+# inherit mozconfig-v6.46
 #
 # src_configure() {
 # 	mozconfig_init
@@ -208,7 +206,7 @@ mozconfig_config() {
 	mozconfig_annotate 'Enable by Gentoo' --enable-release
 
 	# Must pass --enable-gold if using ld.gold
-	if tc-ld-is-gold; then
+	if tc-ld-is-gold ; then
 		mozconfig_annotate 'tc-ld-is-gold=true' --enable-gold
 	else
 		mozconfig_annotate 'tc-ld-is-gold=false' --disable-gold
@@ -216,7 +214,7 @@ mozconfig_config() {
 
 	if has bindist ${IUSE}; then
 		mozconfig_use_enable !bindist official-branding
-		if [[ ${MOZ_PN} == firefox ]] && use bindist; then
+		if [[ ${PN} == firefox ]] && use bindist ; then
 			mozconfig_annotate '' --with-branding=browser/branding/aurora
 		fi
 	fi
@@ -226,7 +224,7 @@ mozconfig_config() {
 	mozconfig_use_enable debug
 	mozconfig_use_enable debug tests
 
-	if ! use debug; then
+	if ! use debug ; then
 		mozconfig_annotate 'disabled by Gentoo' --disable-debug-symbols
 	else
 		mozconfig_annotate 'enabled by Gentoo' --enable-debug-symbols
@@ -234,7 +232,7 @@ mozconfig_config() {
 
 	mozconfig_use_enable startup-notification
 
-	if [[ -n ${MOZCONFIG_OPTIONAL_WIFI} ]]; then
+	if [[ -n ${MOZCONFIG_OPTIONAL_WIFI} ]] ; then
 		# wifi pulls in dbus so manage both here
 		mozconfig_use_enable wifi necko-wifi
 		if use kernel_linux && use wifi && ! use dbus; then
@@ -267,7 +265,6 @@ mozconfig_config() {
 	mozconfig_annotate '' --enable-system-ffi
 	mozconfig_annotate '' --disable-gconf
 	mozconfig_annotate '' --with-intl-api
-	mozconfig_annotate '' --enable-system-pixman
 
 	# skia has no support for big-endian platforms
 	if [[ $(tc-endian) == "big" ]]; then
@@ -286,7 +283,7 @@ mozconfig_config() {
 		fi
 	fi
 	if [[ -n ${MOZCONFIG_OPTIONAL_GTK2ONLY} ]]; then
-		if use gtk2; then
+		if use gtk2 ; then
 			toolkit="cairo-gtk2"
 		else
 			toolkit_comment="gtk2 use flag"
@@ -318,7 +315,7 @@ mozconfig_config() {
 
 	mozconfig_use_enable pulseaudio
 	# force the deprecated alsa sound code if pulseaudio is disabled
-	if use kernel_linux && ! use pulseaudio; then
+	if use kernel_linux && ! use pulseaudio ; then
 		mozconfig_annotate '-pulseaudio' --enable-alsa
 	fi
 
@@ -333,14 +330,14 @@ mozconfig_config() {
 	mozconfig_use_with system-harfbuzz system-graphite2
 
 	# Modifications to better support ARM, bug 553364
-	if use neon; then
+	if use neon ; then
 		mozconfig_annotate '' --with-fpu=neon
 		mozconfig_annotate '' --with-thumb=yes
 		mozconfig_annotate '' --with-thumb-interwork=no
 	fi
-	if [[ ${CHOST} == armv* ]]; then
+	if [[ ${CHOST} == armv* ]] ; then
 		mozconfig_annotate '' --with-float-abi=hard
-		if ! use system-libvpx; then
+		if ! use system-libvpx ; then
 			sed -i -e "s|softfp|hard|" \
 				"${S}"/media/libvpx/moz.build
 		fi
@@ -382,13 +379,13 @@ mozconfig_install_prefs() {
 		>>"${prefs_file}" || die
 
 	# force the graphite pref if system-harfbuzz is enabled, since the pref cant disable it
-	if use system-harfbuzz; then
+	if use system-harfbuzz ; then
 		echo "sticky_pref(\"gfx.font_rendering.graphite.enabled\",true);" \
 			>>"${prefs_file}" || die
 	fi
 
 	# force cairo as the canvas renderer on platforms without skia support
-	if [[ $(tc-endian) == "big" ]]; then
+	if [[ $(tc-endian) == "big" ]] ; then
 		echo "sticky_pref(\"gfx.canvas.azure.backends\",\"cairo\");" \
 			>>"${prefs_file}" || die
 		echo "sticky_pref(\"gfx.content.azure.backends\",\"cairo\");" \

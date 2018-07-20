@@ -1,7 +1,7 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 #
-# @ECLASS: mozextension-kde.eclass
+# @ECLASS: mozextension.eclass
 # @MAINTAINER:
 # Mozilla team <mozilla@gentoo.org>
 # @BLURB: Install extensions for use in mozilla products.
@@ -21,9 +21,9 @@ inherit eutils
 DEPEND="app-arch/unzip"
 
 mozversion_extension_location() {
-	case ${MOZ_PN} in
+	case ${PN} in
 		firefox|firefox-bin|palemoon)
-			if [[ $(get_version_component_range 1) -ge 21 ]]; then
+			if [[ $(get_version_component_range 1) -ge 21 ]] ; then
 				return 0
 			fi
 		;;
@@ -43,7 +43,7 @@ xpi_unpack() {
 		einfo "Unpacking ${xpi} to ${PWD}"
 		xpiname=$(basename ${xpi%.*})
 
-		if   [[ "${xpi:0:2}" != "./" ]] && [[ "${xpi:0:1}" != "/" ]]; then
+		if   [[ "${xpi:0:2}" != "./" ]] && [[ "${xpi:0:1}" != "/" ]] ; then
 			srcdir="${DISTDIR}/"
 		fi
 
@@ -60,6 +60,7 @@ xpi_unpack() {
 		esac
 	done
 }
+
 
 xpi_install() {
 	local emid

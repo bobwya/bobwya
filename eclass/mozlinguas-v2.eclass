@@ -1,7 +1,7 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-# @ECLASS: mozlinguas-kde-v2.eclass
+# @ECLASS: mozlinguas-v2.eclass
 # @MAINTAINER:
 # mozilla@gentoo.org
 # @AUTHOR:
@@ -13,7 +13,7 @@
 # src_unpack, src_compile and src_install for use in ebuilds, and provides
 # supporting functions for langpack generation and installation.
 
-inherit mozextension-kde
+inherit mozextension
 
 case "${EAPI:-0}" in
 	0|1)
@@ -117,6 +117,7 @@ esac
 # shouldn't (ie it is an alpha or beta package)
 : ${MOZ_FORCE_UPSTREAM_L10N:=""}
 
+
 # @ECLASS-VARIABLE: MOZ_TOO_REGIONALIZED_FOR_L10N
 # @INTERNAL
 # @DESCRIPTION:
@@ -125,8 +126,8 @@ MOZ_TOO_REGIONALIZED_FOR_L10N=( fy-NL ga-IE gu-IN hi-IN hy-AM nb-NO nn-NO pa-IN 
 
 # Add l10n_* to IUSE according to available language packs
 # No language packs for alphas and betas
-if ! [[ -n ${MOZ_GENERATE_LANGPACKS} ]]; then
-	if ! [[ ${PV} =~ alpha ]] || { [[ ${PN} == seamonkey ]] && ! [[ ${PV} =~ alpha|beta ]] ; } || [[ -n ${MOZ_FORCE_UPSTREAM_L10N} ]]; then
+if ! [[ -n ${MOZ_GENERATE_LANGPACKS} ]] ; then
+	if ! [[ ${PV} =~ alpha ]] || { [[ ${PN} == seamonkey ]] && ! [[ ${PV} =~ alpha|beta ]] ; } || [[ -n ${MOZ_FORCE_UPSTREAM_L10N} ]] ; then
 	[[ -z ${MOZ_FTP_URI} ]] && [[ -z ${MOZ_HTTP_URI} ]] && die "No URI set to download langpacks, please set one of MOZ_{FTP,HTTP}_URI"
 	for x in "${MOZ_LANGS[@]}" ; do
 		# en and en_US are handled internally
@@ -134,7 +135,7 @@ if ! [[ -n ${MOZ_GENERATE_LANGPACKS} ]]; then
 			continue
 		fi
 		# strip region subtag if $x is in the list
-		if has ${x} "${MOZ_TOO_REGIONALIZED_FOR_L10N[@]}"; then
+		if has ${x} "${MOZ_TOO_REGIONALIZED_FOR_L10N[@]}" ; then
 			xflag=${x%%-*}
 		else
 			xflag=${x}
@@ -157,7 +158,7 @@ else
 			continue
 		fi
 		# strip region subtag if $x is in the list
-		if has ${x} "${MOZ_TOO_REGIONALIZED_FOR_L10N[@]}"; then
+		if has ${x} "${MOZ_TOO_REGIONALIZED_FOR_L10N[@]}" ; then
 			xflag=${x%%-*}
 		else
 			xflag=${x}
@@ -166,7 +167,7 @@ else
 #		if [[ ${PV} =~ alpha ]]; then
 #			# Please note that this URI is not deterministic - digest breakage could occur
 #			SRC_URI+=" l10n_${xflag/[_@]/-}? ( http://hg.mozilla.org/releases/l10n/mozilla-aurora/ach/archive/tip.tar.bz2 -> ${MOZ_P}-l10n-${x}.tar.bz2 )"
-#		elif [[ ${PV} =~ beta ]] ; then
+#		elif [[ ${PV} =~ beta ]] && ! [[ ${PN} == seamonkey ]]; then
 #			# Please note that this URI is not deterministic - digest breakage could occur
 #			SRC_URI+=" l10n_${xflag/[_@]/-}? ( http://hg.mozilla.org/releases/l10n/mozilla-beta/ach/archive/tip.tar.bz2 -> ${MOZ_P}-l10n-${x}.tar.bz2 )"
 #		elif [[ -n ${MOZ_L10N_URI_PREFIX} ]]; then
@@ -178,13 +179,17 @@ else
 fi
 unset x xflag
 
-# @FUNCTION: mozlinguas_kde_export
+# @FUNCTION: mozlinguas_export
 # @INTERNAL
 # @DESCRIPTION:
 # Generate the list of language packs called "mozlinguas"
 # This list is used to unpack and install the xpi language packs
-mozlinguas_kde_export() {
-	[[ ${PV} =~ alpha|beta ]] && ! [[ -n ${MOZ_GENERATE_LANGPACKS} ]] && return
+mozlinguas_export() {
+	if [[ ${PN} == seamonkey ]] ; then
+		[[ ${PV} =~ alpha ]] && ! [[ -n ${MOZ_GENERATE_LANGPACKS} ]] && return
+	else
+		[[ ${PV} =~ alpha|beta ]] && ! [[ -n ${MOZ_GENERATE_LANGPACKS} ]] && return
+	fi
 	local lingua lflag
 	mozlinguas=()
 	# Set mozlinguas based on the enabled l10n_* USE flags.
@@ -221,13 +226,13 @@ mozlinguas_kde_export() {
 	done
 }
 
-# @FUNCTION: mozlinguas_kde_src_unpack
+# @FUNCTION: mozlinguas_src_unpack
 # @DESCRIPTION:
 # Unpack xpi language packs according to the user's LINGUAS settings
-mozlinguas_kde_src_unpack() {
+mozlinguas_src_unpack() {
 	local x
 	if ! [[ -n ${MOZ_GENERATE_LANGPACKS} ]]; then
-		mozlinguas_kde_export
+		mozlinguas_export
 		for x in "${mozlinguas[@]}"; do
 			# FIXME: Add support for unpacking xpis to portage
 			xpi_unpack "${MOZ_P}-${x}${MOZ_LANGPACK_UNOFFICIAL:+.unofficial}.xpi"
@@ -238,19 +243,20 @@ mozlinguas_kde_src_unpack() {
 	fi
 }
 # For the phase function export
-mozlinguas-kde-v2_src_unpack() {
-	mozlinguas_kde_src_unpack
+mozlinguas-v2_src_unpack() {
+	mozlinguas_src_unpack
 }
 
-# @FUNCTION: mozlinguas_kde_mozconfig
+
+# @FUNCTION: mozlinguas_mozconfig
 # @DESCRIPTION:
 # if applicable, add the necessary flag to .mozconfig to support
 # the generation of locales.  Note that this function requires
 # mozconfig_annontate to already be declared via an inherit of
 # mozconfig or mozcoreconf.
-mozlinguas_kde_mozconfig() {
+mozlinguas_mozconfig() {
 	if [[ -n ${MOZ_GENERATE_LANGPACKS} ]]; then
-		if declare -f mozconfig_annotate >/dev/null; then
+		if declare -f mozconfig_annotate >/dev/null ; then
 			mozconfig_annotate 'for building locales' --with-l10n-base=${MOZ_L10N_SOURCEDIR}
 		else
 			die "Could not configure l10n-base, mozconfig_annotate not declared -- missing inherit?"
@@ -258,25 +264,28 @@ mozlinguas_kde_mozconfig() {
 	fi
 }
 
-# @FUNCTION: mozlinguas_kde_src_compile
+# @FUNCTION: mozlinguas_src_compile
 # @DESCRIPTION:
 # if applicable, build the selected locales.
-mozlinguas_kde_src_compile() {
+mozlinguas_src_compile() {
 	if [[ -n ${MOZ_GENERATE_LANGPACKS} ]]; then
 		# leverage BUILD_OBJ_DIR if set otherwise assume PWD.
 		local x y targets=( "langpack" ) localedir="${BUILD_OBJ_DIR:-.}"
-		case ${MOZ_PN} in
+		case ${PN} in
 			*firefox)
 				localedir+="/browser/locales"
+				;;
+			seamonkey)
+				localedir+="/suite/locales"
 				;;
 			*thunderbird)
 				localedir+="/mail/locales"
 				targets+=( "calendar-langpack" )
 				;;
-			*) die "Building locales for ${MOZ_PN} is not supported."
+			*) die "Building locales for ${PN} is not supported."
 		esac
 		pushd "${localedir}" > /dev/null || die
-		mozlinguas_kde_export
+		mozlinguas_export
 		for x in "${mozlinguas[@]}"; do for y in "${targets[@]}"; do
 			emake ${y}-${x} LOCALE_MERGEDIR="./${y}-${x}"
 		done; done
@@ -285,11 +294,11 @@ mozlinguas_kde_src_compile() {
 }
 
 # For the phase function export
-mozlinguas-kde-v2_src_compile() {
-	mozlinguas_kde_src_compile
+mozlinguas-v2_src_compile() {
+	mozlinguas_src_compile
 }
 
-# @FUNCTION: mozlinguas_kde_xpistage_langpacks
+# @FUNCTION: mozlinguas_xpistage_langpacks
 # @DESCRIPTION:
 # Add extra langpacks to the xpi-stage dir for prebuilt plugins
 #
@@ -301,20 +310,20 @@ mozlinguas-kde-v2_src_compile() {
 # Example - installing extra langpacks for lightning:
 # src_install() {
 # 	... # general installation steps
-# 	mozlinguas_kde_xpistage_langpacks \
+# 	mozlinguas_xpistage_langpacks \
 #		"${BUILD_OBJ_DIR}"/dist/xpi-stage/lightning \
 #		"${WORKDIR}"/lightning \
 #		lightning calendar
 #	... # proceed with installation from the xpi-stage dir
 # }
 
-mozlinguas_kde_xpistage_langpacks() {
+mozlinguas_xpistage_langpacks() {
 	local l c modpath="${1}" srcprefix="${1}" modules=( "${1##*/}" )
 	shift
 	if [[ -n ${1} ]] ; then srcprefix="${1}" ; shift ; fi
 	if [[ -n ${1} ]] ; then modules=( $@ ) ; fi
 
-	mozlinguas_kde_export
+	mozlinguas_export
 	mkdir -p "${modpath}/chrome" || die
 	for l in "${mozlinguas[@]}"; do	for c in "${modules[@]}" ; do
 		if [[ -e "${srcprefix}-${l}/chrome/${c}-${l}" ]]; then
@@ -343,13 +352,13 @@ mozlinguas_kde_xpistage_langpacks() {
 	done; done
 }
 
-# @FUNCTION: mozlinguas-kde-v2_src_install
+# @FUNCTION: mozlinguas-v2_src_install
 # @DESCRIPTION:
 # Install xpi language packs according to the user's L10N settings
 # NOTE - uses ${BUILD_OBJ_DIR} or PWD if unset, for source-generated langpacks
-mozlinguas_kde_src_install() {
+mozlinguas_src_install() {
 	local x
-	mozlinguas_kde_export
+	mozlinguas_export
 	if [[ -n ${MOZ_GENERATE_LANGPACKS} ]] && [[ -n ${mozlinguas[*]} ]]; then
 		local repopath="${WORKDIR}/${PN}-generated-langpacks"
 		mkdir -p "${repopath}" || die
@@ -367,6 +376,6 @@ mozlinguas_kde_src_install() {
 }
 
 # For the phase function export
-mozlinguas-kde-v2_src_install() {
-	mozlinguas_kde_src_install
+mozlinguas-v2_src_install() {
+	mozlinguas_src_install
 }

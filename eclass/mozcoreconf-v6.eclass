@@ -1,13 +1,13 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 #
-# @ECLASS: mozcoreconf-kde-v6.eclass
+# @ECLASS: mozcoreconf-v5.eclass
 # @MAINTAINER:
 # Mozilla team <mozilla@gentoo.org>
 # @BLURB: core options and configuration functions for mozilla
 # @DESCRIPTION:
 #
-# inherit mozconfig-kde-v6.* or above for mozilla configuration support
+# inherit mozconfig-v6.* or above for mozilla configuration support
 
 # @ECLASS-VARIABLE: MOZILLA_FIVE_HOME
 # @DESCRIPTION:
@@ -99,7 +99,7 @@ moz_pkgsetup() {
 	unset MOZCONFIG
 
 	# set MOZILLA_FIVE_HOME
-	export MOZILLA_FIVE_HOME="/usr/$(get_libdir)/${MOZ_PN}"
+	export MOZILLA_FIVE_HOME="/usr/$(get_libdir)/${PN}"
 
 	# nested configure scripts in mozilla products generate unrecognized options
 	# false positives when toplevel configure passes downwards.
@@ -120,9 +120,11 @@ moz_pkgsetup() {
 # This should be called in src_configure before any other mozconfig_* functions.
 mozconfig_init() {
 	declare enable_optimize pango_version myext x
-	declare XUL=$([[ ${MOZ_PN} == xulrunner ]] && echo true || echo false)
-	declare FF=$([[ ${MOZ_PN} == firefox ]] && echo true || echo false)
-	declare TB=$([[ ${MOZ_PN} == thunderbird ]] && echo true || echo false)
+	declare XUL=$([[ ${PN} == xulrunner ]] && echo true || echo false)
+	declare FF=$([[ ${PN} == firefox ]] && echo true || echo false)
+	declare SM=$([[ ${PN} == seamonkey ]] && echo true || echo false)
+	declare TB=$([[ ${PN} == thunderbird ]] && echo true || echo false)
+	declare TRB=$([[ ${PN} == torbrowser ]] && echo true || echo false)
 
 	####################################
 	#
@@ -131,13 +133,20 @@ mozconfig_init() {
 	#
 	####################################
 
-	case ${MOZ_PN} in
+	case ${PN} in
 		*xulrunner)
 			cp xulrunner/config/mozconfig .mozconfig \
 				|| die "cp xulrunner/config/mozconfig failed" ;;
 		*firefox)
 			cp browser/config/mozconfig .mozconfig \
 				|| die "cp browser/config/mozconfig failed" ;;
+		*torbrowser)
+			cp browser/config/mozconfig .mozconfig \
+				|| die "cp browser/config/mozconfig failed" ;;
+		seamonkey)
+			# Must create the initial mozconfig to enable application
+			: >.mozconfig || die "initial mozconfig creation failed"
+			mozconfig_annotate "" --enable-application=suite ;;
 		*thunderbird)
 			# Must create the initial mozconfig to enable application
 			: >.mozconfig || die "initial mozconfig creation failed"
@@ -151,7 +160,7 @@ mozconfig_init() {
 	####################################
 
 	# Set optimization level
-	if [[ $(gcc-major-version) -ge 7 ]]; then
+	if [[ $(gcc-major-version) -eq 7 ]]; then
 		mozconfig_annotate "Workaround known breakage" --enable-optimize=-O2
 	elif [[ ${ARCH} == hppa ]]; then
 		mozconfig_annotate "more than -O0 causes a segfault on hppa" --enable-optimize=-O0
