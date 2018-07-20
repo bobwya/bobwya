@@ -2,9 +2,9 @@
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-EAPI=6
+EAPI=7
 
-inherit gnome2-utils
+inherit bash-completion-r1 gnome2-icon-utils
 
 if [ "${PV}" = "99999999" ]; then
 	EGIT_REPO_URI="https://github.com/Winetricks/${PN}.git"
@@ -18,6 +18,7 @@ fi
 winetricks_gentoo="winetricks-gentoo-2012.11.24"
 
 SRC_URI="${SRC_URI}
+	https://github.com/bobwya/${PN}/commit/8a07089d182c36bd1ec04d515facb5b5a04081b2.diff -> ${PN}-20180603_add_bashcomp.patch
 	gtk? ( https://dev.gentoo.org/~tetromino/distfiles/wine/${winetricks_gentoo}.tar.bz2 )
 	kde? ( https://dev.gentoo.org/~tetromino/distfiles/wine/${winetricks_gentoo}.tar.bz2 )"
 
@@ -64,7 +65,7 @@ winetricks_disable_gui_component() {
 }
 
 src_unpack() {
-	if [ "${PV}" = "99999999" ]; then
+	if [[ "${PV}" = "99999999" ]]; then
 		git-r3_src_unpack
 		(use gtk || use kde) && unpack "${winetricks_gentoo}.tar.bz2"
 	else
@@ -74,7 +75,7 @@ src_unpack() {
 
 src_prepare() {
 	local PATCHES=(
-		"${FILESDIR}/${PN}-20180513_add_bashcomp.patch"
+		"${DISTDIR}/${PN}-20180603_add_bashcomp.patch"
 	)
 	if use gtk || use kde; then
 		winetricks_disable_gui_component "${S}/src/winetricks"
