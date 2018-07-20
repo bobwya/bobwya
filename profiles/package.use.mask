@@ -1,17 +1,13 @@
 # Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-# Silence Repoman
-app-emulation/wine vkd3d vulkan
-
-# global masking of >=dev-libs/icu-59
->=www-client/firefox-kde-opensuse-56.0 system-icu
+# Allow USE +ffmpeg (globally use masked)
+app-emulation/wine-staging -ffmpeg
 
 # rust on mozilla packages is experimental
 mail-client/thunderbird-kde-opensuse	custom-optimization
 mail-client/thunderbird-kde-opensuse	rust
 mail-client/thunderbird-kde-opensuse	system-cairo
-www-client/firefox-kde-opensuse			rust
 
 
 mail-client/thunderbird-kde-opensuse	-amd64
