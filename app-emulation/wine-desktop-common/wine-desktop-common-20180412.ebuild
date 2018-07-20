@@ -3,9 +3,9 @@
 
 # shellcheck disable=SC2034
 
-EAPI=6
+EAPI=7
 
-inherit gnome2-utils
+inherit gnome2-icon-utils
 
 DESCRIPTION="Core desktop menu entries and icons for Wine"
 HOMEPAGE="https://github.com/bobwya/wine-desktop-common"
