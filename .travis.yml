@@ -6,7 +6,7 @@ language: python
 python:
     - pypy
 env:
-    - PORTAGE_VER="2.3.40"
+    - PORTAGE_VER="2.3.43"
 before_install:
     - sudo apt-get -qq update
     - pip install lxml pyyaml
@@ -25,8 +25,9 @@ before_script:
     - wget "https://www.gentoo.org/dtd/metadata.dtd" -O /usr/portage/distfiles/metadata.dtd
     - ln -s $TRAVIS_BUILD_DIR/portage-portage-${PORTAGE_VER}/cnf/repos.conf /etc/portage/repos.conf
     - ln -s /usr/portage/profiles/default/linux/amd64/17.0 /etc/portage/make.profile
-    - sha256sum -c --quiet <<< "fa981a88cb838b0394c30292ac49153c3b58b7c09496e294c7166425f8521b6c .travis.yml.upstream" || echo -e "\e[31m !!! .travis.yml outdated! Update available https://github.com/mrueg/repoman-travis \e[0m" > /tmp/update
+    - PORTAGE_VER_UPSTREAM=$(awk '{ if (sub("^PORTAGE_VER=","",$2)) print $2 }' .travis.yml.upstream)
+    - if [[ "${PORTAGE_VER}" != "${PORTAGE_VER_UPSTREAM}" ]]; then echo -e "\e[31m !!! .travis.yml outdated! Update available https://github.com/mrueg/repoman-travis \e[0m" > /tmp/update ; fi
     - cd travis-overlay
 script:
-    - ./../spinner.sh "python ../portage-portage-${PORTAGE_VER}/repoman/bin/repoman full -d --include-arches \"amd64 x86\""
+    - ./../spinner.sh "python ../portage-portage-${PORTAGE_VER}/repoman/bin/repoman full -d --include-arches amd64 x86"
 # You can append own scripts after this line
