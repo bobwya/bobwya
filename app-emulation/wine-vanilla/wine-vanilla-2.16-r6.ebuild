@@ -2,22 +2,24 @@
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-EAPI=6
+EAPI=7
 
 PLOCALES="ar bg ca cs da de el en en_US eo es fa fi fr he hi hr hu it ja ko lt ml nb_NO nl or pa pl pt_BR pt_PT rm ro ru sk sl sr_RS@cyrillic sr_RS@latin sv te th tr uk wa zh_CN zh_TW"
 PLOCALE_BACKUP="en"
 
-inherit autotools flag-o-matic gnome2-utils l10n multilib multilib-minimal pax-utils toolchain-funcs virtualx versionator xdg-utils
+inherit autotools flag-o-matic l10n multilib multilib-minimal pax-utils toolchain-funcs virtualx xdg-utils-r1
 
 MY_PN="${PN%%-*}"
 MY_PV="${PV}"
-version_component_count=$(get_version_component_count)
+# shellcheck disable=SC2207
+array_components=( $( ver_rs 1- ' ' ) )
+version_component_count=${#array_components[@]}
 # Hack, using Portage patch versioning, to implement multiple slots per single unique slotted version
 # (of the multislot wine-vanilla package)
-last_component="$( get_version_component_range $((version_component_count)) )"
-if [[ "${last_component}" =~ ^p[[:digit:]]+$ ]]; then
-	MY_PV="${MY_PV%_${last_component}}"
-	: $(( --version_component_count ))
+(( version_component_count > 2 )) && if [[ "$( ver_cut $((version_component_count-1)) )" = "p" ]]; then
+	patch_version="$( ver_cut $((version_component_count-1))- )"
+	MY_PV="${MY_PV%_${patch_version}}"
+	: $(( version_component_count -= 2 ))
 fi
 MY_P="${MY_PN}-${MY_PV}"
 if [[ "${MY_PV}" == "9999" ]]; then
@@ -27,19 +29,19 @@ if [[ "${MY_PV}" == "9999" ]]; then
 	SRC_URI=""
 else
 	KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
-	last_component="$( get_version_component_range $((version_component_count)) )"
-	rc_version=0
-	if [[ "${last_component}" =~ ^rc[[:digit:]]+$ ]]; then
-		rc_version=1
-		: $(( --version_component_count ))
-		MY_PV=$(replace_version_separator $((version_component_count)) '''-''')
+	is_rc=0
+	(( version_component_count > 2 )) && if [[ "$( ver_cut $((version_component_count-1)) )" = "rc" ]]; then
+		is_rc=1
+		: $(( version_component_count -= 2 ))
+		MY_PV=$(ver_rs $((version_component_count)) '''-''')
 		MY_P="${MY_PN}-${MY_PV}"
 	fi
-	major_version=$(get_major_version)
-	minor_version=$(get_version_component_range 2)
-	stable_version=$(( (major_version == 1 && (minor_version % 2 == 0)) || (major_version >= 2 && minor_version == 0) ))
-	base_version=$(( stable_version && (version_component_count == 2) ))
-	if (( stable_version && rc_version && !base_version )); then
+	major_version=$( ver_cut 1 )
+	minor_version=0
+	(( version_component_count > 1 )) && minor_version=$( ver_cut 2 )
+	is_stable=$(( (major_version == 1 && (minor_version % 2 == 0)) || (major_version >= 2 && minor_version == 0) ))
+	is_major_base=$(( is_stable && (version_component_count == 2) ))
+	if (( is_stable && is_rc && !is_major_base )); then
 		# Pull Wine RC intermediate stable versions from alternate Github repository...
 		STABLE_PREFIX="wine-stable"
 		MY_P="${STABLE_PREFIX}-${MY_P}"
@@ -53,15 +55,11 @@ else
 		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.x/${MY_P}.tar.xz -> ${MY_P}.tar.xz"
 	fi
 fi
-unset -v base_version last_component minor_version major_version rc_version stable_version version_component_count
+unset -v array_components is_major_base is_rc is_stable minor_version major_version patch_version version_component_count
 
 GENTOO_WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20171106"
 GENTOO_WINE_EBUILD_COMMON_PN="${GENTOO_WINE_EBUILD_COMMON_P%-*}"
 GENTOO_WINE_EBUILD_COMMON_PV="${GENTOO_WINE_EBUILD_COMMON_P##*-}"
-
-WINE_STAGING_GIT_HELPER_P="wine-staging-git-helper-0.1.9"
-WINE_STAGING_GIT_HELPER_PN="${WINE_STAGING_GIT_HELPER_P%-*}"
-WINE_STAGING_GIT_HELPER_PV="${WINE_STAGING_GIT_HELPER_P##*-}"
 
 DESCRIPTION="Free implementation of Windows(tm) on Unix, without any external patchsets"
 HOMEPAGE="https://www.winehq.org/"
@@ -232,8 +230,8 @@ wine_gcc_specific_pretests() {
 		$(tc-getCC) -O2 "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/files/pr66838.c" -o "${T}/pr66838" \
 			|| die "cc compilation failed: pr66838 test"
 		# Run in a subshell to prevent "Aborted" message
-		( "${T}"/pr66838 || false ) >/dev/null 2>&1
-		if ! eend $?; then
+		( "${T}"/pr66838 || false ) >/dev/null 2>&1 \
+		|| {
 			eerror "(subshell): =sys-devel/gcc-5.1.x , =sys-devel/gcc-5.2.0 MS X86_64 ABI compiler bug detected."
 			eerror "64-bit wine cannot be built with =sys-devel/gcc-5.1 or initial patchset of =sys-devel/gcc-5.2.0."
 			eerror "Please re-emerge wine using an unaffected version of gcc or apply"
@@ -242,22 +240,22 @@ wine_gcc_specific_pretests() {
 			eerror "See https://bugs.gentoo.org/549768"
 			eerror
 			return 1
-		fi
+		}
 	fi
 
 	#574044 sys-devel/gcc-5.3.0 miscompiles app-emulation/wine
 	if (( using_abi_x86_64 && (gcc_major_version == 5) && (gcc_minor_version == 3) )); then
 		ebegin "(subshell): checking for =sys-devel/gcc-5.3.0 X86_64 misaligned stack compiler bug ..."
 		# Compile in a subshell to prevent "Aborted" message
-		( $(tc-getCC) -O2 -mincoming-stack-boundary=3 "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/files/pr69140.c" -o "${T}/pr69140" ) >/dev/null 2>&1
-		if ! eend $?; then
+		( $(tc-getCC) -O2 -mincoming-stack-boundary=3 "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/files/pr69140.c" -o "${T}/pr69140" ) >/dev/null 2>&1 \
+		|| {
 			eerror "(subshell): =sys-devel/gcc-5.3.0 X86_64 misaligned stack compiler bug detected."
 			eerror "Please re-emerge the latest =sys-devel/gcc-5.3.0 ebuild,"
 			eerror "or use gcc-config to select a different compiler version."
 			eerror "See https://bugs.gentoo.org/574044"
 			eerror
 			return 1
-		fi
+		}
 	fi
 }
 
@@ -267,14 +265,14 @@ wine_generic_compiler_pretests() {
 	if use abi_x86_64; then
 		ebegin "(subshell): checking compiler support for (64-bit) builtin_ms_va_list ..."
 		# Compile in a subshell to prevent "Aborted" message
-		( $(tc-getCC) -O2 "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/files/builtin_ms_va_list.c" -o "${T}/builtin_ms_va_list" >/dev/null 2>&1 )
-		if ! eend $?; then
+		( $(tc-getCC) -O2 "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/files/builtin_ms_va_list.c" -o "${T}/builtin_ms_va_list" >/dev/null 2>&1 ) \
+		|| {
 			eerror "(subshell): $(tc-getCC) does not support builtin_ms_va_list."
 			eerror "Please re-emerge using a compiler (version) that supports building 64-bit Wine."
 			eerror "Use >=sys-devel/gcc-4.4 or >=sys-devel/clang-3.8 to build ${CATEGORY}/${PN}."
 			eerror
 			return 1
-		fi
+		}
 	fi
 }
 
@@ -350,7 +348,7 @@ src_prepare() {
 		# shellcheck disable=SC1090
 		source "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/scripts/${MY_PN}-multilib-portage-sed.sh"
 	)
-	eend $? || die "(subshell) script: \"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/scripts/${MY_PN}-multilib-portage-sed.sh\"."
+	eend
 
 	disable_man_file() {
 		(($# == 3))	|| die "invalid number of arguments: ${#} (3)"
@@ -566,6 +564,8 @@ pkg_postinst() {
 		|| die "eselect wine register --wine --vanilla \"${P}\" failed"
 	eselect wine set --force --verbose --wine --vanilla --if-unset "${P}" \
 		|| die "eselect wine set --force --wine --vanilla --if-unset \"${P}\" failed"
+
+	xdg_mimeinfo_database_update
 
 	if ! use gecko; then
 		ewarn "Without Wine Gecko, Wineprefixes will not have a default"

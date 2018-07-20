@@ -69,11 +69,10 @@ SRC_URI="${SRC_URI}
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap +png prelink prefix pulseaudio +realtime +run-exes samba scanner selinux +ssl test +threads +truetype +udisks v4l +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss +perl pcap +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test +threads +truetype udev +udisks v4l vkd3d vulkan +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
-	mono? ( abi_x86_32 )
 	osmesa? ( opengl )
 	test? ( abi_x86_32 )" #286560 osmesa-opengl  #551124 X-truetype
 
@@ -86,6 +85,7 @@ COMMON_DEPEND="
 	X? (
 		x11-libs/libXcursor[${MULTILIB_USEDEP}]
 		x11-libs/libXext[${MULTILIB_USEDEP}]
+		x11-libs/libXfixes[${MULTILIB_USEDEP}]
 		x11-libs/libXrandr[${MULTILIB_USEDEP}]
 		x11-libs/libXi[${MULTILIB_USEDEP}]
 		x11-libs/libXxf86vm[${MULTILIB_USEDEP}]
@@ -101,6 +101,7 @@ COMMON_DEPEND="
 		media-plugins/gst-plugins-meta:1.0[${MULTILIB_USEDEP}]
 	)
 	jpeg? ( virtual/jpeg:0=[${MULTILIB_USEDEP}] )
+	kerberos? ( virtual/krb5:0=[${MULTILIB_USEDEP}] )
 	lcms? ( media-libs/lcms:2=[${MULTILIB_USEDEP}] )
 	ldap? ( net-nds/openldap:=[${MULTILIB_USEDEP}] )
 	mp3? ( >=media-sound/mpg123-1.5.0[${MULTILIB_USEDEP}] )
@@ -119,10 +120,14 @@ COMMON_DEPEND="
 	png? ( media-libs/libpng:0=[${MULTILIB_USEDEP}] )
 	pulseaudio? ( media-sound/pulseaudio[${MULTILIB_USEDEP}] )
 	scanner? ( media-gfx/sane-backends:=[${MULTILIB_USEDEP}] )
+	sdl2? ( media-libs/libsdl2[haptic,joystick,${MULTILIB_USEDEP}] )
 	ssl? ( net-libs/gnutls:=[${MULTILIB_USEDEP}] )
 	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
+	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
+	vkd3d? ( app-emulation/vkd3d[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
+	vulkan? ( media-libs/vulkan-loader[X,${MULTILIB_USEDEP}] )
 	xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
 	xinerama? ( x11-libs/libXinerama[${MULTILIB_USEDEP}] )
 	xml? (
@@ -135,8 +140,8 @@ RDEPEND="${COMMON_DEPEND}
 	!app-emulation/wine:0
 	>=app-eselect/eselect-wine-1.5.4
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
-	gecko? ( app-emulation/wine-gecko:2.44[abi_x86_32?,abi_x86_64?] )
-	mono? ( app-emulation/wine-mono:4.5.6 )
+	gecko? ( app-emulation/wine-gecko:2.47[abi_x86_32?,abi_x86_64?] )
+	mono? ( app-emulation/wine-mono:4.7.3 )
 	perl? (
 		dev-lang/perl
 		dev-perl/XML-Simple
@@ -329,24 +334,8 @@ src_prepare() {
 		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.8_winecfg_detailed_version.patch"
 		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.5.26-winegcc.patch" #260726
 		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.6-memset-O3.patch" #480508
-		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.9.9-sysmacros.patch" #580046
-		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.9.13-gnutls-3.5-compat.patch" #587028
 		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.8-multislot-apploader.patch" #310611
 	)
-	if use truetype; then
-		PATCHES+=(
-			"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.18-freetype-2.8.1-segfault.patch"    #631676
-			"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.18-freetype-2.8.1-drop-glyphs.patch" #631676
-		)
-		PATCHES_BIN+=( "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.18-freetype-2.8.1-implement_minimum_em_size_required_by_opentype_1.8.2.patch" ) #631376
-	fi
-	use osmesa && PATCHES+=( "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.7-osmesa-configure_support_recent_versions.patch" ) #429386
-
-	# https://bugs.winehq.org/show_bug.cgi?id=40851
-	use cups && PATCHES+=( "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.9.14-cups-2.2-cupsgetppd-build-fix.patch" )
-
-	# https://bugs.winehq.org/show_bug.cgi?id=31836
-	use gstreamer && PATCHES+=( "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.8-gstreamer-1.0_"{07,08,09,10,11}".patch" )
 
 	[[ "${MY_PV}" == "9999" ]] && sieve_patchset_array_by_git_commit "${S}" "PATCHES" "PATCHES_BIN"
 
@@ -457,6 +446,8 @@ multilib_src_configure() {
 		"$(use_with gstreamer)"
 		--without-hal
 		"$(use_with jpeg)"
+		"$(use_with kerberos gssapi)"
+		"$(use_with kerberos krb5)"
 		"$(use_with ldap)"
 		"$(use_enable mono mscoree)"
 		"$(use_with mp3 mpg123)"
@@ -472,11 +463,16 @@ multilib_src_configure() {
 		"$(use_with pulseaudio pulse)"
 		"$(use_with threads pthread)"
 		"$(use_with scanner sane)"
+		"$(use_with sdl2 sdl)"
 		"$(use_enable test tests)"
 		"$(use_with truetype freetype)"
+		"$(use_with udev)"
 		"$(use_with udisks dbus)"
 		"$(use_with v4l)"
+		"$(use_with vkd3d)"
+		"$(use_with vulkan)"
 		"$(use_with X x)"
+		"$(use_with X xfixes)"
 		"$(use_with xcomposite)"
 		"$(use_with xinerama)"
 		"$(use_with xml)"
