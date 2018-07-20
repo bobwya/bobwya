@@ -2,22 +2,24 @@
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-EAPI=6
+EAPI=7
 
 PLOCALES="ar bg ca cs da de el en en_US eo es fa fi fr he hi hr hu it ja ko lt ml nb_NO nl or pa pl pt_BR pt_PT rm ro ru sk sl sr_RS@cyrillic sr_RS@latin sv te th tr uk wa zh_CN zh_TW"
 PLOCALE_BACKUP="en"
 
-inherit autotools flag-o-matic gnome2-utils l10n multilib multilib-minimal pax-utils toolchain-funcs virtualx versionator xdg-utils
+inherit autotools flag-o-matic l10n multilib multilib-minimal pax-utils toolchain-funcs virtualx xdg-utils-r1
 
 MY_PN="${PN%%-*}"
 MY_PV="${PV}"
-version_component_count=$(get_version_component_count)
+# shellcheck disable=SC2207
+array_components=( $( ver_rs 1- ' ' ) )
+version_component_count=${#array_components[@]}
 # Hack, using Portage patch versioning, to implement multiple slots per single unique slotted version
 # (of the multislot wine-staging package)
-last_component="$( get_version_component_range $((version_component_count)) )"
-if [[ "${last_component}" =~ ^p[[:digit:]]+$ ]]; then
-	MY_PV="${MY_PV%_${last_component}}"
-	: $(( --version_component_count ))
+(( version_component_count > 2 )) && if [[ "$( ver_cut $((version_component_count-1)) )" = "p" ]]; then
+	patch_version="$( ver_cut $((version_component_count-1))- )"
+	MY_PV="${MY_PV%_${patch_version}}"
+	: $(( version_component_count -= 2 ))
 fi
 MY_P="${MY_PN}-${MY_PV}"
 STAGING_SUFFIX=""
@@ -28,11 +30,12 @@ if [[ "${MY_PV}" == "9999" ]]; then
 	SRC_URI=""
 else
 	KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
-	major_version=$(get_major_version)
-	minor_version=$(get_version_component_range 2)
-	stable_version=$(( (major_version == 1 && (minor_version % 2 == 0)) || (major_version >= 2 && minor_version == 0) ))
-	base_version=$(( stable_version && (version_component_count == 2) ))
-	if (( (major_version < 2) || ((major_version == 2) && base_version) )); then
+	major_version=$( ver_cut 1 )
+	minor_version=0
+	(( version_component_count > 1 )) && minor_version=$( ver_cut 2 )
+	is_stable=$(( (major_version == 1 && (minor_version % 2 == 0)) || (major_version >= 2 && minor_version == 0) ))
+	is_major_base=$(( is_stable && (version_component_count == 2) ))
+	if (( (major_version < 2) || ((major_version == 2) && is_major_base) )); then
 		# The base Wine 2.0 release tarball was bzip2 compressed - switching to xz shortly after...
 		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.${minor_version}/${MY_P}.tar.bz2 -> ${MY_P}.tar.bz2"
 	elif (( (major_version >= 2) && (minor_version == 0) )); then
@@ -42,7 +45,7 @@ else
 	fi
 	((major_version == 1 && minor_version == 8)) && STAGING_SUFFIX="-unofficial"
 fi
-unset -v base_version last_component minor_version major_version stable_version version_component_count
+unset -v array_components is_major_base is_stable minor_version major_version patch_version version_component_count
 
 STAGING_P="wine-staging-${MY_PV}"
 STAGING_DIR="${WORKDIR}/${STAGING_P}${STAGING_SUFFIX}"
@@ -51,10 +54,6 @@ GENTOO_WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20171106"
 GENTOO_WINE_EBUILD_COMMON_PN="${GENTOO_WINE_EBUILD_COMMON_P%-*}"
 GENTOO_WINE_EBUILD_COMMON_PV="${GENTOO_WINE_EBUILD_COMMON_P##*-}"
 
-WINE_STAGING_GIT_HELPER_P="wine-staging-git-helper-0.1.9"
-WINE_STAGING_GIT_HELPER_PN="${WINE_STAGING_GIT_HELPER_P%-*}"
-WINE_STAGING_GIT_HELPER_PV="${WINE_STAGING_GIT_HELPER_P##*-}"
-
 DESCRIPTION="Free implementation of Windows(tm) on Unix, with Wine Staging patchset"
 HOMEPAGE="https://www.winehq.org/"
 SRC_URI="${SRC_URI}
@@ -62,8 +61,6 @@ SRC_URI="${SRC_URI}
 
 if [[ "${MY_PV}" == "9999" ]]; then
 	STAGING_EGIT_REPO_URI="https://github.com/wine-staging/wine-staging.git"
-	SRC_URI="${SRC_URI}
-		https://github.com/bobwya/${WINE_STAGING_GIT_HELPER_PN}/archive/${WINE_STAGING_GIT_HELPER_PV}.tar.gz -> ${WINE_STAGING_GIT_HELPER_P}.tar.gz"
 else
 	SRC_URI="${SRC_URI}
 		https://github.com/wine-staging/wine-staging/archive/v${MY_PV}${STAGING_SUFFIX}.tar.gz -> ${STAGING_P}.tar.gz"
@@ -246,8 +243,8 @@ wine_gcc_specific_pretests() {
 		$(tc-getCC) -O2 "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/files/pr66838.c" -o "${T}/pr66838" \
 			|| die "cc compilation failed: pr66838 test"
 		# Run in a subshell to prevent "Aborted" message
-		( "${T}"/pr66838 || false ) >/dev/null 2>&1
-		if ! eend $?; then
+		( "${T}"/pr66838 || false ) >/dev/null 2>&1 \
+		|| {
 			eerror "(subshell): =sys-devel/gcc-5.1.x , =sys-devel/gcc-5.2.0 MS X86_64 ABI compiler bug detected."
 			eerror "64-bit wine cannot be built with =sys-devel/gcc-5.1 or initial patchset of =sys-devel/gcc-5.2.0."
 			eerror "Please re-emerge wine using an unaffected version of gcc or apply"
@@ -256,22 +253,22 @@ wine_gcc_specific_pretests() {
 			eerror "See https://bugs.gentoo.org/549768"
 			eerror
 			return 1
-		fi
+		}
 	fi
 
 	#574044 sys-devel/gcc-5.3.0 miscompiles app-emulation/wine
 	if (( using_abi_x86_64 && (gcc_major_version == 5) && (gcc_minor_version == 3) )); then
 		ebegin "(subshell): checking for =sys-devel/gcc-5.3.0 X86_64 misaligned stack compiler bug ..."
 		# Compile in a subshell to prevent "Aborted" message
-		( $(tc-getCC) -O2 -mincoming-stack-boundary=3 "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/files/pr69140.c" -o "${T}/pr69140" ) >/dev/null 2>&1
-		if ! eend $?; then
+		( $(tc-getCC) -O2 -mincoming-stack-boundary=3 "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/files/pr69140.c" -o "${T}/pr69140" ) >/dev/null 2>&1 \
+		|| {
 			eerror "(subshell): =sys-devel/gcc-5.3.0 X86_64 misaligned stack compiler bug detected."
 			eerror "Please re-emerge the latest =sys-devel/gcc-5.3.0 ebuild,"
 			eerror "or use gcc-config to select a different compiler version."
 			eerror "See https://bugs.gentoo.org/574044"
 			eerror
 			return 1
-		fi
+		}
 	fi
 }
 
@@ -281,14 +278,14 @@ wine_generic_compiler_pretests() {
 	if use abi_x86_64; then
 		ebegin "(subshell): checking compiler support for (64-bit) builtin_ms_va_list ..."
 		# Compile in a subshell to prevent "Aborted" message
-		( $(tc-getCC) -O2 "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/files/builtin_ms_va_list.c" -o "${T}/builtin_ms_va_list" >/dev/null 2>&1 )
-		if ! eend $?; then
+		( $(tc-getCC) -O2 "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/files/builtin_ms_va_list.c" -o "${T}/builtin_ms_va_list" >/dev/null 2>&1 ) \
+		|| {
 			eerror "(subshell): $(tc-getCC) does not support builtin_ms_va_list."
 			eerror "Please re-emerge using a compiler (version) that supports building 64-bit Wine."
 			eerror "Use >=sys-devel/gcc-4.4 or >=sys-devel/clang-3.8 to build ${CATEGORY}/${PN}."
 			eerror
 			return 1
-		fi
+		}
 	fi
 }
 
@@ -329,7 +326,7 @@ src_unpack() {
 			ebegin "(subshell): Wine Staging git reference specified. Building Wine git with Wine Staging patchset ..."
 			(
 				# shellcheck source=/dev/null
-				source "${WORKDIR%/}/${WINE_STAGING_GIT_HELPER_P%/}/${WINE_STAGING_GIT_HELPER_PN}.sh" || exit 1
+				source "${WORKDIR%/}/${GENTOO_WINE_EBUILD_COMMON_P%/}/scripts/wine-staging-git-helper.sh"
 				if [[ ! -z "${EGIT_STAGING_COMMIT}" ]]; then
 					ewarn "Building Wine against Wine Staging git commit EGIT_STAGING_COMMIT=\"${EGIT_STAGING_COMMIT}\" ."
 					git-r3_fetch "${STAGING_EGIT_REPO_URI}" "${EGIT_STAGING_COMMIT}"
@@ -343,7 +340,7 @@ src_unpack() {
 				EGIT_COMMIT="${wine_commit}" git-r3_src_unpack
 				einfo "Building Wine commit \"${wine_commit}\" referenced by Wine Staging commit \"${wine_staging_target_commit}\" ..."
 			)
-			eend $? || die "(subshell): ... failed to determine target Wine commit."
+			eend
 		else
 			# References are relative to Wine git tree (post-checkout Wine Staging git tree)
 			# Use env variables "EGIT_WINE_COMMIT" or "EGIT_WINE_BRANCH" to reference Wine git tree
@@ -351,7 +348,7 @@ src_unpack() {
 			ebegin "(subshell): Wine git reference specified or inferred. Building Wine git with with Wine Staging patchset ..."
 			(
 				# shellcheck source=/dev/null
-				source "${WORKDIR%/}/${WINE_STAGING_GIT_HELPER_P%/}/${WINE_STAGING_GIT_HELPER_PN}.sh" || exit 1
+				source "${WORKDIR%/}/${GENTOO_WINE_EBUILD_COMMON_P%/}/scripts/wine-staging-git-helper.sh"
 				wine_git_unpack "${S}"
 				wine_commit="${EGIT_VERSION}"
 				wine_target_commit="${wine_commit}"
@@ -361,12 +358,12 @@ src_unpack() {
 				if ! walk_wine_staging_git_tree "${STAGING_DIR}" "${S}" "${wine_commit}" "wine_staging_commit" ; then
 					find_closest_wine_commit "${STAGING_DIR}" "${S}" "wine_commit" "wine_staging_commit" "wine_commit_offset" \
 						&& display_closest_wine_commit_message "${wine_commit}" "${wine_staging_commit}" "${wine_commit_offset}"
-					ewarn "Failed to find Wine Staging git commit corresponding to supplied Wine git commit \"${wine_target_commit}\" ."
+					die "Failed to find Wine Staging git commit corresponding to supplied Wine git commit \"${wine_target_commit}\" ."
 					exit 1
 				fi
 				einfo "Building Wine Staging commit \"${wine_staging_commit}\" corresponding to Wine commit \"${wine_target_commit}\" ..."
 			)
-			eend $? || die "(subshell): ... failed to determine target Wine Staging commit."
+			eend
 		fi
 	fi
 
@@ -409,7 +406,7 @@ src_prepare() {
 		# shellcheck disable=SC1090
 		source "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/scripts/${MY_PN}-multilib-portage-sed.sh"
 	)
-	eend $? || die "(subshell) script: \"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/scripts/${MY_PN}-multilib-portage-sed.sh\"."
+	eend
 
 	ewarn "Applying the Wine Staging patchset. Any bug reports to Wine Bugzilla"
 	ewarn "should explicitly state that Wine Staging was used."
@@ -437,16 +434,22 @@ src_prepare() {
 			|| die "sed failed"
 	fi
 
-	# Launch wine-staging patcher in a subshell, using epatch as a backend, and gitapply.sh as a backend for binary patches
+	# Launch wine-staging patcher in a subshell, using eapply as a backend, and gitapply.sh as a backend for binary patches
 	ebegin "Running Wine-Staging patch installer"
 	(
+		# Use a sed hack to add EAPI 7 support to the patchinstall.sh script
+		sed -i	-e '$ d' -e '/^# Critical error, abort$/,+6d' \
+			-e '/^[[:blank:]]*abort ".*"$/{s/abort /die /g}' \
+			-e 's/exit 1$/die/g' \
+			"${STAGING_DIR}/patches/patchinstall.sh" \
+			|| die "sed failed"
 		# shellcheck disable=SC2068
-		set -- DESTDIR="${S}" --backend=epatch --no-autoconf --all ${STAGING_EXCLUDE_PATCHSETS[@]/#/-W }
-		cd "${STAGING_DIR}/patches" || { eerror "cd failed"; exit 1; }
+		set -- DESTDIR="${S}" --backend=eapply --no-autoconf --all ${STAGING_EXCLUDE_PATCHSETS[@]/#/-W }
+		cd "${STAGING_DIR}/patches" || die "cd failed"
 		# shellcheck source=/dev/null
 		source "${STAGING_DIR}/patches/patchinstall.sh"
 	)
-	eend $? || die "(subshell) script: failed to apply Wine Staging patches (excluding: \"${STAGING_EXCLUDE_PATCHSETS[*]}\")."
+	eend
 
 	# Apply Staging branding to reported Wine version...
 	sed -r -i -e '/^AC_INIT\(.*\)$/{s/\[Wine\]/\[Wine Staging\]/}' "${S}/configure.ac" || die "sed failed"
@@ -670,6 +673,8 @@ pkg_postinst() {
 		|| die "eselect wine register --wine --staging \"${P}\" failed"
 	eselect wine set --force --verbose --wine --staging --if-unset "${P}" \
 		|| die "eselect wine set --force --wine --staging --if-unset \"${P}\" failed"
+
+	xdg_mimeinfo_database_update
 
 	if ! use gecko; then
 		ewarn "Without Wine Gecko, Wineprefixes will not have a default"
