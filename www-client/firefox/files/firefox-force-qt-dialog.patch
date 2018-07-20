@@ -1,0 +1,7 @@
+diff -Naur mozilla-release.old/toolkit/xre/nsKDEUtils.cpp mozilla-release.new/toolkit/xre/nsKDEUtils.cpp
+--- a/toolkit/xre/nsKDEUtils.cpp	2015-01-14 09:52:25.179106037 +0000
++++ b/toolkit/xre/nsKDEUtils.cpp	2015-01-25 00:10:47.201289667 +0000
+@@ -39,2 +39,2 @@
+     Atom kde_full_session = XInternAtom( dpy, "KDE_FULL_SESSION", True );
+-    bool kde = false;
++    bool kde = true;
