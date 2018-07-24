@@ -5,7 +5,7 @@
 EAPI=6
 VIRTUALX_REQUIRED="pgo"
 WANT_AUTOCONF="2.1"
-MOZ_ESR="1"
+MOZ_ESR=""
 
 # This list can be updated with scripts/get_langs.sh from the mozilla overlay
 MOZ_LANGS=( "ach" "af" "an" "ar" "as" "ast" "az" "bg" "bn-BD" "bn-IN" "br" "bs" "ca" "cak" "cs" "cy" "da" "de" "dsb"
@@ -17,17 +17,17 @@ MOZ_LANGS=( "ach" "af" "an" "ar" "as" "ast" "az" "bg" "bn-BD" "bn-IN" "br" "bs" 
 # Patch version
 MOZ_PV="${PV}"
 [[ ${MOZ_ESR} == 1 ]] && MOZ_PV="${MOZ_PV}esr"
-PATCH="${PN}-60.0-patches-02"
+PATCH="${PN}-61.0-patches-01"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 
 #MOZCONFIG_OPTIONAL_QT5=1
 MOZCONFIG_OPTIONAL_WIFI=1
 
-inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mercurial mozconfig-v6.60 \
-	pax-utils xdg-utils autotools mozlinguas-v2 versionator llvm
-
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
 EHG_REPO_URI="https://www.rosenauer.org/hg/mozilla"
+
+inherit autotools check-reqs flag-o-matic gnome2-utils llvm mercurial mozconfig-v6.60 \
+	mozlinguas-v2 pax-utils toolchain-funcs xdg-utils
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.com/firefox
@@ -54,7 +54,7 @@ ASM_DEPEND=">=dev-lang/yasm-1.1"
 RDEPEND="
 	system-icu? ( >=dev-libs/icu-60.2 )
 	jack? ( virtual/jack )
-	>=dev-libs/nss-3.36.4
+	>=dev-libs/nss-3.38
 	>=dev-libs/nspr-4.19
 	selinux? ( sec-policy/selinux-mozilla )
 	kde? ( kde-misc/kmozillahelper:=  )"
@@ -155,10 +155,10 @@ src_prepare() {
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox/)
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
-	rm "${WORKDIR}/firefox/2005_ffmpeg4.patch"
 
 	PATCHES+=(
 		"${FILESDIR}/bug_1461221.patch"
+		"${FILESDIR}/${PN}-61.0-mozHunspell.patch"
 	)
 
 	# Enable gnomebreakpad
@@ -246,9 +246,6 @@ src_configure() {
 		mozconfig_use_enable hardened hardening
 	fi
 
-	# egl build error #571180
-	use egl && mozconfig_annotate 'Enable EGL as GL provider' --with-gl-provider=EGL
-
 	# Setup api key for location services
 	echo -n "${_google_api_key}" > "${S}"/google-api-key
 	mozconfig_annotate '' --with-google-api-keyfile="${S}/google-api-key"
@@ -258,8 +255,10 @@ src_configure() {
 	echo "mk_add_options MOZ_OBJDIR=${BUILD_OBJ_DIR}" >> "${S}/.mozconfig"
 	echo "mk_add_options XARGS=/usr/bin/xargs" >> "${S}/.mozconfig"
 
-	# Default mozilla_five_home no longer valid option
+	# Default mozilla_five_home, system-hunspell no longer valid option
 	sed '/with-default-mozilla-five-home=/d' -i "${S}/.mozconfig"
+	sed '/enable-system-hunspell/d' -i "${S}/.mozconfig"
+	sed '/disable-stylo/d' -i "${S}/.mozconfig"
 
 	# Finalize and report settings
 	mozconfig_final
