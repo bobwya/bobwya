@@ -24,7 +24,7 @@ MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 MOZCONFIG_OPTIONAL_WIFI=1
 
 inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mercurial mozconfig-v6.60 \
-	pax-utils xdg-utils autotools mozlinguas-v2 versionator
+	pax-utils xdg-utils autotools mozlinguas-v2 versionator llvm
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
 EHG_REPO_URI="https://www.rosenauer.org/hg/mozilla"
