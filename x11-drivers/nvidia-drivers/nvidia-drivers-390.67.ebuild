@@ -7,7 +7,10 @@ inherit flag-o-matic linux-info linux-mod multilib-minimal nvidia-driver \
 	portability toolchain-funcs unpacker user udev
 
 NV_URI="https://download.nvidia.com/XFree86/"
+X86_NV_PACKAGE="NVIDIA-Linux-x86-${PV}"
 AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
+ARM_NV_PACKAGE="NVIDIA-Linux-armv7l-gnueabihf-${PV}"
+X86_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86-${PV}"
 AMD64_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86_64-${PV}"
 
 DESCRIPTION="NVIDIA Accelerated Graphics Driver"
@@ -15,12 +18,15 @@ HOMEPAGE="https://www.nvidia.com/ https://www.nvidia.com/Download/Find.aspx"
 SRC_URI="
 	amd64-fbsd? ( ${NV_URI%/}/FreeBSD-x86_64/${PV}/${AMD64_FBSD_NV_PACKAGE}.tar.gz )
 	amd64? ( ${NV_URI%/}/Linux-x86_64/${PV}/${AMD64_NV_PACKAGE}.run )
+	arm? ( ${NV_URI%/}/Linux-32bit-ARM/${PV}/${ARM_NV_PACKAGE}.run )
+	x86-fbsd? ( ${NV_URI%/}/FreeBSD-x86/${PV}/${X86_FBSD_NV_PACKAGE}.tar.gz )
+	x86? ( ${NV_URI%/}/Linux-x86/${PV}/${X86_NV_PACKAGE}.run )
 	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${PV}.tar.bz2 )
 "
 
 LICENSE="GPL-2 NVIDIA-r2"
 SLOT="0/${PV%.*}"
-KEYWORDS="-* ~amd64 ~amd64-fbsd"
+KEYWORDS="-* ~amd64 ~x86 ~amd64-fbsd ~x86-fbsd"
 RESTRICT="bindist mirror"
 EMULTILIB_PKG="true"
 
@@ -63,7 +69,7 @@ RDEPEND="
 	tools? ( !media-video/nvidia-settings )
 	wayland? ( dev-libs/wayland[${MULTILIB_USEDEP}] )
 	X? (
-		<x11-base/xorg-server-1.19.99:=
+		<x11-base/xorg-server-1.20.99:=
 		>=x11-libs/libX11-1.6.2[${MULTILIB_USEDEP}]
 		>=x11-libs/libXext-1.3.2[${MULTILIB_USEDEP}]
 		>=x11-libs/libvdpau-1.0[${MULTILIB_USEDEP}]
@@ -147,8 +153,22 @@ donvidia() {
 	dosym "${nv_LIBNAME}" "${nv_DEST%/}/${nv_LIBNAME/.so*/.so}" \
 		|| die "failed to create \"${nv_DEST%/}/${nv_LIBNAME/.so*/.so}\" symlink"
 }
+
+display_overlay_warning() {
+	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix"
+	ewarn "issues when switching GL providers."
+	ewarn "This package should only be used in conjuction with patched versions of:"
+	ewarn " * app-select/eselect-opengl"
+	ewarn " * media-libs/mesa"
+	ewarn " * x11-base/xorg-server"
+	ewarn "from the ::bobwya overlay."
+	ewarn
+}
+
 pkg_pretend() {
 	nvidia_drivers_versions_check
+
+	display_overlay_warning
 }
 
 pkg_setup() {
@@ -497,13 +517,12 @@ src_install-libs() {
 			"libnvidia-eglcore.so.${NV_SOVER}" .
 			"libnvidia-glcore.so.${NV_SOVER}" .
 			"libnvidia-glsi.so.${NV_SOVER}" .
-			"libnvidia-glvkspirv.so.${NV_SOVER}" .
 			"libnvidia-ifr.so.${NV_SOVER}" .
 		)
 
 		if use wayland && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then
 			NV_GLX_LIBRARIES+=(
-				"libnvidia-egl-wayland.so.1.0.3" .
+				"libnvidia-egl-wayland.so.1.0.2" .
 			)
 		fi
 
@@ -585,14 +604,8 @@ pkg_postinst() {
 		elog "media-video/nvidia-settings"
 		elog
 	fi
-	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix"
-	ewarn "issues when switching GL providers."
-	ewarn "This package should only be used in conjuction with patched versions of:"
-	ewarn " * app-select/eselect-opengl"
-	ewarn " * media-libs/mesa"
-	ewarn " * x11-base/xorg-server"
-	ewarn "from the bobwya overlay."
-	ewarn
+
+	display_overlay_warning
 }
 
 pkg_prerm() {

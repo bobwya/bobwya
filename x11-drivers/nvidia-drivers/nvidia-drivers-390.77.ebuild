@@ -69,7 +69,7 @@ RDEPEND="
 	tools? ( !media-video/nvidia-settings )
 	wayland? ( dev-libs/wayland[${MULTILIB_USEDEP}] )
 	X? (
-		<x11-base/xorg-server-1.19.99:=
+		<x11-base/xorg-server-1.20.99:=
 		>=x11-libs/libX11-1.6.2[${MULTILIB_USEDEP}]
 		>=x11-libs/libXext-1.3.2[${MULTILIB_USEDEP}]
 		>=x11-libs/libvdpau-1.0[${MULTILIB_USEDEP}]
@@ -90,11 +90,11 @@ nvidia_drivers_versions_check() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 16; then
+		if kernel_is ge 4 17; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.16"
-			ewarn "<sys-kernel/vanilla-sources-4.16"
+			ewarn "<sys-kernel/gentoo-sources-4.17"
+			ewarn "<sys-kernel/vanilla-sources-4.17"
 		elif use kms && kernel_is lt 4 2; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -153,8 +153,22 @@ donvidia() {
 	dosym "${nv_LIBNAME}" "${nv_DEST%/}/${nv_LIBNAME/.so*/.so}" \
 		|| die "failed to create \"${nv_DEST%/}/${nv_LIBNAME/.so*/.so}\" symlink"
 }
+
+display_overlay_warning() {
+	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix"
+	ewarn "issues when switching GL providers."
+	ewarn "This package should only be used in conjuction with patched versions of:"
+	ewarn " * app-select/eselect-opengl"
+	ewarn " * media-libs/mesa"
+	ewarn " * x11-base/xorg-server"
+	ewarn "from the ::bobwya overlay."
+	ewarn
+}
+
 pkg_pretend() {
 	nvidia_drivers_versions_check
+
+	display_overlay_warning
 }
 
 pkg_setup() {
@@ -590,14 +604,8 @@ pkg_postinst() {
 		elog "media-video/nvidia-settings"
 		elog
 	fi
-	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix"
-	ewarn "issues when switching GL providers."
-	ewarn "This package should only be used in conjuction with patched versions of:"
-	ewarn " * app-select/eselect-opengl"
-	ewarn " * media-libs/mesa"
-	ewarn " * x11-base/xorg-server"
-	ewarn "from the bobwya overlay."
-	ewarn
+
+	display_overlay_warning
 }
 
 pkg_prerm() {

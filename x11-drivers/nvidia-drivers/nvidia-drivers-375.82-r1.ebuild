@@ -153,8 +153,22 @@ donvidia() {
 	dosym "${nv_LIBNAME}" "${nv_DEST%/}/${nv_LIBNAME/.so*/.so}" \
 		|| die "failed to create \"${nv_DEST%/}/${nv_LIBNAME/.so*/.so}\" symlink"
 }
+
+display_overlay_warning() {
+	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix"
+	ewarn "issues when switching GL providers."
+	ewarn "This package should only be used in conjuction with patched versions of:"
+	ewarn " * app-select/eselect-opengl"
+	ewarn " * media-libs/mesa"
+	ewarn " * x11-base/xorg-server"
+	ewarn "from the ::bobwya overlay."
+	ewarn
+}
+
 pkg_pretend() {
 	nvidia_drivers_versions_check
+
+	display_overlay_warning
 }
 
 pkg_setup() {
@@ -583,14 +597,8 @@ pkg_postinst() {
 		elog "media-video/nvidia-settings"
 		elog
 	fi
-	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix"
-	ewarn "issues when switching GL providers."
-	ewarn "This package should only be used in conjuction with patched versions of:"
-	ewarn " * app-select/eselect-opengl"
-	ewarn " * media-libs/mesa"
-	ewarn " * x11-base/xorg-server"
-	ewarn "from the bobwya overlay."
-	ewarn
+
+	display_overlay_warning
 }
 
 pkg_prerm() {
