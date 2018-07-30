@@ -38,9 +38,9 @@ for card in "${VIDEO_CARDS[@]}"; do
 done
 
 IUSE="${IUSE_VIDEO_CARDS}
-	bindist +classic d3d9 debug +dri3 +egl +gallium +gbm gles1 gles2 unwind
-	+llvm +nptl opencl osmesa pax_kernel openmax pic selinux vaapi valgrind
-	vdpau vulkan wayland xvmc xa"
+	bindist +classic d3d9 debug +dri3 +egl +gallium +gbm gles1 gles2 +llvm +nptl
+	opencl openmax osmesa pax_kernel pic selinux unwind vaapi valgrind vdpau vulkan
+	wayland xa xvmc"
 
 REQUIRED_USE="
 	d3d9?   ( dri3 gallium )
@@ -115,7 +115,7 @@ RDEPEND="
 	)
 	vdpau? ( >=x11-libs/libvdpau-1.1:=[${MULTILIB_USEDEP}] )
 	wayland? (
-		>=dev-libs/wayland-1.11.0:=[${MULTILIB_USEDEP}]
+		>=dev-libs/wayland-1.15.0:=[${MULTILIB_USEDEP}]
 		>=dev-libs/wayland-protocols-1.8
 	)
 	xvmc? ( >=x11-libs/libXvMC-1.0.8:=[${MULTILIB_USEDEP}] )
@@ -210,8 +210,6 @@ DEPEND="${RDEPEND}
 "
 
 [[ "${PV}" == "9999" ]] && DEPEND+="
-	sys-devel/bison
-	sys-devel/flex
 	$(python_gen_any_dep ">=dev-python/mako-0.7.3[\${PYTHON_USEDEP}]")
 "
 
@@ -231,16 +229,14 @@ x86? (
 
 # driver_enable DRI_DRIVERS()
 #	1>	 driver array (reference)
-#	2>	 driver USE flag (main category)
+#	2>	 -- / driver USE flag (main category)
 #	[3-N]> driver USE flags (subcategory)
 driver_enable() {
-	(($# < 2)) && die "Invalid parameter count: ${#} (2)"
-	local __driver_array_reference="${1}" __driver_use_flag="${2}" driver
+	(($# < 3)) && die "Invalid parameter count: ${#} (3+)"
+	local __driver_array_reference="${1}" driver
 	declare -n driver_array=${__driver_array_reference}
 
-	if (($# == 2)); then
-		driver_array+=",${__driver_use_flag}"
-	elif use "${__driver_use_flag}"; then
+	if [[ "${2}" == "--" ]] || use $2; then
 		# shellcheck disable=SC2068
 		for driver in ${@:3}; do
 			driver_array+=",${driver}"
@@ -257,6 +253,16 @@ llvm_check_depends() {
 		has_version "sys-devel/clang[${flags}]" || return 1
 	fi
 	has_version "sys-devel/llvm[${flags}]"
+}
+
+pkg_pretend() {
+	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix various issues"
+	ewarn "when switching GL providers."
+	ewarn "This package can only be used in conjuction with patched versions of:"
+	ewarn " * app-select/eselect-opengl"
+	ewarn " * x11-base/xorg-server"
+	ewarn " * x11-drivers/nvidia-drivers"
+	ewarn "from the bobwya overlay."
 }
 
 pkg_setup() {
@@ -281,9 +287,6 @@ multilib_src_configure() {
 	local myeconfargs
 
 	if use classic; then
-		# Configurable DRI drivers
-		driver_enable DRI_DRIVERS swrast
-
 		# Intel code
 		driver_enable DRI_DRIVERS video_cards_i915 i915
 		driver_enable DRI_DRIVERS video_cards_i965 i965
@@ -303,7 +306,7 @@ multilib_src_configure() {
 	fi
 
 	if use egl; then
-		myeconfargs+=( "--with-egl-platforms=x11,surfaceless$(use wayland && echo ",wayland")$(use gbm && echo ",drm")" )
+		myeconfargs+=( "--with-platforms=x11,surfaceless$(use wayland && echo ",wayland")$(use gbm && echo ",drm")" )
 	fi
 
 	if use gallium; then
@@ -318,7 +321,7 @@ multilib_src_configure() {
 		)
 		use vaapi && myeconfargs+=( "--with-va-libdir=/usr/$(get_libdir)/va/drivers" )
 
-		driver_enable GALLIUM_DRIVERS swrast
+		driver_enable GALLIUM_DRIVERS -- swrast
 		driver_enable GALLIUM_DRIVERS video_cards_vc4 vc4
 		driver_enable GALLIUM_DRIVERS video_cards_virgl virgl
 		driver_enable GALLIUM_DRIVERS video_cards_vivante etnaviv

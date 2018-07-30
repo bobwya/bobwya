@@ -38,9 +38,9 @@ for card in "${VIDEO_CARDS[@]}"; do
 done
 
 IUSE="${IUSE_VIDEO_CARDS}
-	bindist +classic d3d9 debug +dri3 +egl +gallium +gbm gles1 gles2 unwind
-	+llvm +nptl opencl osmesa pax_kernel openmax pic selinux vaapi valgrind
-	vdpau vulkan wayland xvmc xa"
+	bindist +classic d3d9 debug +dri3 +egl +gallium +gbm gles1 gles2 +llvm +nptl
+	opencl openmax osmesa pax_kernel pic selinux unwind vaapi valgrind vdpau vulkan
+	wayland xa xvmc"
 
 REQUIRED_USE="
 	d3d9?   ( dri3 gallium )
@@ -212,8 +212,6 @@ DEPEND="${RDEPEND}
 "
 
 [[ "${PV}" == "9999" ]] && DEPEND+="
-	sys-devel/bison
-	sys-devel/flex
 	$(python_gen_any_dep ">=dev-python/mako-0.7.3[\${PYTHON_USEDEP}]")
 "
 
@@ -233,16 +231,14 @@ x86? (
 
 # driver_enable DRI_DRIVERS()
 #	1>	 driver array (reference)
-#	2>	 driver USE flag (main category)
+#	2>	 -- / driver USE flag (main category)
 #	[3-N]> driver USE flags (subcategory)
 driver_enable() {
-	(($# < 2)) && die "Invalid parameter count: ${#} (2)"
-	local __driver_array_reference="${1}" __driver_use_flag="${2}" driver
+	(($# < 3)) && die "Invalid parameter count: ${#} (3+)"
+	local __driver_array_reference="${1}" driver
 	declare -n driver_array=${__driver_array_reference}
 
-	if (($# == 2)); then
-		driver_array+=",${__driver_use_flag}"
-	elif use "${__driver_use_flag}"; then
+	if [[ "${2}" == "--" ]] || use $2; then
 		# shellcheck disable=SC2068
 		for driver in ${@:3}; do
 			driver_array+=",${driver}"
@@ -259,6 +255,16 @@ llvm_check_depends() {
 		has_version "sys-devel/clang[${flags}]" || return 1
 	fi
 	has_version "sys-devel/llvm[${flags}]"
+}
+
+pkg_pretend() {
+	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix various issues"
+	ewarn "when switching GL providers."
+	ewarn "This package can only be used in conjuction with patched versions of:"
+	ewarn " * app-select/eselect-opengl"
+	ewarn " * x11-base/xorg-server"
+	ewarn " * x11-drivers/nvidia-drivers"
+	ewarn "from the bobwya overlay."
 }
 
 pkg_setup() {
@@ -283,9 +289,6 @@ multilib_src_configure() {
 	local myeconfargs
 
 	if use classic; then
-		# Configurable DRI drivers
-		driver_enable DRI_DRIVERS swrast
-
 		# Intel code
 		driver_enable DRI_DRIVERS video_cards_i915 i915
 		driver_enable DRI_DRIVERS video_cards_i965 i965
@@ -305,7 +308,7 @@ multilib_src_configure() {
 	fi
 
 	if use egl; then
-		myeconfargs+=( "--with-egl-platforms=x11,surfaceless$(use wayland && echo ",wayland")$(use gbm && echo ",drm")" )
+		myeconfargs+=( "--with-platforms=x11,surfaceless$(use wayland && echo ",wayland")$(use gbm && echo ",drm")" )
 	fi
 
 	if use gallium; then
@@ -320,7 +323,7 @@ multilib_src_configure() {
 		)
 		use vaapi && myeconfargs+=( "--with-va-libdir=/usr/$(get_libdir)/va/drivers" )
 
-		driver_enable GALLIUM_DRIVERS swrast
+		driver_enable GALLIUM_DRIVERS -- swrast
 		driver_enable GALLIUM_DRIVERS video_cards_vc4 vc4
 		driver_enable GALLIUM_DRIVERS video_cards_virgl virgl
 		driver_enable GALLIUM_DRIVERS video_cards_vivante etnaviv
@@ -414,6 +417,60 @@ multilib_src_install() {
 		done
 	)
 	eend $? || die "(subshell): failed to move lib{EGL*,GL*,OpenGL}.{la,a,so*}"
+
+	if use classic || use gallium; then
+		ebegin "(subshell): moving DRI/Gallium drivers for dynamic switching"
+		(
+			local gallium_drivers=( i915_dri.so i965_dri.so r300_dri.so r600_dri.so swrast_dri.so )
+			keepdir "/usr/$(get_libdir)/dri"
+			dodir "/usr/$(get_libdir)/mesa"
+			# shellcheck disable=SC2068
+			for library in ${gallium_drivers[@]}; do
+				if [ -f "$(get_libdir)/gallium/${library}" ]; then
+					mv -f "${ED%/}/usr/$(get_libdir)/dri/${library}" \
+							"${ED%/}/usr/$(get_libdir)/dri/${library/_dri.so/g_dri.so}" \
+						|| die "Failed to move ${library}"
+				fi
+			done
+			if use classic; then
+				emake -C "${BUILD_DIR}/src/mesa/drivers/dri" DESTDIR="${D}" install
+			fi
+			for library in "${ED%/}/usr/$(get_libdir)/dri"/*.so; do
+				if [[ -f "${library}" || -L "${library}" ]]; then
+					mv -f "${library}" "${library/dri/mesa}" \
+						|| die "Failed to move ${library}"
+				fi
+			done
+			pushd "${ED%/}/usr/$(get_libdir)/dri" || die "pushd failed"
+			ln -s ../mesa/*.so . || die "Creating symlink failed"
+			# remove symlinks to drivers known to eselect
+			# shellcheck disable=SC2068
+			for library in ${gallium_drivers[@]}; do
+				if [[ -f "${library}" || -L "${library}" ]]; then
+					rm "${library}" || die "Failed to remove ${library}"
+				fi
+			done
+			popd || die "popd failed"
+		)
+		eend $? || die "(subshell): moving DRI/Gallium drivers failed"
+	fi
+	if use opencl; then
+		ebegin "(subshell): moving Gallium/Clover OpenCL implementation for dynamic switching"
+		(
+			local cl_dir
+			cl_dir="/usr/$(get_libdir)/OpenCL/vendors/mesa"
+			dodir "${cl_dir}"/{lib,include}
+			if [ -f "${ED%/}/usr/$(get_libdir)/libOpenCL.so" ]; then
+				mv -f "${ED%/}/usr/$(get_libdir)/libOpenCL.so"* \
+					"${ED%/}${cl_dir}"
+			fi
+			if [ -f "${ED%/}/usr/include/CL/opencl.h" ]; then
+				mv -f "${ED%/}/usr/include/CL" \
+					"${ED%/}${cl_dir}/include"
+			fi
+		)
+		eend $? || die "(subshell): moving Gallium/Clover OpenCL implementation failed"
+	fi
 
 	if use openmax; then
 		echo "XDG_DATA_DIRS=\"${EPREFIX}/usr/share/mesa/xdg\"" > "${T}/99mesaxdgomx"
