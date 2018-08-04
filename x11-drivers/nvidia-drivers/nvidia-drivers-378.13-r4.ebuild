@@ -3,8 +3,8 @@
 
 # shellcheck disable=SC2034
 EAPI=6
-inherit flag-o-matic linux-info linux-mod multilib-minimal nvidia-driver \
-	portability toolchain-funcs unpacker user udev
+inherit flag-o-matic linux-info linux-mod multilib-minimal \
+	nvidia-driver portability toolchain-funcs unpacker user udev
 
 NV_URI="https://download.nvidia.com/XFree86/"
 X86_NV_PACKAGE="NVIDIA-Linux-x86-${PV}"
