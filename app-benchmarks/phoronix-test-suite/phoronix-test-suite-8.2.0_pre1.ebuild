@@ -3,9 +3,9 @@
 
 # shellcheck disable=SC2034
 
-EAPI=6
+EAPI=7
 
-inherit bash-completion-r1 versionator
+inherit bash-completion-r1 xdg-utils-r1
 
 DESCRIPTION="Phoronix's comprehensive, cross-platform testing and benchmark suite"
 HOMEPAGE="http://www.phoronix-test-suite.com"
@@ -21,13 +21,12 @@ if [[ ${PV} == "9999" ]] ; then
 	SRC_URI=""
 	KEYWORDS=""
 else
-	major_version="$(get_version_component_range 1-3)"
-	minor_version="$(get_version_component_range 4)"
+	major_version="$(ver_cut 1-3)"
+	minor_version="$(ver_cut 4-5)"
 	MY_PV="${major_version}"
 	MY_P="${PN}-${MY_PV}"
 	KEYWORDS="~amd64 ~x86"
 	if [ ! -z "${minor_version}" ]; then
-		KEYWORDS=""
 		MY_PV="${MY_PV}${minor_version/pre/m}"
 		MY_P="${MY_P}${minor_version/pre/m}"
 	fi
@@ -83,23 +82,34 @@ check_php_config()
 
 get_optional_dependencies()
 {
-	awk '{
-		category=($0 ~ "<(GenericName|Name)>")
-		packages=($0 ~ "<(PackageName|PackageManager)>")
-		if ($0 ~ "<FileCheck>")
-			next
-		sub("^[[:blank:]]*<[^>]*>","")
-		sub("<\/[^>]*>[[:blank:]]*$", (category ? ":" : ""))
-		if ($0 ~ "^[[:blank:]]$")
-			next
-		padding=""
-		if (category)
-			padding=sprintf("%*s",25-length($0)," ")
-		else if (packages)
-			padding="\n"
-		printf("%s%s", $0, padding)
-		}' \
-		"${EROOT%/}/usr/share/phoronix-test-suite/pts-core/external-test-dependencies/xml/gentoo-packages.xml"
+	local ifield installable_packages installed package_generic_name package_names
+	local package_close_regexp="<\\/Package>" \
+		  package_generic_name_regexp="^.*<GenericName>|<\\/GenericName>.*$" \
+		  package_names_regexp="^.*<PackageName>|<\\/PackageName>.*$"
+
+	ewarn "get_optional_dependencies()"
+	while IFS=$'\n' read -r optional_packages_xmlline; do
+		ewarn "optional_packages_xmlline=${optional_packages_xmlline}"
+		if [[ "${optional_packages_xmlline}" =~ ${package_generic_name_regexp} ]]; then
+			package_generic_name="$(echo "${optional_packages_xmlline}" | sed -r "s@${package_generic_name_regexp}@@g")"
+		elif [[ "${optional_packages_xmlline}" =~ ${package_names_regexp} ]]; then
+			package_names="$(echo "${optional_packages_xmlline}" | sed -r "s@${package_names_regexp}@@g")"
+			ifield=1
+			installable_packages=""
+			while ((++ifield)); do
+				field_value="$(echo "${optional_packages_xmlline}" | awk -F -vifield="${ifield}" '[ ]+' '{ if (ifield<=NF) print $ifield }')"
+				if [[ -z "${field_value}" ]]; then
+					break
+				fi
+				if ! has_version "${field_value}"; then
+					installable_packages="${installable_packages}${installable_packages:+ }${field_value}"
+					break;
+				fi
+			done
+		elif [[ "${optional_packages_xmlline}" =~ ${package_close_regexp} && ! -z "${installable_packages}" ]]; then
+			ewarn "${package_generic_name}: ${installable_packages}"
+		fi
+	done <"${EROOT%/}/usr/share/phoronix-test-suite/pts-core/external-test-dependencies/xml/gentoo-packages.xml"
 }
 
 src_prepare() {
@@ -120,9 +130,9 @@ src_install() {
 }
 
 pkg_postinst() {
-	gnome2_icon_cache_update
-	fdo-mime_desktop_database_update
+	xdg_icon_cache_update
+	xdg_mimeinfo_database_update
 
 	ewarn "${PN} has the following optional package dependencies:"
-	ewarn "$(get_optional_dependencies)"
+	get_optional_dependencies
 }

@@ -3,9 +3,9 @@
 
 # shellcheck disable=SC2034
 
-EAPI=6
+EAPI=7
 
-inherit bash-completion-r1 fdo-mime gnome2-utils versionator
+inherit bash-completion-r1 xdg-utils-r1
 
 DESCRIPTION="Phoronix's comprehensive, cross-platform testing and benchmark suite"
 HOMEPAGE="http://www.phoronix-test-suite.com"
@@ -21,13 +21,12 @@ if [[ ${PV} == "9999" ]] ; then
 	SRC_URI=""
 	KEYWORDS=""
 else
-	major_version="$(get_version_component_range 1-3)"
-	minor_version="$(get_version_component_range 4)"
+	major_version="$(ver_cut 1-3)"
+	minor_version="$(ver_cut 4-5)"
 	MY_PV="${major_version}"
 	MY_P="${PN}-${MY_PV}"
 	KEYWORDS="~amd64 ~x86"
 	if [ ! -z "${minor_version}" ]; then
-		KEYWORDS=""
 		MY_PV="${MY_PV}${minor_version/pre/m}"
 		MY_P="${MY_P}${minor_version/pre/m}"
 	fi
@@ -131,8 +130,8 @@ src_install() {
 }
 
 pkg_postinst() {
-	gnome2_icon_cache_update
-	fdo-mime_desktop_database_update
+	xdg_icon_cache_update
+	xdg_mimeinfo_database_update
 
 	ewarn "${PN} has the following optional package dependencies:"
 	get_optional_dependencies
