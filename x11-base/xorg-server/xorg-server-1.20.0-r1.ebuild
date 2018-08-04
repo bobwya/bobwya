@@ -17,7 +17,7 @@ fi
 IUSE_SERVERS="dmx kdrive wayland xephyr xnest xorg xvfb"
 IUSE="${IUSE_SERVERS} debug +fop glamor ipv6 libressl minimal selinux systemd +udev unwind xcsecurity"
 
-CDEPEND="=app-eselect/eselect-opengl-1.3.3-r1
+CDEPEND="=app-eselect/eselect-opengl-1.3.3-r2
 	!libressl? ( dev-libs/openssl:0= )
 	libressl? ( dev-libs/libressl:0= )
 	>=x11-apps/iceauth-1.0.2
