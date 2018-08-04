@@ -3,7 +3,7 @@
 
 # shellcheck disable=SC2034
 
-EAPI=6
+EAPI=7
 
 inherit multilib
 
@@ -26,11 +26,7 @@ IUSE=""
 DEPEND="app-arch/xz-utils"
 RDEPEND=">=app-admin/eselect-1.2.4
 		 >=media-libs/mesa-11.0.6-r1
-		 >=x11-base/xorg-server-1.16.4-r6
-		 !<x11-proto/glproto-1.4.17-r1
-		 !<x11-drivers/ati-drivers-14.9-r2
-		 !=x11-drivers/ati-drivers-14.12
-		 !<=app-emulation/emul-linux-x86-opengl-20180508"
+		 >=x11-base/xorg-server-1.16.4-r6"
 
 pkg_preinst() {
 	# we may be moving the config file, so get it early
