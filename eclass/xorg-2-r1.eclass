@@ -1,7 +1,7 @@
 # Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-# @ECLASS: xorg-3.eclass
+# @ECLASS: xorg-2-r1.eclass
 # @MAINTAINER:
 # x11@gentoo.org
 # @AUTHOR:
@@ -60,7 +60,7 @@ esac
 EXPORT_FUNCTIONS ${EXPORTED_FUNCTIONS}
 
 IUSE=""
-HOMEPAGE="https://www.x.org/wiki/"
+HOMEPAGE="https://www.x.org/wiki/ https://cgit.freedesktop.org/"
 
 # @ECLASS-VARIABLE: XORG_EAUTORECONF
 # @DESCRIPTION:
@@ -87,7 +87,6 @@ if [[ -z ${XORG_MODULE} ]]; then
 		x11-misc|x11-themes) XORG_MODULE=util/    ;;
 		x11-base)            XORG_MODULE=xserver/ ;;
 		x11-drivers)         XORG_MODULE=driver/  ;;
-		x11-proto)           XORG_MODULE=proto/   ;;
 		x11-libs)            XORG_MODULE=lib/     ;;
 		*)                   XORG_MODULE=         ;;
 	esac
@@ -157,7 +156,7 @@ if [[ ${FONT} == yes ]]; then
 	# Set up configure options, wrapped so ebuilds can override if need be
 	[[ -z ${FONT_OPTIONS} ]] && FONT_OPTIONS="--with-fontdir=\"${EPREFIX}/usr/share/fonts/${FONT_DIR}\""
 
-	[[ ${PN##*-} = misc || ${PN##*-} = 75dpi || ${PN##*-} = 100dpi || ${PN##*-} = cyrillic ]] && IUSE+=" nls"
+	[[ ${PN} = font-misc-misc || ${PN} = font-schumacher-misc || ${PN##*-} = 75dpi || ${PN##*-} = 100dpi || ${PN##*-} = cyrillic ]] && IUSE+=" nls"
 fi
 
 # If we're a driver package, then enable DRIVER case
@@ -175,7 +174,6 @@ if [[ ${XORG_STATIC} == yes \
 		&& ${FONT} != yes \
 		&& ${CATEGORY} != app-doc \
 		&& ${CATEGORY} != x11-apps \
-		&& ${CATEGORY} != x11-proto \
 		&& ${CATEGORY} != x11-drivers \
 		&& ${CATEGORY} != media-fonts \
 		&& ${PN} != util-macros \
@@ -288,19 +286,19 @@ debug-print "${LINENO} ${ECLASS} ${FUNCNAME}: DEPEND=${DEPEND}"
 debug-print "${LINENO} ${ECLASS} ${FUNCNAME}: RDEPEND=${RDEPEND}"
 debug-print "${LINENO} ${ECLASS} ${FUNCNAME}: PDEPEND=${PDEPEND}"
 
-# @FUNCTION: xorg-3_pkg_setup
+# @FUNCTION: xorg-2-r1_pkg_setup
 # @DESCRIPTION:
 # Setup prefix compat
-xorg-3_pkg_setup() {
+xorg-2-r1_pkg_setup() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	[[ ${FONT} == yes ]] && font_pkg_setup "$@"
 }
 
-# @FUNCTION: xorg-3_src_unpack
+# @FUNCTION: xorg-2-r1_src_unpack
 # @DESCRIPTION:
 # Simply unpack source code.
-xorg-3_src_unpack() {
+xorg-2-r1_src_unpack() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	if [[ -n ${GIT_ECLASS} ]]; then
@@ -312,10 +310,10 @@ xorg-3_src_unpack() {
 	[[ -n ${FONT_OPTIONS} ]] && einfo "Detected font directory: ${FONT_DIR}"
 }
 
-# @FUNCTION: xorg-3_patch_source
+# @FUNCTION: xorg-2-r1_patch_source
 # @DESCRIPTION:
 # Apply all patches
-xorg-3_patch_source() {
+xorg-2-r1_patch_source() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	# Use standardized names and locations with bulk patching
@@ -326,10 +324,10 @@ xorg-3_patch_source() {
 	[[ -d "${EPATCH_SOURCE}" ]] && epatch
 }
 
-# @FUNCTION: xorg-3_reconf_source
+# @FUNCTION: xorg-2-r1_reconf_source
 # @DESCRIPTION:
 # Run eautoreconf if necessary, and run elibtoolize.
-xorg-3_reconf_source() {
+xorg-2-r1_reconf_source() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	case ${CHOST} in
@@ -346,27 +344,28 @@ xorg-3_reconf_source() {
 	esac
 }
 
-# @FUNCTION: xorg-3_src_prepare
+# @FUNCTION: xorg-2-r1_src_prepare
 # @DESCRIPTION:
 # Prepare a package after unpacking, performing all X-related tasks.
-xorg-3_src_prepare() {
+xorg-2-r1_src_prepare() {
 	debug-print-function ${FUNCNAME} "$@"
 
-	xorg-3_patch_source
-	xorg-3_reconf_source
+	xorg-2-r1_patch_source
+	xorg-2-r1_reconf_source
 	autotools-utils_src_prepare "$@"
 }
 
-# @FUNCTION: xorg-3_font_configure
+# @FUNCTION: xorg-2-r1_font_configure
 # @DESCRIPTION:
 # If a font package, perform any necessary configuration steps
-xorg-3_font_configure() {
+xorg-2-r1_font_configure() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	if has nls ${IUSE//+} && ! use nls; then
 		if grep -q -s "disable-all-encodings" ${ECONF_SOURCE:-.}/configure; then
 			FONT_OPTIONS+="
-				--disable-all-encodings"
+				--disable-all-encodings
+				--enable-iso8859-1"
 		else
 			FONT_OPTIONS+="
 				--disable-iso8859-2
@@ -390,10 +389,10 @@ xorg-3_font_configure() {
 	fi
 }
 
-# @FUNCTION: xorg-3_flags_setup
+# @FUNCTION: xorg-2-r1_flags_setup
 # @DESCRIPTION:
 # Set up CFLAGS for a debug build
-xorg-3_flags_setup() {
+xorg-2-r1_flags_setup() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	# Win32 require special define
@@ -409,13 +408,13 @@ xorg-3_flags_setup() {
 	fi
 }
 
-# @FUNCTION: xorg-3_src_configure
+# @FUNCTION: xorg-2-r1_src_configure
 # @DESCRIPTION:
 # Perform any necessary pre-configuration steps, then run configure
-xorg-3_src_configure() {
+xorg-2-r1_src_configure() {
 	debug-print-function ${FUNCNAME} "$@"
 
-	xorg-3_flags_setup
+	xorg-2-r1_flags_setup
 
 	# @VARIABLE: XORG_CONFIGURE_OPTIONS
 	# @DESCRIPTION:
@@ -433,7 +432,7 @@ xorg-3_src_configure() {
 		local xorgconfadd=("${XORG_CONFIGURE_OPTIONS[@]}")
 	fi
 
-	[[ -n "${FONT}" ]] && xorg-3_font_configure
+	[[ -n "${FONT}" ]] && xorg-2-r1_font_configure
 
 	# Check if package supports disabling of dep tracking
 	# Fixes warnings like:
@@ -461,10 +460,10 @@ xorg-3_src_configure() {
 	fi
 }
 
-# @FUNCTION: xorg-3_src_compile
+# @FUNCTION: xorg-2-r1_src_compile
 # @DESCRIPTION:
 # Compile a package, performing all X-related tasks.
-xorg-3_src_compile() {
+xorg-2-r1_src_compile() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	if [[ ${XORG_MULTILIB} == yes ]]; then
@@ -474,20 +473,14 @@ xorg-3_src_compile() {
 	fi
 }
 
-# @FUNCTION: xorg-3_src_install
+# @FUNCTION: xorg-2-r1_src_install
 # @DESCRIPTION:
 # Install a built package to ${D}, performing any necessary steps.
 # Creates a ChangeLog from git if using live ebuilds.
-xorg-3_src_install() {
+xorg-2-r1_src_install() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	local install_args=( docdir="${EPREFIX}/usr/share/doc/${PF}" )
-
-	if [[ ${CATEGORY} == x11-proto ]]; then
-		install_args+=(
-			${PN/proto/}docdir="${EPREFIX}/usr/share/doc/${PF}"
-		)
-	fi
 
 	if [[ ${XORG_MULTILIB} == yes ]]; then
 		autotools-multilib_src_install "${install_args[@]}"
@@ -511,25 +504,27 @@ xorg-3_src_install() {
 	[[ -n ${FONT} ]] && remove_font_metadata
 }
 
-# @FUNCTION: xorg-3_pkg_postinst
+# @FUNCTION: xorg-2-r1_pkg_postinst
 # @DESCRIPTION:
 # Run X-specific post-installation tasks on the live filesystem. The
 # only task right now is some setup for font packages.
-xorg-3_pkg_postinst() {
+xorg-2-r1_pkg_postinst() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	if [[ -n ${FONT} ]]; then
 		create_fonts_scale
 		create_fonts_dir
 		font_pkg_postinst "$@"
+
+		ewarn "Installed fonts changed. Run 'xset fp rehash' if you are using non-fontconfig applications."
 	fi
 }
 
-# @FUNCTION: xorg-3_pkg_postrm
+# @FUNCTION: xorg-2-r1_pkg_postrm
 # @DESCRIPTION:
 # Run X-specific post-removal tasks on the live filesystem. The only
 # task right now is some cleanup for font packages.
-xorg-3_pkg_postrm() {
+xorg-2-r1_pkg_postrm() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	if [[ -n ${FONT} ]]; then
