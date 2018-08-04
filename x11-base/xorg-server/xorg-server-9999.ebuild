@@ -4,7 +4,7 @@
 EAPI=5
 
 XORG_DOC=doc
-inherit xorg-3 multilib versionator flag-o-matic
+inherit eapi7-ver flag-o-matic multilib xorg-2-r1
 EGIT_REPO_URI="https://anongit.freedesktop.org/git/xorg/xserver.git"
 
 DESCRIPTION="X.Org X servers"
@@ -102,7 +102,7 @@ RDEPEND="${CDEPEND}
 "
 
 PDEPEND="
-	xorg? ( >=x11-base/xorg-drivers-$(get_version_component_range 1-2) )"
+	xorg? ( >=x11-base/xorg-drivers-$(ver_cut 1-2) )"
 
 REQUIRED_USE="!minimal? (
 		|| ( ${IUSE_SERVERS} )
