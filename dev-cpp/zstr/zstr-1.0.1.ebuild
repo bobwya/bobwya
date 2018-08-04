@@ -3,7 +3,7 @@
 
 # shellcheck disable=SC2034
 
-EAPI=6
+EAPI=7
 
 DESCRIPTION="C++ header-only library allowing iostream access ZLib-compressed streams"
 HOMEPAGE="https://github.com/mateidavid/zstr.git"
@@ -13,7 +13,7 @@ if [ "${PV}" = "9999" ]; then
 	inherit git-r3
 else
 	SRC_URI="https://github.com/mateidavid/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~x86 ~amd64 ~x86-fbsd"
+	KEYWORDS="~amd64 ~x86 ~x86-fbsd"
 fi
 
 LICENSE="MIT"
