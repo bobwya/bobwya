@@ -23,6 +23,7 @@ version_component_count=${#array_components[@]}
 fi
 MY_P="${MY_PN}-${MY_PV}"
 STAGING_SUFFIX=""
+STAGING_REVISION="1"
 if [[ "${MY_PV}" == "9999" ]]; then
 	#KEYWORDS=""
 	EGIT_REPO_URI="https://source.winehq.org/git/wine.git"
@@ -47,7 +48,7 @@ else
 fi
 unset -v array_components is_major_base is_stable minor_version major_version patch_version version_component_count
 
-STAGING_P="wine-staging-${MY_PV}"
+STAGING_P="wine-staging-${MY_PV}.${STAGING_REVISION}"
 STAGING_DIR="${WORKDIR}/${STAGING_P}${STAGING_SUFFIX}"
 
 GENTOO_WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20171106"
@@ -63,7 +64,7 @@ if [[ "${MY_PV}" == "9999" ]]; then
 	STAGING_EGIT_REPO_URI="https://github.com/wine-staging/wine-staging.git"
 else
 	SRC_URI="${SRC_URI}
-		https://github.com/wine-staging/wine-staging/archive/v${MY_PV}${STAGING_SUFFIX}.tar.gz -> ${STAGING_P}.tar.gz"
+		https://github.com/wine-staging/wine-staging/archive/v${MY_PV}.${STAGING_REVISION}${STAGING_SUFFIX}.tar.gz -> ${STAGING_P}.tar.gz"
 fi
 
 LICENSE="LGPL-2.1"
