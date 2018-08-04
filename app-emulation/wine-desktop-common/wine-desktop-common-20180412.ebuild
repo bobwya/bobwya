@@ -5,7 +5,7 @@
 
 EAPI=7
 
-inherit gnome2-icon-utils
+inherit xdg-utils-r1
 
 DESCRIPTION="Core desktop menu entries and icons for Wine"
 HOMEPAGE="https://github.com/bobwya/wine-desktop-common"
@@ -49,13 +49,13 @@ usr/share/winecmd.desktop
 "
 
 pkg_preinst() {
-	gnome2_icon_savelist
+	xdg_icon_savelist
 }
 
 pkg_postinst() {
-	gnome2_icon_cache_update
+	xdg_desktop_database_update
 }
 
 pkg_postrm() {
-	gnome2_icon_cache_update
+	xdg_desktop_database_update
 }
