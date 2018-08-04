@@ -2,14 +2,14 @@
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-EAPI=6
+EAPI=7
 
 if [[ ${PV} == "9999" ]]; then
 	EGIT_REPO_URI="https://github.com/merces/${PN}.git"
 	inherit git-r3
 else
 	SRC_URI="https://github.com/merces/${PN}/archive/v${PV}.tar.gz"
-	KEYWORDS="~x86 ~amd64"
+	KEYWORDS="~amd64 ~x86"
 fi
 
 DESCRIPTION="The PE file analysis toolkit"
