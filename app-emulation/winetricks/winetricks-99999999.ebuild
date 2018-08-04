@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=7
 
-inherit bash-completion-r1 gnome2-icon-utils
+inherit bash-completion-r1 xdg-utils-r1
 
 if [ "${PV}" = "99999999" ]; then
 	EGIT_REPO_URI="https://github.com/Winetricks/${PN}.git"
@@ -101,13 +101,13 @@ src_install() {
 }
 
 pkg_preinst() {
-	(use gtk || use kde) && gnome2_icon_savelist
+	(use gtk || use kde) && xdg_icon_savelist
 }
 
 pkg_postinst() {
-	(use gtk || use kde) && gnome2_icon_cache_update
+	(use gtk || use kde) && xdg_icon_cache_update
 }
 
 pkg_postrm() {
-	(use gtk || use kde) && gnome2_icon_cache_update
+	(use gtk || use kde) && xdg_icon_cache_update
 }
