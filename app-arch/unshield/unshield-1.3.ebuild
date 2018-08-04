@@ -3,7 +3,7 @@
 
 EAPI=6
 
-inherit cmake-utils versionator
+inherit cmake-utils
 
 DESCRIPTION="Tool and library to extract CAB files from InstallShield installers"
 HOMEPAGE="https://github.com/twogood/unshield"
@@ -30,12 +30,8 @@ RDEPEND="
 DEPEND="${RDEPEND}"
 
 src_prepare() {
-	local PATCHES
-	if [[ $(get_version_component_range 1-2) == "1.3" ]]; then
-		PATCHES+=( "${FILESDIR}/${PN}-1.3-fix_cmake_include_paths.patch" )
-	fi
-	default
-	unset -v PATCHES
+	local PATCHES=( "${FILESDIR}/${PN}-1.3-fix_cmake_include_paths.patch" )
+	eapply_user
 	cmake-utils_src_prepare
 }
 
