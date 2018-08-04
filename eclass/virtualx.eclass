@@ -8,6 +8,8 @@
 # Original author: Martin Schlemmer <azarah@gentoo.org>
 # @BLURB: This eclass can be used for packages that needs a working X environment to build.
 
+# shellcheck disable=SC2034,SC2154
+
 if [[ ! ${_VIRTUAL_X} ]]; then
 
 case "${EAPI:-0}" in
@@ -31,7 +33,7 @@ esac
 # Any other value is taken as useflag desired to be in control of
 # the dependency (eg. VIRTUALX_REQUIRED="kde" will add the dependency
 # into "kde? ( )" and add kde into IUSE.
-: ${VIRTUALX_REQUIRED:=test}
+: "${VIRTUALX_REQUIRED:=test}"
 
 # @ECLASS-VARIABLE: VIRTUALX_DEPEND
 # @DESCRIPTION:
@@ -47,13 +49,17 @@ VIRTUALX_DEPEND="${VIRTUALX_DEPEND}
 # @DESCRIPTION:
 # Command (or eclass function call) to be run in the X11 environment
 # (within virtualmake function).
-: ${VIRTUALX_COMMAND:="emake"}
+: "${VIRTUALX_COMMAND:="emake"}"
 
 case ${VIRTUALX_REQUIRED} in
 	manual)
 		;;
 	always)
-		DEPEND="${VIRTUALX_DEPEND}"
+		if [[ ${EAPI:-0} != [0123456] ]]; then
+			BDEPEND="${VIRTUALX_DEPEND}"
+		else
+			DEPEND="${VIRTUALX_DEPEND}"
+		fi
 		RDEPEND=""
 		;;
 	optional|tests)
@@ -77,7 +83,11 @@ case ${VIRTUALX_REQUIRED} in
 		IUSE="${VIRTUALX_USE}"
 		;;
 	*)
-		DEPEND="${VIRTUALX_REQUIRED}? ( ${VIRTUALX_DEPEND} )"
+		if [[ ${EAPI:-0} != [0123456] ]]; then
+			BDEPEND="${VIRTUALX_REQUIRED}? ( ${VIRTUALX_DEPEND} )"
+		else
+			DEPEND="${VIRTUALX_REQUIRED}? ( ${VIRTUALX_DEPEND} )"
+		fi
 		RDEPEND=""
 		IUSE="${VIRTUALX_REQUIRED}"
 		;;
@@ -88,13 +98,13 @@ esac
 # Function which start new Xvfb session
 # where the VIRTUALX_COMMAND variable content gets executed.
 virtualmake() {
-	debug-print-function ${FUNCNAME} "$@"
+	debug-print-function "${FUNCNAME[0]}" "$@"
 
 	[[ ${EAPI} == [45] ]] \
-		|| die "${FUNCNAME} is unsupported in EAPI > 5, please use virtx"
+		|| die "${FUNCNAME[0]} is unsupported in EAPI > 5, please use virtx"
 
 	# backcompat for maketype
-	if [[ -n ${maketype} ]]; then
+	if [[ -n "${maketype}" ]]; then
 		[[ ${EAPI} == [45] ]] || die "maketype is banned in EAPI > 5"
 		eqawarn "ebuild is exporting \$maketype=${maketype}"
 		eqawarn "Ebuild should be migrated to use 'virtx command' instead."
@@ -145,9 +155,9 @@ virtualmake() {
 # }
 # @CODE
 virtx() {
-	debug-print-function ${FUNCNAME} "$@"
+	debug-print-function "${FUNCNAME[0]}" "$@"
 
-	[[ $# -lt 1 ]] && die "${FUNCNAME} needs at least one argument"
+	[[ $# -lt 1 ]] && die "${FUNCNAME[0]} needs at least one argument"
 
 	local i=0
 	local retval=0
@@ -157,7 +167,7 @@ virtx() {
 	XVFB=$(type -p Xvfb) || die
 	XHOST=$(type -p xhost) || die
 
-	debug-print "${FUNCNAME}: running Xvfb hack"
+	debug-print "${FUNCNAME[0]}: running Xvfb hack"
 	export XAUTHORITY=
 	# The following is derived from Mandrake's hack to allow
 	# compiling without the X display
@@ -170,13 +180,13 @@ virtx() {
 	#
 	# Azarah - 5 May 2002
 	XDISPLAY=$(i=0; while [[ -f /tmp/.X${i}-lock ]] ; do ((i++));done; echo ${i})
-	debug-print "${FUNCNAME}: XDISPLAY=${XDISPLAY}"
+	debug-print "${FUNCNAME[0]}: XDISPLAY=${XDISPLAY}"
 
 	# We really do not want SANDBOX enabled here
 	export SANDBOX_ON="0"
 
-	debug-print "${FUNCNAME}: ${XVFB} :${XDISPLAY} ${xvfbargs}"
-	${XVFB} :${XDISPLAY} ${xvfbargs} &>/dev/null &
+	debug-print "${FUNCNAME[0]}: ${XVFB} :${XDISPLAY} ${xvfbargs}"
+	"${XVFB}" :"${XDISPLAY}" "${xvfbargs}" &>/dev/null &
 	sleep 2
 
 	local start=${XDISPLAY}
@@ -185,14 +195,16 @@ virtx() {
 		if ((XDISPLAY - start > 15)) ; then
 			eerror "'${XVFB} :${XDISPLAY} ${xvfbargs}' returns:"
 			echo
-			${XVFB} :${XDISPLAY} ${xvfbargs}
+			# shellcheck disable=SC2086
+			"${XVFB}" :"${XDISPLAY}" ${xvfbargs}
 			echo
 			eerror "If possible, correct the above error and try your emerge again."
 			die "Unable to start Xvfb"
 		fi
 			((XDISPLAY++))
-		debug-print "${FUNCNAME}: ${XVFB} :${XDISPLAY} ${xvfbargs}"
-		${XVFB} :${XDISPLAY} ${xvfbargs} &>/dev/null &
+		debug-print "${FUNCNAME[0]}: ${XVFB} :${XDISPLAY} ${xvfbargs}"
+		# shellcheck disable=SC2086
+		"${XVFB}" :"${XDISPLAY}" ${xvfbargs} &>/dev/null &
 		sleep 2
 	done
 
@@ -204,15 +216,15 @@ virtx() {
 	export DISPLAY=:${XDISPLAY}
 	# Do not break on error, but setup $retval, as we need
 	# to kill Xvfb
-	debug-print "${FUNCNAME}: $@"
+	debug-print "${FUNCNAME[0]}: $*"
 	nonfatal "$@"
 	retval=$?
 
 	# Now kill Xvfb
-	kill $(cat /tmp/.X${XDISPLAY}-lock)
+	kill "$(cat "/tmp/.X${XDISPLAY}-lock")"
 
 	# die if our command failed
-	[[ ${retval} -ne 0 ]] && die "Failed to run '$@'"
+	[[ ${retval} -ne 0 ]] && die "Failed to run '$*'"
 
 	return 0 # always return 0, it can be altered by failed kill for Xvfb
 }
@@ -222,10 +234,10 @@ virtx() {
 # Same as "make", but set up the Xvfb hack if needed.
 # Deprecated call.
 Xmake() {
-	debug-print-function ${FUNCNAME} "$@"
+	debug-print-function "${FUNCNAME[0]}" "$@"
 
 	[[ ${EAPI} == [45] ]] \
-		|| die "${FUNCNAME} is unsupported in EAPI > 5, please use 'virtx emake -j1 ....'"
+		|| die "${FUNCNAME[0]} is unsupported in EAPI > 5, please use 'virtx emake -j1 ....'"
 
 	eqawarn "you should not execute make directly"
 	eqawarn "rather execute Xemake -j1 if you have issues with parallel make"
@@ -236,10 +248,10 @@ Xmake() {
 # @DESCRIPTION:
 # Same as "emake", but set up the Xvfb hack if needed.
 Xemake() {
-	debug-print-function ${FUNCNAME} "$@"
+	debug-print-function "${FUNCNAME[0]}" "$@"
 
 	[[ ${EAPI} == [45] ]] \
-		|| die "${FUNCNAME} is unsupported in EAPI > 5, please use 'virtx emake ....'"
+		|| die "${FUNCNAME[0]} is unsupported in EAPI > 5, please use 'virtx emake ....'"
 
 	VIRTUALX_COMMAND="emake" virtualmake "$@"
 }
@@ -248,10 +260,10 @@ Xemake() {
 # @DESCRIPTION:
 # Same as "econf", but set up the Xvfb hack if needed.
 Xeconf() {
-	debug-print-function ${FUNCNAME} "$@"
+	debug-print-function "${FUNCNAME[0]}" "$@"
 
 	[[ ${EAPI} == [45] ]] \
-		|| die "${FUNCNAME} is unsupported in EAPI > 5, please use 'virtx econf ....'"
+		|| die "${FUNCNAME[0]} is unsupported in EAPI > 5, please use 'virtx econf ....'"
 
 	VIRTUALX_COMMAND="econf" virtualmake "$@"
 }
