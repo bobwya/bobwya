@@ -11,7 +11,7 @@ SRC_URI="https://github.com/cloudmeter/pion/archive/${PV}.tar.gz"
 
 LICENSE="Boost-1.0"
 SLOT="0"
-KEYWORDS="~x86 ~amd64"
+KEYWORDS="~amd64 ~x86"
 IUSE="+bzip2 debug doc logging log4cplus log4cxx log4cpp +ssl static-libs +zlib"
 
 RDEPEND=">=dev-libs/boost-1.35.0[threads]
