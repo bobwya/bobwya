@@ -48,7 +48,7 @@ COMMON="
 		x11-libs/pango[X]
 	)
 	X? (
-		=app-eselect/eselect-opengl-1.3.3-r1
+		=app-eselect/eselect-opengl-1.3.3-r2
 		app-misc/pax-utils
 	)
 "
