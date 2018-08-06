@@ -54,19 +54,27 @@ RDEPEND="app-arch/cabextract
 QA_DESKTOP_FILE="usr/share/applications/winetricks.desktop"
 
 winetricks_disable_gui_component() {
-	(($# == 1)) || die "Invalid parameter count: ${#} (1)"
+	(($# == 2)) || die "Invalid parameter count: ${#} (2)"
 	[[ -f "${1}" ]] || die "winetricks script file not valid: \"${1}\""
 
+	local awk_file
+
 	mv "${1}" "${1}.bak" || die "mv failed"
+	if [[ "${2}" == true ]]; then
+		awk_file="disable_gui"
+	else
+		awk_file="disable_gui_component"
+	fi
 	awk -vgtk_use="$(use gtk && echo 1)" \
 		-vkde_use="$(use kde && echo 1)" \
-		-f "${FILESDIR}/${PN}-disable_gui_component.awk" \
+		-f "${FILESDIR}/${PN}-${awk_file}.awk" \
 		"${1}.bak" > "${1}" || die "awk failed"
 }
 
 src_unpack() {
 	if [[ "${PV}" = "99999999" ]]; then
 		git-r3_src_unpack
+
 		(use gtk || use kde) && unpack "${winetricks_gentoo}.tar.bz2"
 	else
 		default
@@ -76,12 +84,15 @@ src_unpack() {
 src_prepare() {
 	local PATCHES=(
 		"${DISTDIR}/${PN}-20180603_add_bashcomp.patch"
-		"${FILESDIR}/${PN}-20180603_fix_multislot_wine64_variants.patch"
 	)
+	if [[ "${PV}" = "99999999" ]] && [[ ! -z "${EGIT_VERSION}" ]]; then
+		sed -i -e '/WINETRICKS_VERSION=/{s/=/=\"/;s/$/ '"${EGIT_VERSION}"'\"/}' \
+			"${S}/src/winetricks" || die "sed failed"
+	fi
 	if use gtk || use kde; then
-		winetricks_disable_gui_component "${S}/src/winetricks"
+		winetricks_disable_gui_component "${S}/src/winetricks" false
 	else
-		PATCHES+=( "${FILESDIR}/${PN}-20180513_disable_gui.patch" )
+		winetricks_disable_gui_component "${S}/src/winetricks" true
 	fi
 	default
 }
