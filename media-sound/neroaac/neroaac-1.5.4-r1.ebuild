@@ -3,11 +3,11 @@
 
 EAPI=7
 
-inherit eutils
-
+MY_PN="NeroAACCodec"
+MP_P="${MY_PN}-${PV}"
 DESCRIPTION="Nero AAC reference quality MPEG-4 and 3GPP audio codec"
-HOMEPAGE="http://www.nero.com/enu/technologies-aac-codec.html"
-SRC_URI="https://www.videohelp.com/download/NeroAACCodec-1.5.4.zip?r=ZBtkbdlS -> NeroAACCodec-${PV}.zip"
+HOMEPAGE="https://www.videohelp.com/software/Nero-AAC-Codec"
+SRC_URI="${MP_P}.zip"
 
 LICENSE="Nero-AAC-EULA"
 SLOT="0"
@@ -17,13 +17,18 @@ IUSE="doc"
 RDEPEND=""
 DEPEND="app-arch/unzip"
 
-RESTRICT="strip mirror test"
-
+RESTRICT="fetch strip mirror test"
 QA_PRESTRIPPED="opt/${PN}/${PV}/neroAac\(Dec\|Enc\|Tag\)"
 QA_EXECSTACK="opt/${PN}/${PV}/neroAacDec opt/${PN}/${PV}/neroAacEnc"
 QA_FLAGS_IGNORED="${QA_PRESTRIPPED}"
 
 S="${WORKDIR}"
+
+pkg_nofetch() {
+	einfo "Please visit: ${HOMEPAGE} amd download: \"${MP_P}.zip\""
+	einfo "Then move this zip file to your Portage distfiles directory."
+	einfo
+}
 
 src_prepare() {
 	edos2unix *.txt
