@@ -27,3 +27,4 @@ www-client
 x11-apps
 x11-base
 x11-drivers
+cross-i686-w64-mingw32

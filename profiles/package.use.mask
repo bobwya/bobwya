@@ -9,6 +9,7 @@ mail-client/thunderbird-kde-opensuse	custom-optimization
 mail-client/thunderbird-kde-opensuse	rust
 mail-client/thunderbird-kde-opensuse	system-cairo
 
-
+# shutup repoman
 mail-client/thunderbird-kde-opensuse	-amd64
+media-video/h264enc						neroaac
 x11-drivers/nvidia-drivers				-amd64-fbsd
