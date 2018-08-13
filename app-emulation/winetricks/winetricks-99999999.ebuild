@@ -82,9 +82,7 @@ src_unpack() {
 }
 
 src_prepare() {
-	local PATCHES=(
-		"${DISTDIR}/${PN}-20180603_add_bashcomp.patch"
-	)
+	local PATCHES
 	if [[ "${PV}" = "99999999" ]] && [[ ! -z "${EGIT_VERSION}" ]]; then
 		sed -i -e '/WINETRICKS_VERSION=/{s/=/=\"/;s/$/ '"${EGIT_VERSION}"'\"/}' \
 			"${S}/src/winetricks" || die "sed failed"
