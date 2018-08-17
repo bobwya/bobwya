@@ -59,12 +59,13 @@ check_php_config()
 {
 	local slot
 	for slot in $(eselect --brief php list cli); do
-		local php_dir="etc/php/cli-${slot}"
-		if [[ -f "${ROOT}${php_dir}/php.ini" ]]; then
+		local php_dir="/etc/php/cli-${slot}"
+
+		if [[ -f "${EROOT%/}${php_dir}/php.ini" ]]; then
 			dodir "${php_dir}"
-			cp -f "${ROOT}${php_dir}/php.ini" "${D}${php_dir}/php.ini" \
+			cp -f "${EROOT%/}${php_dir}/php.ini" "${ED%/}${php_dir}/php.ini" \
 					|| die "cp failed: copy php.ini file"
-			sed -i -e 's|^allow_url_fopen .*|allow_url_fopen = On|g' "${D}${php_dir}/php.ini" \
+			sed -i -e 's|^allow_url_fopen .*|allow_url_fopen = On|g' "${ED%/}${php_dir}/php.ini" \
 					|| die "sed failed: modify php.ini file"
 		elif [[ "$(eselect php show cli)" == "${slot}" ]]; then
 			ewarn "${slot} does not have a php.ini file."
@@ -82,34 +83,35 @@ check_php_config()
 
 get_optional_dependencies()
 {
-	local ifield installable_packages installed package_generic_name package_names
-	local package_close_regexp="<\\/Package>" \
-		  package_generic_name_regexp="^.*<GenericName>|<\\/GenericName>.*$" \
-		  package_names_regexp="^.*<PackageName>|<\\/PackageName>.*$"
+	(($# == 1)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (1)"
 
-	ewarn "get_optional_dependencies()"
+	local -a array_package_names
+	local field_value first_field ifield installed package_generic_name package_names installable_packages=""
+	local package_close_regexp="</Package>" \
+		  package_generic_name_regexp="^.*<GenericName>|</GenericName>.*$" \
+		  package_names_regexp="^.*<PackageName>|</PackageName>.*$"
+
+	line=0
 	while IFS=$'\n' read -r optional_packages_xmlline; do
-		ewarn "optional_packages_xmlline=${optional_packages_xmlline}"
 		if [[ "${optional_packages_xmlline}" =~ ${package_generic_name_regexp} ]]; then
 			package_generic_name="$(echo "${optional_packages_xmlline}" | sed -r "s@${package_generic_name_regexp}@@g")"
 		elif [[ "${optional_packages_xmlline}" =~ ${package_names_regexp} ]]; then
-			package_names="$(echo "${optional_packages_xmlline}" | sed -r "s@${package_names_regexp}@@g")"
-			ifield=1
-			installable_packages=""
-			while ((++ifield)); do
-				field_value="$(echo "${optional_packages_xmlline}" | awk -F -vifield="${ifield}" '[ ]+' '{ if (ifield<=NF) print $ifield }')"
-				if [[ -z "${field_value}" ]]; then
-					break
-				fi
+			package_names="$(echo "${optional_packages_xmlline}" | sed -r -e "s@${package_names_regexp}@@g" -e 's@(^[[:blank:]]+|[[:blank:]]+$)$@@g' )"
+			ifield=0
+			array_package_names=( ${package_names} )
+			for (( ifield=0 ; ifield < ${#array_package_names[@]} ; ++ifield )); do
+				field_value="${array_package_names[ifield]}"
+				[[ ${field_value} =~ ^.+/.+$ ]]	|| continue	# skip invalid package atoms
+
 				if ! has_version "${field_value}"; then
 					installable_packages="${installable_packages}${installable_packages:+ }${field_value}"
-					break;
 				fi
 			done
 		elif [[ "${optional_packages_xmlline}" =~ ${package_close_regexp} && ! -z "${installable_packages}" ]]; then
-			ewarn "${package_generic_name}: ${installable_packages}"
+			ewarn "  ${package_generic_name}: ${installable_packages}"
+			installable_packages=""
 		fi
-	done <"${EROOT%/}/usr/share/phoronix-test-suite/pts-core/external-test-dependencies/xml/gentoo-packages.xml"
+	done <<< "${1}"
 }
 
 src_prepare() {
@@ -122,6 +124,8 @@ src_prepare() {
 }
 
 src_install() {
+	# Store the contents of this file - since it will be installed / deleted before we need it.
+	GENTOO_OPTIONAL_PKGS_XML="$(cat "${S}/pts-core/external-test-dependencies/xml/gentoo-packages.xml")"
 	newbashcomp pts-core/static/bash_completion "${PN}"
 	DESTDIR="${D}" "${S}/install-sh" "${EPREFIX%/}/usr"
 
@@ -134,5 +138,6 @@ pkg_postinst() {
 	xdg_mimeinfo_database_update
 
 	ewarn "${PN} has the following optional package dependencies:"
-	get_optional_dependencies
+	get_optional_dependencies "${GENTOO_OPTIONAL_PKGS_XML}"
+	unset -v GENTOO_OPTIONAL_PKGS_XML
 }
