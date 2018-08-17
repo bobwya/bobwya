@@ -86,7 +86,7 @@ get_optional_dependencies()
 	(($# == 1)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (1)"
 
 	local -a array_package_names
-	local field_value first_field ifield installed package_generic_name package_names installable_packages=""
+	local field_value ifield package_generic_name optional_packages_xmlline package_names installable_packages=""
 	local package_close_regexp="</Package>" \
 		  package_generic_name_regexp="^.*<GenericName>|</GenericName>.*$" \
 		  package_names_regexp="^.*<PackageName>|</PackageName>.*$"
@@ -98,6 +98,7 @@ get_optional_dependencies()
 		elif [[ "${optional_packages_xmlline}" =~ ${package_names_regexp} ]]; then
 			package_names="$(echo "${optional_packages_xmlline}" | sed -r -e "s@${package_names_regexp}@@g" -e 's@(^[[:blank:]]+|[[:blank:]]+$)$@@g' )"
 			ifield=0
+			# shellcheck disable=SC2206
 			array_package_names=( ${package_names} )
 			for (( ifield=0 ; ifield < ${#array_package_names[@]} ; ++ifield )); do
 				field_value="${array_package_names[ifield]}"
