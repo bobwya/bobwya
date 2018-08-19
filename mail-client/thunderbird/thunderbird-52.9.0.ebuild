@@ -40,11 +40,10 @@ DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE 
 HOMEPAGE="https://www.mozilla.com/en-US/thunderbird
 	https://www.rosenauer.org/hg/mozilla"
 
-KEYWORDS="~alpha ~amd64 ~arm ~ppc ~ppc64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist crypt hardened kde ldap kernel_linux lightning +minimal mozdom rust selinux"
-REQUIRED_USE="kde? ( || ( amd64 x86 ) )"
 RESTRICT="!bindist? ( bindist )"
 
 # shellcheck disable=SC2206
@@ -124,7 +123,11 @@ src_prepare() {
 	local -a PATCHES
 	PATCHES+=( "${FILESDIR}/1000_fix_gentoo_preferences.patch" )
 
-	rm -f "${WORKDIR}/firefox/2007_fix_nvidia_latest.patch" || die "rm failed"
+	local patch
+	for patch in "2007_fix_nvidia_latest.patch"; do
+		rm -f "${WORKDIR}/firefox/${patch}"
+	done
+
 	pushd "${S}/mozilla" &>/dev/null || die "pushd failed"
 	if use kde; then
 		# Gecko/toolkit OpenSUSE KDE integration patchset

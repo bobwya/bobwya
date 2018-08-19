@@ -5,20 +5,21 @@
 EAPI=6
 WANT_AUTOCONF="2.1"
 MOZ_ESR=""
-MOZ_LIGHTNING_VER="5.4.5.2"
-MOZ_LIGHTNING_GDATA_VER="3.3"
+MOZ_LIGHTNING_VER="6.2"
+MOZ_LIGHTNING_GDATA_VER="4.4.1"
 
 # This list can be updated using scripts/get_langs.sh from the mozilla overlay
-MOZ_LANGS=("ar" "ast" "be" "bg" "bn-BD" "br" "ca" "cs" "cy" "da" "de" "el" "en" "en-GB" "en-US" "es-AR"
+MOZ_LANGS=("ar" "ast" "be" "bg" "br" "ca" "cs" "cy" "da" "de" "el" "en" "en-GB" "en-US" "es-AR"
 "es-ES" "et" "eu" "fi" "fr" "fy-NL" "ga-IE" "gd" "gl" "he" "hr" "hsb" "hu" "hy-AM" "id" "is" "it" "ja" "ko" "lt"
-"nb-NO" "nl" "nn-NO" "pa-IN" "pl" "pt-BR" "pt-PT" "rm" "ro" "ru" "si" "sk" "sl" "sq" "sr" "sv-SE" "ta-LK" "tr"
+"nb-NO" "nl" "nn-NO" "pl" "pt-BR" "pt-PT" "rm" "ro" "ru" "si" "sk" "sl" "sq" "sr" "sv-SE" "tr"
 "uk" "vi" "zh-CN" "zh-TW" )
 
 # Convert the ebuild version to the upstream mozilla version, used by mozlinguas
 MOZ_PV="${PV/_beta/b}"
 
 # Patches
-PATCHFF="firefox-52.5-patches-02"
+PATCHTB="thunderbird-60.0-patches-0"
+PATCHFF="firefox-60.0-patches-02"
 
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 
@@ -31,24 +32,23 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 MOZ_P="${PN}-${MOZ_PV}"
 
-MOZCONFIG_OPTIONAL_GTK2ONLY=1
 MOZCONFIG_OPTIONAL_WIFI=1
+#MOZ_GENERATE_LANGPACKS=1
 
-inherit flag-o-matic toolchain-funcs mozconfig-v6.52 autotools pax-utils check-reqs nsplugins mozlinguas-v2 xdg-utils gnome2-utils mercurial
+inherit check-reqs flag-o-matic toolchain-funcs gnome2-utils mozconfig-v6.60 pax-utils xdg-utils autotools mozlinguas-v2 mercurial
 
 DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.com/en-US/thunderbird
 	https://www.rosenauer.org/hg/mozilla"
 
-KEYWORDS="~alpha ~amd64 ~arm ~ppc ~ppc64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist crypt hardened kde ldap kernel_linux lightning +minimal mozdom rust selinux"
-REQUIRED_USE="kde? ( || ( amd64 x86 ) )"
+IUSE="bindist crypt hardened kde lightning kernel_linux +minimal mozdom rust selinux"
 RESTRICT="!bindist? ( bindist )"
 
 # shellcheck disable=SC2206
-PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/${PATCHFF}.tar.xz )
+PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchsets/{${PATCHTB},${PATCHFF}}.tar.xz )
 # shellcheck disable=SC2124
 SRC_URI="${SRC_URI}
 	${MOZ_HTTP_URI}/${MOZ_PV}/source/${MOZ_P}.source.tar.xz
@@ -73,14 +73,14 @@ RDEPEND="${CDEPEND}
 	selinux? ( sec-policy/selinux-thunderbird )
 	crypt? ( >=x11-plugins/enigmail-1.9.8.3-r1 )
 	kde? ( kde-misc/kmozillahelper:= )"
-S="${WORKDIR}/${MOZ_P}"
+S="${WORKDIR}/${MOZ_P%b[0-9]*}"
 
 BUILD_OBJ_DIR="${S}/tbird"
 
 pkg_setup() {
 	moz_pkgsetup
 
-	export MOZILLA_DIR="${S}/mozilla"
+	#export MOZILLA_DIR="${S}/mozilla"
 
 	if ! use bindist; then
 		elog "You are enabling official branding. You may not redistribute this build"
@@ -89,6 +89,8 @@ pkg_setup() {
 		elog "You can disable it by emerging ${PN} _with_ the bindist USE-flag"
 		elog
 	fi
+
+	addpredict /proc/self/oom_score_adj
 }
 
 pkg_pretend() {
@@ -121,10 +123,15 @@ src_unpack() {
 }
 
 src_prepare() {
-	local -a PATCHES
-	PATCHES+=( "${FILESDIR}/1000_fix_gentoo_preferences.patch" )
+	local patch
+	for patch in "2005_ffmpeg4.patch" "2007_fix_nvidia_latest.patch"; do
+		rm -f "${WORKDIR}/firefox/${patch}"
+	done
 
-	pushd "${S}/mozilla" &>/dev/null || die "pushd failed"
+	# Apply our patchset from firefox to thunderbird as well
+	eapply "${WORKDIR}/firefox"
+	eapply "${FILESDIR}/fix-setupterm.patch"
+
 	if use kde; then
 		# Gecko/toolkit OpenSUSE KDE integration patchset
 		eapply "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
@@ -135,50 +142,55 @@ src_prepare() {
 		#PATCHES+=( "${FILESDIR}/${PN}-force-qt-dialog.patch" )
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/mail-client/thunderbird/)
 	fi
-	# Apply our patchset from firefox to thunderbird as well
-	eapply "${WORKDIR}/firefox"
-	popd &>/dev/null || die "popd failed"
 
 	# Ensure that are plugins dir is enabled as default
 	sed -i -e "s:/usr/lib/mozilla/plugins:/usr/lib/nsbrowser/plugins:" \
-		"${S}/mozilla/xpcom/io/nsAppFileLocationProvider.cpp" || die "sed failed to replace plugin path for 32bit!"
+		"${S}/xpcom/io/nsAppFileLocationProvider.cpp" || die "sed failed to replace plugin path for 32bit!"
 	sed -i -e "s:/usr/lib64/mozilla/plugins:/usr/lib64/nsbrowser/plugins:" \
-		"${S}/mozilla/xpcom/io/nsAppFileLocationProvider.cpp" || die "sed failed to replace plugin path for 64bit!"
+		"${S}/xpcom/io/nsAppFileLocationProvider.cpp" || die "sed failed to replace plugin path for 64bit!"
+
+	# Don't error out when there's no files to be removed:
+	sed 's@\(xargs rm\)$@\1 -f@' \
+		-i "${S}/toolkit/mozapps/installer/packager.mk" || die "sed failed"
 
 	# Don't exit with error when some libs are missing which we have in
 	# system.
 	sed '/^MOZ_PKG_FATAL_WARNINGS/s@= 1@= 0@' \
-		-i "${S}/mail/installer/Makefile.in" || die "sed failed"
-
-	# Don't error out when there's no files to be removed:
-	sed 's@\(xargs rm\)$@\1 -f@' \
-		-i "${S}/mozilla/toolkit/mozapps/installer/packager.mk" || die "sed failed"
+		-i "${S}/comm/mail/installer/Makefile.in" || die "sed failed"
 
 	# Shell scripts sometimes contain DOS line endings; bug 391889
-	grep -rlZ --include="*.sh" $'\r$' . |
-	while read -r -d $'\0' file ; do
-		einfo edos2unix "${file}"
-		edos2unix "${file}"
-	done
+#	grep -rlZ --include="*.sh" $'\r$' . |
+#	while read -r -d $'\0' file ; do
+#		einfo edos2unix "${file}"
+# edos2unix "${file}"
+#	done
 
+	pushd "${S}/comm" &>/dev/null || die "pushd failed"
+	# Default to our patchset
+	local PATCHES=( "${WORKDIR}/thunderbird" )
+
+	# simulate old directory structure just in case it helps default
+	ln -s .. mozilla || die "sed failed"
 	default
+	# remove the symlink
+	rm -f mozilla
 
 	# Confirm the version of lightning being grabbed for langpacks is the same
 	# as that used in thunderbird
 	local THIS_MOZ_LIGHTNING_VER
-	THIS_MOZ_LIGHTNING_VER=$(python "${S}/calendar/lightning/build/makeversion.py" "${PV}")
+	THIS_MOZ_LIGHTNING_VER=$(${PYTHON} calendar/lightning/build/makeversion.py "${PV}")
 	if [[ "${MOZ_LIGHTNING_VER}" != "${THIS_MOZ_LIGHTNING_VER}" ]]; then
 		eqawarn "The version of lightning used for localization differs from the version"
 		eqawarn "in thunderbird.  Please update MOZ_LIGHTNING_VER in the ebuild from ${MOZ_LIGHTNING_VER}"
 		eqawarn "to ${THIS_MOZ_LIGHTNING_VER}"
 	fi
 
-	eautoreconf
-	# Ensure we run eautoreconf in mozilla to regenerate configure
-	cd "${S}/mozilla" || die "cd failed"
-	eautoconf
-	cd "${S}/mozilla/js/src" || die "cd failed"
-	eautoconf
+	popd &>/dev/null || die "popd failed"
+
+	eautoreconf old-configure.in
+	# Ensure we run eautoreconf in spidermonkey to regenerate configure
+	cd "${S}/js/src" || die "cd failed"
+	eautoconf old-configure.in
 }
 
 src_configure() {
@@ -205,8 +217,13 @@ src_configure() {
 	# Other tb-specific settings
 	mozconfig_annotate '' --with-user-appdir=.thunderbird
 
-	mozconfig_use_enable ldap
-	mozconfig_use_enable rust
+	# Disabling ldap support causes build failures with 60.0b10
+	#mozconfig_use_enable ldap
+	mozconfig_annotate '' --enable-ldap
+	if use hardened; then
+		append-ldflags "-Wl,-z,relro,-z,now"
+		mozconfig_use_enable hardened hardening
+	fi
 
 	mozlinguas_mozconfig
 
@@ -218,6 +235,9 @@ src_configure() {
 	# Use an objdir to keep things organized.
 	echo "mk_add_options MOZ_OBJDIR=${BUILD_OBJ_DIR}" >> "${S}/.mozconfig"
 	echo "mk_add_options XARGS=/usr/bin/xargs" >> "${S}/.mozconfig"
+
+	# Default mozilla_five_home no longer valid option
+	sed '/with-default-mozilla-five-home=/d' -i "${S}/.mozconfig"
 
 	# Finalize and report settings
 	mozconfig_final
@@ -236,13 +256,13 @@ src_configure() {
 	fi
 
 	# workaround for funky/broken upstream configure...
-	SHELL="${SHELL:-${EPREFIX}/bin/bash}" \
-	emake V=1 -f client.mk configure
+	SHELL="${SHELL:-${EPREFIX}/bin/bash}" MOZ_NOSPAM=1 \
+	./mach configure || die "sed failed"
 }
 
 src_compile() {
-	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX}/bin/bash}" \
-	emake V=1 -f client.mk
+	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX}/bin/bash}" MOZ_NOSPAM=1 \
+	./mach build --verbose || die "sed failed"
 }
 
 src_install() {
@@ -253,7 +273,7 @@ src_install() {
 	pax-mark m "${BUILD_OBJ_DIR}/dist/bin/xpcshell"
 
 	# Copy our preference before omnijar is created.
-	cp "${FILESDIR}/thunderbird-gentoo-default-prefs-1.js-1" \
+	cp "${FILESDIR}/thunderbird-gentoo-default-prefs.js-2" \
 		"${BUILD_OBJ_DIR}/dist/bin/defaults/pref/all-gentoo.js" \
 		|| die "cp failed"
 
@@ -267,20 +287,23 @@ src_install() {
 			>>"${BUILD_OBJ_DIR}/dist/bin/defaults/pref/all-gentoo.js" || die "echo failed"
 	fi
 
-	MOZ_MAKE_FLAGS="${MAKEOPTS}" \
-	emake DESTDIR="${D}" install
+# MOZ_MAKE_FLAGS="${MAKEOPTS}" \
+# emake DESTDIR="${D}" install
+	cd "${S}" || die "cd failed"
+	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX}/bin/bash}" MOZ_NOSPAM=1 \
+	DESTDIR="${D}" ./mach install
 
 	# Install language packs
 	mozlinguas_src_install
 
 	local size sizes icon_path icon
 	if ! use bindist; then
-		icon_path="${S}/other-licenses/branding/thunderbird"
+		icon_path="${S}/comm/mail/branding/thunderbird"
 		icon="${PN}-icon"
 
 		domenu "${FILESDIR}/icon/${PN}.desktop"
 	else
-		icon_path="${S}/mail/branding/aurora"
+		icon_path="${S}/comm/mail/branding/nightly"
 		icon="${PN}-icon-unbranded"
 
 		newmenu "${FILESDIR}/icon/${PN}-unbranded.desktop" \
@@ -291,21 +314,22 @@ src_install() {
 	fi
 
 	# Install a 48x48 icon into /usr/share/pixmaps for legacy DEs
-	newicon "${icon_path}/mailicon48.png" "${icon}.png"
+	newicon "${icon_path}/default48.png" "${icon}.png"
 	# Install icons for menu entry
 	sizes="16 22 24 32 48 256"
 	for size in ${sizes}; do
-		newicon -s "${size}" "${icon_path}/mailicon${size}.png" "${icon}.png"
+		newicon -s "${size}" "${icon_path}/default${size}.png" "${icon}.png"
 	done
 
 	local emid
 	# stage extra locales for lightning and install over existing
-	mozlinguas_xpistage_langpacks "${BUILD_OBJ_DIR}/dist/xpi-stage/lightning" \
+	rm -f "${ED}/${MOZILLA_FIVE_HOME}/distribution/extensions/${emid}.xpi" || die "rm failed"
+	mozlinguas_xpistage_langpacks "${BUILD_OBJ_DIR}/dist/bin/distribution/extensions/${emid}" \
 		"${WORKDIR}/lightning-${MOZ_LIGHTNING_VER}" lightning calendar
 
 	emid='{e2fda1a4-762b-4020-b5ad-a41df1933103}'
 	mkdir -p "${T}/${emid}" || die "sed failed"
-	cp -RLp -t "${T}/${emid}" "${BUILD_OBJ_DIR}/dist/xpi-stage/lightning"/* || die "cp failed"
+	cp -RLp -t "${T}/${emid}" "${BUILD_OBJ_DIR}/dist/bin/distribution/extensions/${emid}"/* || die "cp failed"
 	insinto "${MOZILLA_FIVE_HOME}/distribution/extensions"
 	doins -r "${T}/${emid}"
 
@@ -326,11 +350,10 @@ src_install() {
 	# Required in order to use plugins and even run thunderbird on hardened.
 	pax-mark pm "${ED}${MOZILLA_FIVE_HOME}"/{thunderbird,thunderbird-bin,plugin-container}
 
-	if use minimal; then
-		# shellcheck disable=SC2115
-		rm -r "${ED}/usr/include" "${ED}${MOZILLA_FIVE_HOME}"/{idl,include,lib,sdk} || \
-			die "Failed to remove sdk and headers"
-	fi
+#	if use minimal; then
+# rm -r "${ED}/usr/include" "${ED}${MOZILLA_FIVE_HOME}"/{idl,include,lib,sdk} || \
+#			die "Failed to remove sdk and headers"
+#	fi
 }
 
 pkg_preinst() {
