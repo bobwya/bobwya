@@ -1,7 +1,7 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 #
-# @ECLASS: mozcoreconf-v5.eclass
+# @ECLASS: mozcoreconf-v6.eclass
 # @MAINTAINER:
 # Mozilla team <mozilla@gentoo.org>
 # @BLURB: core options and configuration functions for mozilla
@@ -16,8 +16,11 @@
 
 if [[ ! ${_MOZCORECONF} ]]; then
 
+# for compatibility with packages prior to v1
+if [[ -z ${PYTHON_COMPAT[@]} ]]; then
 PYTHON_COMPAT=( python2_7 )
 PYTHON_REQ_USE='ncurses,sqlite,ssl,threads'
+fi
 
 inherit multilib toolchain-funcs flag-o-matic python-any-r1 versionator
 
@@ -112,6 +115,11 @@ moz_pkgsetup() {
 	fi
 
 	python-any-r1_pkg_setup
+	# workaround to set python3 into PYTHON3 until mozilla doesn't need py2
+	if [[ "${PYTHON_COMPAT[@]}" != "${PYTHON_COMPAT[@]#python3*}" ]]; then
+		export PYTHON3=${PYTHON}
+		python_export python2_7 PYTHON EPYTHON
+	fi
 }
 
 # @FUNCTION: mozconfig_init
@@ -146,11 +154,13 @@ mozconfig_init() {
 		seamonkey)
 			# Must create the initial mozconfig to enable application
 			: >.mozconfig || die "initial mozconfig creation failed"
-			mozconfig_annotate "" --enable-application=suite ;;
+			# NOTE--this is not compatible with mozilla prior to v60
+			mozconfig_annotate "" --enable-application=comm/suite ;;
 		*thunderbird)
 			# Must create the initial mozconfig to enable application
 			: >.mozconfig || die "initial mozconfig creation failed"
-			mozconfig_annotate "" --enable-application=mail ;;
+			# NOTE--this is not compatible with mozilla prior to v60
+			mozconfig_annotate "" --enable-application=comm/mail ;;
 	esac
 
 	####################################
