@@ -3,6 +3,7 @@
 
 EAPI=5
 
+XORG_EAUTORECONF=yes
 XORG_DOC=doc
 inherit eapi7-ver flag-o-matic multilib xorg-2-r1
 EGIT_REPO_URI="https://anongit.freedesktop.org/git/xorg/xserver.git"
@@ -109,9 +110,8 @@ REQUIRED_USE="!minimal? (
 	)
 	xephyr? ( kdrive )"
 
-#UPSTREAMED_PATCHES=(
-#	"${WORKDIR}/patches/"
-#)
+UPSTREAMED_PATCHES=(
+)
 
 PATCHES=(
 	"${UPSTREAMED_PATCHES[@]}"
