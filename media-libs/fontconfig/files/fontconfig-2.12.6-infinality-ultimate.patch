@@ -1,0 +1,484 @@
+diff --git a/configure b/configure
+index 6cf7689..57e3826 100755
+--- a/configure
++++ b/configure
+@@ -655,6 +655,7 @@ XMLDIR
+ CONFIGDIR
+ BASECONFIGDIR
+ TEMPLATEDIR
++TEMPLATEINFDIR
+ FC_FONTDATE
+ FC_CACHEDIR
+ fc_cachedir
+@@ -850,6 +851,7 @@ with_default_fonts
+ with_add_fonts
+ with_cache_dir
+ with_templatedir
++with_templateinfdir
+ with_baseconfigdir
+ with_configdir
+ with_xmldir
+@@ -1543,6 +1545,10 @@ Optional Packages:
+                           [default=LOCALSTATEDIR/cache/fontconfig]
+   --with-templatedir=DIR  Use DIR to store the configuration template files
+                           [default=DATADIR/fontconfig/conf.avail]
++  --with-templateinfdir=DIR
++                          Use DIR to store the Infinality compliant
++                          configuration template files
++                          [default=DATADIR/fontconfig/conf.avail.infinality]
+   --with-baseconfigdir=DIR
+                           Use DIR to store the base configuration files
+                           [default=SYSCONFDIR/fonts]
+@@ -15826,6 +15832,12 @@ else
+   templatedir=yes
+ fi
+ 
++# Check whether --with-templateinfdir was given.
++if test "${with_templateinfdir+set}" = set; then :
++  withval=$with_templateinfdir; templateinfdir="$withval"
++else
++  templateinfdir=yes
++fi
+ 
+ # Check whether --with-baseconfigdir was given.
+ if test "${with_baseconfigdir+set}" = set; then :
+@@ -15858,6 +15870,13 @@ no|yes)
+ *)
+ 	;;
+ esac
++case "$templateinfdir" in
++no|yes)
++	templateinfdir='${datadir}'/fontconfig/conf.avail.infinality
++	;;
++*)
++	;;
++esac
+ case "$baseconfigdir" in
+ no|yes)
+ 	baseconfigdir='${sysconfdir}'/fonts
+@@ -15881,6 +15900,7 @@ no|yes)
+ esac
+ 
+ TEMPLATEDIR=${templatedir}
++TEMPLATEINFDIR=${templateinfdir}
+ BASECONFIGDIR=${baseconfigdir}
+ CONFIGDIR=${configdir}
+ XMLDIR=${xmldir}
+@@ -16944,8 +16964,8 @@ _ACEOF
+ 
+ 
+ 
+-ac_config_files="$ac_config_files Makefile fontconfig/Makefile fc-lang/Makefile fc-glyphname/Makefile fc-blanks/Makefile fc-case/Makefile src/Makefile conf.d/Makefile fc-cache/Makefile fc-cat/Makefile fc-list/Makefile fc-match/Makefile fc-pattern/Makefile fc-query/Makefile fc-scan/Makefile fc-validate/Makefile doc/Makefile doc/version.sgml test/Makefile fontconfig.spec fontconfig.pc fontconfig-zip"
+-
++ac_config_files="$ac_config_files Makefile fontconfig/Makefile fc-lang/Makefile fc-glyphname/Makefile fc-blanks/Makefile fc-case/Makefile src/Makefile conf.d/Makefile conf.d.infinality/Makefile fc-cache/Makefile fc-cat/Makefile fc-list/Makefile fc-match/Makefile fc-pattern/Makefile fc-query/Makefile fc-scan/Makefile fc-validate/Makefile doc/Makefile doc/version.sgml test/Makefile fontconfig.spec fontconfig.pc fontconfig-zip"
++ 
+ cat >confcache <<\_ACEOF
+ # This file is a shell script that caches the results of configure
+ # tests run on this system so they can be shared between configure
+diff --git a/configure.ac b/configure.ac
+index 1c7652e..bb5c127 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -583,9 +583,14 @@ AC_SUBST(FC_FONTDATE)
+ 
+ AC_ARG_WITH(templatedir,
+ 	[AC_HELP_STRING([--with-templatedir=DIR],
+-			[Use DIR to store the configuration template files [default=DATADIR/fontconfig/conf.avail]])],
++			[Use DIR to store the generic configuration template files [default=DATADIR/fontconfig/conf.avail]])],
+ 	[templatedir="$withval"],
+ 	[templatedir=yes])
++AC_ARG_WITH(templateinfdir,
++	[AC_HELP_STRING([--with-templateinfdir=DIR],
++			[Use DIR to store the Infinality compliant configuration template files [default=DATADIR/fontconfig/conf.avail.infinality]])],
++	[templateinfdir="$withval"],
++	[templateinfdir=yes])
+ AC_ARG_WITH(baseconfigdir,
+ 	[AC_HELP_STRING([--with-baseconfigdir=DIR],
+ 			[Use DIR to store the base configuration files [default=SYSCONFDIR/fonts]])],
+@@ -609,6 +614,13 @@ no|yes)
+ *)
+ 	;;
+ esac
++case "$templateinfdir" in
++no|yes)
++	templateinfdir='${datadir}'/fontconfig/conf.avail.infinality
++	;;
++*)
++	;;
++esac
+ case "$baseconfigdir" in
+ no|yes)
+ 	baseconfigdir='${sysconfdir}'/fonts
+@@ -632,10 +644,12 @@ no|yes)
+ esac
+ 
+ TEMPLATEDIR=${templatedir}
++TEMPLATEINFDIR=${templateinfdir}
+ BASECONFIGDIR=${baseconfigdir}
+ CONFIGDIR=${configdir}
+ XMLDIR=${xmldir}
+ AC_SUBST(TEMPLATEDIR)
++AC_SUBST(TEMPLATEINFDIR)
+ AC_SUBST(BASECONFIGDIR)
+ AC_SUBST(CONFIGDIR)
+ AC_SUBST(XMLDIR)
+@@ -765,6 +779,7 @@ fc-blanks/Makefile
+ fc-case/Makefile
+ src/Makefile
+ conf.d/Makefile
++conf.d.infinality/Makefile
+ fc-cache/Makefile
+ fc-cat/Makefile
+ fc-list/Makefile
+diff --git a/fc-blanks/Makefile.in b/fc-blanks/Makefile.in
+index 1b75bdc..84aca25 100644
+--- a/fc-blanks/Makefile.in
++++ b/fc-blanks/Makefile.in
+@@ -275,6 +275,7 @@ SET_MAKE = @SET_MAKE@
+ SHELL = @SHELL@
+ STRIP = @STRIP@
+ TEMPLATEDIR = @TEMPLATEDIR@
++TEMPLATEINFDIR = @TEMPLATEINFDIR@
+ VERSION = @VERSION@
+ WARN_CFLAGS = @WARN_CFLAGS@
+ XMLDIR = @XMLDIR@
+diff --git a/fc-cache/Makefile.in b/fc-cache/Makefile.in
+index 7865c0d..f9ca400 100644
+--- a/fc-cache/Makefile.in
++++ b/fc-cache/Makefile.in
+@@ -335,6 +335,7 @@ SET_MAKE = @SET_MAKE@
+ SHELL = @SHELL@
+ STRIP = @STRIP@
+ TEMPLATEDIR = @TEMPLATEDIR@
++TEMPLATEINFDIR = @TEMPLATEINFDIR@
+ VERSION = @VERSION@
+ WARN_CFLAGS = @WARN_CFLAGS@
+ XMLDIR = @XMLDIR@
+diff --git a/fc-case/Makefile.in b/fc-case/Makefile.in
+index c2a1984..c6d42de 100644
+--- a/fc-case/Makefile.in
++++ b/fc-case/Makefile.in
+@@ -301,6 +301,7 @@ SET_MAKE = @SET_MAKE@
+ SHELL = @SHELL@
+ STRIP = @STRIP@
+ TEMPLATEDIR = @TEMPLATEDIR@
++TEMPLATEINFDIR = @TEMPLATEINFDIR@
+ VERSION = @VERSION@
+ WARN_CFLAGS = @WARN_CFLAGS@
+ XMLDIR = @XMLDIR@
+diff --git a/fc-cat/Makefile.in b/fc-cat/Makefile.in
+index 0d505e8..3f7121e 100644
+--- a/fc-cat/Makefile.in
++++ b/fc-cat/Makefile.in
+@@ -335,6 +335,7 @@ SET_MAKE = @SET_MAKE@
+ SHELL = @SHELL@
+ STRIP = @STRIP@
+ TEMPLATEDIR = @TEMPLATEDIR@
++TEMPLATEINFDIR = @TEMPLATEINFDIR@
+ VERSION = @VERSION@
+ WARN_CFLAGS = @WARN_CFLAGS@
+ XMLDIR = @XMLDIR@
+diff --git a/fc-glyphname/Makefile.in b/fc-glyphname/Makefile.in
+index 0df1c18..cabc658 100644
+--- a/fc-glyphname/Makefile.in
++++ b/fc-glyphname/Makefile.in
+@@ -301,6 +301,7 @@ SET_MAKE = @SET_MAKE@
+ SHELL = @SHELL@
+ STRIP = @STRIP@
+ TEMPLATEDIR = @TEMPLATEDIR@
++TEMPLATEINFDIR = @TEMPLATEINFDIR@
+ VERSION = @VERSION@
+ WARN_CFLAGS = @WARN_CFLAGS@
+ XMLDIR = @XMLDIR@
+diff --git a/fc-lang/Makefile.in b/fc-lang/Makefile.in
+index 8b440c4..10629c7 100644
+--- a/fc-lang/Makefile.in
++++ b/fc-lang/Makefile.in
+@@ -301,6 +301,7 @@ SET_MAKE = @SET_MAKE@
+ SHELL = @SHELL@
+ STRIP = @STRIP@
+ TEMPLATEDIR = @TEMPLATEDIR@
++TEMPLATEINFDIR = @TEMPLATEINFDIR@
+ VERSION = @VERSION@
+ WARN_CFLAGS = @WARN_CFLAGS@
+ XMLDIR = @XMLDIR@
+diff --git a/fc-list/Makefile.in b/fc-list/Makefile.in
+index b8e1582..3ac7aa4 100644
+--- a/fc-list/Makefile.in
++++ b/fc-list/Makefile.in
+@@ -335,6 +335,7 @@ SET_MAKE = @SET_MAKE@
+ SHELL = @SHELL@
+ STRIP = @STRIP@
+ TEMPLATEDIR = @TEMPLATEDIR@
++TEMPLATEINFDIR = @TEMPLATEINFDIR@
+ VERSION = @VERSION@
+ WARN_CFLAGS = @WARN_CFLAGS@
+ XMLDIR = @XMLDIR@
+diff --git a/fc-match/Makefile.in b/fc-match/Makefile.in
+index d5d22f0..8af1846 100644
+--- a/fc-match/Makefile.in
++++ b/fc-match/Makefile.in
+@@ -335,6 +335,7 @@ SET_MAKE = @SET_MAKE@
+ SHELL = @SHELL@
+ STRIP = @STRIP@
+ TEMPLATEDIR = @TEMPLATEDIR@
++TEMPLATEINFDIR = @TEMPLATEINFDIR@
+ VERSION = @VERSION@
+ WARN_CFLAGS = @WARN_CFLAGS@
+ XMLDIR = @XMLDIR@
+diff --git a/fc-pattern/Makefile.in b/fc-pattern/Makefile.in
+index 4e4b6d4..93576f8 100644
+--- a/fc-pattern/Makefile.in
++++ b/fc-pattern/Makefile.in
+@@ -335,6 +335,7 @@ SET_MAKE = @SET_MAKE@
+ SHELL = @SHELL@
+ STRIP = @STRIP@
+ TEMPLATEDIR = @TEMPLATEDIR@
++TEMPLATEINFDIR = @TEMPLATEINFDIR@
+ VERSION = @VERSION@
+ WARN_CFLAGS = @WARN_CFLAGS@
+ XMLDIR = @XMLDIR@
+diff --git a/fc-query/Makefile.in b/fc-query/Makefile.in
+index bb50431..33f6482 100644
+--- a/fc-query/Makefile.in
++++ b/fc-query/Makefile.in
+@@ -337,6 +337,7 @@ SET_MAKE = @SET_MAKE@
+ SHELL = @SHELL@
+ STRIP = @STRIP@
+ TEMPLATEDIR = @TEMPLATEDIR@
++TEMPLATEINFDIR = @TEMPLATEINFDIR@
+ VERSION = @VERSION@
+ WARN_CFLAGS = @WARN_CFLAGS@
+ XMLDIR = @XMLDIR@
+diff --git a/fc-scan/Makefile.in b/fc-scan/Makefile.in
+index a0e0901..00abea4 100644
+--- a/fc-scan/Makefile.in
++++ b/fc-scan/Makefile.in
+@@ -335,6 +335,7 @@ SET_MAKE = @SET_MAKE@
+ SHELL = @SHELL@
+ STRIP = @STRIP@
+ TEMPLATEDIR = @TEMPLATEDIR@
++TEMPLATEINFDIR = @TEMPLATEINFDIR@
+ VERSION = @VERSION@
+ WARN_CFLAGS = @WARN_CFLAGS@
+ XMLDIR = @XMLDIR@
+diff --git a/fc-validate/Makefile.in b/fc-validate/Makefile.in
+index f3dcea8..09178c9 100644
+--- a/fc-validate/Makefile.in
++++ b/fc-validate/Makefile.in
+@@ -337,6 +337,7 @@ SET_MAKE = @SET_MAKE@
+ SHELL = @SHELL@
+ STRIP = @STRIP@
+ TEMPLATEDIR = @TEMPLATEDIR@
++TEMPLATEINFDIR = @TEMPLATEINFDIR@
+ VERSION = @VERSION@
+ WARN_CFLAGS = @WARN_CFLAGS@
+ XMLDIR = @XMLDIR@
+diff --git a/fontconfig/Makefile.in b/fontconfig/Makefile.in
+index 69c36ed..ef0c606 100644
+--- a/fontconfig/Makefile.in
++++ b/fontconfig/Makefile.in
+@@ -279,6 +279,7 @@ SET_MAKE = @SET_MAKE@
+ SHELL = @SHELL@
+ STRIP = @STRIP@
+ TEMPLATEDIR = @TEMPLATEDIR@
++TEMPLATEINFDIR = @TEMPLATEINFDIR@
+ VERSION = @VERSION@
+ WARN_CFLAGS = @WARN_CFLAGS@
+ XMLDIR = @XMLDIR@
+diff --git a/src/Makefile.in b/src/Makefile.in
+index 0dd5c74..8306638 100644
+--- a/src/Makefile.in
++++ b/src/Makefile.in
+@@ -350,6 +350,7 @@ SET_MAKE = @SET_MAKE@
+ SHELL = @SHELL@
+ STRIP = @STRIP@
+ TEMPLATEDIR = @TEMPLATEDIR@
++TEMPLATEINFDIR = @TEMPLATEINFDIR@
+ VERSION = @VERSION@
+ WARN_CFLAGS = @WARN_CFLAGS@
+ XMLDIR = @XMLDIR@
+diff --git a/test/Makefile.in b/test/Makefile.in
+index e807cfa..34d1a9e 100644
+--- a/test/Makefile.in
++++ b/test/Makefile.in
+@@ -515,6 +515,7 @@ SET_MAKE = @SET_MAKE@
+ SHELL = @SHELL@
+ STRIP = @STRIP@
+ TEMPLATEDIR = @TEMPLATEDIR@
++TEMPLATEINFDIR = @TEMPLATEINFDIR@
+ VERSION = @VERSION@
+ WARN_CFLAGS = @WARN_CFLAGS@
+ XMLDIR = @XMLDIR@
+diff --git a/conf.d/Makefile.am b/conf.d/Makefile.am
+index ff03fb2..107b058 100644
+--- a/conf.d/Makefile.am
++++ b/conf.d/Makefile.am
+@@ -21,28 +21,9 @@
+ #  TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ #  PERFORMANCE OF THIS SOFTWARE.
+ 
+-BUILT_SOURCES = README
+-DOC_SOURCES = README.in
+ DOC_FILES = $(DOC_SOURCES:.in=)
+ 
+-CONF_LINKS = \
+-	10-hinting-$(PREFERRED_HINTING).conf	\
+-	10-scale-bitmap-fonts.conf \
+-	20-unhint-small-vera.conf \
+-	30-metric-aliases.conf \
+-	40-nonlatin.conf \
+-	45-generic.conf \
+-	45-latin.conf \
+-	49-sansserif.conf \
+-	50-user.conf \
+-	51-local.conf \
+-	60-generic.conf \
+-	60-latin.conf \
+-	65-fonts-persian.conf \
+-	65-nonlatin.conf \
+-	69-unifont.conf \
+-	80-delicious.conf \
+-	90-synthetic.conf
++CONF_LINKS =
+ 
+ EXTRA_DIST = $(template_DATA) $(DOC_SOURCES)
+ CLEANFILES = $(DOC_FILES)
+@@ -87,24 +68,4 @@ template_DATA =				\
+ 	80-delicious.conf		\
+ 	90-synthetic.conf
+ 
+-README: $(srcdir)/README.in
+-	sed "s|\@TEMPLATEDIR\@|$(templatedir)|" $< > $@
+-
+-install-data-hook:
+-	mkdir -p $(DESTDIR)$(configdir)
+-	@(echo cd $(DESTDIR)$(configdir);			\
+-	  cd $(DESTDIR)$(configdir);				\
+-	  for i in $(CONF_LINKS); do				\
+-	    echo $(RM) $$i";" ln -s $(templatedir)/$$i .;	\
+-	    $(RM) $$i;						\
+-	    ln -s $(templatedir)/$$i .;				\
+-	  done)
+-uninstall-local:
+-	@(echo cd $(DESTDIR)$(configdir);			\
+-	  cd $(DESTDIR)$(configdir);				\
+-	  for i in $(CONF_LINKS); do				\
+-	    echo $(RM) $$i;					\
+-	    $(RM) $$i;						\
+-	  done)
+-
+ -include $(top_srcdir)/git.mk
+diff --git a/conf.d/Makefile.in b/conf.d/Makefile.in
+index 60e2ef8..d784afe 100644
+--- a/conf.d/Makefile.in
++++ b/conf.d/Makefile.in
+@@ -173,7 +173,7 @@ am__uninstall_files_from_dir = { \
+     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
+          $(am__cd) "$$dir" && rm -f $$files; }; \
+   }
+-am__installdirs = "$(DESTDIR)$(configdir)" "$(DESTDIR)$(templatedir)"
++am__installdirs = "$(DESTDIR)$(templatedir)"
+ DATA = $(config_DATA) $(template_DATA)
+ am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
+ am__DIST_COMMON = $(srcdir)/Makefile.in README
+@@ -346,27 +346,8 @@ target_alias = @target_alias@
+ top_build_prefix = @top_build_prefix@
+ top_builddir = @top_builddir@
+ top_srcdir = @top_srcdir@
+-BUILT_SOURCES = README
+-DOC_SOURCES = README.in
+ DOC_FILES = $(DOC_SOURCES:.in=)
+-CONF_LINKS = \
+-	10-hinting-$(PREFERRED_HINTING).conf	\
+-	10-scale-bitmap-fonts.conf \
+-	20-unhint-small-vera.conf \
+-	30-metric-aliases.conf \
+-	40-nonlatin.conf \
+-	45-generic.conf \
+-	45-latin.conf \
+-	49-sansserif.conf \
+-	50-user.conf \
+-	51-local.conf \
+-	60-generic.conf \
+-	60-latin.conf \
+-	65-fonts-persian.conf \
+-	65-nonlatin.conf \
+-	69-unifont.conf \
+-	80-delicious.conf \
+-	90-synthetic.conf
++CONF_LINKS =
+ 
+ EXTRA_DIST = $(template_DATA) $(DOC_SOURCES)
+ CLEANFILES = $(DOC_FILES)
+@@ -532,7 +513,7 @@ check: $(BUILT_SOURCES)
+ 	$(MAKE) $(AM_MAKEFLAGS) check-am
+ all-am: Makefile $(DATA)
+ installdirs:
+-	for dir in "$(DESTDIR)$(configdir)" "$(DESTDIR)$(templatedir)"; do \
++	for dir in "$(DESTDIR)$(templatedir)"; do \
+ 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
+ 	done
+ install: $(BUILT_SOURCES)
+@@ -655,9 +636,6 @@ uninstall-am: uninstall-configDATA uninstall-local \
+ .PRECIOUS: Makefile
+ 
+ 
+-README: $(srcdir)/README.in
+-	sed "s|\@TEMPLATEDIR\@|$(templatedir)|" $< > $@
+-
+ install-data-hook:
+ 	mkdir -p $(DESTDIR)$(configdir)
+ 	@(echo cd $(DESTDIR)$(configdir);			\
+diff --git a/Makefile.am b/Makefile.am
+index 2b4a5b8..411eb03 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -23,7 +23,7 @@
+ 
+ SUBDIRS=fontconfig fc-blanks fc-case fc-lang fc-glyphname src \
+ 	fc-cache fc-cat fc-list fc-match fc-pattern fc-query fc-scan \
+-	fc-validate conf.d test
++	fc-validate conf.d conf.d.infinality test
+ if ENABLE_DOCS
+ SUBDIRS += doc
+ endif
+diff --git a/Makefile.in b/Makefile.in
+index 3e3001b..9405748 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -143,6 +143,8 @@ AM_V_at = $(am__v_at_@AM_V@)
+ am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
+ am__v_at_0 = @
+ am__v_at_1 = 
++depcomp =
++am__depfiles_maybe =
+ SOURCES =
+ DIST_SOURCES =
+ RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
+@@ -218,7 +220,7 @@ CTAGS = ctags
+ CSCOPE = cscope
+ DIST_SUBDIRS = fontconfig fc-blanks fc-case fc-lang fc-glyphname src \
+ 	fc-cache fc-cat fc-list fc-match fc-pattern fc-query fc-scan \
+-	fc-validate conf.d test doc
++	fc-validate conf.d conf.d.infinality test doc
+ am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.h.in \
+ 	$(srcdir)/fontconfig-zip.in $(srcdir)/fontconfig.pc.in \
+ 	$(srcdir)/fontconfig.spec.in AUTHORS COPYING ChangeLog INSTALL \
+@@ -371,6 +373,7 @@ SET_MAKE = @SET_MAKE@
+ SHELL = @SHELL@
+ STRIP = @STRIP@
+ TEMPLATEDIR = @TEMPLATEDIR@
++TEMPLATEINFDIR = @TEMPLATEINFDIR@
+ VERSION = @VERSION@
+ WARN_CFLAGS = @WARN_CFLAGS@
+ XMLDIR = @XMLDIR@
+@@ -436,7 +439,7 @@ top_builddir = @top_builddir@
+ top_srcdir = @top_srcdir@
+ SUBDIRS = fontconfig fc-blanks fc-case fc-lang fc-glyphname src \
+ 	fc-cache fc-cat fc-list fc-match fc-pattern fc-query fc-scan \
+-	fc-validate conf.d test $(am__append_1)
++	fc-validate conf.d conf.d.infinality test $(am__append_1)
+ ACLOCAL_AMFLAGS = -I m4
+ EXTRA_DIST = fontconfig.pc.in fonts.conf.in fonts.dtd \
+ 	fontconfig.spec.in fontconfig.spec fontconfig-zip.in \
