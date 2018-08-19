@@ -5,11 +5,14 @@
 app-emulation/wine-staging -ffmpeg
 
 # rust on mozilla packages is experimental
-mail-client/thunderbird-kde-opensuse	custom-optimization
-mail-client/thunderbird-kde-opensuse	rust
-mail-client/thunderbird-kde-opensuse	system-cairo
+mail-client/thunderbird					custom-optimization
+mail-client/thunderbird					rust
+mail-client/thunderbird					system-cairo
 
 # shutup repoman
-mail-client/thunderbird-kde-opensuse	-amd64
+>=games-util/lutris-0.4.18.1			python_single_target_python3_7 python_targets_python3_7
+mail-client/thunderbird-kde-opensuse	kde
+media-libs/fontconfig					infinality
 media-video/h264enc						neroaac
 x11-drivers/nvidia-drivers				-amd64-fbsd
+www-client/firefox						kde
