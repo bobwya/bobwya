@@ -43,18 +43,12 @@ IUSE="${IUSE_VIDEO_CARDS}
 	wayland xa xvmc"
 
 REQUIRED_USE="
-	d3d9?   ( dri3 gallium )
-	llvm?   ( gallium )
-	opencl? ( gallium llvm )
-	openmax? ( gallium )
+	d3d9?   ( dri3 )
 	gles1?  ( egl )
 	gles2?  ( egl )
-	vaapi? ( gallium )
-	vdpau? ( gallium )
 	vulkan? ( || ( video_cards_i965 video_cards_radeonsi )
 			  video_cards_radeonsi? ( llvm ) )
 	wayland? ( egl gbm )
-	xa?  ( gallium )
 	video_cards_freedreno?  ( gallium )
 	video_cards_intel?  ( classic )
 	video_cards_i915?   ( || ( classic gallium ) )
@@ -88,42 +82,44 @@ RDEPEND="
 	>=x11-libs/libXxf86vm-1.1.3:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libxcb-1.9.3:=[${MULTILIB_USEDEP}]
 	x11-libs/libXfixes:=[${MULTILIB_USEDEP}]
-	unwind? ( sys-libs/libunwind[${MULTILIB_USEDEP}] )
-	llvm? (
-		video_cards_radeonsi? (
-			virtual/libelf:0=[${MULTILIB_USEDEP}]
-			vulkan? (
-				|| (
-					sys-devel/llvm:4[${MULTILIB_USEDEP}]
-					>=sys-devel/llvm-3.9.0:0[${MULTILIB_USEDEP}] )
+	gallium? (
+		llvm? (
+			video_cards_radeonsi? (
+				virtual/libelf:0=[${MULTILIB_USEDEP}]
+				vulkan? (
+					|| (
+						sys-devel/llvm:4[${MULTILIB_USEDEP}]
+						>=sys-devel/llvm-3.9.0:0[${MULTILIB_USEDEP}] )
+				)
+			)
+			video_cards_r600? (
+				virtual/libelf:0=[${MULTILIB_USEDEP}]
+			)
+			video_cards_radeon? (
+				virtual/libelf:0=[${MULTILIB_USEDEP}]
 			)
 		)
-		video_cards_r600? (
+		opencl? (
+			app-eselect/eselect-opencl
+			dev-libs/libclc
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
 		)
-		video_cards_radeon? (
-			virtual/libelf:0=[${MULTILIB_USEDEP}]
+		openmax? (
+			>=media-libs/libomxil-bellagio-0.9.3:=[${MULTILIB_USEDEP}]
+			x11-misc/xdg-utils
 		)
+		unwind? ( sys-libs/libunwind[${MULTILIB_USEDEP}] )
+		vaapi? (
+			>=x11-libs/libva-1.7.3:=[${MULTILIB_USEDEP}]
+			video_cards_nouveau? ( !<=x11-libs/libva-vdpau-driver-0.7.4-r3 )
+		)
+		vdpau? ( >=x11-libs/libvdpau-1.1:=[${MULTILIB_USEDEP}] )
+		xvmc? ( >=x11-libs/libXvMC-1.0.8:=[${MULTILIB_USEDEP}] )
 	)
-	opencl? (
-		app-eselect/eselect-opencl
-		dev-libs/libclc
-		virtual/libelf:0=[${MULTILIB_USEDEP}]
-	)
-	openmax? (
-		>=media-libs/libomxil-bellagio-0.9.3:=[${MULTILIB_USEDEP}]
-		x11-misc/xdg-utils
-	)
-	vaapi? (
-		>=x11-libs/libva-1.7.3:=[${MULTILIB_USEDEP}]
-		video_cards_nouveau? ( !<=x11-libs/libva-vdpau-driver-0.7.4-r3 )
-	)
-	vdpau? ( >=x11-libs/libvdpau-1.1:=[${MULTILIB_USEDEP}] )
 	wayland? (
 		>=dev-libs/wayland-1.11.0:=[${MULTILIB_USEDEP}]
 		>=dev-libs/wayland-protocols-1.8
 	)
-	xvmc? ( >=x11-libs/libXvMC-1.0.8:=[${MULTILIB_USEDEP}] )
 	${LIBDRM_DEPSTRING}[video_cards_freedreno?,video_cards_nouveau?,video_cards_vc4?,video_cards_vivante?,video_cards_vmware?,${MULTILIB_USEDEP}]
 	video_cards_intel? (
 		!video_cards_i965? ( ${LIBDRM_DEPSTRING}[video_cards_intel] )
@@ -265,6 +261,69 @@ pkg_pretend() {
 	ewarn " * x11-base/xorg-server"
 	ewarn " * x11-drivers/nvidia-drivers"
 	ewarn "from the bobwya overlay."
+
+	if use d3d9; then
+		if ! use video_cards_r300 &&
+		   ! use video_cards_r600 &&
+		   ! use video_cards_radeonsi &&
+		   ! use video_cards_nouveau &&
+		   ! use video_cards_vmware; then
+			ewarn "Ignoring USE=d3d9       since VIDEO_CARDS does not contain r300, r600, radeonsi, nouveau, or vmware"
+		fi
+	fi
+
+	if use opencl; then
+		if ! use video_cards_r600 &&
+		   ! use video_cards_radeonsi; then
+			ewarn "Ignoring USE=opencl     since VIDEO_CARDS does not contain r600 or radeonsi"
+		fi
+	fi
+
+	if use vaapi; then
+		if ! use video_cards_r600 &&
+		   ! use video_cards_radeonsi &&
+		   ! use video_cards_nouveau; then
+			ewarn "Ignoring USE=vaapi      since VIDEO_CARDS does not contain r600, radeonsi, or nouveau"
+		fi
+	fi
+
+	if use vdpau; then
+		if ! use video_cards_r300 &&
+		   ! use video_cards_r600 &&
+		   ! use video_cards_radeonsi &&
+		   ! use video_cards_nouveau; then
+			ewarn "Ignoring USE=vdpau      since VIDEO_CARDS does not contain r300, r600, radeonsi, or nouveau"
+		fi
+	fi
+
+	if use xa; then
+		if ! use video_cards_freedreno &&
+		   ! use video_cards_nouveau; then
+			ewarn "Ignoring USE=xa         since VIDEO_CARDS does not contain freedreno or nouveau"
+		fi
+	fi
+
+	if use xvmc; then
+		if ! use video_cards_r600 &&
+		   ! use video_cards_nouveau; then
+			ewarn "Ignoring USE=xvmc       since VIDEO_CARDS does not contain r600 or nouveau"
+		fi
+	fi
+
+	if ! use gallium; then
+		use d3d9       && ewarn "Ignoring USE=d3d9       since USE does not contain gallium"
+		use llvm       && ewarn "Ignoring USE=llvm       since USE does not contain gallium"
+		use opencl     && ewarn "Ignoring USE=opencl     since USE does not contain gallium"
+		use vaapi      && ewarn "Ignoring USE=vaapi      since USE does not contain gallium"
+		use vdpau      && ewarn "Ignoring USE=vdpau      since USE does not contain gallium"
+		use unwind     && ewarn "Ignoring USE=unwind     since USE does not contain gallium"
+		use xa         && ewarn "Ignoring USE=xa         since USE does not contain gallium"
+		use xvmc       && ewarn "Ignoring USE=xvmc       since USE does not contain gallium"
+	fi
+
+	if ! use llvm; then
+		use opencl     && ewarn "Ignoring USE=opencl     since USE does not contain llvm"
+	fi
 }
 
 pkg_setup() {
@@ -286,7 +345,7 @@ src_prepare() {
 }
 
 multilib_src_configure() {
-	local myeconfargs
+	local -a myeconfargs=()
 
 	if use classic; then
 		# Intel code
@@ -313,16 +372,48 @@ multilib_src_configure() {
 
 	if use gallium; then
 		myeconfargs+=(
-			"$(use_enable d3d9 nine)"
 			"$(use_enable llvm)"
 			"$(use_enable openmax omx-bellagio)"
-			"$(use_enable vaapi va)"
-			"$(use_enable vdpau)"
-			"$(use_enable xa)"
-			"$(use_enable xvmc)"
+			"$(use_enable unwind libunwind)"
 		)
-		use vaapi && myeconfargs+=( "--with-va-libdir=/usr/$(get_libdir)/va/drivers" )
 
+		if use video_cards_r300 ||
+		   use video_cards_r600 ||
+		   use video_cards_radeonsi ||
+		   use video_cards_nouveau ||
+		   use video_cards_vmware; then
+			myeconfargs+=( "$(use_enable d3d9 nine)" )
+		else
+			myeconfargs+=( "--disable-nine" )
+		fi
+		if use video_cards_r600 ||
+		   use video_cards_radeonsi ||
+		   use video_cards_nouveau; then
+			myeconfargs+=( "$(use_enable vaapi va)" )
+			use vaapi && myeconfargs+=( "--with-va-libdir=/usr/$(get_libdir)/va/drivers" )
+		else
+			myeconfargs+=( "--disable-va" )
+		fi
+		if use video_cards_r300 ||
+		   use video_cards_r600 ||
+		   use video_cards_radeonsi ||
+		   use video_cards_nouveau; then
+			myeconfargs+=( "$(use_enable vdpau)" )
+		else
+			myeconfargs+=( "--disable-vdpau" )
+		fi
+		if use video_cards_freedreno ||
+		   use video_cards_nouveau; then
+			myeconfargs+=( "$(use_enable xa)" )
+		else
+			myeconfargs+=( "--disable-xa" )
+		fi
+		if use video_cards_r600 ||
+		   use video_cards_nouveau; then
+			myeconfargs+=( "$(use_enable xvmc)" )
+		else
+			myeconfargs+=( "--disable-xvmc" )
+		fi
 		driver_enable GALLIUM_DRIVERS -- swrast
 		driver_enable GALLIUM_DRIVERS video_cards_vc4 vc4
 		driver_enable GALLIUM_DRIVERS video_cards_virgl virgl
@@ -380,7 +471,6 @@ multilib_src_configure() {
 		"--enable-glx"
 		"--enable-shared-glapi"
 		"$(use_enable !bindist texture-float)"
-		"$(use_enable d3d9 nine)"
 		"$(use_enable debug)"
 		"$(use_enable dri3)"
 		"$(use_enable egl)"
@@ -388,7 +478,6 @@ multilib_src_configure() {
 		"$(use_enable gles1)"
 		"$(use_enable gles2)"
 		"$(use_enable nptl glx-tls)"
-		"$(use_enable unwind libunwind)"
 		"--enable-valgrind=$(usex valgrind auto no)"
 		"--enable-llvm-shared-libs"
 		"--with-dri-drivers=${DRI_DRIVERS}"

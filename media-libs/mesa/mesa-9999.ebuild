@@ -43,18 +43,12 @@ IUSE="${IUSE_VIDEO_CARDS}
 	vulkan wayland xa xvmc"
 
 REQUIRED_USE="
-	d3d9?   ( dri3 gallium )
-	llvm?   ( gallium )
-	opencl? ( gallium llvm )
-	openmax? ( gallium )
+	d3d9?   ( dri3 )
 	gles1?  ( egl )
 	gles2?  ( egl )
-	vaapi? ( gallium )
-	vdpau? ( gallium )
 	vulkan? ( || ( video_cards_i965 video_cards_radeonsi )
 			  video_cards_radeonsi? ( llvm ) )
 	wayland? ( egl gbm )
-	xa?  ( gallium )
 	video_cards_freedreno?  ( gallium )
 	video_cards_intel?  ( classic )
 	video_cards_i915?   ( || ( classic gallium ) )
@@ -89,7 +83,6 @@ RDEPEND="
 	>=x11-libs/libxcb-1.13:=[${MULTILIB_USEDEP}]
 	x11-libs/libXfixes:=[${MULTILIB_USEDEP}]
 	gallium? (
-		unwind? ( sys-libs/libunwind[${MULTILIB_USEDEP}] )
 		llvm? (
 			video_cards_radeonsi? (
 				virtual/libelf:0=[${MULTILIB_USEDEP}]
@@ -107,10 +100,7 @@ RDEPEND="
 			dev-libs/libclc
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
 		)
-		openmax? (
-			>=media-libs/libomxil-bellagio-0.9.3:=[${MULTILIB_USEDEP}]
-			x11-misc/xdg-utils
-		)
+		unwind? ( sys-libs/libunwind[${MULTILIB_USEDEP}] )
 		vaapi? (
 			>=x11-libs/libva-1.7.3:=[${MULTILIB_USEDEP}]
 			video_cards_nouveau? ( !<=x11-libs/libva-vdpau-driver-0.7.4-r3 )
@@ -263,6 +253,70 @@ pkg_pretend() {
 	ewarn " * x11-base/xorg-server"
 	ewarn " * x11-drivers/nvidia-drivers"
 	ewarn "from the bobwya overlay."
+
+	if use d3d9; then
+		if ! use video_cards_r300 &&
+		   ! use video_cards_r600 &&
+		   ! use video_cards_radeonsi &&
+		   ! use video_cards_nouveau &&
+		   ! use video_cards_vmware; then
+			ewarn "Ignoring USE=d3d9       since VIDEO_CARDS does not contain r300, r600, radeonsi, nouveau, or vmware"
+		fi
+	fi
+
+	if use opencl; then
+		if ! use video_cards_r600 &&
+		   ! use video_cards_radeonsi; then
+			ewarn "Ignoring USE=opencl     since VIDEO_CARDS does not contain r600 or radeonsi"
+		fi
+	fi
+
+	if use vaapi; then
+		if ! use video_cards_r600 &&
+		   ! use video_cards_radeonsi &&
+		   ! use video_cards_nouveau; then
+			ewarn "Ignoring USE=vaapi      since VIDEO_CARDS does not contain r600, radeonsi, or nouveau"
+		fi
+	fi
+
+	if use vdpau; then
+		if ! use video_cards_r300 &&
+		   ! use video_cards_r600 &&
+		   ! use video_cards_radeonsi &&
+		   ! use video_cards_nouveau; then
+			ewarn "Ignoring USE=vdpau      since VIDEO_CARDS does not contain r300, r600, radeonsi, or nouveau"
+		fi
+	fi
+
+	if use xa; then
+		if ! use video_cards_freedreno &&
+		   ! use video_cards_nouveau; then
+			ewarn "Ignoring USE=xa         since VIDEO_CARDS does not contain freedreno or nouveau"
+		fi
+	fi
+
+	if use xvmc; then
+		if ! use video_cards_r600 &&
+		   ! use video_cards_nouveau; then
+			ewarn "Ignoring USE=xvmc       since VIDEO_CARDS does not contain r600 or nouveau"
+		fi
+	fi
+
+	if ! use gallium; then
+		use d3d9       && ewarn "Ignoring USE=d3d9       since USE does not contain gallium"
+		use lm_sensors && ewarn "Ignoring USE=lm_sensors since USE does not contain gallium"
+		use llvm       && ewarn "Ignoring USE=llvm       since USE does not contain gallium"
+		use opencl     && ewarn "Ignoring USE=opencl     since USE does not contain gallium"
+		use vaapi      && ewarn "Ignoring USE=vaapi      since USE does not contain gallium"
+		use vdpau      && ewarn "Ignoring USE=vdpau      since USE does not contain gallium"
+		use unwind     && ewarn "Ignoring USE=unwind     since USE does not contain gallium"
+		use xa         && ewarn "Ignoring USE=xa         since USE does not contain gallium"
+		use xvmc       && ewarn "Ignoring USE=xvmc       since USE does not contain gallium"
+	fi
+
+	if ! use llvm; then
+		use opencl     && ewarn "Ignoring USE=opencl     since USE does not contain llvm"
+	fi
 }
 
 pkg_setup() {
@@ -279,7 +333,7 @@ pkg_setup() {
 }
 
 multilib_src_configure() {
-	local myemesonargs
+	local -a myemesonargs=()
 
 	if use classic; then
 		# Configurable DRI drivers
@@ -309,16 +363,47 @@ multilib_src_configure() {
 
 	if use gallium; then
 		myemesonargs+=(
-			"$(meson_use d3d9 nine)"
 			"$(meson_use llvm)"
-			"-Dgallium-omx=$(usex openmax bellagio disabled)"
-			"$(meson_use vaapi va)"
-			"$(meson_use vdpau)"
-			"$(meson_use xa)"
-			"$(meson_use xvmc)"
+			"$(meson_use unwind libunwind)"
 		)
-		use vaapi && myemesonargs+=( "-Dva-libs-path=/usr/$(get_libdir)/va/drivers" )
 
+		if use video_cards_r300 ||
+		   use video_cards_r600 ||
+		   use video_cards_radeonsi ||
+		   use video_cards_nouveau ||
+		   use video_cards_vmware; then
+			myemesonargs+=( "$(meson_use d3d9 gallium-nine)" )
+		else
+			myemesonargs+=( "-Dgallium-nine=false" )
+		fi
+		if use video_cards_r600 ||
+		   use video_cards_radeonsi ||
+		   use video_cards_nouveau; then
+			myemesonargs+=( "$(meson_use vaapi gallium-va)" )
+			use vaapi && myemesonargs+=( "-Dva-libs-path=/usr/$(get_libdir)/va/drivers" )
+		else
+			myemesonargs+=( "-Dgallium-va=false" )
+		fi
+		if use video_cards_r300 ||
+		   use video_cards_r600 ||
+		   use video_cards_radeonsi ||
+		   use video_cards_nouveau; then
+			myemesonargs+=( "$(meson_use vdpau gallium-vdpau)" )
+		else
+			myemesonargs+=( "-Dgallium-vdpau=false" )
+		fi
+		if use video_cards_freedreno ||
+		   use video_cards_nouveau; then
+			myemesonargs+=( "$(meson_use xa gallium-xa)" )
+		else
+			myemesonargs+=( "-Dgallium-xa=false" )
+		fi
+		if use video_cards_r600 ||
+		   use video_cards_nouveau; then
+			myemesonargs+=( "$(meson_use xvmc gallium-xvmc)" )
+		else
+			myemesonargs+=( "-Dgallium-xvmc=false" )
+		fi
 		driver_enable GALLIUM_DRIVERS video_cards_vc4 vc4
 		driver_enable GALLIUM_DRIVERS video_cards_virgl virgl
 		driver_enable GALLIUM_DRIVERS video_cards_vivante etnaviv
@@ -372,17 +457,11 @@ multilib_src_configure() {
 		"$(meson_use test build-tests)"
 		"-Dglx=dri"
 		"-Dshared-glapi=true"
-		"$(meson_use !bindist texture-float)"
-		"$(meson_use d3d9 nine)"
-		"$(meson_use debug)"
 		"$(meson_use dri3)"
 		"$(meson_use egl)"
 		"$(meson_use gbm)"
 		"$(meson_use gles1)"
 		"$(meson_use gles2)"
-		"$(meson_use lm_sensors lmsensors)"
-		"$(meson_use nptl glx-tls)"
-		"$(meson_use unwind libunwind)"
 		"-Dvalgrind=$(usex valgrind auto false)"
 		"-Ddri-drivers=${DRI_DRIVERS}"
 		"-Dgallium-drivers=${GALLIUM_DRIVERS}"
