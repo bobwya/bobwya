@@ -35,7 +35,7 @@ else
 	(( version_component_count > 2 )) && if [[ "$( ver_cut $((version_component_count-1)) )" = "rc" ]]; then
 		is_rc=1
 		: $(( version_component_count -= 2 ))
-		MY_PV=$(ver_rs $((version_component_count)) '''-''')
+		MY_PV=$(ver_rs $((version_component_count)) '''-''' "${MY_PV}")
 		MY_P="${MY_PN}-${MY_PV}"
 	fi
 	major_version=$( ver_cut 1 )
