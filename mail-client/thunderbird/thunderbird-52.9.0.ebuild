@@ -34,7 +34,8 @@ MOZ_P="${PN}-${MOZ_PV}"
 MOZCONFIG_OPTIONAL_GTK2ONLY=1
 MOZCONFIG_OPTIONAL_WIFI=1
 
-inherit flag-o-matic toolchain-funcs mozconfig-v6.52 autotools pax-utils check-reqs nsplugins mozlinguas-v2 xdg-utils gnome2-utils mercurial
+inherit autotools check-reqs flag-o-matic gnome2-utils mercurial mozconfig-v6.52 \
+	mozlinguas-v2 nsplugins pax-utils toolchain-funcs xdg-utils
 
 DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.com/en-US/thunderbird
@@ -101,15 +102,19 @@ src_unpack() {
 
 	# Unpack language packs
 	mozlinguas_src_unpack
+
+	if [[ ${MOZ_PV} =~ ^\(10|17|24\)\..*esr$ ]]; then
+		EHG_REVISION="esr${MOZ_PV%%.*}"
+	else
+		EHG_REVISION="firefox${MOZ_PV%%.*}"
+	fi
+	KDE_PATCHSET="firefox-kde-patchset"
+	EHG_CHECKOUT_DIR="${WORKDIR}/${KDE_PATCHSET}"
 	if use kde; then
-		if [[ ${MOZ_PV} =~ ^\(10|17|24\)\..*esr$ ]]; then
-			EHG_REVISION="esr${MOZ_PV%%.*}"
-		else
-			EHG_REVISION="firefox${MOZ_PV%%.*}"
-		fi
-		KDE_PATCHSET="firefox-kde-patchset"
-		EHG_CHECKOUT_DIR="${WORKDIR}/${KDE_PATCHSET}"
 		mercurial_fetch "${EHG_REPO_URI}" "${KDE_PATCHSET}"
+	else
+		# quieten the mercurial module for app-portage/smart-live-rebuild
+		export HG_REV_ID="${EHG_REVISION}"
 	fi
 
 	# this version of lightning is a .tar.xz, no xpi needed
