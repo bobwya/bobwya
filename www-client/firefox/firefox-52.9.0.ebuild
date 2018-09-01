@@ -56,10 +56,10 @@ RDEPEND="
 	>=dev-libs/nspr-4.13.1
 	selinux? ( sec-policy/selinux-mozilla )
 	amd64? (
-		kde? ( kde-misc/kmozillahelper:=  )
+		kde? ( kde-misc/kmozillahelper:= )
 	)
 	x86? (
-		kde? ( kde-misc/kmozillahelper:=  )
+		kde? ( kde-misc/kmozillahelper:= )
 	)"
 
 DEPEND="${RDEPEND}
@@ -85,7 +85,7 @@ pkg_setup() {
 
 	# Avoid PGO profiling problems due to enviroment leakage
 	# These should *always* be cleaned up anyway
-	unset DBUS_SESSION_BUS_ADDRESS \
+	unset -v DBUS_SESSION_BUS_ADDRESS \
 		DISPLAY \
 		ORBIT_SOCKETDIR \
 		SESSION_MANAGER \
@@ -127,17 +127,19 @@ src_unpack() {
 
 	# Unpack language packs
 	mozlinguas_src_unpack
+
+	if [[ ${MOZ_PV} =~ ^\(10|17|24\)\..*esr$ ]]; then
+		EHG_REVISION="esr${MOZ_PV%%.*}"
+	else
+		EHG_REVISION="firefox${MOZ_PV%%.*}"
+	fi
+	KDE_PATCHSET="firefox-kde-patchset"
+	EHG_CHECKOUT_DIR="${WORKDIR}/${KDE_PATCHSET}"
 	if use kde; then
-		if [[ ${MOZ_PV} =~ ^\(10|17|24\)\..*esr$ ]]; then
-			EHG_REVISION="esr${MOZ_PV%%.*}"
-		elif [[ ${MOZ_PV} =~ ^48\. ]]; then
-			EHG_REVISION="4663386a04de"
-		else
-			EHG_REVISION="firefox${MOZ_PV%%.*}"
-		fi
-		KDE_PATCHSET="firefox-kde-patchset"
-		EHG_CHECKOUT_DIR="${WORKDIR}/${KDE_PATCHSET}"
 		mercurial_fetch "${EHG_REPO_URI}" "${KDE_PATCHSET}"
+	else
+		# quieten the mercurial module for app-portage/smart-live-rebuild
+		export HG_REV_ID="${EHG_REVISION}"
 	fi
 }
 
@@ -193,7 +195,7 @@ src_prepare() {
 		"${S}"/xpcom/io/nsAppFileLocationProvider.cpp || die "sed failed to replace plugin path for 64bit!"
 
 	# Fix sandbox violations during make clean, bug 372817
-		# shellcheck disable=SC1117
+	# shellcheck disable=SC1117
 	sed -e "s:\(/no-such-file\):${T}\1:g" \
 		-i "${S}"/config/rules.mk \
 		-i "${S}"/nsprpub/configure{.in,} \
