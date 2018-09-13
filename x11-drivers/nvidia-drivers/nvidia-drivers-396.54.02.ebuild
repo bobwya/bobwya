@@ -84,11 +84,11 @@ nvidia_drivers_versions_check() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 17; then
+		if kernel_is ge 4 18; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.17"
-			ewarn "<sys-kernel/vanilla-sources-4.17"
+			ewarn "<sys-kernel/gentoo-sources-4.18"
+			ewarn "<sys-kernel/vanilla-sources-4.18"
 		elif use kms && kernel_is lt 4 2; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"

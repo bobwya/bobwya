@@ -3,30 +3,24 @@
 
 # shellcheck disable=SC2034
 EAPI=6
-inherit flag-o-matic linux-info linux-mod multilib-minimal \
+inherit eapi7-ver flag-o-matic linux-info linux-mod multilib-minimal \
 	nvidia-driver portability toolchain-funcs unpacker user udev
 
-NV_URI="https://download.nvidia.com/XFree86/"
-X86_NV_PACKAGE="NVIDIA-Linux-x86-${PV}"
-AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
-ARM_NV_PACKAGE="NVIDIA-Linux-armv7l-gnueabihf-${PV}"
-X86_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86-${PV}"
-AMD64_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86_64-${PV}"
+MM_PV="$(ver_cut "1-2")"
+DL_PV="$(ver_rs 1- '')"
 
+NV_URI="https://download.nvidia.com/XFree86/"
+AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
 DESCRIPTION="NVIDIA Accelerated Graphics Driver"
 HOMEPAGE="https://www.nvidia.com/ https://www.nvidia.com/Download/Find.aspx"
 SRC_URI="
-	amd64-fbsd? ( ${NV_URI%/}/FreeBSD-x86_64/${PV}/${AMD64_FBSD_NV_PACKAGE}.tar.gz )
-	amd64? ( ${NV_URI%/}/Linux-x86_64/${PV}/${AMD64_NV_PACKAGE}.run )
-	arm? ( ${NV_URI%/}/Linux-32bit-ARM/${PV}/${ARM_NV_PACKAGE}.run )
-	x86-fbsd? ( ${NV_URI%/}/FreeBSD-x86/${PV}/${X86_FBSD_NV_PACKAGE}.tar.gz )
-	x86? ( ${NV_URI%/}/Linux-x86/${PV}/${X86_NV_PACKAGE}.run )
-	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${PV}.tar.bz2 )
+	amd64? ( "https://developer.nvidia.com/linux-${DL_PV}" -> ${AMD64_NV_PACKAGE}.run )
+	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${MM_PV}.tar.bz2 )
 "
 
 LICENSE="GPL-2 NVIDIA-r2"
 SLOT="0/${PV%.*}"
-KEYWORDS="-* ~amd64 ~x86 ~amd64-fbsd ~x86-fbsd"
+KEYWORDS="-* ~amd64"
 RESTRICT="bindist mirror"
 EMULTILIB_PKG="true"
 
@@ -79,7 +73,7 @@ RDEPEND="
 
 QA_PREBUILT="opt/* usr/lib*"
 S="${WORKDIR}"
-NVIDIA_SETTINGS_SRC_DIR="${S%/}/${P/drivers/settings}/src"
+NVIDIA_SETTINGS_SRC_DIR="${S%/}/${PN/drivers/settings}-${MM_PV}/src"
 
 nvidia_drivers_versions_check() {
 	if use amd64 && has_multilib_profile && \
@@ -232,7 +226,7 @@ src_prepare() {
 	if use tools; then
 		rsync -achv "${FILESDIR}/nvidia-settings-linker.patch" "${WORKDIR}"/ \
 			|| die "rsync failed"
-		sed -i -e 's:@PV@:'"${PV}"':g' "${WORKDIR}/nvidia-settings-linker.patch" \
+		sed -i -e 's:@PV@:'"${MM_PV}"':g' "${WORKDIR}/nvidia-settings-linker.patch" \
 			|| die "sed failed"
 		PATCHES+=( "${WORKDIR}/nvidia-settings-linker.patch" )
 	fi
@@ -517,12 +511,13 @@ src_install-libs() {
 			"libnvidia-eglcore.so.${NV_SOVER}" .
 			"libnvidia-glcore.so.${NV_SOVER}" .
 			"libnvidia-glsi.so.${NV_SOVER}" .
+			"libnvidia-glvkspirv.so.${NV_SOVER}" .
 			"libnvidia-ifr.so.${NV_SOVER}" .
 		)
 
 		if use wayland && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then
 			NV_GLX_LIBRARIES+=(
-				"libnvidia-egl-wayland.so.1.0.2" .
+				"libnvidia-egl-wayland.so.1.0.3" .
 			)
 		fi
 
