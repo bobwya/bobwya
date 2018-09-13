@@ -6,8 +6,7 @@ EAPI=6
 
 PYTHON_COMPAT=( python2_7 )
 
-inherit llvm meson multilib-minimal python-any-r1
-OPENGL_DIR="${PN}"
+inherit llvm meson multilib-minimal pax-utils python-any-r1
 
 MY_P="${P/_/-}"
 
@@ -68,7 +67,7 @@ REQUIRED_USE="
 	video_cards_vmware? ( gallium )
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.91"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.93"
 # shellcheck disable=SC2124
 RDEPEND="
 	!app-eselect/eselect-mesa
@@ -197,10 +196,8 @@ DEPEND="${RDEPEND}
 	virtual/pkgconfig
 	valgrind? ( dev-util/valgrind )
 	x11-base/xorg-proto
-"
-
-[[ "${PV}" == "9999" ]] && DEPEND+="
-	$(python_gen_any_dep ">=dev-python/mako-0.7.3[\${PYTHON_USEDEP}]")
+	x11-libs/libXrandr[${MULTILIB_USEDEP}]
+	$(python_gen_any_dep ">=dev-python/mako-0.8.0[\${PYTHON_USEDEP}]")
 "
 
 S="${WORKDIR}/${MY_P}"
@@ -210,14 +207,14 @@ QA_WX_LOAD="
 x86? (
 	!pic? (
 		usr/lib*/libglapi.so.0.0.0
-		usr/lib*/libGLESv1_CM.so.1.1.0
+		usr/lib*/libGLESv1_CM.so.1.0.0
 		usr/lib*/libGLESv2.so.2.0.0
 		usr/lib*/libGL.so.1.2.0
 		usr/lib*/libOSMesa.so.8.0.0
 	)
 "
 
-# driver_enable DRI_DRIVERS()
+# driver_enable()
 #	1>	 driver array (reference)
 #	2>	 -- / driver USE flag (main category)
 #	[3-N]> driver USE flags (subcategory)
@@ -226,12 +223,18 @@ driver_enable() {
 	local __driver_array_reference="${1}" driver
 	declare -n driver_array=${__driver_array_reference}
 
-	if [[ "${2}" == "--" ]] || use $2; then
-		# shellcheck disable=SC2068
-		for driver in ${@:3}; do
-			driver_array+=",${driver}"
-		done
+	if [[ "${2}" == "--" ]] || use "${2}"; then
+		driver_array+=( "${@:3}" )
 	fi
+}
+
+# driver_list()
+#	1>	 driver list
+driver_list() {
+	(($# != 1)) && die "Invalid parameter count: ${#} (1)"
+
+	drivers="$(sort -u <<< "${1// /$'\n'}")"
+	printf "%s\\n" "${drivers//$'\n'/,}"
 }
 
 llvm_check_depends() {
@@ -333,7 +336,7 @@ pkg_setup() {
 }
 
 multilib_src_configure() {
-	local -a myemesonargs=()
+	local -a emesonargs=()
 
 	if use classic; then
 		# Configurable DRI drivers
@@ -358,11 +361,11 @@ multilib_src_configure() {
 	fi
 
 	if use egl; then
-		myemesonargs+=( "-Dplatforms=x11,surfaceless$(use wayland && echo ",wayland")$(use gbm && echo ",drm")" )
+		emesonargs+=( "-Dplatforms=x11,surfaceless$(use wayland && echo ",wayland")$(use gbm && echo ",drm")" )
 	fi
 
 	if use gallium; then
-		myemesonargs+=(
+		emesonargs+=(
 			"$(meson_use llvm)"
 			"$(meson_use unwind libunwind)"
 		)
@@ -372,37 +375,37 @@ multilib_src_configure() {
 		   use video_cards_radeonsi ||
 		   use video_cards_nouveau ||
 		   use video_cards_vmware; then
-			myemesonargs+=( "$(meson_use d3d9 gallium-nine)" )
+			emesonargs+=( "$(meson_use d3d9 gallium-nine)" )
 		else
-			myemesonargs+=( "-Dgallium-nine=false" )
+			emesonargs+=( "-Dgallium-nine=false" )
 		fi
 		if use video_cards_r600 ||
 		   use video_cards_radeonsi ||
 		   use video_cards_nouveau; then
-			myemesonargs+=( "$(meson_use vaapi gallium-va)" )
-			use vaapi && myemesonargs+=( "-Dva-libs-path=/usr/$(get_libdir)/va/drivers" )
+			emesonargs+=( "$(meson_use vaapi gallium-va)" )
+			use vaapi && emesonargs+=( "-Dva-libs-path=/usr/$(get_libdir)/va/drivers" )
 		else
-			myemesonargs+=( "-Dgallium-va=false" )
+			emesonargs+=( "-Dgallium-va=false" )
 		fi
 		if use video_cards_r300 ||
 		   use video_cards_r600 ||
 		   use video_cards_radeonsi ||
 		   use video_cards_nouveau; then
-			myemesonargs+=( "$(meson_use vdpau gallium-vdpau)" )
+			emesonargs+=( "$(meson_use vdpau gallium-vdpau)" )
 		else
-			myemesonargs+=( "-Dgallium-vdpau=false" )
+			emesonargs+=( "-Dgallium-vdpau=false" )
 		fi
 		if use video_cards_freedreno ||
 		   use video_cards_nouveau; then
-			myemesonargs+=( "$(meson_use xa gallium-xa)" )
+			emesonargs+=( "$(meson_use xa gallium-xa)" )
 		else
-			myemesonargs+=( "-Dgallium-xa=false" )
+			emesonargs+=( "-Dgallium-xa=false" )
 		fi
 		if use video_cards_r600 ||
 		   use video_cards_nouveau; then
-			myemesonargs+=( "$(meson_use xvmc gallium-xvmc)" )
+			emesonargs+=( "$(meson_use xvmc gallium-xvmc)" )
 		else
-			myemesonargs+=( "-Dgallium-xvmc=false" )
+			emesonargs+=( "-Dgallium-xvmc=false" )
 		fi
 		driver_enable GALLIUM_DRIVERS video_cards_vc4 vc4
 		driver_enable GALLIUM_DRIVERS video_cards_virgl virgl
@@ -425,7 +428,7 @@ multilib_src_configure() {
 		driver_enable GALLIUM_DRIVERS video_cards_freedreno freedreno
 		# opencl stuff
 		if use opencl; then
-			myemesonargs+=(
+			emesonargs+=(
 				"-Dgallium-opencl=$(usex opencl standalone disabled)"
 				)
 		fi
@@ -437,23 +440,23 @@ multilib_src_configure() {
 	fi
 	# x86 hardened pax_kernel needs glx-rts, bug 240956
 	if [[ "${ABI}" == "x86" ]]; then
-		myemesonargs+=( "$(meson_use pax_kernel glx-read-only-text)" )
+		emesonargs+=( "$(meson_use pax_kernel glx-read-only-text)" )
 	fi
 
 	# on abi_x86_32 hardened we need to have asm disable
 	if [[ ${ABI} == x86* ]] && use pic; then
-		myemesonargs+=( "--disable-asm" )
+		emesonargs+=( "--disable-asm" )
 	fi
 
 	if use gallium; then
-		myemesonargsdriver_enable GALLIUM_DRIVERS -- swrast
-		myemesonargs+=( "-Dosmesa=$(usex osmesa gallium none)" )
+		driver_enable GALLIUM_DRIVERS -- swrast
+		emesonargs+=( "-Dosmesa=$(usex osmesa gallium none)" )
 	else
-		myemesonargsdriver_enable DRI_DRIVERS -- swrast
-		myemesonargs+=( "-Dosmesa=$(usex osmesa classic none)" )
+		driver_enable DRI_DRIVERS -- swrast
+		emesonargs+=( "-Dosmesa=$(usex osmesa classic none)" )
 	fi
 
-	myemesonargs+=(
+	emesonargs+=(
 		"$(meson_use test build-tests)"
 		"-Dglx=dri"
 		"-Dshared-glapi=true"
@@ -463,10 +466,10 @@ multilib_src_configure() {
 		"$(meson_use gles1)"
 		"$(meson_use gles2)"
 		"-Dvalgrind=$(usex valgrind auto false)"
-		"-Ddri-drivers=${DRI_DRIVERS}"
-		"-Dgallium-drivers=${GALLIUM_DRIVERS}"
-		"-Dvulkan-drivers=${VULKAN_DRIVERS}"
-		"--buildtype $(usex debug debug plain)"
+		"-Ddri-drivers=$(driver_list "${DRI_DRIVERS[*]}")"
+		"-Dgallium-drivers=$(driver_list "${GALLIUM_DRIVERS[*]}")"
+		"-Dvulkan-drivers=$(driver_list "${VULKAN_DRIVERS[*]}")"
+		"--buildtype" "$(usex debug debug plain)"
 	)
 	meson_src_configure
 }
@@ -482,10 +485,10 @@ multilib_src_install() {
 	ebegin "(subshell): moving lib{EGL*,GL*,OpenGL}.{la,a,so*} in order to implement dynamic GL switching support"
 	(
 		local gl_dir
-		gl_dir="/usr/$(get_libdir)/opengl/${OPENGL_DIR}"
+		gl_dir="/usr/$(get_libdir)/opengl/${PN}"
 		dodir "${gl_dir}/lib"
 		for library in "${ED%/}/usr/$(get_libdir)"/lib{EGL*,GL*,OpenGL}.{la,a,so*} ; do
-			if [[ -f ${library} || -L ${library} ]]; then
+			if [[ -f "${library}" || -L "${library}" ]]; then
 				mv -f "${library}" "${ED%/}${gl_dir}"/lib \
 					|| die "Failed to move ${library}"
 			fi
@@ -511,20 +514,11 @@ multilib_src_test() {
 pkg_postinst() {
 	# Switch to the xorg implementation.
 	echo
-	eselect opengl set --use-old "${OPENGL_DIR}"
+	eselect opengl set --use-old "${PN}"
 
 	# Switch to mesa opencl
 	if use opencl; then
 		eselect opencl set --use-old "${PN}"
-	fi
-
-	# run omxregister-bellagio to make the OpenMAX drivers known system-wide
-	if use openmax; then
-		ebegin "(subshell): registering OpenMAX drivers"
-		BELLAGIO_SEARCH_PATH="${EPREFIX}/usr/$(get_libdir)/libomxil-bellagio0" \
-			OMX_BELLAGIO_REGISTRY="${EPREFIX}/usr/share/mesa/xdg/.omxregister" \
-			omxregister-bellagio
-		eend $? || die "(subshell): registering OpenMAX drivers failed"
 	fi
 
 	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix various issues"
@@ -536,8 +530,3 @@ pkg_postinst() {
 	ewarn "from the bobwya overlay."
 }
 
-pkg_prerm() {
-	if use openmax; then
-		rm "${EPREFIX}/usr/share/mesa/xdg/.omxregister"
-	fi
-}

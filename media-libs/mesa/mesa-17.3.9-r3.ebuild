@@ -6,8 +6,7 @@ EAPI=6
 
 PYTHON_COMPAT=( python2_7 )
 
-inherit autotools llvm multilib-minimal python-any-r1 pax-utils
-OPENGL_DIR="${PN}"
+inherit autotools llvm multilib-minimal pax-utils python-any-r1
 
 MY_P="${P/_/-}"
 
@@ -207,10 +206,6 @@ DEPEND="${RDEPEND}
 	)
 "
 
-[[ "${PV}" == "9999" ]] && DEPEND+="
-	$(python_gen_any_dep ">=dev-python/mako-0.7.3[\${PYTHON_USEDEP}]")
-"
-
 S="${WORKDIR}/${MY_P}"
 EGIT_CHECKOUT_DIR="${S}"
 
@@ -225,7 +220,7 @@ x86? (
 	)
 "
 
-# driver_enable DRI_DRIVERS()
+# driver_enable()
 #	1>	 driver array (reference)
 #	2>	 -- / driver USE flag (main category)
 #	[3-N]> driver USE flags (subcategory)
@@ -234,12 +229,18 @@ driver_enable() {
 	local __driver_array_reference="${1}" driver
 	declare -n driver_array=${__driver_array_reference}
 
-	if [[ "${2}" == "--" ]] || use $2; then
-		# shellcheck disable=SC2068
-		for driver in ${@:3}; do
-			driver_array+=",${driver}"
-		done
+	if [[ "${2}" == "--" ]] || use "${2}"; then
+		driver_array+=( "${@:3}" )
 	fi
+}
+
+# driver_list()
+#	1>	 driver list
+driver_list() {
+	(($# != 1)) && die "Invalid parameter count: ${#} (1)"
+
+	drivers="$(sort -u <<< "${1// /$'\n'}")"
+	printf "%s\\n" "${drivers//$'\n'/,}"
 }
 
 llvm_check_depends() {
@@ -496,10 +497,10 @@ multilib_src_install() {
 	ebegin "(subshell): moving lib{EGL*,GL*,OpenGL}.{la,a,so*} in order to implement dynamic GL switching support"
 	(
 		local gl_dir
-		gl_dir="/usr/$(get_libdir)/opengl/${OPENGL_DIR}"
+		gl_dir="/usr/$(get_libdir)/opengl/${PN}"
 		dodir "${gl_dir}/lib"
 		for library in "${ED%/}/usr/$(get_libdir)"/lib{EGL*,GL*,OpenGL}.{la,a,so*} ; do
-			if [[ -f ${library} || -L ${library} ]]; then
+			if [[ -f "${library}" || -L "${library}" ]]; then
 				mv -f "${library}" "${ED%/}${gl_dir}"/lib \
 					|| die "Failed to move ${library}"
 			fi
@@ -597,7 +598,7 @@ multilib_src_test() {
 pkg_postinst() {
 	# Switch to the xorg implementation.
 	echo
-	eselect opengl set --use-old "${OPENGL_DIR}"
+	eselect opengl set --use-old "${PN}"
 
 	# Select classic/gallium drivers
 	if use classic || use gallium; then
