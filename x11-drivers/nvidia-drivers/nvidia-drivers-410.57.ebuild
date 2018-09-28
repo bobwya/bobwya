@@ -7,10 +7,7 @@ inherit flag-o-matic linux-info linux-mod multilib-minimal \
 	nvidia-driver portability toolchain-funcs unpacker user udev
 
 NV_URI="https://download.nvidia.com/XFree86/"
-X86_NV_PACKAGE="NVIDIA-Linux-x86-${PV}"
 AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
-ARM_NV_PACKAGE="NVIDIA-Linux-armv7l-gnueabihf-${PV}"
-X86_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86-${PV}"
 AMD64_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86_64-${PV}"
 
 DESCRIPTION="NVIDIA Accelerated Graphics Driver"
@@ -18,15 +15,12 @@ HOMEPAGE="https://www.nvidia.com/ https://www.nvidia.com/Download/Find.aspx"
 SRC_URI="
 	amd64-fbsd? ( ${NV_URI%/}/FreeBSD-x86_64/${PV}/${AMD64_FBSD_NV_PACKAGE}.tar.gz )
 	amd64? ( ${NV_URI%/}/Linux-x86_64/${PV}/${AMD64_NV_PACKAGE}.run )
-	arm? ( ${NV_URI%/}/Linux-32bit-ARM/${PV}/${ARM_NV_PACKAGE}.run )
-	x86-fbsd? ( ${NV_URI%/}/FreeBSD-x86/${PV}/${X86_FBSD_NV_PACKAGE}.tar.gz )
-	x86? ( ${NV_URI%/}/Linux-x86/${PV}/${X86_NV_PACKAGE}.run )
 	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${PV}.tar.bz2 )
 "
 
 LICENSE="GPL-2 NVIDIA-r2"
 SLOT="0/${PV%.*}"
-KEYWORDS="-* ~amd64 ~x86 ~amd64-fbsd ~x86-fbsd"
+KEYWORDS="-* ~amd64 ~amd64-fbsd"
 RESTRICT="bindist mirror"
 EMULTILIB_PKG="true"
 
@@ -69,7 +63,7 @@ RDEPEND="
 	tools? ( !media-video/nvidia-settings )
 	wayland? ( dev-libs/wayland[${MULTILIB_USEDEP}] )
 	X? (
-		<x11-base/xorg-server-1.19.99:=
+		<x11-base/xorg-server-1.20.99:=
 		>=x11-libs/libX11-1.6.2[${MULTILIB_USEDEP}]
 		>=x11-libs/libXext-1.3.2[${MULTILIB_USEDEP}]
 		>=x11-libs/libvdpau-1.0[${MULTILIB_USEDEP}]
@@ -90,15 +84,11 @@ nvidia_drivers_versions_check() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 10; then
+		if kernel_is ge 4 19; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.10"
-			ewarn "<sys-kernel/vanilla-sources-4.10"
-			ewarn "This version of ${CATEGORY}/${PN} has an unofficial patch"
-			ewarn "applied to enable support for the following kernels::"
-			ewarn "=sys-kernel/gentoo-sources-4.10"
-			ewarn "=sys-kernel/vanilla-sources-4.10"
+			ewarn "<sys-kernel/gentoo-sources-4.19"
+			ewarn "<sys-kernel/vanilla-sources-4.19"
 		elif use kms && kernel_is lt 4 2; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -232,12 +222,19 @@ pkg_setup() {
 }
 
 src_prepare() {
-	local -a PATCHES=( "${FILESDIR}/${PN}-378.13-kernel-4.10.patch" )
+	local -a PATCHES
+	if use tools; then
+		rsync -achv "${FILESDIR}/nvidia-settings-linker.patch" "${WORKDIR}"/ \
+			|| die "rsync failed"
+		sed -i -e 's:@PV@:'"${PV}"':g' "${WORKDIR}/nvidia-settings-linker.patch" \
+			|| die "sed failed"
+		PATCHES+=( "${WORKDIR}/nvidia-settings-linker.patch" )
+	fi
 	if use pax_kernel; then
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
 		ewarn "need support with these patches, contact the PaX team."
-		PATCHES+=( "${FILESDIR}/${PN}-375.20-pax-r1.patch" )
+		PATCHES+=( "${FILESDIR}/${PN}-384.47-pax-r1.patch" )
 	fi
 
 	local man_file
@@ -281,6 +278,8 @@ src_compile() {
 		local -a mybaseemakeargs myemakeargs
 		mybaseemakeargs=(
 			"CC=$(tc-getCC)"
+			"LD=$(tc-getCC)"
+			"NVLD=$(tc-getLD)"
 			"LIBDIR=$(get_libdir)"
 			"NV_VERBOSE=1"
 			"DO_STRIP="
@@ -300,7 +299,6 @@ src_compile() {
 
 		myemakeargs=( "${mybaseemakeargs[@]}" )
 		myemakeargs+=(
-			"LD=$(tc-getCC)"
 			"GTK3_AVAILABLE=$(usex gtk3 1 0)"
 			"NVML_ENABLED=0"
 			"NV_USE_BUNDLED_LIBJANSSON=0"
@@ -353,8 +351,8 @@ src_install() {
 		doins "${NV_X11}/nvidia_drv.so"
 
 		# Xorg GLX driver
-		donvidia "${NV_X11}/libglx.so.${NV_SOVER}" \
-			"/usr/$(get_libdir)/xorg/nvidia/extensions"
+		donvidia "${NV_X11}/libglxserver_nvidia.so.${NV_SOVER}" \
+			"/usr/$(get_libdir)/xorg/modules/extensions"
 
 		# Xorg nvidia.conf
 		insinto "/usr/share/X11/xorg.conf.d"
@@ -489,10 +487,10 @@ src_install-libs() {
 
 	if use X; then
 		NV_GLX_LIBRARIES=(
-			"libEGL.so.$(usex compat "${NV_SOVER}" 1)" "${GL_ROOT}"
+			"libEGL.so.$(usex compat "${NV_SOVER}" 1.1.0)" "${GL_ROOT}"
 			"libEGL_nvidia.so.${NV_SOVER}" "${GL_ROOT}"
-			"libGL.so.$(usex compat "${NV_SOVER}" 1.0.0)" "${GL_ROOT}"
-			"libGLESv1_CM.so.1" "${GL_ROOT}"
+			"libGL.so.$(usex compat "${NV_SOVER}" 1.7.0)" "${GL_ROOT}"
+			"libGLESv1_CM.so.1.2.0" "${GL_ROOT}"
 			"libGLESv1_CM_nvidia.so.${NV_SOVER}" "${GL_ROOT}"
 			"libGLX.so.0" "${GL_ROOT}"
 			"libGLX_nvidia.so.${NV_SOVER}" "${GL_ROOT}"
@@ -507,12 +505,13 @@ src_install-libs() {
 			"libnvidia-fbc.so.${NV_SOVER}" .
 			"libnvidia-opencl.so.${NV_SOVER}" .
 			"libnvidia-ptxjitcompiler.so.${NV_SOVER}" .
-			"libGLESv2.so.2" "${GL_ROOT}"
+			"libGLESv2.so.2.1.0" "${GL_ROOT}"
 			"libGLESv2_nvidia.so.${NV_SOVER}" "${GL_ROOT}"
 			"libvdpau_nvidia.so.${NV_SOVER}" .
 			"libnvidia-eglcore.so.${NV_SOVER}" .
 			"libnvidia-glcore.so.${NV_SOVER}" .
 			"libnvidia-glsi.so.${NV_SOVER}" .
+			"libnvidia-glvkspirv.so.${NV_SOVER}" .
 			"libnvidia-ifr.so.${NV_SOVER}" .
 		)
 
