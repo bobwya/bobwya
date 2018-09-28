@@ -31,7 +31,7 @@ inherit autotools check-reqs flag-o-matic gnome2-utils mercurial mozconfig-v6.52
 	mozlinguas-v2 pax-utils toolchain-funcs virtualx xdg-utils
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
-HOMEPAGE="https://www.mozilla.org/en-US/firefox/
+HOMEPAGE="https://www.mozilla.org/firefox
 	https://www.rosenauer.org/hg/mozilla"
 
 KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~ia64 ~ppc ~ppc64 ~x86 ~amd64-linux ~x86-linux"
@@ -128,7 +128,7 @@ src_unpack() {
 	# Unpack language packs
 	mozlinguas_src_unpack
 
-	if [[ ${MOZ_PV} =~ ^\(10|17|24\)\..*esr$ ]]; then
+	if [[ "${MOZ_PV}" =~ ^\(10|17|24\)\..*esr$ ]]; then
 		EHG_REVISION="esr${MOZ_PV%%.*}"
 	else
 		EHG_REVISION="firefox${MOZ_PV%%.*}"
@@ -171,6 +171,8 @@ src_prepare() {
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
 	rm -f "${WORKDIR}"/firefox/2007_fix_nvidia_latest.patch
+
+	PATCHES+=( "${FILESDIR}/${P}-blessings-TERM.patch" ) # 654316
 
 	# Enable gnomebreakpad
 	if use debug; then

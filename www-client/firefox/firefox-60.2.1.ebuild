@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -17,7 +17,7 @@ MOZ_LANGS=( "ach" "af" "an" "ar" "as" "ast" "az" "bg" "bn-BD" "bn-IN" "br" "bs" 
 # Patch version
 MOZ_PV="${PV}"
 [[ ${MOZ_ESR} == 1 ]] && MOZ_PV="${MOZ_PV}esr"
-PATCH="${PN}-60.0-patches-02"
+PATCH="${PN}-60.0-patches-03"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 
 #MOZCONFIG_OPTIONAL_QT5=1
@@ -37,7 +37,7 @@ KEYWORDS="~amd64 ~x86"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist egl eme-free +gmp-autoupdate hardened hwaccel jack kde +screenshot selinux test"
+IUSE="bindist egl eme-free geckodriver +gmp-autoupdate hardened hwaccel jack kde +screenshot selinux test"
 RESTRICT="!bindist? ( bindist )"
 
 PATCH_URIS=( "https://dev.gentoo.org"/~{anarchy,axs,polynomial-c}/"mozilla/patchsets/${PATCH}.tar.xz" )
@@ -116,7 +116,7 @@ src_unpack() {
 	# Unpack language packs
 	mozlinguas_src_unpack
 
-	if [[ ${MOZ_PV} =~ ^\(10|17|24\)\..*esr$ ]]; then
+	if [[ "${MOZ_PV}" =~ ^\(10|17|24\)\..*esr$ ]]; then
 		EHG_REVISION="esr${MOZ_PV%%.*}"
 	else
 		EHG_REVISION="firefox${MOZ_PV%%.*}"
@@ -156,9 +156,8 @@ src_prepare() {
 	fi
 	rm "${WORKDIR}/firefox/2005_ffmpeg4.patch"
 
-	PATCHES+=(
-		"${FILESDIR}/bug_1461221.patch"
-	)
+	PATCHES+=( "${FILESDIR}/bug_1461221.patch" )
+	PATCHES+=( "${FILESDIR}/${PN}-60.0-blessings-TERM.patch" ) # 654316
 
 	# Enable gnomebreakpad
 	if use debug; then
@@ -221,6 +220,14 @@ src_configure() {
 	# get your own set of keys.
 	_google_api_key=AIzaSyDEAOvatFo0eTgsV_ZlEzx0ObmepsMzfAc
 
+	# Add information about TERM to output (build.log) to aid debugging
+	# blessings problems
+	if [[ -n "${TERM}" ]]; then
+		einfo "TERM is set to: \"${TERM}\""
+	else
+		einfo "TERM is unset."
+	fi
+
 	####################################
 	#
 	# mozconfig, CFLAGS and CXXFLAGS setup
@@ -229,6 +236,8 @@ src_configure() {
 
 	mozconfig_init
 	mozconfig_config
+
+	mozconfig_use_enable geckodriver
 
 	# enable JACK, bug 600002
 	mozconfig_use_enable jack
@@ -245,8 +254,12 @@ src_configure() {
 		mozconfig_use_enable hardened hardening
 	fi
 
-	# egl build error #571180
-	use egl && mozconfig_annotate 'Enable EGL as GL provider' --with-gl-provider=EGL
+	# Disable built-in ccache support to avoid sandbox violation, #665420
+	# Use FEATURES=ccache instead!
+	mozconfig_annotate '' --without-ccache
+	sed -i -e 's/ccache_stats = None/return None/' \
+		python/mozbuild/mozbuild/controller/building.py || \
+		die "Failed to disable ccache stats call"
 
 	# Setup api key for location services
 	echo -n "${_google_api_key}" > "${S}"/google-api-key
@@ -320,7 +333,14 @@ src_install() {
 
 	cd "${S}" || die "cd failed"
 	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX}/bin/bash}" MOZ_NOSPAM=1 \
-	DESTDIR="${D}" ./mach install
+	DESTDIR="${D}" ./mach install || die "echo failed"
+
+	if use geckodriver; then
+		cp "${BUILD_OBJ_DIR}"/dist/bin/geckodriver "${ED%/}"${MOZILLA_FIVE_HOME} || die "cp failed"
+		pax-mark m "${ED%/}"${MOZILLA_FIVE_HOME}/geckodriver
+
+		dosym ${MOZILLA_FIVE_HOME}/geckodriver /usr/bin/geckodriver
+	fi
 
 	# Install language packs
 	mozlinguas_src_install
@@ -369,8 +389,16 @@ PROFILE_EOF
 			|| die "echo failed"
 	fi
 
+	# Don't install llvm-symbolizer from sys-devel/llvm package
+	[[ -f "${ED%/}${MOZILLA_FIVE_HOME}/llvm-symbolizer" ]] && \
+		rm "${ED%/}${MOZILLA_FIVE_HOME}/llvm-symbolizer"
+
+	# firefox and firefox-bin are identical
+	rm "${ED%/}"${MOZILLA_FIVE_HOME}/firefox-bin || die "rm failed"
+	dosym firefox ${MOZILLA_FIVE_HOME}/firefox-bin
+
 	# Required in order to use plugins and even run firefox on hardened.
-	pax-mark m "${ED}${MOZILLA_FIVE_HOME}"/{firefox,firefox-bin,plugin-container}
+	pax-mark m "${ED}${MOZILLA_FIVE_HOME}"/{firefox,plugin-container}
 }
 
 pkg_preinst() {
@@ -394,9 +422,8 @@ pkg_preinst() {
 }
 
 pkg_postinst() {
-	# Update mimedb for the new .desktop file
-	xdg_desktop_database_update
 	gnome2_icon_cache_update
+	xdg_desktop_database_update
 
 	if ! use gmp-autoupdate && ! use eme-free; then
 		elog "USE='-gmp-autoupdate' has disabled the following plugins from updating or"
@@ -416,4 +443,5 @@ pkg_postinst() {
 
 pkg_postrm() {
 	gnome2_icon_cache_update
+	xdg_desktop_database_update
 }
