@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=6
 
-PYTHON_COMPAT=( python2_7 )
+PYTHON_COMPAT=( python3_4 python3_5 python3_6 python3_7 )
 
 inherit llvm meson multilib-minimal pax-utils python-any-r1
 
@@ -20,7 +20,7 @@ if [[ "${PV}" == "9999" ]]; then
 	SRC_URI=""
 else
 	SRC_URI="https://mesa.freedesktop.org/archive/${MY_P}.tar.xz"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~arm-linux ~x86-linux ~sparc-solaris ~x64-solaris ~x86-solaris"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~x86-linux ~sparc-solaris ~x64-solaris ~x86-solaris"
 fi
 
 LICENSE="MIT"
@@ -132,6 +132,7 @@ RDEPEND="${RDEPEND}
 # we need to *really* make sure we're only using one slot.
 LLVM_DEPSTR="
 	|| (
+		sys-devel/llvm:8[${MULTILIB_USEDEP}]
 		sys-devel/llvm:7[${MULTILIB_USEDEP}]
 		sys-devel/llvm:6[${MULTILIB_USEDEP}]
 		sys-devel/llvm:5[${MULTILIB_USEDEP}]
@@ -470,6 +471,7 @@ multilib_src_configure() {
 		"-Dgallium-drivers=$(driver_list "${GALLIUM_DRIVERS[*]}")"
 		"-Dvulkan-drivers=$(driver_list "${VULKAN_DRIVERS[*]}")"
 		"--buildtype" "$(usex debug debug plain)"
+		"-Db_ndebug=$(usex debug false true)"
 	)
 	meson_src_configure
 }
@@ -529,4 +531,3 @@ pkg_postinst() {
 	ewarn " * x11-drivers/nvidia-drivers"
 	ewarn "from the bobwya overlay."
 }
-
