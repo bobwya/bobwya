@@ -71,7 +71,7 @@ LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.93"
 # shellcheck disable=SC2124
 RDEPEND="
 	!app-eselect/eselect-mesa
-	=app-eselect/eselect-opengl-1.3.3-r2
+	~app-eselect/eselect-opengl-1.3.3
 	>=dev-libs/expat-2.1.0-r3:=[${MULTILIB_USEDEP}]
 	>=sys-libs/zlib-1.2.8[${MULTILIB_USEDEP}]
 	>=x11-libs/libX11-1.6.2:=[${MULTILIB_USEDEP}]
