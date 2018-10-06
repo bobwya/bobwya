@@ -14,7 +14,7 @@ else
 	SRC_URI="https://dl.winehq.org/vkd3d/source/${P}.tar.xz"
 fi
 
-IUSE="spirv-tools xcb"
+IUSE="demos spirv-tools"
 RDEPEND="spirv-tools? ( dev-util/spirv-tools:=[${MULTILIB_USEDEP}] )
 		media-libs/vulkan-loader[${MULTILIB_USEDEP},X]
 		x11-libs/xcb-util:=[${MULTILIB_USEDEP}]
@@ -40,4 +40,16 @@ multilib_src_configure() {
 	)
 
 	ECONF_SOURCE=${S} econf "${myconf[@]}"
+}
+
+multilib_src_install() {
+	default
+	if multilib_is_native_abi && use demos; then
+		local demo_bin
+		pushd "${BUILD_DIR}/demos/.libs/" || die "pushd failed"
+		while IFS= read -r -d '' demo_bin; do
+			newbin "${demo_bin}" "${PN}-${demo_bin}"
+		done < <(find . -maxdepth 1 -executable -type f -printf '%f\0' 2>/dev/null)
+		popd || die "popd failed"
+	fi
 }
