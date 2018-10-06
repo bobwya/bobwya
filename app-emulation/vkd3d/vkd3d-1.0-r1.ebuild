@@ -14,7 +14,7 @@ else
 	SRC_URI="https://dl.winehq.org/vkd3d/source/${P}.tar.xz"
 fi
 
-IUSE="spirv-tools"
+IUSE="spirv-tools xcb"
 RDEPEND="spirv-tools? ( dev-util/spirv-tools:=[${MULTILIB_USEDEP}] )
 		media-libs/vulkan-loader[${MULTILIB_USEDEP},X]
 		x11-libs/xcb-util:=[${MULTILIB_USEDEP}]
