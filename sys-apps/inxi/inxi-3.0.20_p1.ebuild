@@ -3,15 +3,13 @@
 
 # shellcheck disable=SC2034
 
-EAPI=6
-
-inherit git-r3
+EAPI=7
 
 DESCRIPTION="Perl script that collects and displays system information."
 HOMEPAGE="https://github.com/smxi/inxi"
 
 if [ "${PV}" = "9999" ]; then
-	MY_PV="${PV}"
+	inherit git-r3
 	MY_P="${P}"
 	EGIT_REPO_URI="https://github.com/smxi/${PN}.git"
 	KEYWORDS=""
@@ -27,11 +25,21 @@ SLOT="0"
 IUSE=""
 
 DEPEND=""
-RDEPEND="dev-lang/perl:0=
-		dev-perl/Cpanel-JSON-XS
-		sys-apps/pciutils
-		sys-apps/usbutils
-		"
+RDEPEND="
+	app-text/tree
+	dev-lang/perl:0=
+	dev-perl/Cpanel-JSON-XS
+	sys-apps/pciutils
+	sys-apps/usbutils
+	virtual/perl-HTTP-Tiny
+	virtual/perl-IO-Socket-IP
+	virtual/perl-Time-HiRes
+	"
+
+S="${WORKDIR}/${MY_P}"
+
+PATCHES=( "${FILESDIR}/${PN}-3.0.00_fix_disk_usage_calculation.patch" )
+
 get_recommended_packages() {
 	local inxi_bin="${ROOT}/usr/bin/inxi"
 	[[ -f "${inxi_bin}" ]] || die "inxi script not valid"

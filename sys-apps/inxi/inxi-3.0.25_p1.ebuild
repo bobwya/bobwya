@@ -3,7 +3,7 @@
 
 # shellcheck disable=SC2034
 
-EAPI=6
+EAPI=7
 
 DESCRIPTION="Perl script that collects and displays system information."
 HOMEPAGE="https://github.com/smxi/inxi"
@@ -26,10 +26,14 @@ IUSE=""
 
 DEPEND=""
 RDEPEND="
+	app-text/tree
 	dev-lang/perl:0=
 	dev-perl/Cpanel-JSON-XS
 	sys-apps/pciutils
 	sys-apps/usbutils
+	virtual/perl-HTTP-Tiny
+	virtual/perl-IO-Socket-IP
+	virtual/perl-Time-HiRes
 	"
 
 S="${WORKDIR}/${MY_P}"

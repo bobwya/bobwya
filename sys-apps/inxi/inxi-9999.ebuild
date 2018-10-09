@@ -3,7 +3,7 @@
 
 # shellcheck disable=SC2034
 
-EAPI=6
+EAPI=7
 
 DESCRIPTION="Perl script that collects and displays system information."
 HOMEPAGE="https://github.com/smxi/inxi"
