@@ -77,7 +77,7 @@ get_recommended_packages() {
 	END{
 		if (dump_section)
 			dump_array(array_section)
-	}'
+	}' 2>/dev/null
 }
 
 src_install() {
