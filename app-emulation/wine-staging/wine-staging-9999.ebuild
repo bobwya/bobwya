@@ -63,7 +63,7 @@ SRC_URI="${SRC_URI}
 	https://github.com/bobwya/${GENTOO_WINE_EBUILD_COMMON_PN}/archive/${GENTOO_WINE_EBUILD_COMMON_PV}.tar.gz -> ${GENTOO_WINE_EBUILD_COMMON_P}.tar.gz"
 
 if [[ "${MY_PV}" == "9999" ]]; then
-	STAGING_EGIT_REPO_URI="https://github.com/wine-staging/wine-staging.git"
+	EGIT_REPO_WINE_STAGING="https://github.com/wine-staging/wine-staging.git"
 else
 	SRC_URI="${SRC_URI}
 		https://github.com/wine-staging/wine-staging/archive/v${STAGING_PV}.tar.gz -> ${STAGING_P}.tar.gz"
@@ -192,17 +192,22 @@ wine_env_vcs_variable_prechecks() {
 	local env_error=0
 
 	if [[ ! -z "${pn_live_value}" ]]; then
-		eerror "Because ${PN} is multi-repository based, ${pn_live_variable}"
-		eerror "cannot be used to set the commit."
+		eerror "Because ${PN} is multi-repository based, ${pn_live_variable} cannot be"
+		eerror "used to set the commit. It also a depreciated git-r3 eclass feature."
 		env_error=1
 	fi
-	[[ ! -z ${EGIT_COMMIT} || ! -z ${EGIT_BRANCH} ]] \
-		&& env_error=1
+	if [[ ! -z "${EGIT_COMMIT:-${EGIT_BRANCH}}" || ! -z "${EGIT_WINE_COMMIT:-${EGIT_WINE_BRANCH}}" \
+		|| ! -z "${EGIT_STAGING_COMMIT:-${EGIT_STAGING_BRANCH}}" ]]; then
+		env_error=1
+	fi
+
 	if (( env_error )); then
-		eerror "Git commit (and branch) overrides must now be specified"
-		eerror "using ONE of following the environmental variables:"
-		eerror "  EGIT_WINE_COMMIT or EGIT_WINE_BRANCH (Wine)"
-		eerror "  EGIT_STAGING_COMMIT or EGIT_STAGING_BRANCH (Wine Staging)."
+		eerror "To override fetched wine repository properties, use:"
+		eerror "  EGIT_OVERRIDE_BRANCH_WINE"
+		eerror "  EGIT_OVERRIDE_COMMIT_WINE"
+		eerror "OR to override fetched wine-staging repository properties, use:"
+		eerror "  EGIT_OVERRIDE_BRANCH_WINE_STAGING_WINE_STAGING"
+		eerror "  EGIT_OVERRIDE_COMMIT_WINE_STAGING_WINE_STAGING"
 		eerror
 		return 1
 	fi
@@ -303,30 +308,14 @@ wine_generic_compiler_pretests() {
 	fi
 }
 
-# wine_git_unpack() {
-#	1>  : Target Wine Git Source directory
-wine_git_unpack() {
-	(($# == 0))	|| die "invalid number of arguments: ${#} (0)"
-
-	if [[ ! -z "${EGIT_WINE_COMMIT}" ]]; then
-		ewarn "Building Wine against Wine git commit EGIT_WINE_COMMIT=\"${EGIT_WINE_COMMIT}\" ."
-		EGIT_COMMIT="${EGIT_WINE_COMMIT}" git-r3_src_unpack
-	elif [[ ! -z "${EGIT_WINE_BRANCH}" ]]; then
-		ewarn "Building Wine against Wine git branch EGIT_WINE_BRANCH=\"${EGIT_WINE_BRANCH}\" ."
-		EGIT_BRANCH="${EGIT_WINE_BRANCH}" git-r3_src_unpack
-	else
-		EGIT_BRANCH="master" git-r3_src_unpack
-	fi
-}
-
 # sieve_patchset_array_by_git_commit()
 #	1>  : Git Source directory
-#	2[-N]>  : Patch-set array (reference(s))
+#	2[-N]>  : Patch-set array(s) (reference(s))
 sieve_patchset_array_by_git_commit() {
 	(($# >= 2))	|| die "invalid number of arguments: ${#} (2-)"
 
 	local -r SHA1_REGEXP="[[:xdigit:]]{40}" VARIABLE_NAME_REGEXP="^[_[:alpha:]][_[:alnum:]]+$"
-	local __commit_hash __git_directory __git_log __patch_array_reference i_arg i_array __line
+	local __commit_hash __git_directory __git_log __patch_array_reference i_arg=1 i_array __line
 
 	__git_directory="${1%/}"
 	if [[ ! -d "${__git_directory}/.git" ]]; then
@@ -336,15 +325,19 @@ sieve_patchset_array_by_git_commit() {
 	__git_log="$( git log --pretty=format:%H 2>/dev/null || die "git log failed" )"
 	popd || die "popd failed"
 
-	for (( i_arg=1 ; $# > 1 ; ++i_arg)); do
-		shift 1
-		__patch_array_reference="${1}"
+	shift 1
+	for __patch_array_reference; do
 		if [[ ! "${__patch_array_reference}" =~ ${VARIABLE_NAME_REGEXP} ]]; then
-			die "argument (${i_arg}): invalid reference name (${VARIABLE_NAME_REGEXP}): '${__patch_array_reference}'"
+			die "argument ($((i_arg+=1))): invalid reference name: '${__patch_array_reference}'"
 		fi
 
 		declare -n patch_array="${__patch_array_reference}"
 		for i_array in "${!patch_array[@]}"; do
+			if [[ "${patch_array[i_array]}" =~ ${SHA1_REGEXP} ]]; then
+				[[ "${__git_log}" =~ ${patch_array[i_array]} ]] && unset -v 'patch_array[i_array]'
+				continue
+			fi
+
 			[[ -f "${patch_array[i_array]}" ]] || die "patch file: \"${patch_array[i_array]}\" does not exist"
 
 			__line=0
@@ -356,7 +349,7 @@ sieve_patchset_array_by_git_commit() {
 				[[ "${__git_log}" =~ ${__commit_hash} ]] || continue
 
 				einfo "excluding patch: \"${patch_array[i_array]}\"; parent Wine Git commit: ${__commit_hash} (parent of HEAD)"
-				unset 'patch_array[i_array]'
+				unset -v 'patch_array[i_array]'
 				break
 			done
 		done
@@ -394,49 +387,44 @@ src_unpack() {
 	default
 
 	if [[ "${MY_PV}" == "9999" ]]; then
-		if [[ ! -z "${EGIT_STAGING_COMMIT:-${EGIT_STAGING_BRANCH}}" ]]; then
+		if [[ ! -z "${EGIT_OVERRIDE_COMMIT_WINE_STAGING_WINE_STAGING:-${EGIT_OVERRIDE_BRANCH_WINE_STAGING_WINE_STAGING}}" ]]; then
 			# References are relative to Wine Staging git tree (checkout Wine Staging git tree first)
-			# Use env variables "EGIT_STAGING_COMMIT" or "EGIT_STAGING_BRANCH" to reference Wine Staging git tree
+			# Use env variables "EGIT_OVERRIDE_COMMIT_WINE_STAGING_WINE_STAGING" or "EGIT_OVERRIDE_BRANCH_WINE_STAGING_WINE_STAGING" to reference Wine Staging git tree
 			#588604 Use git-r3 internal functions for secondary Wine Staging repository
 			ebegin "(subshell): Wine Staging git reference specified. Building Wine git with Wine Staging patchset ..."
 			(
 				# shellcheck source=/dev/null
 				source "${WORKDIR%/}/${GENTOO_WINE_EBUILD_COMMON_P%/}/scripts/wine-staging-git-helper.sh"
-				if [[ ! -z "${EGIT_STAGING_COMMIT}" ]]; then
-					ewarn "Building Wine against Wine Staging git commit EGIT_STAGING_COMMIT=\"${EGIT_STAGING_COMMIT}\" ."
-					git-r3_fetch "${STAGING_EGIT_REPO_URI}" "${EGIT_STAGING_COMMIT}"
-				else
-					ewarn "Building Wine against Wine Staging git branch EGIT_STAGING_BRANCH=\"${EGIT_STAGING_BRANCH}\" ."
-					git-r3_fetch "${STAGING_EGIT_REPO_URI}" "refs/heads/${EGIT_STAGING_BRANCH}"
-				fi
-				git-r3_checkout "${STAGING_EGIT_REPO_URI}" "${STAGING_DIR}"
+				EGIT_CHECKOUT_DIR="${STAGING_DIR}" EGIT_REPO_URI="${EGIT_REPO_WINE_STAGING}" git-r3_src_unpack
 				wine_staging_target_commit="${EGIT_VERSION}"
-				get_upstream_wine_commit  "${STAGING_DIR}" "${wine_staging_target_commit}" "wine_commit"
-				EGIT_COMMIT="${wine_commit}" git-r3_src_unpack
-				einfo "Building Wine commit \"${wine_commit}\" referenced by Wine Staging commit \"${wine_staging_target_commit}\" ..."
+				get_upstream_wine_commit "${STAGING_DIR}" "${wine_staging_target_commit}" "wine_commit" || die "get_upstream_wine_commit failed"
+				EGIT_OVERRIDE_COMMIT_WINE="${wine_commit}" git-r3_src_unpack
+				einfo "Building Wine commit '${wine_commit}' referenced by Wine Staging commit '${wine_staging_target_commit}' ..."
 			)
 			eend
 		else
 			# References are relative to Wine git tree (post-checkout Wine Staging git tree)
-			# Use env variables "EGIT_WINE_COMMIT" or "EGIT_WINE_BRANCH" to reference Wine git tree
+			# Use env variables "EGIT_OVERRIDE_COMMIT_WINE" or "EGIT_OVERRIDE_BRANCH_WINE" to reference Wine git tree
 			#588604 Use git-r3 internal functions for secondary Wine Staging repository
 			ebegin "(subshell): Wine git reference specified or inferred. Building Wine git with with Wine Staging patchset ..."
 			(
 				# shellcheck source=/dev/null
 				source "${WORKDIR%/}/${GENTOO_WINE_EBUILD_COMMON_P%/}/scripts/wine-staging-git-helper.sh"
-				wine_git_unpack
+				git-r3_src_unpack
 				wine_commit="${EGIT_VERSION}"
 				wine_target_commit="${wine_commit}"
-				git-r3_fetch "${STAGING_EGIT_REPO_URI}" "HEAD"
-				git-r3_checkout "${STAGING_EGIT_REPO_URI}" "${STAGING_DIR}"
+				EGIT_OVERRIDE_BRANCH_WINE_STAGING_WINE_STAGING="" EGIT_OVERRIDE_BRANCH_WINE_STAGING_WINE_STAGING="" \
+				EGIT_CHECKOUT_DIR="${STAGING_DIR}" EGIT_REPO_URI="${EGIT_REPO_WINE_STAGING}" git-r3_src_unpack
 				wine_staging_commit=""; wine_commit_offset=""
 				if ! walk_wine_staging_git_tree "${STAGING_DIR}" "${S}" "${wine_commit}" "wine_staging_commit" ; then
 					find_closest_wine_commit "${STAGING_DIR}" "${S}" "wine_commit" "wine_staging_commit" "wine_commit_offset" \
 						&& display_closest_wine_commit_message "${wine_commit}" "${wine_staging_commit}" "${wine_commit_offset}"
-					die "Failed to find Wine Staging git commit corresponding to supplied Wine git commit \"${wine_target_commit}\" ."
+					die "Failed to find Wine Staging git commit corresponding to supplied Wine git commit '${wine_target_commit}' ."
 					exit 1
 				fi
-				einfo "Building Wine Staging commit \"${wine_staging_commit}\" corresponding to Wine commit \"${wine_target_commit}\" ..."
+				EGIT_OVERRIDE_COMMIT_WINE_STAGING_WINE_STAGING="${wine_staging_commit}" \
+				EGIT_CHECKOUT_DIR="${STAGING_DIR}" EGIT_REPO_URI="${EGIT_REPO_WINE_STAGING}" git-r3_src_unpack
+				einfo "Building Wine Staging commit '${wine_staging_commit}' corresponding to Wine commit '${wine_target_commit}' ..."
 			)
 			eend
 		fi
