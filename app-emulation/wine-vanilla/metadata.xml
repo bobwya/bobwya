@@ -17,6 +17,8 @@ However Wine can optionally use native Windows DLLs if they are available.Wine p
 		<flag name="netapi">Use libnetapi from <pkg>net-fs/samba</pkg> to support Windows networks in netapi32.dll.</flag>
 		<flag name="opencl">Enable OpenCL support.</flag>
 		<flag name="osmesa">Add support for OpenGL in bitmaps using libOSMesa.</flag>
+		<flag name="pba">Add support for the Wine-PBA patchset (unofficial).
+		See: https://github.com/acomminos/wine-pba</flag>
 		<flag name="pcap">Support packet capture software (e.g. wireshark).</flag>
 		<flag name="perl">Install helpers written in perl (winedump/winemaker).</flag>
 		<flag name="prelink">Run prelink on DLLs during build.</flag>
