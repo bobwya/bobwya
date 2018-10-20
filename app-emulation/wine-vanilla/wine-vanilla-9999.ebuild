@@ -178,12 +178,14 @@ wine_env_vcs_variable_prechecks() {
 	local pn_live_value="${!pn_live_variable}"
 	local env_error=0
 
-	[[ ! -z ${EGIT_COMMIT} || ! -z ${EGIT_BRANCH} ]] \
-		&& env_error=1
+	if [[ ! -z "${EGIT_COMMIT:-${EGIT_BRANCH}}" || ! -z "${EGIT_WINE_COMMIT:-${EGIT_WINE_BRANCH}}" ]]; then
+		env_error=1
+	fi
+
 	if (( env_error )); then
-		eerror "Git commit (and branch) overrides must now be specified"
-		eerror "using ONE of following the environmental variables:"
-		eerror "  EGIT_WINE_COMMIT or EGIT_WINE_BRANCH (Wine)"
+		eerror "To override fetched wine repository properties, use:"
+		eerror "  EGIT_OVERRIDE_BRANCH_WINE"
+		eerror "  EGIT_OVERRIDE_COMMIT_WINE"
 		eerror
 		return 1
 	fi
@@ -284,22 +286,6 @@ wine_generic_compiler_pretests() {
 	fi
 }
 
-# wine_git_unpack() {
-#	1>  : Target Wine Git Source directory
-wine_git_unpack() {
-	(($# == 0))	|| die "invalid number of arguments: ${#} (0)"
-
-	if [[ ! -z "${EGIT_WINE_COMMIT}" ]]; then
-		ewarn "Building Wine against Wine git commit EGIT_WINE_COMMIT=\"${EGIT_WINE_COMMIT}\" ."
-		EGIT_COMMIT="${EGIT_WINE_COMMIT}" git-r3_src_unpack
-	elif [[ ! -z "${EGIT_WINE_BRANCH}" ]]; then
-		ewarn "Building Wine against Wine git branch EGIT_WINE_BRANCH=\"${EGIT_WINE_BRANCH}\" ."
-		EGIT_BRANCH="${EGIT_WINE_BRANCH}" git-r3_src_unpack
-	else
-		EGIT_BRANCH="master" git-r3_src_unpack
-	fi
-}
-
 # sieve_patchset_array_by_git_commit()
 #	1>  : Git Source directory
 #	2[-N]>  : Patch-set array(s) (reference(s))
@@ -307,7 +293,7 @@ sieve_patchset_array_by_git_commit() {
 	(($# >= 2))	|| die "invalid number of arguments: ${#} (2-)"
 
 	local -r SHA1_REGEXP="[[:xdigit:]]{40}" VARIABLE_NAME_REGEXP="^[_[:alpha:]][_[:alnum:]]+$"
-	local __commit_hash __git_directory __git_log __patch_array_reference i_arg i_array __line
+	local __commit_hash __git_directory __git_log __patch_array_reference i_arg=1 i_array __line
 
 	__git_directory="${1%/}"
 	if [[ ! -d "${__git_directory}/.git" ]]; then
@@ -317,15 +303,19 @@ sieve_patchset_array_by_git_commit() {
 	__git_log="$( git log --pretty=format:%H 2>/dev/null || die "git log failed" )"
 	popd || die "popd failed"
 
-	for (( i_arg=1 ; $# > 1 ; ++i_arg)); do
-		shift 1
-		__patch_array_reference="${1}"
+	shift 1
+	for __patch_array_reference; do
 		if [[ ! "${__patch_array_reference}" =~ ${VARIABLE_NAME_REGEXP} ]]; then
-			die "argument (${i_arg}): invalid reference name (${VARIABLE_NAME_REGEXP}): '${__patch_array_reference}'"
+			die "argument ($((i_arg+=1))): invalid reference name: '${__patch_array_reference}'"
 		fi
 
 		declare -n patch_array="${__patch_array_reference}"
 		for i_array in "${!patch_array[@]}"; do
+			if [[ "${patch_array[i_array]}" =~ ${SHA1_REGEXP} ]]; then
+				[[ "${__git_log}" =~ ${patch_array[i_array]} ]] && unset -v 'patch_array[i_array]'
+				continue
+			fi
+
 			[[ -f "${patch_array[i_array]}" ]] || die "patch file: \"${patch_array[i_array]}\" does not exist"
 
 			__line=0
@@ -337,7 +327,7 @@ sieve_patchset_array_by_git_commit() {
 				[[ "${__git_log}" =~ ${__commit_hash} ]] || continue
 
 				einfo "excluding patch: \"${patch_array[i_array]}\"; parent Wine Git commit: ${__commit_hash} (parent of HEAD)"
-				unset 'patch_array[i_array]'
+				unset -v 'patch_array[i_array]'
 				break
 			done
 		done
@@ -374,7 +364,7 @@ src_unpack() {
 
 	default
 
-	[[ "${MY_PV}" == "9999" ]] && wine_git_unpack
+	[[ "${MY_PV}" == "9999" ]] && git-r3_src_unpack
 
 	l10n_find_plocales_changes "${S}/po" "" ".po"
 }

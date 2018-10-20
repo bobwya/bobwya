@@ -174,12 +174,14 @@ wine_env_vcs_variable_prechecks() {
 	local pn_live_value="${!pn_live_variable}"
 	local env_error=0
 
-	[[ ! -z ${EGIT_COMMIT} || ! -z ${EGIT_BRANCH} ]] \
-		&& env_error=1
+	if [[ ! -z "${EGIT_COMMIT:-${EGIT_BRANCH}}" || ! -z "${EGIT_WINE_COMMIT:-${EGIT_WINE_BRANCH}}" ]]; then
+		env_error=1
+	fi
+
 	if (( env_error )); then
-		eerror "Git commit (and branch) overrides must now be specified"
-		eerror "using ONE of following the environmental variables:"
-		eerror "  EGIT_WINE_COMMIT or EGIT_WINE_BRANCH (Wine)"
+		eerror "To override fetched wine repository properties, use:"
+		eerror "  EGIT_OVERRIDE_BRANCH_WINE"
+		eerror "  EGIT_OVERRIDE_COMMIT_WINE"
 		eerror
 		return 1
 	fi
@@ -310,7 +312,7 @@ src_unpack() {
 
 	default
 
-	[[ "${MY_PV}" == "9999" ]] && wine_git_unpack
+	[[ "${MY_PV}" == "9999" ]] && git-r3_src_unpack
 
 	l10n_find_plocales_changes "${S}/po" "" ".po"
 }
