@@ -23,7 +23,8 @@ PATCHFF="firefox-52.5-patches-02"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-EHG_REPO_URI="https://www.rosenauer.org/hg/mozilla"
+HG_REVISION="d9b28dbb04f2"
+HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
 
 # ESR releases have slightly version numbers
 if [[ ${MOZ_ESR} == 1 ]]; then
@@ -34,8 +35,8 @@ MOZ_P="${PN}-${MOZ_PV}"
 MOZCONFIG_OPTIONAL_GTK2ONLY=1
 MOZCONFIG_OPTIONAL_WIFI=1
 
-inherit autotools check-reqs flag-o-matic gnome2-utils mercurial mozconfig-v6.52 \
-	mozlinguas-v2 nsplugins pax-utils toolchain-funcs xdg-utils
+inherit autotools check-reqs flag-o-matic gnome2-utils mozconfig-v6.52 mozlinguas-v2 \
+	nsplugins pax-utils toolchain-funcs xdg-utils
 
 DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.com/en-US/thunderbird
@@ -53,6 +54,10 @@ PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c}/mozilla/patchset
 SRC_URI="${SRC_URI}
 	${MOZ_HTTP_URI}/${MOZ_PV}/source/${MOZ_P}.source.tar.xz
 	https://dev.gentoo.org/~axs/distfiles/lightning-${MOZ_LIGHTNING_VER}.tar.xz
+	kde? (
+		${HG_MOZILLA_URI}/${HG_REVISION}/raw-file/mozilla-kde.patch -> ${P}-mozilla-kde.patch
+		${HG_MOZILLA_URI}/${HG_REVISION}/raw-file/mozilla-nongnome-proxies.patch -> ${P}-mozilla-nongnome-proxies.patch
+	)
 	lightning? ( https://dev.gentoo.org/~axs/distfiles/gdata-provider-${MOZ_LIGHTNING_GDATA_VER}.tar.xz )
 	${PATCH_URIS[@]}"
 
@@ -70,9 +75,11 @@ DEPEND="rust? ( dev-lang/rust )
 		virtual/opengl )"
 
 RDEPEND="${CDEPEND}
+	kde? ( kde-misc/kmozillahelper:= )
 	selinux? ( sec-policy/selinux-thunderbird )
 	crypt? ( >=x11-plugins/enigmail-2.0.5 )
-	kde? ( kde-misc/kmozillahelper:= )"
+"
+
 S="${WORKDIR}/${MOZ_P}"
 
 BUILD_OBJ_DIR="${S}/tbird"
@@ -103,20 +110,6 @@ src_unpack() {
 	# Unpack language packs
 	mozlinguas_src_unpack
 
-	if [[ ${MOZ_PV} =~ ^\(10|17|24\)\..*esr$ ]]; then
-		EHG_REVISION="esr${MOZ_PV%%.*}"
-	else
-		EHG_REVISION="firefox${MOZ_PV%%.*}"
-	fi
-	KDE_PATCHSET="firefox-kde-patchset"
-	EHG_CHECKOUT_DIR="${WORKDIR}/${KDE_PATCHSET}"
-	if use kde; then
-		mercurial_fetch "${EHG_REPO_URI}" "${KDE_PATCHSET}"
-	else
-		# quieten the mercurial module for app-portage/smart-live-rebuild
-		export HG_REV_ID="${EHG_REVISION}"
-	fi
-
 	# this version of lightning is a .tar.xz, no xpi needed
 	#xpi_unpack lightning-${MOZ_LIGHTNING_VER}.xpi
 
@@ -126,7 +119,7 @@ src_unpack() {
 
 src_prepare() {
 	local -a PATCHES
-	PATCHES+=( "${FILESDIR}/1000_fix_gentoo_preferences.patch" )
+	epatch "${FILESDIR}/1000_fix_gentoo_preferences.patch"
 
 	local patch
 	for patch in "2007_fix_nvidia_latest.patch"; do
@@ -136,8 +129,8 @@ src_prepare() {
 	pushd "${S}/mozilla" &>/dev/null || die "pushd failed"
 	if use kde; then
 		# Gecko/toolkit OpenSUSE KDE integration patchset
-		eapply "${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
-		eapply "${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
+		eapply "${DISTDIR}/${P}-mozilla-kde.patch"
+		eapply "${DISTDIR}/${P}-mozilla-nongnome-proxies.patch"
 		# Uncomment the next line to enable KDE support debugging (additional console output)...
 		#PATCHES+=( "${FILESDIR}/${PN}-kde-debug.patch" )
 		# Uncomment the following patch line to force Plasma/Qt file dialog for Thunderbird...
@@ -145,6 +138,7 @@ src_prepare() {
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/mail-client/thunderbird/)
 	fi
 	# Apply our patchset from firefox to thunderbird as well
+
 	eapply "${WORKDIR}/firefox"
 	popd &>/dev/null || die "popd failed"
 
