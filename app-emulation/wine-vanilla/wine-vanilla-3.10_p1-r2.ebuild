@@ -1,1 +1,0 @@
-wine-vanilla-3.10-r2.ebuild

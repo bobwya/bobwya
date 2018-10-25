@@ -388,7 +388,7 @@ src_prepare() {
 				PATCHES+=( "${pba_patchset}" )
 			fi
 		else
-			PATCHES+=( "${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/429e0c913087bdc2c183f74f346a9438278ec960" )
+			PATCHES+=( "${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/f08342f5737c2bb3f965059f930e5d9a25ff6268" )
 		fi
 	fi
 

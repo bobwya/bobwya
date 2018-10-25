@@ -491,7 +491,6 @@ multilib_src_configure() {
 		"$(use_with gstreamer)"
 		--without-hal
 		"$(use_with jpeg)"
-		"$(use_with kerberos gssapi)"
 		"$(use_with kerberos krb5)"
 		"$(use_with ldap)"
 		"$(use_enable mono mscoree)"

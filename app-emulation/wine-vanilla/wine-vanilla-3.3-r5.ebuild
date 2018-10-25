@@ -76,7 +76,7 @@ SRC_URI="${SRC_URI}
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pba pcap +perl +png prelink prefix pulseaudio +realtime +run-exes samba scanner selinux +ssl test +threads +truetype udev +udisks v4l +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pba pcap +perl +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test +threads +truetype udev +udisks v4l vulkan +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
@@ -127,11 +127,13 @@ COMMON_DEPEND="
 	png? ( media-libs/libpng:0=[${MULTILIB_USEDEP}] )
 	pulseaudio? ( media-sound/pulseaudio[${MULTILIB_USEDEP}] )
 	scanner? ( media-gfx/sane-backends:=[${MULTILIB_USEDEP}] )
+	sdl2? ( media-libs/libsdl2[haptic,joystick,${MULTILIB_USEDEP}] )
 	ssl? ( net-libs/gnutls:=[${MULTILIB_USEDEP}] )
 	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
 	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
+	vulkan? ( media-libs/vulkan-loader[X,${MULTILIB_USEDEP}] )
 	xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
 	xinerama? ( x11-libs/libXinerama[${MULTILIB_USEDEP}] )
 	xml? (
@@ -388,7 +390,7 @@ src_prepare() {
 				PATCHES+=( "${pba_patchset}" )
 			fi
 		else
-			PATCHES+=( "${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/429e0c913087bdc2c183f74f346a9438278ec960" )
+			PATCHES+=( "${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/6eb562210cb154749b1da5c399a69320d87365e6" )
 		fi
 	fi
 
@@ -508,11 +510,13 @@ multilib_src_configure() {
 		"$(use_with pulseaudio pulse)"
 		"$(use_with threads pthread)"
 		"$(use_with scanner sane)"
+		"$(use_with sdl2 sdl)"
 		"$(use_enable test tests)"
 		"$(use_with truetype freetype)"
 		"$(use_with udev)"
 		"$(use_with udisks dbus)"
 		"$(use_with v4l)"
+		"$(use_with vulkan)"
 		"$(use_with X x)"
 		"$(use_with X xfixes)"
 		"$(use_with xcomposite)"

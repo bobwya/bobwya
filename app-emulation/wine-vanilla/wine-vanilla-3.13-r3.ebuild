@@ -76,12 +76,13 @@ SRC_URI="${SRC_URI}
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pba pcap +perl +png prelink prefix pulseaudio +realtime +run-exes samba scanner selinux +ssl test +threads +truetype udev +udisks v4l +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pba pcap +perl +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test +threads +truetype udev +udisks v4l vkd3d vulkan +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
 	osmesa? ( opengl )
-	test? ( abi_x86_32 )" #286560 osmesa-opengl  #551124 X-truetype
+	test? ( abi_x86_32 )
+	vkd3d? ( vulkan )" #286560 osmesa-opengl  #551124 X-truetype
 
 # FIXME: the test suite is unsuitable for us; many tests require net access
 # or fail due to Xvfb's opengl limitations.
@@ -127,11 +128,14 @@ COMMON_DEPEND="
 	png? ( media-libs/libpng:0=[${MULTILIB_USEDEP}] )
 	pulseaudio? ( media-sound/pulseaudio[${MULTILIB_USEDEP}] )
 	scanner? ( media-gfx/sane-backends:=[${MULTILIB_USEDEP}] )
+	sdl2? ( media-libs/libsdl2[haptic,joystick,${MULTILIB_USEDEP}] )
 	ssl? ( net-libs/gnutls:=[${MULTILIB_USEDEP}] )
 	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
 	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
+	vkd3d? ( app-emulation/vkd3d[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
+	vulkan? ( media-libs/vulkan-loader[X,${MULTILIB_USEDEP}] )
 	xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
 	xinerama? ( x11-libs/libXinerama[${MULTILIB_USEDEP}] )
 	xml? (
@@ -145,7 +149,7 @@ RDEPEND="${COMMON_DEPEND}
 	>=app-eselect/eselect-wine-1.5.4
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
 	gecko? ( app-emulation/wine-gecko:2.47[abi_x86_32?,abi_x86_64?] )
-	mono? ( app-emulation/wine-mono:4.7.1 )
+	mono? ( app-emulation/wine-mono:4.7.3 )
 	perl? (
 		dev-lang/perl
 		dev-perl/XML-Simple
@@ -388,7 +392,7 @@ src_prepare() {
 				PATCHES+=( "${pba_patchset}" )
 			fi
 		else
-			PATCHES+=( "${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/429e0c913087bdc2c183f74f346a9438278ec960" )
+			PATCHES+=( "${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/ea7186348f48a749ab28ecc405fb56601c56e4f8" )
 		fi
 	fi
 
@@ -508,11 +512,14 @@ multilib_src_configure() {
 		"$(use_with pulseaudio pulse)"
 		"$(use_with threads pthread)"
 		"$(use_with scanner sane)"
+		"$(use_with sdl2 sdl)"
 		"$(use_enable test tests)"
 		"$(use_with truetype freetype)"
 		"$(use_with udev)"
 		"$(use_with udisks dbus)"
 		"$(use_with v4l)"
+		"$(use_with vkd3d)"
+		"$(use_with vulkan)"
 		"$(use_with X x)"
 		"$(use_with X xfixes)"
 		"$(use_with xcomposite)"
