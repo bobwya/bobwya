@@ -77,13 +77,12 @@ fi
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc ffmpeg +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap libav +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pba pcap +perl pipelight +png prelink prefix pulseaudio +realtime +run-exes s3tc samba scanner sdl2 selinux +ssl test themes +threads +truetype udev +udisks v4l vaapi vkd3d vulkan +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pba pcap +perl pipelight +png prelink prefix pulseaudio +realtime +run-exes s3tc samba scanner sdl2 selinux +ssl test themes +threads +truetype udev +udisks v4l vaapi vulkan +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
 	osmesa? ( opengl )
-	test? ( abi_x86_32 )
-	vkd3d? ( vulkan )" #286560 osmesa-opengl  #551124 X-truetype
+	test? ( abi_x86_32 )" #286560 osmesa-opengl  #551124 X-truetype
 
 # FIXME: the test suite is unsuitable for us; many tests require net access
 # or fail due to Xvfb's opengl limitations.
@@ -103,10 +102,6 @@ COMMON_DEPEND="
 	alsa? ( media-libs/alsa-lib[${MULTILIB_USEDEP}] )
 	capi? ( net-libs/libcapi[${MULTILIB_USEDEP}] )
 	cups? ( net-print/cups:=[${MULTILIB_USEDEP}] )
-	ffmpeg? (
-		libav? ( media-video/libav:=[${MULTILIB_USEDEP}] )
-		!libav? ( media-video/ffmpeg:=[${MULTILIB_USEDEP}] )
-	)
 	fontconfig? ( media-libs/fontconfig:=[${MULTILIB_USEDEP}] )
 	gphoto2? ( media-libs/libgphoto2:=[${MULTILIB_USEDEP}] )
 	gsm? ( media-sound/gsm:=[${MULTILIB_USEDEP}] )
@@ -144,7 +139,6 @@ COMMON_DEPEND="
 	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
 	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
-	vkd3d? ( app-emulation/vkd3d[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
 	vaapi? ( x11-libs/libva:=[drm,X?,${MULTILIB_USEDEP}] )
 	vulkan? ( media-libs/vulkan-loader[X,${MULTILIB_USEDEP}] )
@@ -161,7 +155,7 @@ RDEPEND="${COMMON_DEPEND}
 	>=app-eselect/eselect-wine-1.5.4
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
 	gecko? ( app-emulation/wine-gecko:2.47[abi_x86_32?,abi_x86_64?] )
-	mono? ( app-emulation/wine-mono:4.7.3 )
+	mono? ( app-emulation/wine-mono:4.7.1 )
 	perl? (
 		dev-lang/perl
 		dev-perl/XML-Simple
@@ -313,54 +307,6 @@ wine_generic_compiler_pretests() {
 	fi
 }
 
-# sieve_patchset_array_by_git_commit()
-#	1>  : Git Source directory
-#	2[-N]>  : Patch-set array(s) (reference(s))
-sieve_patchset_array_by_git_commit() {
-	(($# >= 2))	|| die "invalid number of arguments: ${#} (2-)"
-
-	local -r SHA1_REGEXP="[[:xdigit:]]{40}" VARIABLE_NAME_REGEXP="^[_[:alpha:]][_[:alnum:]]+$"
-	local __commit_hash __git_directory __git_log __patch_array_reference i_arg=1 i_array __line
-
-	__git_directory="${1%/}"
-	if [[ ! -d "${__git_directory}/.git" ]]; then
-		die "argument (1): path \"${__git_directory}\" is not a valid Git repository directory"
-	fi
-	pushd "${__git_directory}" || die "pushd failed"
-	__git_log="$( git log --pretty=format:%H 2>/dev/null || die "git log failed" )"
-	popd || die "popd failed"
-
-	shift 1
-	for __patch_array_reference; do
-		if [[ ! "${__patch_array_reference}" =~ ${VARIABLE_NAME_REGEXP} ]]; then
-			die "argument ($((i_arg+=1))): invalid reference name: '${__patch_array_reference}'"
-		fi
-
-		declare -n patch_array="${__patch_array_reference}"
-		for i_array in "${!patch_array[@]}"; do
-			if [[ "${patch_array[i_array]}" =~ ${SHA1_REGEXP} ]]; then
-				[[ "${__git_log}" =~ ${patch_array[i_array]} ]] && unset -v 'patch_array[i_array]'
-				continue
-			fi
-
-			[[ -f "${patch_array[i_array]}" ]] || die "patch file: \"${patch_array[i_array]}\" does not exist"
-
-			__line=0
-			while
-				: $((++__line))
-				__commit_hash="$( sed -n -e "${__line}"'s/^.*\([[:xdigit:]]\{40\}\).*$/\1/p' "${patch_array[i_array]}" )"
-				[[ "${__commit_hash}" =~ ${SHA1_REGEXP} ]]
-			do
-				[[ "${__git_log}" =~ ${__commit_hash} ]] || continue
-
-				einfo "excluding patch: \"${patch_array[i_array]}\"; parent Wine Git commit: ${__commit_hash} (parent of HEAD)"
-				unset -v 'patch_array[i_array]'
-				break
-			done
-		done
-	done
-}
-
 pkg_pretend() {
 	if use oss && ! use kernel_FreeBSD && ! has_version '>=media-sound/oss-4'; then
 		eerror "You cannot build ${CATEGORY}/${PN} with USE=+oss without having support from a FreeBSD kernel"
@@ -455,23 +401,8 @@ src_prepare() {
 		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.8_winecfg_detailed_version.patch"
 		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.5.26-winegcc.patch" #260726
 		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.6-memset-O3.patch" #480508
-		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.9.9-sysmacros.patch" #580046
-		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.9.13-gnutls-3.5-compat.patch" #587028
 		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.8-multislot-apploader.patch" #310611
 	)
-	if use truetype; then
-		PATCHES+=(
-			"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.18-freetype-2.8.1-segfault.patch"    #631676
-			"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.18-freetype-2.8.1-drop-glyphs.patch" #631676
-		)
-		PATCHES_BIN+=( "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.18-freetype-2.8.1-implement_minimum_em_size_required_by_opentype_1.8.2.patch" ) #631376
-	fi
-
-	# https://bugs.winehq.org/show_bug.cgi?id=40851
-	use cups && PATCHES+=( "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.9.14-cups-2.2-cupsgetppd-build-fix.patch" )
-
-	# https://bugs.winehq.org/show_bug.cgi?id=31836
-	use gstreamer && PATCHES+=( "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.8-gstreamer-1.0_"{01,02,03,04,05,06,07,08,09,10,11}".patch" )
 
 	[[ "${MY_PV}" == "9999" ]] && sieve_patchset_array_by_git_commit "${S}" "PATCHES" "PATCHES_BIN"
 
@@ -517,7 +448,7 @@ src_prepare() {
 				PATCHES+=( "${pba_patchset}" )
 			fi
 		else
-			PATCHES+=( "${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/82dbf75dc064bb03b5dfc5d8a82b9782a7272ce2" )
+			PATCHES+=( "${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/be002fd92b9d72163bf130ab8ade8aa4d9cdbad0" )
 		fi
 	fi
 
@@ -658,7 +589,6 @@ multilib_src_configure() {
 		"$(use_with lcms cms)"
 		"$(use_with cups)"
 		"$(use_with ncurses curses)"
-		"$(use_with ffmpeg)"
 		"$(use_with fontconfig)"
 		"$(use_with ssl gnutls)"
 		"$(use_enable gecko mshtml)"
@@ -692,7 +622,6 @@ multilib_src_configure() {
 		"$(use_with udisks dbus)"
 		"$(use_with v4l)"
 		"$(use_with vaapi va)"
-		"$(use_with vkd3d)"
 		"$(use_with vulkan)"
 		"$(use_with X x)"
 		"$(use_with X xfixes)"

@@ -1,1 +1,0 @@
-wine-staging-3.18-r1.ebuild
