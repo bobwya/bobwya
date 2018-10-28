@@ -63,7 +63,7 @@ GENTOO_WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20180805"
 GENTOO_WINE_EBUILD_COMMON_PN="${GENTOO_WINE_EBUILD_COMMON_P%-*}"
 GENTOO_WINE_EBUILD_COMMON_PV="${GENTOO_WINE_EBUILD_COMMON_P##*-}"
 
-GENTOO_WINE_PBA_P="gentoo-wine-pba-20181025"
+GENTOO_WINE_PBA_P="gentoo-wine-pba-20181028"
 GENTOO_WINE_PBA_PN="${GENTOO_WINE_PBA_P%-*}"
 GENTOO_WINE_PBA_PV="${GENTOO_WINE_PBA_P##*-}"
 
@@ -436,6 +436,7 @@ src_prepare() {
 				"1251fe692165077f9ee38992ac33a999bf26b69d" "0e9f94ec1c201c56442124eb8754be1e30840299"
 				"ea7186348f48a749ab28ecc405fb56601c56e4f8" "cf9536b6bfbefbf5003c7633446a91f6e399c4de"
 				"580ea44bc65472c0304d74b7e873acfb7f680b85" "944e92ba06ecadeb933d95e30035323483dfe7c7"
+				"12b5c9148588464d621131e80a2b751e7dbce55b"
 			)
 			sieved_pba_patchset_commits=( "${pba_patchset_commits[@]}" )
 			sieve_patchset_array_by_git_commit "${S}" "sieved_pba_patchset_commits"
@@ -456,7 +457,7 @@ src_prepare() {
 				PATCHES+=( "${pba_patchset}" )
 			fi
 		else
-			PATCHES+=( "${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/944e92ba06ecadeb933d95e30035323483dfe7c7" )
+			PATCHES+=( "${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/12b5c9148588464d621131e80a2b751e7dbce55b" )
 		fi
 	fi
 
