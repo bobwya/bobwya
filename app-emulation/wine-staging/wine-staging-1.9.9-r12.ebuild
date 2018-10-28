@@ -431,6 +431,7 @@ src_prepare() {
 		if grep -q "${STAGING_EXCLUDE_PATCHSETS[indices[i]]}" "${STAGING_DIR}/patches/patchinstall.sh"; then
 			einfo "Excluding Wine Staging patchset: \"${STAGING_EXCLUDE_PATCHSETS[indices[i]]}\""
 		else
+			einfo "Ignoring Wine Staging patchset: \"${STAGING_EXCLUDE_PATCHSETS[indices[i]]}\""
 			unset -v 'STAGING_EXCLUDE_PATCHSETS[indices[i]]'
 		fi
 	done

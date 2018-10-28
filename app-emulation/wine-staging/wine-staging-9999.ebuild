@@ -64,7 +64,9 @@ GENTOO_WINE_PBA_PV="${GENTOO_WINE_PBA_P##*-}"
 DESCRIPTION="Free implementation of Windows(tm) on Unix, with Wine Staging patchset"
 HOMEPAGE="https://www.winehq.org/"
 SRC_URI="${SRC_URI}
-	https://github.com/bobwya/${GENTOO_WINE_PBA_PN}/archive/${GENTOO_WINE_PBA_PV}.tar.gz -> ${GENTOO_WINE_PBA_P}.tar.gz
+	pba? (
+		https://github.com/bobwya/${GENTOO_WINE_PBA_PN}/archive/${GENTOO_WINE_PBA_PV}.tar.gz -> ${GENTOO_WINE_PBA_P}.tar.gz
+	)
 	https://github.com/bobwya/${GENTOO_WINE_EBUILD_COMMON_PN}/archive/${GENTOO_WINE_EBUILD_COMMON_PV}.tar.gz -> ${GENTOO_WINE_EBUILD_COMMON_P}.tar.gz"
 
 if [[ "${MY_PV}" == "9999" ]]; then
@@ -510,7 +512,6 @@ src_prepare() {
 				wine_git_commit="$(git rev-parse HEAD)" || die "git rev-parse failed"
 				popd || die "popd failed"
 				ewarn "The PBA patchset is only unsupported for Wine Git commit: '${pba_patchset_commits[0]}' (+child commits)"
-				ewarn "This Wine Git commit corresponds to Wine Staging Git commit: 'a1ec166849d66b93f03eb31a10de73c78e4f4724' (tag: v3.3~18)"
 				ewarn "The PBA patchset cannot be applied on Wine Git commit: '${wine_git_commit}'"
 				ewarn "USE +pba will omitted for this build"
 			else
@@ -536,6 +537,7 @@ src_prepare() {
 		if grep -q "${STAGING_EXCLUDE_PATCHSETS[indices[i]]}" "${STAGING_DIR}/patches/patchinstall.sh"; then
 			einfo "Excluding Wine Staging patchset: \"${STAGING_EXCLUDE_PATCHSETS[indices[i]]}\""
 		else
+			einfo "Ignoring Wine Staging patchset: \"${STAGING_EXCLUDE_PATCHSETS[indices[i]]}\""
 			unset -v 'STAGING_EXCLUDE_PATCHSETS[indices[i]]'
 		fi
 	done
