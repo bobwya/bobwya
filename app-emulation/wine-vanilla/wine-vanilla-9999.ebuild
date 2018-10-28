@@ -70,7 +70,9 @@ GENTOO_WINE_PBA_PV="${GENTOO_WINE_PBA_P##*-}"
 DESCRIPTION="Free implementation of Windows(tm) on Unix, without any external patchsets"
 HOMEPAGE="https://www.winehq.org/"
 SRC_URI="${SRC_URI}
-	https://github.com/bobwya/${GENTOO_WINE_PBA_PN}/archive/${GENTOO_WINE_PBA_PV}.tar.gz -> ${GENTOO_WINE_PBA_P}.tar.gz
+	pba? (
+		https://github.com/bobwya/${GENTOO_WINE_PBA_PN}/archive/${GENTOO_WINE_PBA_PV}.tar.gz -> ${GENTOO_WINE_PBA_P}.tar.gz
+	)
 	https://github.com/bobwya/${GENTOO_WINE_EBUILD_COMMON_PN}/archive/${GENTOO_WINE_EBUILD_COMMON_PV}.tar.gz -> ${GENTOO_WINE_EBUILD_COMMON_P}.tar.gz"
 
 LICENSE="LGPL-2.1"
@@ -448,7 +450,6 @@ src_prepare() {
 				wine_git_commit="$(git rev-parse HEAD)" || die "git rev-parse failed"
 				popd || die "popd failed"
 				ewarn "The PBA patchset is only unsupported for Wine Git commit: '${pba_patchset_commits[0]}' (+child commits)"
-				ewarn "This Wine Git commit corresponds to Wine Git tag: wine-3.0-rc1~98"
 				ewarn "The PBA patchset cannot be applied on Wine Git commit: '${wine_git_commit}'"
 				ewarn "USE +pba will omitted for this build"
 			else
