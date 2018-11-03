@@ -71,6 +71,17 @@ winetricks_disable_gui_component() {
 		"${1}.bak" > "${1}" || die "awk failed"
 }
 
+winetricks_disable_version_check() {
+	(($# == 1)) || die "Invalid parameter count: ${#} (1)"
+	[[ -f "${1}" ]] || die "winetricks script file not valid: \"${1}\""
+
+	local awk_file="disable_version_check"
+
+	mv "${1}" "${1}.bak" || die "mv failed"
+	awk -f "${FILESDIR}/${PN}-${awk_file}.awk" \
+		"${1}.bak" > "${1}" || die "awk failed"
+}
+
 src_unpack() {
 	if [[ "${PV}" = "99999999" ]]; then
 		git-r3_src_unpack
@@ -92,6 +103,7 @@ src_prepare() {
 	else
 		winetricks_disable_gui_component "${S}/src/winetricks" true
 	fi
+	winetricks_disable_version_check "${S}/src/winetricks"
 	default
 }
 
