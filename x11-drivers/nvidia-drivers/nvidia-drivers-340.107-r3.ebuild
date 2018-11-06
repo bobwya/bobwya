@@ -114,7 +114,8 @@ nvidia_drivers_versions_check() {
 donvidia() {
 	(($# == 2)) || die "Invalid parameter count: ${#} (2)"
 	[[ -z "${1}" || ! -e "${1}" ]] && die "Invalid parameter (1) path: \"${1}\""
-	[[ -z "${2}" || ! -d "${2}" ]] && die "Invalid parameter (2) directory: \"${2}\""
+	[[ -z "${2}" ]] && die "Invalid parameter (2) directory: \"${2}\""
+	[[ ! -d "${2}" ]] && dodir "${2}"
 
 	local nv_LIB nv_DEST nv_LIBNAME nv_SOVER
 	nv_LIB="${1}"
@@ -452,11 +453,10 @@ src_install-libs() {
 			"libGLESv1_CM.so.${NV_SOVER}" "${GL_ROOT}"
 			"libGLESv2.so.2" "${GL_ROOT}"
 			"libGLESv2_nvidia.so.${NV_SOVER}" "${GL_ROOT}"
-			"libvdpau_nvidia.so.${NV_SOVER}" .
 			"libnvidia-eglcore.so.${NV_SOVER}" .
 			"libnvidia-glcore.so.${NV_SOVER}" .
 			"libnvidia-glsi.so.${NV_SOVER}" .
-			"libnvidia-ifr.so.${NV_SOVER}" .
+			"libvdpau_nvidia.so.${NV_SOVER}" .
 		)
 
 		if use kernel_linux && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then

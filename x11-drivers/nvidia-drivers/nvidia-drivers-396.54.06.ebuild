@@ -122,7 +122,8 @@ nvidia_drivers_versions_check() {
 donvidia() {
 	(($# == 2)) || die "Invalid parameter count: ${#} (2)"
 	[[ -z "${1}" || ! -e "${1}" ]] && die "Invalid parameter (1) path: \"${1}\""
-	[[ -z "${2}" || ! -d "${2}" ]] && die "Invalid parameter (2) directory: \"${2}\""
+	[[ -z "${2}" ]] && die "Invalid parameter (2) directory: \"${2}\""
+	[[ ! -d "${2}" ]] && dodir "${2}"
 
 	local nv_LIB nv_DEST nv_LIBNAME nv_SOVER
 	nv_LIB="${1}"
@@ -492,6 +493,8 @@ src_install-libs() {
 			"libGL.so.$(usex compat "${NV_SOVER}" 1.7.0)" "${GL_ROOT}"
 			"libGLESv1_CM.so.1.2.0" "${GL_ROOT}"
 			"libGLESv1_CM_nvidia.so.${NV_SOVER}" "${GL_ROOT}"
+			"libGLESv2.so.2.1.0" "${GL_ROOT}"
+			"libGLESv2_nvidia.so.${NV_SOVER}" "${GL_ROOT}"
 			"libGLX.so.0" "${GL_ROOT}"
 			"libGLX_nvidia.so.${NV_SOVER}" "${GL_ROOT}"
 			"libGLdispatch.so.0" "${GL_ROOT}"
@@ -500,19 +503,17 @@ src_install-libs() {
 			"libcuda.so.${NV_SOVER}" .
 			"libnvcuvid.so.${NV_SOVER}" .
 			"libnvidia-compiler.so.${NV_SOVER}" .
+			"libnvidia-eglcore.so.${NV_SOVER}" .
 			"libnvidia-encode.so.${NV_SOVER}" .
 			"libnvidia-fatbinaryloader.so.${NV_SOVER}" .
 			"libnvidia-fbc.so.${NV_SOVER}" .
-			"libnvidia-opencl.so.${NV_SOVER}" .
-			"libnvidia-ptxjitcompiler.so.${NV_SOVER}" .
-			"libGLESv2.so.2.1.0" "${GL_ROOT}"
-			"libGLESv2_nvidia.so.${NV_SOVER}" "${GL_ROOT}"
-			"libvdpau_nvidia.so.${NV_SOVER}" .
-			"libnvidia-eglcore.so.${NV_SOVER}" .
 			"libnvidia-glcore.so.${NV_SOVER}" .
 			"libnvidia-glsi.so.${NV_SOVER}" .
 			"libnvidia-glvkspirv.so.${NV_SOVER}" .
 			"libnvidia-ifr.so.${NV_SOVER}" .
+			"libnvidia-opencl.so.${NV_SOVER}" .
+			"libnvidia-ptxjitcompiler.so.${NV_SOVER}" .
+			"libvdpau_nvidia.so.${NV_SOVER}" .
 		)
 
 		if use wayland && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then
