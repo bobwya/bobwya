@@ -20,7 +20,7 @@ MOZ_LANGS=( "ach" "af" "an" "ar" "as" "ast" "az" "bg" "bn-BD" "bn-IN" "br" "bs" 
 # Patch version
 MOZ_PV="${PV}"
 [[ ${MOZ_ESR} == 1 ]] && MOZ_PV="${MOZ_PV}esr"
-PATCH="${PN}-62.0-patches-01"
+PATCH="${PN}-63.0-patches-01"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 
 #MOZCONFIG_OPTIONAL_QT5=1
@@ -53,7 +53,7 @@ SRC_URI="${SRC_URI}
 	${PATCH_URIS[@]}"
 
 CDEPEND="
-	>=dev-libs/nss-3.38
+	>=dev-libs/nss-3.39
 	>=dev-libs/nspr-4.19
 	>=app-text/hunspell-1.5.4:=
 	dev-libs/atk
@@ -106,6 +106,8 @@ RDEPEND="${CDEPEND}
 DEPEND="${CDEPEND}
 	app-arch/zip
 	app-arch/unzip
+	<dev-util/cbindgen-0.6.7
+	>=net-libs/nodejs-8.11.0
 	>=sys-devel/binutils-2.30
 	sys-apps/findutils
 	>=sys-devel/llvm-4.0.1
@@ -115,14 +117,8 @@ DEPEND="${CDEPEND}
 		>=sys-devel/lld-4.0.1
 	)
 	pulseaudio? ( media-sound/pulseaudio )
-	elibc_glibc? (
-		virtual/cargo
-		virtual/rust
-	)
-	elibc_musl? (
-		virtual/cargo
-		virtual/rust
-	)
+	>=virtual/cargo-1.28.0
+	>=virtual/rust-1.28.0
 	amd64? ( >=dev-lang/yasm-1.1 virtual/opengl )
 	x86? ( >=dev-lang/yasm-1.1 virtual/opengl )"
 
@@ -221,10 +217,7 @@ src_prepare() {
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
 
-	PATCHES+=( "${FILESDIR}/${PN}-60.0-blessings-TERM.patch" ) # 654316
-	PATCHES+=( "${FILESDIR}/${PN}-60.0-do-not-force-lld.patch" )
-	PATCHES+=( "${FILESDIR}/${PN}-60.0-sandbox-lto.patch" ) # 666580
-	PATCHES+=( "${FILESDIR}/${PN}-60.0-missing-errno_h-in-SandboxOpenedFiles_cpp.patch" )
+	default
 
 	# Enable gnomebreakpad
 	if use debug; then
@@ -268,7 +261,10 @@ src_prepare() {
 	sed '/^MOZ_DEV_EDITION=1/d' \
 		-i "${S}"/browser/branding/aurora/configure.sh || die "sed failed"
 
-	default
+	# rustfmt, a tool to format Rust code, is optional and not required to build Firefox.
+	# However, when available, an unsupported version can cause problems, bug #669548
+	sed -i -e "s@check_prog('RUSTFMT', add_rustup_path('rustfmt')@check_prog('RUSTFMT', add_rustup_path('rustfmt_do_not_use')@" \
+		"${S}"/build/moz.configure/rust.configure || die "sed failed"
 
 	# Autotools configure is now called old-configure.in
 	# This works because there is still a configure.in that happens to be for the
@@ -328,12 +324,38 @@ src_configure() {
 	filter-flags -flto*
 
 	if use lto; then
+		local show_old_compiler_warning=
+
 		if use clang; then
+			# At this stage CC is adjusted and the following check will
+			# will work
+			if [[ $(clang-major-version) -lt 7 ]]; then
+				show_old_compiler_warning=1
+			fi
+
 			# Upstream only supports lld when using clang
 			mozconfig_annotate "forcing ld=lld due to USE=clang and USE=lto" --enable-linker=lld
 		else
+			if [[ $(gcc-major-version) -lt 8 ]]; then
+				show_old_compiler_warning=1
+			fi
+
 			# Linking only works when using ld.gold when LTO is enabled
 			mozconfig_annotate "forcing ld=gold due to USE=lto" --enable-linker=gold
+		fi
+
+		if [[ -n "${show_old_compiler_warning}" ]]; then
+			# Checking compiler's major version uses CC variable. Because we allow
+			# user to control used compiler via USE=clang flag, we cannot use
+			# initial value. So this is the earliest stage where we can do this check
+			# because pkg_pretend is not called in the main phase function sequence
+			# environment saving is not guaranteed so we don't know if we will have
+			# correct compiler until now.
+			ewarn ""
+			ewarn "USE=lto requires up-to-date compiler (>=gcc-8 or >=clang-7)."
+			ewarn "You are on your own -- expect build failures. Don't file bugs using that unsupported configuration!"
+			ewarn ""
+			sleep 5
 		fi
 
 		mozconfig_annotate '+lto' --enable-lto=thin
@@ -463,6 +485,7 @@ src_configure() {
 
 	if use clang; then
 		# https://bugzilla.mozilla.org/show_bug.cgi?id=1423822
+		# bug #669382
 		mozconfig_annotate 'elf-hack is broken when using Clang' --disable-elf-hack
 	fi
 
