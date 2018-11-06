@@ -15,7 +15,7 @@ HOMEPAGE="https://www.mesa3d.org/ https://mesa.freedesktop.org/
 		https://mesa.freedesktop.org/"
 if [[ "${PV}" == "9999" ]]; then
 	inherit git-r3
-	EGIT_REPO_URI="https://anongit.freedesktop.org/git/mesa/mesa.git"
+	EGIT_REPO_URI="https://gitlab.freedesktop.org/mesa/mesa.git"
 	EGIT_CHECKOUT_DIR="${WORKDIR}/${MY_P}"
 	SRC_URI=""
 else
@@ -46,7 +46,7 @@ REQUIRED_USE="
 	gles1?  ( egl )
 	gles2?  ( egl )
 	vulkan? ( || ( video_cards_i965 video_cards_radeonsi )
-			  video_cards_radeonsi? ( llvm ) )
+		video_cards_radeonsi? ( llvm ) )
 	wayland? ( egl gbm )
 	video_cards_freedreno?  ( gallium )
 	video_cards_intel?  ( classic )
@@ -94,7 +94,7 @@ RDEPEND="
 			)
 		)
 		opencl? (
-			app-eselect/eselect-opencl
+			dev-libs/ocl-icd
 			dev-libs/libclc
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
 		)
@@ -263,48 +263,49 @@ pkg_pretend() {
 
 	if use d3d9; then
 		if ! use video_cards_r300 &&
-		   ! use video_cards_r600 &&
-		   ! use video_cards_radeonsi &&
-		   ! use video_cards_nouveau &&
-		   ! use video_cards_vmware; then
+			! use video_cards_r600 &&
+			! use video_cards_radeonsi &&
+			! use video_cards_nouveau &&
+			! use video_cards_vmware; then
 			ewarn "Ignoring USE=d3d9       since VIDEO_CARDS does not contain r300, r600, radeonsi, nouveau, or vmware"
 		fi
 	fi
 
 	if use opencl; then
 		if ! use video_cards_r600 &&
-		   ! use video_cards_radeonsi; then
+			! use video_cards_radeonsi; then
 			ewarn "Ignoring USE=opencl     since VIDEO_CARDS does not contain r600 or radeonsi"
 		fi
 	fi
 
 	if use vaapi; then
 		if ! use video_cards_r600 &&
-		   ! use video_cards_radeonsi &&
-		   ! use video_cards_nouveau; then
+			! use video_cards_radeonsi &&
+			! use video_cards_nouveau; then
 			ewarn "Ignoring USE=vaapi      since VIDEO_CARDS does not contain r600, radeonsi, or nouveau"
 		fi
 	fi
 
 	if use vdpau; then
 		if ! use video_cards_r300 &&
-		   ! use video_cards_r600 &&
-		   ! use video_cards_radeonsi &&
-		   ! use video_cards_nouveau; then
+			! use video_cards_r600 &&
+			! use video_cards_radeonsi &&
+			! use video_cards_nouveau; then
 			ewarn "Ignoring USE=vdpau      since VIDEO_CARDS does not contain r300, r600, radeonsi, or nouveau"
 		fi
 	fi
 
 	if use xa; then
 		if ! use video_cards_freedreno &&
-		   ! use video_cards_nouveau; then
+			! use video_cards_nouveau &&
+			! use video_cards_vmware; then
 			ewarn "Ignoring USE=xa         since VIDEO_CARDS does not contain freedreno or nouveau"
 		fi
 	fi
 
 	if use xvmc; then
 		if ! use video_cards_r600 &&
-		   ! use video_cards_nouveau; then
+			! use video_cards_nouveau; then
 			ewarn "Ignoring USE=xvmc       since VIDEO_CARDS does not contain r600 or nouveau"
 		fi
 	fi
@@ -377,38 +378,39 @@ multilib_src_configure() {
 		)
 
 		if use video_cards_r300 ||
-		   use video_cards_r600 ||
-		   use video_cards_radeonsi ||
-		   use video_cards_nouveau ||
-		   use video_cards_vmware; then
+			use video_cards_r600 ||
+			use video_cards_radeonsi ||
+			use video_cards_nouveau ||
+			use video_cards_vmware; then
 			myeconfargs+=( "$(use_enable d3d9 nine)" )
 		else
 			myeconfargs+=( "--disable-nine" )
 		fi
 		if use video_cards_r600 ||
-		   use video_cards_radeonsi ||
-		   use video_cards_nouveau; then
+			use video_cards_radeonsi ||
+			use video_cards_nouveau; then
 			myeconfargs+=( "$(use_enable vaapi va)" )
 			use vaapi && myeconfargs+=( "--with-va-libdir=/usr/$(get_libdir)/va/drivers" )
 		else
 			myeconfargs+=( "--disable-va" )
 		fi
 		if use video_cards_r300 ||
-		   use video_cards_r600 ||
-		   use video_cards_radeonsi ||
-		   use video_cards_nouveau; then
+			use video_cards_r600 ||
+			use video_cards_radeonsi ||
+			use video_cards_nouveau; then
 			myeconfargs+=( "$(use_enable vdpau)" )
 		else
 			myeconfargs+=( "--disable-vdpau" )
 		fi
 		if use video_cards_freedreno ||
-		   use video_cards_nouveau; then
+			use video_cards_nouveau ||
+			use video_cards_vmware; then
 			myeconfargs+=( "$(use_enable xa)" )
 		else
 			myeconfargs+=( "--disable-xa" )
 		fi
 		if use video_cards_r600 ||
-		   use video_cards_nouveau; then
+			use video_cards_nouveau; then
 			myeconfargs+=( "$(use_enable xvmc)" )
 		else
 			myeconfargs+=( "--disable-xvmc" )
@@ -433,7 +435,6 @@ multilib_src_configure() {
 		fi
 
 		driver_enable GALLIUM_DRIVERS video_cards_freedreno freedreno
-		# opencl stuff
 		if use opencl; then
 			myeconfargs+=(
 				"$(use_enable opencl)"
@@ -453,7 +454,7 @@ multilib_src_configure() {
 
 	# on abi_x86_32 hardened we need to have asm disable
 	if [[ ${ABI} == x86* ]] && use pic; then
-		myeconfargs+=( "--disable-asm" )
+		myeconfargs+=( "-Dasm=false" )
 	fi
 
 	if use gallium; then
@@ -549,11 +550,6 @@ pkg_postinst() {
 	# Switch to the xorg implementation.
 	echo
 	eselect opengl set --use-old "${PN}"
-
-	# Switch to mesa opencl
-	if use opencl; then
-		eselect opencl set --use-old "${PN}"
-	fi
 
 	# run omxregister-bellagio to make the OpenMAX drivers known system-wide
 	if use openmax; then

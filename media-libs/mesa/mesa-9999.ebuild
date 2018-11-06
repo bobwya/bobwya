@@ -15,7 +15,7 @@ HOMEPAGE="https://www.mesa3d.org/ https://mesa.freedesktop.org/
 		https://mesa.freedesktop.org/"
 if [[ "${PV}" == "9999" ]]; then
 	inherit git-r3
-	EGIT_REPO_URI="https://anongit.freedesktop.org/git/mesa/mesa.git"
+	EGIT_REPO_URI="https://gitlab.freedesktop.org/mesa/mesa.git"
 	EGIT_CHECKOUT_DIR="${WORKDIR}/${MY_P}"
 	SRC_URI=""
 else
@@ -45,8 +45,9 @@ REQUIRED_USE="
 	d3d9?   ( dri3 )
 	gles1?  ( egl )
 	gles2?  ( egl )
-	vulkan? ( || ( video_cards_i965 video_cards_radeonsi )
-			  video_cards_radeonsi? ( llvm ) )
+	vulkan? ( dri3
+		|| ( video_cards_i965 video_cards_radeonsi )
+		video_cards_radeonsi? ( llvm ) )
 	wayland? ( egl gbm )
 	video_cards_freedreno?  ( gallium )
 	video_cards_intel?  ( classic )
@@ -67,7 +68,7 @@ REQUIRED_USE="
 	video_cards_vmware? ( gallium )
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.93"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.96"
 # shellcheck disable=SC2124
 RDEPEND="
 	!app-eselect/eselect-mesa
@@ -95,7 +96,7 @@ RDEPEND="
 		)
 		lm_sensors? ( sys-apps/lm_sensors:=[${MULTILIB_USEDEP}] )
 		opencl? (
-			app-eselect/eselect-opencl
+			dev-libs/ocl-icd[khronos-headers,${MULTILIB_USEDEP}]
 			dev-libs/libclc
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
 		)
@@ -112,12 +113,14 @@ RDEPEND="
 		>=dev-libs/wayland-protocols-1.8
 	)
 	${LIBDRM_DEPSTRING}[video_cards_freedreno?,video_cards_nouveau?,video_cards_vc4?,video_cards_vivante?,video_cards_vmware?,${MULTILIB_USEDEP}]
-	video_cards_intel? (
-		!video_cards_i965? ( ${LIBDRM_DEPSTRING}[video_cards_intel] )
-	)
-	video_cards_i915? ( ${LIBDRM_DEPSTRING}[video_cards_intel] )
 "
 
+# shellcheck disable=SC2068
+for card in ${INTEL_CARDS[@]}; do
+	RDEPEND="${RDEPEND}
+		video_cards_${card}? ( ${LIBDRM_DEPSTRING}[video_cards_intel] )
+	"
+done
 # shellcheck disable=SC2068
 for card in ${AMD_CARDS[@]}; do
 	RDEPEND="${RDEPEND}
@@ -260,48 +263,49 @@ pkg_pretend() {
 
 	if use d3d9; then
 		if ! use video_cards_r300 &&
-		   ! use video_cards_r600 &&
-		   ! use video_cards_radeonsi &&
-		   ! use video_cards_nouveau &&
-		   ! use video_cards_vmware; then
+			! use video_cards_r600 &&
+			! use video_cards_radeonsi &&
+			! use video_cards_nouveau &&
+			! use video_cards_vmware; then
 			ewarn "Ignoring USE=d3d9       since VIDEO_CARDS does not contain r300, r600, radeonsi, nouveau, or vmware"
 		fi
 	fi
 
 	if use opencl; then
 		if ! use video_cards_r600 &&
-		   ! use video_cards_radeonsi; then
+			! use video_cards_radeonsi; then
 			ewarn "Ignoring USE=opencl     since VIDEO_CARDS does not contain r600 or radeonsi"
 		fi
 	fi
 
 	if use vaapi; then
 		if ! use video_cards_r600 &&
-		   ! use video_cards_radeonsi &&
-		   ! use video_cards_nouveau; then
+			! use video_cards_radeonsi &&
+			! use video_cards_nouveau; then
 			ewarn "Ignoring USE=vaapi      since VIDEO_CARDS does not contain r600, radeonsi, or nouveau"
 		fi
 	fi
 
 	if use vdpau; then
 		if ! use video_cards_r300 &&
-		   ! use video_cards_r600 &&
-		   ! use video_cards_radeonsi &&
-		   ! use video_cards_nouveau; then
+			! use video_cards_r600 &&
+			! use video_cards_radeonsi &&
+			! use video_cards_nouveau; then
 			ewarn "Ignoring USE=vdpau      since VIDEO_CARDS does not contain r300, r600, radeonsi, or nouveau"
 		fi
 	fi
 
 	if use xa; then
 		if ! use video_cards_freedreno &&
-		   ! use video_cards_nouveau; then
+			! use video_cards_nouveau &&
+			! use video_cards_vmware; then
 			ewarn "Ignoring USE=xa         since VIDEO_CARDS does not contain freedreno or nouveau"
 		fi
 	fi
 
 	if use xvmc; then
 		if ! use video_cards_r600 &&
-		   ! use video_cards_nouveau; then
+			! use video_cards_nouveau; then
 			ewarn "Ignoring USE=xvmc       since VIDEO_CARDS does not contain r600 or nouveau"
 		fi
 	fi
@@ -340,9 +344,6 @@ multilib_src_configure() {
 	local -a emesonargs=()
 
 	if use classic; then
-		# Configurable DRI drivers
-		driver_enable DRI_DRIVERS -- swrast
-
 		# Intel code
 		driver_enable DRI_DRIVERS video_cards_i915 i915
 		driver_enable DRI_DRIVERS video_cards_i965 i965
@@ -372,38 +373,39 @@ multilib_src_configure() {
 		)
 
 		if use video_cards_r300 ||
-		   use video_cards_r600 ||
-		   use video_cards_radeonsi ||
-		   use video_cards_nouveau ||
-		   use video_cards_vmware; then
+			use video_cards_r600 ||
+			use video_cards_radeonsi ||
+			use video_cards_nouveau ||
+			use video_cards_vmware; then
 			emesonargs+=( "$(meson_use d3d9 gallium-nine)" )
 		else
 			emesonargs+=( "-Dgallium-nine=false" )
 		fi
 		if use video_cards_r600 ||
-		   use video_cards_radeonsi ||
-		   use video_cards_nouveau; then
+			use video_cards_radeonsi ||
+			use video_cards_nouveau; then
 			emesonargs+=( "$(meson_use vaapi gallium-va)" )
 			use vaapi && emesonargs+=( "-Dva-libs-path=/usr/$(get_libdir)/va/drivers" )
 		else
 			emesonargs+=( "-Dgallium-va=false" )
 		fi
 		if use video_cards_r300 ||
-		   use video_cards_r600 ||
-		   use video_cards_radeonsi ||
-		   use video_cards_nouveau; then
+			use video_cards_r600 ||
+			use video_cards_radeonsi ||
+			use video_cards_nouveau; then
 			emesonargs+=( "$(meson_use vdpau gallium-vdpau)" )
 		else
 			emesonargs+=( "-Dgallium-vdpau=false" )
 		fi
 		if use video_cards_freedreno ||
-		   use video_cards_nouveau; then
+			use video_cards_nouveau ||
+			use video_cards_vmware; then
 			emesonargs+=( "$(meson_use xa gallium-xa)" )
 		else
 			emesonargs+=( "-Dgallium-xa=false" )
 		fi
 		if use video_cards_r600 ||
-		   use video_cards_nouveau; then
+			use video_cards_nouveau; then
 			emesonargs+=( "$(meson_use xvmc gallium-xvmc)" )
 		else
 			emesonargs+=( "-Dgallium-xvmc=false" )
@@ -427,12 +429,7 @@ multilib_src_configure() {
 		fi
 
 		driver_enable GALLIUM_DRIVERS video_cards_freedreno freedreno
-		# opencl stuff
-		if use opencl; then
-			emesonargs+=(
-				"-Dgallium-opencl=$(usex opencl standalone disabled)"
-				)
-		fi
+		emesonargs+=( "-Dgallium-opencl=$(usex opencl icd disabled)" )
 	fi
 
 	if use vulkan; then
@@ -446,7 +443,7 @@ multilib_src_configure() {
 
 	# on abi_x86_32 hardened we need to have asm disable
 	if [[ ${ABI} == x86* ]] && use pic; then
-		emesonargs+=( "--disable-asm" )
+		emesonargs+=( "-Dasm=false" )
 	fi
 
 	if use gallium; then
@@ -498,11 +495,6 @@ multilib_src_install() {
 	)
 	eend $? || die "(subshell): failed to move lib{EGL*,GL*,OpenGL}.{la,a,so*}"
 
-	if use openmax; then
-		echo "XDG_DATA_DIRS=\"${EPREFIX}/usr/share/mesa/xdg\"" > "${T}/99mesaxdgomx"
-		doenvd "${T}"/99mesaxdgomx
-		keepdir /usr/share/mesa/xdg
-	fi
 }
 
 multilib_src_install_all() {
@@ -517,11 +509,6 @@ pkg_postinst() {
 	# Switch to the xorg implementation.
 	echo
 	eselect opengl set --use-old "${PN}"
-
-	# Switch to mesa opencl
-	if use opencl; then
-		eselect opencl set --use-old "${PN}"
-	fi
 
 	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix various issues"
 	ewarn "when switching GL providers."
