@@ -316,8 +316,8 @@ wine_generic_compiler_pretests() {
 }
 
 # sieve_patchset_array_by_git_commit()
-#	1>  : Git Source directory
-#	2[-N]>  : Patch-set array(s) (reference(s))
+#   1>  : Git Source directory
+#   2[-N]>  : Patch-set array(s) (reference(s))
 sieve_patchset_array_by_git_commit() {
 	(($# >= 2))	|| die "invalid number of arguments: ${#} (2-)"
 
@@ -361,6 +361,133 @@ sieve_patchset_array_by_git_commit() {
 			done
 		done
 	done
+}
+
+# get_git_commit_info()
+#   1>  : Git Source directory
+#  [2>] : Git commit hash (optional, reference)
+#  [3>] : Git commit date (optional, reference)
+get_git_commit_info() {
+	(((1 <= $#) && ($# <= 3))) || die "invalid number of arguments: ${#} (1-3)"
+
+	local -r SHA1_REGEXP="[[:xdigit:]]{40}" VARIABLE_NAME_REGEXP="^[_[:alpha:]][_[:alnum:]]+$"
+	local __git_directory="${1%/}" __commit_hash __git_commit_hash __git_commit_date
+
+	if [[ ! -d "${__git_directory}/.git" ]]; then
+		die "argument (1): path \"${__git_directory}\" is not a valid Git repository directory"
+	fi
+
+	pushd "${__git_directory}" || die "pushd failed"
+	__commit_hash="$( git rev-parse HEAD || die "git rev-parse failed ")"
+	if [[ ! "${__commit_hash}" =~ ${SHA1_REGEXP} ]]; then
+		die "unable to determine current HEAD Git commit for repository: \"${__git_directory}\""
+	fi
+
+	if [[ ! -z "${2}" && "${2}" =~ ${VARIABLE_NAME_REGEXP} ]]; then
+		declare -n __git_commit_hash="${2}"
+		__git_commit_hash="${__commit_hash}"
+	fi
+
+	if [[ ! -z "${3}" && "${3}" =~ ${VARIABLE_NAME_REGEXP} ]]; then
+		declare -n __git_commit_date="${3}"
+		__git_commit_date="$( git show -s --format=%cd "${__commit_hash}" || die "git show failed" )"
+	fi
+	popd || die "popd failed"
+}
+
+# eapply_staging_patchset()
+#   See: https://github.com/wine-staging/wine-staging
+eapply_staging_patchset() {
+	(($# == 0)) || die "invalid number of arguments: ${#} (0)"
+
+	ewarn "Applying the Wine Staging patchset. Any bug reports to Wine Bugzilla"
+	ewarn "should explicitly state that Wine Staging was used."
+
+	# Declare Wine Staging excluded patchsets
+	local -a STAGING_EXCLUDE_PATCHSETS=( "configure-OSMesa" "winhlp32-Flex_Workaround" )
+	use gstreamer && STAGING_EXCLUDE_PATCHSETS+=( "quartz-NULL_TargetFormat" )
+	use pipelight || STAGING_EXCLUDE_PATCHSETS+=( "Pipelight" )
+
+	# Process Wine Staging excluded patchsets
+	# shellcheck disable=SC2206
+	local indices=( ${!STAGING_EXCLUDE_PATCHSETS[*]} )
+	for ((i=0; i<${#indices[*]}; i++)); do
+		if grep -q "${STAGING_EXCLUDE_PATCHSETS[indices[i]]}" "${STAGING_DIR}/patches/patchinstall.sh"; then
+			einfo "Excluding Wine Staging patchset: \"${STAGING_EXCLUDE_PATCHSETS[indices[i]]}\""
+		else
+			einfo "Ignoring Wine Staging patchset: \"${STAGING_EXCLUDE_PATCHSETS[indices[i]]}\""
+			unset -v 'STAGING_EXCLUDE_PATCHSETS[indices[i]]'
+		fi
+	done
+
+	# Disable Upstream (Wine Staging) about tab customisation, for winecfg utility, to support our own version
+	if [[ -f "${STAGING_DIR}/patches/winecfg-Staging/0001-winecfg-Add-staging-tab-for-CSMT.patch" ]]; then
+		sed -i '/SetDlgItemTextA(hDlg, IDC_ABT_PANEL_TEXT, PACKAGE_VERSION " (Staging)");/{s/PACKAGE_VERSION " (Staging)"/PACKAGE_VERSION/}' \
+			"${STAGING_DIR}/patches/winecfg-Staging/0001-winecfg-Add-staging-tab-for-CSMT.patch" \
+			|| die "sed failed"
+	fi
+
+	# Launch wine-staging patcher in a subshell, using eapply as a backend, and gitapply.sh as a backend for binary patches
+	ebegin "Running Wine-Staging patch installer"
+	(
+		# Use a sed hack to add EAPI 7 support to the patchinstall.sh script
+		sed -i 	-e '$ d' -e '/^# Critical error, abort$/,+6d' \
+			-e '/^[[:blank:]]*abort ".*"$/{s/abort /die /g}' \
+			-e 's/exit 1$/die/g' \
+			"${STAGING_DIR}/patches/patchinstall.sh" \
+			|| die "sed failed"
+		# shellcheck disable=SC2068
+		set -- DESTDIR="${S}" --backend=eapply --no-autoconf --all ${STAGING_EXCLUDE_PATCHSETS[@]/#/-W }
+		cd "${STAGING_DIR}/patches" || die "cd failed"
+		# shellcheck source=/dev/null
+		source "${STAGING_DIR}/patches/patchinstall.sh"
+	)
+	eend
+
+	# Apply Staging branding to reported Wine version...
+	sed -i -e '/^AC_INIT(.*)$/{s/\[Wine\]/\[Wine Staging\]/}' "${S}/configure.ac" || die "sed failed"
+}
+
+# eapply_pba_patchset()
+#   See: https://github.com/acomminos/wine-pba
+eapply_pba_patchset() {
+	(($# == 0)) || die "invalid number of arguments: ${#} (0)"
+
+	local pba_patchset
+
+	if [[ "${MY_PV}" == "9999" ]]; then
+		local -a pba_patchset_commits sieved_pba_patchset_commits
+		local i_array
+
+		pba_patchset_commits=(
+			"9ae8b8c00f2cca205fdf4ce76e221778b7dfbea7" "afef57f872433bcd3032c2ccbc0453bef5b62178"
+			"5946973021285dd6ecb8df224956fea4817f8fed" "be002fd92b9d72163bf130ab8ade8aa4d9cdbad0"
+			"c698682b3286d72cc7c4c4624b4d14b03dbe6908" "f11563c65fa50e2f8b7e39cade34bb7a998b26f7"
+			"82dbf75dc064bb03b5dfc5d8a82b9782a7272ce2" "d279bc24934fd1b68324017ae1b9e70975640a0a"
+			"853351698842c92db62bddedd2f531b7c5e745d1" "3d5a2567977455d04e4896368a71db74e7b9074b"
+		)
+		sieved_pba_patchset_commits=( "${pba_patchset_commits[@]}" )
+		sieve_patchset_array_by_git_commit "${S}" "sieved_pba_patchset_commits"
+		for i_array in "${!pba_patchset_commits[@]}"; do
+			# shellcheck disable=SC2068
+			has "${pba_patchset_commits[i_array]}" ${sieved_pba_patchset_commits[@]} && break
+
+			pba_patchset="${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/${pba_patchset_commits[i_array]}"
+		done
+		if [[ -z "${pba_patchset}" ]]; then
+			ewarn "The PBA patchset is only supported for Wine Git commit (+child commits): '${pba_patchset_commits[0]}'"
+			ewarn "The PBA patchset cannot be applied on Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
+			ewarn "USE +pba will be omitted for this build."
+			return 1
+		fi
+	else
+		pba_patchset="${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/3d5a2567977455d04e4896368a71db74e7b9074b"
+	fi
+
+	ewarn "Applying the wine-pba patchset."
+	ewarn "Note: this third-party patchset is not officially supported!"
+
+	eapply "${pba_patchset}"
 }
 
 pkg_pretend() {
@@ -435,6 +562,7 @@ src_unpack() {
 			)
 			eend
 		fi
+		get_git_commit_info "${S}" WINE_GIT_COMMIT_HASH WINE_GIT_COMMIT_DATE
 	fi
 
 	l10n_find_plocales_changes "${S}/po" "" ".po"
@@ -485,90 +613,9 @@ src_prepare() {
 	)
 	eend
 
-	if use pba; then
-		# See: https://github.com/acomminos/wine-pba
-		ewarn "Queuing the Wine-PBA patchset for inclusion."
-		ewarn "Note: this third-party patchset is not officially supported!"
-		if [[ "${MY_PV}" == "9999" ]]; then
-			local -a pba_patchset_commits sieved_pba_patchset_commits
-			local i_array pba_base_patchset_commit pba_patchset wine_git_commit
+	eapply_staging_patchset
 
-			pba_patchset_commits=(
-				"9ae8b8c00f2cca205fdf4ce76e221778b7dfbea7" "afef57f872433bcd3032c2ccbc0453bef5b62178"
-				"5946973021285dd6ecb8df224956fea4817f8fed" "be002fd92b9d72163bf130ab8ade8aa4d9cdbad0"
-				"c698682b3286d72cc7c4c4624b4d14b03dbe6908" "f11563c65fa50e2f8b7e39cade34bb7a998b26f7"
-				"82dbf75dc064bb03b5dfc5d8a82b9782a7272ce2" "d279bc24934fd1b68324017ae1b9e70975640a0a"
-				"853351698842c92db62bddedd2f531b7c5e745d1" "3d5a2567977455d04e4896368a71db74e7b9074b"
-			)
-			sieved_pba_patchset_commits=( "${pba_patchset_commits[@]}" )
-			sieve_patchset_array_by_git_commit "${S}" "sieved_pba_patchset_commits"
-			for i_array in "${!pba_patchset_commits[@]}"; do
-				# shellcheck disable=SC2068
-				has "${pba_patchset_commits[i_array]}" ${sieved_pba_patchset_commits[@]} && break
-
-				pba_patchset="${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/${pba_patchset_commits[i_array]}"
-			done
-			if [[ -z "${pba_patchset}" ]]; then
-				pushd "${S}" || die "pushd failed"
-				wine_git_commit="$(git rev-parse HEAD)" || die "git rev-parse failed"
-				popd || die "popd failed"
-				ewarn "The PBA patchset is only unsupported for Wine Git commit: '${pba_patchset_commits[0]}' (+child commits)"
-				ewarn "The PBA patchset cannot be applied on Wine Git commit: '${wine_git_commit}'"
-				ewarn "USE +pba will omitted for this build"
-			else
-				PATCHES+=( "${pba_patchset}" )
-			fi
-		else
-			PATCHES+=( "${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/3d5a2567977455d04e4896368a71db74e7b9074b" )
-		fi
-	fi
-
-	ewarn "Applying the Wine Staging patchset. Any bug reports to Wine Bugzilla"
-	ewarn "should explicitly state that Wine Staging was used."
-
-	# Declare Wine Staging excluded patchsets
-	local -a STAGING_EXCLUDE_PATCHSETS=( "configure-OSMesa" "winhlp32-Flex_Workaround" )
-	use gstreamer && STAGING_EXCLUDE_PATCHSETS+=( "quartz-NULL_TargetFormat" )
-	use pipelight || STAGING_EXCLUDE_PATCHSETS+=( "Pipelight" )
-
-	# Process Wine Staging exluded patchsets
-	# shellcheck disable=SC2206
-	local indices=( ${!STAGING_EXCLUDE_PATCHSETS[*]} )
-	for ((i=0; i<${#indices[*]}; i++)); do
-		if grep -q "${STAGING_EXCLUDE_PATCHSETS[indices[i]]}" "${STAGING_DIR}/patches/patchinstall.sh"; then
-			einfo "Excluding Wine Staging patchset: \"${STAGING_EXCLUDE_PATCHSETS[indices[i]]}\""
-		else
-			einfo "Ignoring Wine Staging patchset: \"${STAGING_EXCLUDE_PATCHSETS[indices[i]]}\""
-			unset -v 'STAGING_EXCLUDE_PATCHSETS[indices[i]]'
-		fi
-	done
-
-	# Disable Upstream (Wine Staging) about tab customisation, for winecfg utility, to support our own version
-	if [[ -f "${STAGING_DIR}/patches/winecfg-Staging/0001-winecfg-Add-staging-tab-for-CSMT.patch" ]]; then
-		sed -i '/SetDlgItemTextA(hDlg, IDC_ABT_PANEL_TEXT, PACKAGE_VERSION " (Staging)");/{s/PACKAGE_VERSION " (Staging)"/PACKAGE_VERSION/}' \
-			"${STAGING_DIR}/patches/winecfg-Staging/0001-winecfg-Add-staging-tab-for-CSMT.patch" \
-			|| die "sed failed"
-	fi
-
-	# Launch wine-staging patcher in a subshell, using eapply as a backend, and gitapply.sh as a backend for binary patches
-	ebegin "Running Wine-Staging patch installer"
-	(
-		# Use a sed hack to add EAPI 7 support to the patchinstall.sh script
-		sed -i	-e '$ d' -e '/^# Critical error, abort$/,+6d' \
-			-e '/^[[:blank:]]*abort ".*"$/{s/abort /die /g}' \
-			-e 's/exit 1$/die/g' \
-			"${STAGING_DIR}/patches/patchinstall.sh" \
-			|| die "sed failed"
-		# shellcheck disable=SC2068
-		set -- DESTDIR="${S}" --backend=eapply --no-autoconf --all ${STAGING_EXCLUDE_PATCHSETS[@]/#/-W }
-		cd "${STAGING_DIR}/patches" || die "cd failed"
-		# shellcheck source=/dev/null
-		source "${STAGING_DIR}/patches/patchinstall.sh"
-	)
-	eend
-
-	# Apply Staging branding to reported Wine version...
-	sed -i -e '/^AC_INIT(.*)$/{s/\[Wine\]/\[Wine Staging\]/}' "${S}/configure.ac" || die "sed failed"
+	use pba && eapply_pba_patchset
 
 	disable_man_file() {
 		(($# == 3))	|| die "invalid number of arguments: ${#} (3)"
@@ -751,7 +798,7 @@ multilib_src_install_all() {
 	einstalldocs
 	unset -v DOCS
 
-	prune_libtool_files --all
+	find "${D}" -name '*.la' -delete || die "find failed"
 
 	use abi_x86_32 && pax-mark psmr "${D%/}${MY_PREFIX}/bin/wine"{,-preloader}   #255055
 	use abi_x86_64 && pax-mark psmr "${D%/}${MY_PREFIX}/bin/wine64"{,-preloader} #255055
@@ -778,21 +825,15 @@ multilib_src_install_all() {
 }
 
 pkg_postinst() {
-	local wine_git_commit wine_git_date
-
-	if [[ "${MY_PV}" == "9999" ]]; then
-		pushd "${S}" || die "pushd failed"
-		wine_git_commit="$(git rev-parse HEAD)" || die "git rev-parse failed"
-		wine_git_date="$(git show -s --format=%cd "${wine_git_commit}")" || die "git show failed"
-		popd || die "popd failed"
-	fi
-
 	# shellcheck disable=SC2086,SC2090
-	eselect wine register ${wine_git_commit:+--commit=}"${wine_git_commit}" ${wine_git_date:+--date=}"${wine_git_date}" \
+	eselect wine register \
+			${WINE_GIT_COMMIT_HASH:+--commit=}"${WINE_GIT_COMMIT_HASH}" \
+			${WINE_GIT_COMMIT_DATE:+--date=}"${WINE_GIT_COMMIT_DATE}" \
 			--verbose --wine --staging "${P}" \
 		|| die "eselect wine register --wine --staging \"${P}\" failed"
 	eselect wine set --force --verbose --wine --staging --if-unset "${P}" \
 		|| die "eselect wine set --force --wine --staging --if-unset \"${P}\" failed"
+	unset -v WINE_GIT_COMMIT_DATE WINE_GIT_COMMIT_HASH
 
 	xdg_mimeinfo_database_update
 

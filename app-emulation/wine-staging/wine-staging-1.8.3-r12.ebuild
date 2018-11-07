@@ -300,6 +300,53 @@ wine_generic_compiler_pretests() {
 	fi
 }
 
+# eapply_staging_patchset()
+#   See: https://github.com/wine-staging/wine-staging
+eapply_staging_patchset() {
+	(($# == 0)) || die "invalid number of arguments: ${#} (0)"
+
+	ewarn "Applying the Wine Staging patchset. Any bug reports to Wine Bugzilla"
+	ewarn "should explicitly state that Wine Staging was used."
+
+	# Declare Wine Staging excluded patchsets
+	local -a STAGING_EXCLUDE_PATCHSETS=( "configure-OSMesa" "winhlp32-Flex_Workaround" )
+	use gstreamer && STAGING_EXCLUDE_PATCHSETS+=( "quartz-NULL_TargetFormat" )
+	use pipelight || STAGING_EXCLUDE_PATCHSETS+=( "Pipelight" )
+
+	# Process Wine Staging excluded patchsets
+	# shellcheck disable=SC2206
+	local indices=( ${!STAGING_EXCLUDE_PATCHSETS[*]} )
+	for ((i=0; i<${#indices[*]}; i++)); do
+		if grep -q "${STAGING_EXCLUDE_PATCHSETS[indices[i]]}" "${STAGING_DIR}/patches/patchinstall.sh"; then
+			einfo "Excluding Wine Staging patchset: \"${STAGING_EXCLUDE_PATCHSETS[indices[i]]}\""
+		else
+			einfo "Ignoring Wine Staging patchset: \"${STAGING_EXCLUDE_PATCHSETS[indices[i]]}\""
+			unset -v 'STAGING_EXCLUDE_PATCHSETS[indices[i]]'
+		fi
+	done
+
+	# Launch wine-staging patcher in a subshell, using eapply as a backend, and gitapply.sh as a backend for binary patches
+	ebegin "Running Wine-Staging patch installer"
+	(
+		# Use a sed hack to add EAPI 7 support to the patchinstall.sh script
+		sed -i 	-e '$ d' -e '/^# Critical error, abort$/,+6d' \
+			-e '/^[[:blank:]]*abort ".*"$/{s/abort /die /g}' \
+			-e 's/exit 1$/die/g' -e 's/epatch/eapply/g' \
+			"${STAGING_DIR}/patches/patchinstall.sh" \
+			|| die "sed failed"
+		# shellcheck disable=SC2068
+		set -- DESTDIR="${S}" --backend=eapply --no-autoconf --all ${STAGING_EXCLUDE_PATCHSETS[@]/#/-W }
+		cd "${STAGING_DIR}/patches" || die "cd failed"
+		# shellcheck source=/dev/null
+		source "${STAGING_DIR}/patches/patchinstall.sh"
+	)
+	eend
+
+	# Apply Staging branding to reported Wine version...
+	sed -i -e 's/Staging/Staging'"${STAGING_SUFFIX}"'/' "${S}/libs/wine/Makefile.in" || die "sed failed"
+	sed -i -e '/^AC_INIT(.*)$/{s/\[Wine\]/\[Wine Staging\]/}' "${S}/configure.ac" || die "sed failed"
+}
+
 pkg_pretend() {
 	if use oss && ! use kernel_FreeBSD && ! has_version '>=media-sound/oss-4'; then
 		eerror "You cannot build ${CATEGORY}/${PN} with USE=+oss without having support from a FreeBSD kernel"
@@ -372,6 +419,7 @@ src_unpack() {
 			)
 			eend
 		fi
+		get_git_commit_info "${S}" WINE_GIT_COMMIT_HASH WINE_GIT_COMMIT_DATE
 	fi
 
 	l10n_find_plocales_changes "${S}/po" "" ".po"
@@ -422,46 +470,7 @@ src_prepare() {
 	)
 	eend
 
-	ewarn "Applying the Wine Staging patchset. Any bug reports to Wine Bugzilla"
-	ewarn "should explicitly state that Wine Staging was used."
-
-	# Declare Wine Staging excluded patchsets
-	local -a STAGING_EXCLUDE_PATCHSETS=( "configure-OSMesa" "winhlp32-Flex_Workaround" )
-	use gstreamer && STAGING_EXCLUDE_PATCHSETS+=( "quartz-NULL_TargetFormat" )
-	use pipelight || STAGING_EXCLUDE_PATCHSETS+=( "Pipelight" )
-
-	# Process Wine Staging exluded patchsets
-	# shellcheck disable=SC2206
-	local indices=( ${!STAGING_EXCLUDE_PATCHSETS[*]} )
-	for ((i=0; i<${#indices[*]}; i++)); do
-		if grep -q "${STAGING_EXCLUDE_PATCHSETS[indices[i]]}" "${STAGING_DIR}/patches/patchinstall.sh"; then
-			einfo "Excluding Wine Staging patchset: \"${STAGING_EXCLUDE_PATCHSETS[indices[i]]}\""
-		else
-			einfo "Ignoring Wine Staging patchset: \"${STAGING_EXCLUDE_PATCHSETS[indices[i]]}\""
-			unset -v 'STAGING_EXCLUDE_PATCHSETS[indices[i]]'
-		fi
-	done
-
-	# Launch wine-staging patcher in a subshell, using eapply as a backend, and gitapply.sh as a backend for binary patches
-	ebegin "Running Wine-Staging patch installer"
-	(
-		# Use a sed hack to add EAPI 7 support to the patchinstall.sh script
-		sed -i	-e '$ d' -e '/^# Critical error, abort$/,+6d' \
-			-e '/^[[:blank:]]*abort ".*"$/{s/abort /die /g}' \
-			-e 's/exit 1$/die/g' -e 's/epatch/eapply/g' \
-			"${STAGING_DIR}/patches/patchinstall.sh" \
-			|| die "sed failed"
-		# shellcheck disable=SC2068
-		set -- DESTDIR="${S}" --backend=eapply --no-autoconf --all ${STAGING_EXCLUDE_PATCHSETS[@]/#/-W }
-		cd "${STAGING_DIR}/patches" || die "cd failed"
-		# shellcheck source=/dev/null
-		source "${STAGING_DIR}/patches/patchinstall.sh"
-	)
-	eend
-
-	# Apply Staging branding to reported Wine version...
-	sed -i -e 's/Staging/Staging'"${STAGING_SUFFIX}"'/' "${S}/libs/wine/Makefile.in" || die "sed failed"
-	sed -i -e '/^AC_INIT(.*)$/{s/\[Wine\]/\[Wine Staging\]/}' "${S}/configure.ac" || die "sed failed"
+	eapply_staging_patchset
 
 	disable_man_file() {
 		(($# == 3))	|| die "invalid number of arguments: ${#} (3)"
@@ -636,7 +645,7 @@ multilib_src_install_all() {
 	einstalldocs
 	unset -v DOCS
 
-	prune_libtool_files --all
+	find "${D}" -name '*.la' -delete || die "find failed"
 
 	use abi_x86_32 && pax-mark psmr "${D%/}${MY_PREFIX}/bin/wine"{,-preloader}   #255055
 	use abi_x86_64 && pax-mark psmr "${D%/}${MY_PREFIX}/bin/wine64"{,-preloader} #255055
@@ -663,18 +672,8 @@ multilib_src_install_all() {
 }
 
 pkg_postinst() {
-	local wine_git_commit wine_git_date
-
-	if [[ "${MY_PV}" == "9999" ]]; then
-		pushd "${S}" || die "pushd failed"
-		wine_git_commit="$(git rev-parse HEAD)" || die "git rev-parse failed"
-		wine_git_date="$(git show -s --format=%cd "${wine_git_commit}")" || die "git show failed"
-		popd || die "popd failed"
-	fi
-
 	# shellcheck disable=SC2086,SC2090
-	eselect wine register ${wine_git_commit:+--commit=}"${wine_git_commit}" ${wine_git_date:+--date=}"${wine_git_date}" \
-			--verbose --wine --staging "${P}" \
+	eselect wine register --verbose --wine --staging "${P}" \
 		|| die "eselect wine register --wine --staging \"${P}\" failed"
 	eselect wine set --force --verbose --wine --staging --if-unset "${P}" \
 		|| die "eselect wine set --force --wine --staging --if-unset \"${P}\" failed"
