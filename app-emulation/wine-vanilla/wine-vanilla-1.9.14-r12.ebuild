@@ -309,7 +309,10 @@ src_unpack() {
 
 	default
 
-	[[ "${MY_PV}" == "9999" ]] && git-r3_src_unpack
+	if [[ "${MY_PV}" == "9999" ]]; then
+		git-r3_src_unpack
+		get_git_commit_info "${S}" WINE_GIT_COMMIT_HASH WINE_GIT_COMMIT_DATE
+	fi
 
 	l10n_find_plocales_changes "${S}/po" "" ".po"
 }
@@ -523,7 +526,7 @@ multilib_src_install_all() {
 	einstalldocs
 	unset -v DOCS
 
-	prune_libtool_files --all
+	find "${D}" -name '*.la' -delete || die "find failed"
 
 	use abi_x86_32 && pax-mark psmr "${D%/}${MY_PREFIX}/bin/wine"{,-preloader}   #255055
 	use abi_x86_64 && pax-mark psmr "${D%/}${MY_PREFIX}/bin/wine64"{,-preloader} #255055
@@ -550,18 +553,8 @@ multilib_src_install_all() {
 }
 
 pkg_postinst() {
-	local wine_git_commit wine_git_date
-
-	if [[ "${MY_PV}" == "9999" ]]; then
-		pushd "${S}" || die "pushd failed"
-		wine_git_commit="$(git rev-parse HEAD)" || die "git rev-parse failed"
-		wine_git_date="$(git show -s --format=%cd "${wine_git_commit}")" || die "git show failed"
-		popd || die "popd failed"
-	fi
-
 	# shellcheck disable=SC2086,SC2090
-	eselect wine register ${wine_git_commit:+--commit=}"${wine_git_commit}" ${wine_git_date:+--date=}"${wine_git_date}" \
-			--verbose --wine --vanilla "${P}" \
+	eselect wine register --verbose --wine --vanilla "${P}" \
 		|| die "eselect wine register --wine --vanilla \"${P}\" failed"
 	eselect wine set --force --verbose --wine --vanilla --if-unset "${P}" \
 		|| die "eselect wine set --force --wine --vanilla --if-unset \"${P}\" failed"

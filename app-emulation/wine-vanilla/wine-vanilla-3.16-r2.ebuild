@@ -293,6 +293,50 @@ wine_generic_compiler_pretests() {
 	fi
 }
 
+# eapply_pba_patchset()
+#   See: https://github.com/acomminos/wine-pba
+eapply_pba_patchset() {
+	(($# == 0)) || die "invalid number of arguments: ${#} (0)"
+
+	local pba_patchset
+
+	if [[ "${MY_PV}" == "9999" ]]; then
+		local -a pba_patchset_commits sieved_pba_patchset_commits
+		local i_array
+
+		pba_patchset_commits=(
+			"429e0c913087bdc2c183f74f346a9438278ec960" "7772c4fdbf33507b2262da375b465d4c2cbc316d"
+			"f08342f5737c2bb3f965059f930e5d9a25ff6268" "6eb562210cb154749b1da5c399a69320d87365e6"
+			"1251fe692165077f9ee38992ac33a999bf26b69d" "0e9f94ec1c201c56442124eb8754be1e30840299"
+			"ea7186348f48a749ab28ecc405fb56601c56e4f8" "cf9536b6bfbefbf5003c7633446a91f6e399c4de"
+			"580ea44bc65472c0304d74b7e873acfb7f680b85" "944e92ba06ecadeb933d95e30035323483dfe7c7"
+			"12b5c9148588464d621131e80a2b751e7dbce55b" "b579afd30ae48fef03c9333e31c1349d54ed681a"
+			"22b3a4f044036e62104a6994828d18d3536b3d78" "45bf95278d669779e6ca3cde9215556a043a8cf8"
+		)
+		sieved_pba_patchset_commits=( "${pba_patchset_commits[@]}" )
+		sieve_patchset_array_by_git_commit "${S}" "sieved_pba_patchset_commits"
+		for i_array in "${!pba_patchset_commits[@]}"; do
+			# shellcheck disable=SC2068
+			has "${pba_patchset_commits[i_array]}" ${sieved_pba_patchset_commits[@]} && break
+
+			pba_patchset="${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/${pba_patchset_commits[i_array]}"
+		done
+		if [[ -z "${pba_patchset}" ]]; then
+			ewarn "The PBA patchset is only supported for Wine Git commit (+child commits): '${pba_patchset_commits[0]}'"
+			ewarn "The PBA patchset cannot be applied on Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
+			ewarn "USE +pba will be omitted for this build."
+			return 1
+		fi
+	else
+		pba_patchset="${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/cf9536b6bfbefbf5003c7633446a91f6e399c4de"
+	fi
+
+	ewarn "Applying the wine-pba patchset."
+	ewarn "Note: this third-party patchset is not officially supported!"
+
+	eapply "${pba_patchset}"
+}
+
 pkg_pretend() {
 	if use oss && ! use kernel_FreeBSD && ! has_version '>=media-sound/oss-4'; then
 		eerror "You cannot build ${CATEGORY}/${PN} with USE=+oss without having support from a FreeBSD kernel"
@@ -323,7 +367,10 @@ src_unpack() {
 
 	default
 
-	[[ "${MY_PV}" == "9999" ]] && git-r3_src_unpack
+	if [[ "${MY_PV}" == "9999" ]]; then
+		git-r3_src_unpack
+		get_git_commit_info "${S}" WINE_GIT_COMMIT_HASH WINE_GIT_COMMIT_DATE
+	fi
 
 	l10n_find_plocales_changes "${S}/po" "" ".po"
 }
@@ -359,45 +406,7 @@ src_prepare() {
 	)
 	eend
 
-	if use pba; then
-		# See: https://github.com/acomminos/wine-pba
-		ewarn "Queuing the Wine-PBA patchset for inclusion."
-		ewarn "Note: this third-party patchset is not officially supported!"
-		if [[ "${MY_PV}" == "9999" ]]; then
-			local -a pba_patchset_commits sieved_pba_patchset_commits
-			local i_array pba_base_patchset_commit pba_patchset wine_git_commit
-
-			pba_patchset_commits=(
-				"429e0c913087bdc2c183f74f346a9438278ec960" "7772c4fdbf33507b2262da375b465d4c2cbc316d"
-				"f08342f5737c2bb3f965059f930e5d9a25ff6268" "6eb562210cb154749b1da5c399a69320d87365e6"
-				"1251fe692165077f9ee38992ac33a999bf26b69d" "0e9f94ec1c201c56442124eb8754be1e30840299"
-				"ea7186348f48a749ab28ecc405fb56601c56e4f8" "cf9536b6bfbefbf5003c7633446a91f6e399c4de"
-				"580ea44bc65472c0304d74b7e873acfb7f680b85" "944e92ba06ecadeb933d95e30035323483dfe7c7"
-				"12b5c9148588464d621131e80a2b751e7dbce55b" "b579afd30ae48fef03c9333e31c1349d54ed681a"
-				"22b3a4f044036e62104a6994828d18d3536b3d78" "45bf95278d669779e6ca3cde9215556a043a8cf8"
-			)
-			sieved_pba_patchset_commits=( "${pba_patchset_commits[@]}" )
-			sieve_patchset_array_by_git_commit "${S}" "sieved_pba_patchset_commits"
-			for i_array in "${!pba_patchset_commits[@]}"; do
-				# shellcheck disable=SC2068
-				has "${pba_patchset_commits[i_array]}" ${sieved_pba_patchset_commits[@]} && break
-
-				pba_patchset="${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/${pba_patchset_commits[i_array]}"
-			done
-			if [[ -z "${pba_patchset}" ]]; then
-				pushd "${S}" || die "pushd failed"
-				wine_git_commit="$(git rev-parse HEAD)" || die "git rev-parse failed"
-				popd || die "popd failed"
-				ewarn "The PBA patchset is only unsupported for Wine Git commit: '${pba_patchset_commits[0]}' (+child commits)"
-				ewarn "The PBA patchset cannot be applied on Wine Git commit: '${wine_git_commit}'"
-				ewarn "USE +pba will omitted for this build"
-			else
-				PATCHES+=( "${pba_patchset}" )
-			fi
-		else
-			PATCHES+=( "${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/cf9536b6bfbefbf5003c7633446a91f6e399c4de" )
-		fi
-	fi
+	use pba && eapply_pba_patchset
 
 	disable_man_file() {
 		(($# == 3))	|| die "invalid number of arguments: ${#} (3)"
@@ -576,7 +585,7 @@ multilib_src_install_all() {
 	einstalldocs
 	unset -v DOCS
 
-	prune_libtool_files --all
+	find "${D}" -name '*.la' -delete || die "find failed"
 
 	use abi_x86_32 && pax-mark psmr "${D%/}${MY_PREFIX}/bin/wine"{,-preloader}   #255055
 	use abi_x86_64 && pax-mark psmr "${D%/}${MY_PREFIX}/bin/wine64"{,-preloader} #255055
@@ -603,18 +612,8 @@ multilib_src_install_all() {
 }
 
 pkg_postinst() {
-	local wine_git_commit wine_git_date
-
-	if [[ "${MY_PV}" == "9999" ]]; then
-		pushd "${S}" || die "pushd failed"
-		wine_git_commit="$(git rev-parse HEAD)" || die "git rev-parse failed"
-		wine_git_date="$(git show -s --format=%cd "${wine_git_commit}")" || die "git show failed"
-		popd || die "popd failed"
-	fi
-
 	# shellcheck disable=SC2086,SC2090
-	eselect wine register ${wine_git_commit:+--commit=}"${wine_git_commit}" ${wine_git_date:+--date=}"${wine_git_date}" \
-			--verbose --wine --vanilla "${P}" \
+	eselect wine register --verbose --wine --vanilla "${P}" \
 		|| die "eselect wine register --wine --vanilla \"${P}\" failed"
 	eselect wine set --force --verbose --wine --vanilla --if-unset "${P}" \
 		|| die "eselect wine set --force --wine --vanilla --if-unset \"${P}\" failed"
