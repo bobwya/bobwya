@@ -31,6 +31,7 @@ RDEPEND="${DEPEND}
 	sys-apps/hwinfo
 	sys-apps/pciutils
 	sys-apps/usbutils
+	virtual/perl-Digest-SHA
 "
 
 src_prepare() {

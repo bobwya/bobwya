@@ -1,6 +1,8 @@
 # Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+# shellcheck disable=SC2034
+
 EAPI=6
 
 inherit perl-module
@@ -18,7 +20,7 @@ else
 	KEYWORDS="-* amd64 ~ppc x86 ~amd64-linux ~arm-linux ~x86-linux"
 fi
 
-LICENSE="LGPL-2"
+LICENSE="LGPL-2.1+"
 SLOT="0"
 
 DEPEND=""
@@ -32,6 +34,7 @@ RDEPEND="${DEPEND}
 "
 
 src_prepare() {
+	# shellcheck disable=SC2016
 	sed -i '\:^prefix :a\ dummy_build_folder := $(shell mkdir -p ${prefix})' \
 		"${S}/Makefile" || die "sed failed"
 	default
