@@ -15,6 +15,8 @@ For this Wine variant - the external Wine Staging patchset is always applied whe
 		<flag name="capi">Enable ISDN support via <pkg>net-libs/libcapi</pkg>.</flag>
 		<flag name="custom-cflags">Bypass strip-flags; use at your own peril.</flag>
 		<flag name="dos">Pull in <pkg>games-emulation/dosbox</pkg> to run DOS applications.</flag>
+		<flag name="esync">Add support for the wine-esync patchset (unofficial).
+		See: https://github.com/zfigura/wine</flag>
 		<flag name="ffmpeg">Use ffmpeg to convert WMA formats, requires:
 			<pkg>media-video/ffmpeg</pkg> (this feature may work with <pkg>media-video/libav</pkg>).</flag>
 		<flag name="gecko">Add support for the Gecko engine when using iexplore</flag>
