@@ -1,1 +1,0 @@
-wine-vanilla-3.14-r2.ebuild
