@@ -64,7 +64,7 @@ GENTOO_WINE_EBUILD_COMMON_PN="${GENTOO_WINE_EBUILD_COMMON_P%-*}"
 GENTOO_WINE_EBUILD_COMMON_PV="${GENTOO_WINE_EBUILD_COMMON_P##*-}"
 
 ESYNC_VERSION="esyncb4478b7"
-GENTOO_WINE_ESYNC_P="gentoo-wine-esync-20181108"
+GENTOO_WINE_ESYNC_P="gentoo-wine-esync-20181112"
 GENTOO_WINE_ESYNC_PN="${GENTOO_WINE_ESYNC_P%-*}"
 GENTOO_WINE_ESYNC_PV="${GENTOO_WINE_ESYNC_P##*-}"
 
@@ -532,7 +532,7 @@ src_prepare() {
 
 	local md5hash
 	md5hash="$(md5sum server/protocol.def)" || die "md5sum failed"
-	[[ ! -z "${STABLE_PREFIX}" ]] && sed -i -e 's/[\-\.[:alnum:]]\+$/'"${MY_PV}"'/' "${S}/VERSION"
+	[[ ! -z "${STABLE_PREFIX}" ]] && sed -i -e 's/[-.[:alnum:]]+$/'"${MY_PV}"'/' "${S}/VERSION"
 	local -a PATCHES PATCHES_BIN
 	PATCHES+=(
 		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.8_winecfg_detailed_version.patch"
