@@ -57,7 +57,7 @@ else
 		SRC_URI="https://dl.winehq.org/wine/source/${major_version}.x/${MY_P}.tar.xz -> ${MY_P}.tar.xz"
 	fi
 fi
-unset -v array_components is_major_base is_rc is_stable minor_version major_version patch_version version_component_count
+unset -v array_components is_major_base is_stable minor_version major_version patch_version version_component_count
 
 GENTOO_WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20180805"
 GENTOO_WINE_EBUILD_COMMON_PN="${GENTOO_WINE_EBUILD_COMMON_P%-*}"
@@ -398,6 +398,12 @@ src_prepare() {
 	fi
 
 	default
+
+	if ((is_rc)); then
+		sed -i -e '/^m4_define/{s/\[\\1\]/\[\\1\]'"${MY_PV/#*-rc/-rc}"'/}' \
+			"${S}/configure.ac" || die "sed failed"
+	fi
+	unset -v is_rc
 
 	eapply_bin
 	eautoreconf
