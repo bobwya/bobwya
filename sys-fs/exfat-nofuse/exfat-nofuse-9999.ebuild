@@ -6,9 +6,9 @@ EAPI=7
 inherit linux-mod git-r3
 
 DESCRIPTION="Non-fuse kernel driver for exFat and VFat file systems"
-HOMEPAGE="https://github.com/dorimanx/exfat-nofuse"
+HOMEPAGE="https://github.com/barrybingo/exfat-nofuse"
 
-EGIT_REPO_URI="https://github.com/dorimanx/exfat-nofuse.git"
+EGIT_REPO_URI="https://github.com/barrybingo/exfat-nofuse"
 
 LICENSE="GPL-2+"
 SLOT="0"
@@ -23,9 +23,6 @@ BUILD_TARGETS="all"
 
 src_prepare(){
 	sed -i -e "/^KREL/,2d" Makefile || die "sed failed"
-	if kernel_is eq 4 18; then
-		local PATCHES=( "${FILESDIR}/${P}-kernel_18.1_timespec_fix.patch" )
-	fi
 	default
 }
 
