@@ -68,10 +68,6 @@ GENTOO_WINE_ESYNC_P="gentoo-wine-esync-20181112"
 GENTOO_WINE_ESYNC_PN="${GENTOO_WINE_ESYNC_P%-*}"
 GENTOO_WINE_ESYNC_PV="${GENTOO_WINE_ESYNC_P##*-}"
 
-GENTOO_WINE_PBA_P="gentoo-wine-pba-20181119"
-GENTOO_WINE_PBA_PN="${GENTOO_WINE_PBA_P%-*}"
-GENTOO_WINE_PBA_PV="${GENTOO_WINE_PBA_P##*-}"
-
 DESCRIPTION="Free implementation of Windows(tm) on Unix, without any external patchsets"
 HOMEPAGE="https://www.winehq.org/"
 SRC_URI="${SRC_URI}
@@ -79,15 +75,12 @@ SRC_URI="${SRC_URI}
 		https://github.com/zfigura/wine/releases/download/${ESYNC_VERSION}/esync.tgz -> esync-${ESYNC_VERSION}.tar.gz
 		https://github.com/bobwya/${GENTOO_WINE_ESYNC_PN}/archive/${GENTOO_WINE_ESYNC_PV}.tar.gz -> ${GENTOO_WINE_ESYNC_P}.tar.gz
 	)
-	pba? (
-		https://github.com/bobwya/${GENTOO_WINE_PBA_PN}/archive/${GENTOO_WINE_PBA_PV}.tar.gz -> ${GENTOO_WINE_PBA_P}.tar.gz
-	)
 	https://github.com/bobwya/${GENTOO_WINE_EBUILD_COMMON_PN}/archive/${GENTOO_WINE_EBUILD_COMMON_PV}.tar.gz -> ${GENTOO_WINE_EBUILD_COMMON_P}.tar.gz"
 
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc esync +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pba pcap +perl +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test +threads +truetype udev +udisks v4l vkd3d vulkan +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc esync +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pcap +perl +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test +threads +truetype udev +udisks v4l vkd3d vulkan +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
@@ -302,86 +295,6 @@ wine_generic_compiler_pretests() {
 	fi
 }
 
-# sieve_patchset_array_by_git_commit()
-#   1>  : Git Source directory
-#   2[-N]>  : Patch-set array(s) (reference(s))
-sieve_patchset_array_by_git_commit() {
-	(($# >= 2))	|| die "invalid number of arguments: ${#} (2-)"
-
-	local -r SHA1_REGEXP="[[:xdigit:]]{40}" VARIABLE_NAME_REGEXP="^[_[:alpha:]][_[:alnum:]]+$"
-	local __commit_hash __git_directory __git_log __patch_array_reference i_arg=1 i_array __line
-
-	__git_directory="${1%/}"
-	if [[ ! -d "${__git_directory}/.git" ]]; then
-		die "argument (1): path \"${__git_directory}\" is not a valid Git repository directory"
-	fi
-	pushd "${__git_directory}" || die "pushd failed"
-	__git_log="$( git log --pretty=format:%H 2>/dev/null || die "git log failed" )"
-	popd || die "popd failed"
-
-	shift 1
-	for __patch_array_reference; do
-		if [[ ! "${__patch_array_reference}" =~ ${VARIABLE_NAME_REGEXP} ]]; then
-			die "argument ($((i_arg+=1))): invalid reference name: '${__patch_array_reference}'"
-		fi
-
-		declare -n patch_array="${__patch_array_reference}"
-		for i_array in "${!patch_array[@]}"; do
-			if [[ "${patch_array[i_array]}" =~ ${SHA1_REGEXP} ]]; then
-				[[ "${__git_log}" =~ ${patch_array[i_array]} ]] && unset -v 'patch_array[i_array]'
-				continue
-			fi
-
-			[[ -f "${patch_array[i_array]}" ]] || die "patch file: \"${patch_array[i_array]}\" does not exist"
-
-			__line=0
-			while
-				: $((++__line))
-				__commit_hash="$( sed -n -e "${__line}"'s/^.*\([[:xdigit:]]\{40\}\).*$/\1/p' "${patch_array[i_array]}" )"
-				[[ "${__commit_hash}" =~ ${SHA1_REGEXP} ]]
-			do
-				[[ "${__git_log}" =~ ${__commit_hash} ]] || continue
-
-				einfo "excluding patch: \"${patch_array[i_array]}\"; parent Wine Git commit: ${__commit_hash} (parent of HEAD)"
-				unset -v 'patch_array[i_array]'
-				break
-			done
-		done
-	done
-}
-
-# get_git_commit_info()
-#   1>  : Git Source directory
-#  [2>] : Git commit hash (optional, reference)
-#  [3>] : Git commit date (optional, reference)
-get_git_commit_info() {
-	(((1 <= $#) && ($# <= 3))) || die "invalid number of arguments: ${#} (1-3)"
-
-	local -r SHA1_REGEXP="[[:xdigit:]]{40}" VARIABLE_NAME_REGEXP="^[_[:alpha:]][_[:alnum:]]+$"
-	local __git_directory="${1%/}" __commit_hash __git_commit_hash __git_commit_date
-
-	if [[ ! -d "${__git_directory}/.git" ]]; then
-		die "argument (1): path \"${__git_directory}\" is not a valid Git repository directory"
-	fi
-
-	pushd "${__git_directory}" || die "pushd failed"
-	__commit_hash="$( git rev-parse HEAD || die "git rev-parse failed ")"
-	if [[ ! "${__commit_hash}" =~ ${SHA1_REGEXP} ]]; then
-		die "unable to determine current HEAD Git commit for repository: \"${__git_directory}\""
-	fi
-
-	if [[ ! -z "${2}" && "${2}" =~ ${VARIABLE_NAME_REGEXP} ]]; then
-		declare -n __git_commit_hash="${2}"
-		__git_commit_hash="${__commit_hash}"
-	fi
-
-	if [[ ! -z "${3}" && "${3}" =~ ${VARIABLE_NAME_REGEXP} ]]; then
-		declare -n __git_commit_date="${3}"
-		__git_commit_date="$( git show -s --format=%cd "${__commit_hash}" || die "git show failed" )"
-	fi
-	popd || die "popd failed"
-}
-
 # eapply_esync_patchset()
 #   See: https://github.com/zfigura/wine/blob/esync/README.esync
 eapply_esync_patchset() {
@@ -413,7 +326,7 @@ eapply_esync_patchset() {
 			return 1
 		fi
 	else
-		esync_rebase_patchset="2600ecd4edfdb71097105c74312f83845305a4f2"
+		esync_rebase_patchset="2f17e0112dc0af3f0b246cf377e2cb8fd7a6cf58"
 	fi
 
 	einfo "Using esync rebase revision: '${esync_rebase_patchset}'"
@@ -436,51 +349,6 @@ eapply_esync_patchset() {
 	ewarn "Note: this third-party patchset is not officially supported!"
 
 	eapply "${WORKDIR}/esync"
-}
-
-# eapply_pba_patchset()
-#   See: https://github.com/acomminos/wine-pba
-eapply_pba_patchset() {
-	(($# == 0)) || die "invalid number of arguments: ${#} (0)"
-
-	local pba_patchset
-
-	if [[ "${MY_PV}" == "9999" ]]; then
-		local -a pba_patchset_commits sieved_pba_patchset_commits
-		local i_array
-
-		pba_patchset_commits=(
-			"429e0c913087bdc2c183f74f346a9438278ec960" "7772c4fdbf33507b2262da375b465d4c2cbc316d"
-			"f08342f5737c2bb3f965059f930e5d9a25ff6268" "6eb562210cb154749b1da5c399a69320d87365e6"
-			"1251fe692165077f9ee38992ac33a999bf26b69d" "0e9f94ec1c201c56442124eb8754be1e30840299"
-			"ea7186348f48a749ab28ecc405fb56601c56e4f8" "cf9536b6bfbefbf5003c7633446a91f6e399c4de"
-			"580ea44bc65472c0304d74b7e873acfb7f680b85" "944e92ba06ecadeb933d95e30035323483dfe7c7"
-			"12b5c9148588464d621131e80a2b751e7dbce55b" "b579afd30ae48fef03c9333e31c1349d54ed681a"
-			"22b3a4f044036e62104a6994828d18d3536b3d78" "45bf95278d669779e6ca3cde9215556a043a8cf8"
-		)
-		sieved_pba_patchset_commits=( "${pba_patchset_commits[@]}" )
-		sieve_patchset_array_by_git_commit "${S}" "sieved_pba_patchset_commits"
-		for i_array in "${!pba_patchset_commits[@]}"; do
-			# shellcheck disable=SC2068
-			has "${pba_patchset_commits[i_array]}" ${sieved_pba_patchset_commits[@]} && break
-
-			pba_patchset="${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/${pba_patchset_commits[i_array]}"
-		done
-		# shellcheck disable=SC2068
-		if [[ -z "${pba_patchset}" ]] || ! has "${pba_patchset_commits[9]}" ${sieved_pba_patchset_commits[@]}; then
-			ewarn "The PBA patchset is only supported for Wine Git commit range: ['${pba_patchset_commits[0]}'-'${pba_patchset_commits[9]}')"
-			ewarn "The PBA patchset cannot be applied on Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
-			ewarn "USE +pba will be omitted for this build."
-			return 1
-		fi
-	else
-		pba_patchset="${WORKDIR}/${GENTOO_WINE_PBA_P%/}/${PN}-pba/45bf95278d669779e6ca3cde9215556a043a8cf8"
-	fi
-
-	ewarn "Applying the wine-pba patchset."
-	ewarn "Note: this third-party patchset is not officially supported!"
-
-	eapply "${pba_patchset}"
 }
 
 pkg_pretend() {
@@ -539,23 +407,8 @@ src_prepare() {
 		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.8_winecfg_detailed_version.patch"
 		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.5.26-winegcc.patch" #260726
 		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.6-memset-O3.patch" #480508
-		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.9.9-sysmacros.patch" #580046
-		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.9.13-gnutls-3.5-compat.patch" #587028
 		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.8-multislot-apploader.patch" #310611
 	)
-	if use truetype; then
-		PATCHES+=(
-			"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.18-freetype-2.8.1-segfault.patch"    #631676
-			"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.18-freetype-2.8.1-drop-glyphs.patch" #631676
-		)
-		PATCHES_BIN+=( "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-2.18-freetype-2.8.1-implement_minimum_em_size_required_by_opentype_1.8.2.patch" ) #631376
-	fi
-
-	# https://bugs.winehq.org/show_bug.cgi?id=40851
-	use cups && PATCHES+=( "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.9.14-cups-2.2-cupsgetppd-build-fix.patch" )
-
-	# https://bugs.winehq.org/show_bug.cgi?id=31836
-	use gstreamer && PATCHES+=( "${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.8-gstreamer-1.0_"{01,02,03,04,05,06,07,08,09,10,11}".patch" )
 
 	[[ "${MY_PV}" == "9999" ]] && sieve_patchset_array_by_git_commit "${S}" "PATCHES" "PATCHES_BIN"
 
@@ -568,8 +421,6 @@ src_prepare() {
 	eend
 
 	use esync && eapply_esync_patchset
-
-	use pba && eapply_pba_patchset
 
 	disable_man_file() {
 		(($# == 3))	|| die "invalid number of arguments: ${#} (3)"
@@ -782,14 +633,10 @@ multilib_src_install_all() {
 
 pkg_postinst() {
 	# shellcheck disable=SC2086,SC2090
-	eselect wine register \
-			${WINE_GIT_COMMIT_HASH:+--commit=}"${WINE_GIT_COMMIT_HASH}" \
-			${WINE_GIT_COMMIT_DATE:+--date=}"${WINE_GIT_COMMIT_DATE}" \
-			--verbose --wine --vanilla "${P}" \
+	eselect wine register --verbose --wine --vanilla "${P}" \
 		|| die "eselect wine register --wine --vanilla \"${P}\" failed"
 	eselect wine set --force --verbose --wine --vanilla --if-unset "${P}" \
 		|| die "eselect wine set --force --wine --vanilla --if-unset \"${P}\" failed"
-	unset -v WINE_GIT_COMMIT_DATE WINE_GIT_COMMIT_HASH
 
 	xdg_mimeinfo_database_update
 

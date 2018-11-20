@@ -1,1 +1,0 @@
-wine-vanilla-3.19-r2.ebuild

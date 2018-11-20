@@ -1,1 +1,0 @@
-wine-vanilla-3.4-r6.ebuild
