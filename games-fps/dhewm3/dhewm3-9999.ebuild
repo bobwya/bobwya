@@ -18,7 +18,7 @@ else
 fi
 
 DESCRIPTION="A Doom 3 GPL source modification."
-HOMEPAGE="https://github.com/dhewm/dhewm3"
+HOMEPAGE="https://dhewm3.org/"
 
 LICENSE="GPL-3"
 SLOT="0"
