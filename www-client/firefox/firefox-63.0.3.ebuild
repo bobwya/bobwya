@@ -106,7 +106,7 @@ RDEPEND="${CDEPEND}
 DEPEND="${CDEPEND}
 	app-arch/zip
 	app-arch/unzip
-	<dev-util/cbindgen-0.6.7
+	dev-util/cbindgen
 	>=net-libs/nodejs-8.11.0
 	>=sys-devel/binutils-2.30
 	sys-apps/findutils
@@ -604,6 +604,10 @@ PROFILE_EOF
 		icon="${PN}"
 		name="Mozilla Firefox"
 	fi
+
+	# Disable built-in auto-update because we update firefox through package manager
+	insinto ${MOZILLA_FIVE_HOME}/distribution/
+	newins "${FILESDIR}"/disable-auto-update.policy.json policies.json
 
 	# Install icons and .desktop for menu entry
 	for size in ${sizes}; do

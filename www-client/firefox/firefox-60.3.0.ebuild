@@ -378,6 +378,10 @@ PROFILE_EOF
 		name="Mozilla Firefox"
 	fi
 
+	# Disable built-in auto-update because we update firefox through package manager
+	insinto ${MOZILLA_FIVE_HOME}/distribution/
+	newins "${FILESDIR}"/disable-auto-update.policy.json policies.json
+
 	# Install icons and .desktop for menu entry
 	for size in ${sizes}; do
 		insinto "/usr/share/icons/hicolor/${size}x${size}/apps"
