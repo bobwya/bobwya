@@ -3,24 +3,24 @@
 
 # shellcheck disable=SC2034
 EAPI=6
-inherit flag-o-matic linux-info linux-mod multilib-minimal \
+inherit eapi7-ver flag-o-matic linux-info linux-mod multilib-minimal \
 	nvidia-driver portability toolchain-funcs unpacker user udev
+
+MM_PV="$(ver_cut "1-2")"
+DL_PV="$(ver_rs 1- '')"
 
 NV_URI="https://download.nvidia.com/XFree86/"
 AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
-AMD64_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86_64-${PV}"
-
 DESCRIPTION="NVIDIA Accelerated Graphics Driver"
 HOMEPAGE="https://www.nvidia.com/ https://www.nvidia.com/Download/Find.aspx"
 SRC_URI="
-	amd64-fbsd? ( ${NV_URI%/}/FreeBSD-x86_64/${PV}/${AMD64_FBSD_NV_PACKAGE}.tar.gz )
-	amd64? ( ${NV_URI%/}/Linux-x86_64/${PV}/${AMD64_NV_PACKAGE}.run )
-	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${PV}.tar.bz2 )
+	amd64? ( "https://developer.nvidia.com/linux-${DL_PV}" -> ${AMD64_NV_PACKAGE}.run )
+	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${MM_PV}.tar.bz2 )
 "
 
 LICENSE="GPL-2 NVIDIA-r2"
 SLOT="0/${PV%.*}"
-KEYWORDS="-* ~amd64 ~amd64-fbsd"
+KEYWORDS="-* ~amd64"
 RESTRICT="bindist mirror"
 EMULTILIB_PKG="true"
 
@@ -73,7 +73,7 @@ RDEPEND="
 
 QA_PREBUILT="opt/* usr/lib*"
 S="${WORKDIR}"
-NVIDIA_SETTINGS_SRC_DIR="${S%/}/${P/drivers/settings}/src"
+NVIDIA_SETTINGS_SRC_DIR="${S%/}/${PN/drivers/settings}-${MM_PV}/src"
 
 nvidia_drivers_versions_check() {
 	if use amd64 && has_multilib_profile && \
@@ -89,6 +89,10 @@ nvidia_drivers_versions_check() {
 			ewarn "which are limited to the following kernels:"
 			ewarn "<sys-kernel/gentoo-sources-4.19"
 			ewarn "<sys-kernel/vanilla-sources-4.19"
+			ewarn "This version of ${CATEGORY}/${PN} has an unofficial patch"
+			ewarn "applied to enable support for the following kernels::"
+			ewarn "=sys-kernel/gentoo-sources-4.19"
+			ewarn "=sys-kernel/vanilla-sources-4.19"
 		elif use kms && kernel_is lt 4 2; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -223,11 +227,11 @@ pkg_setup() {
 }
 
 src_prepare() {
-	local -a PATCHES
+	local -a PATCHES=( "${FILESDIR}/${PN}-396.54-kernel-4.19.patch" )
 	if use tools; then
 		rsync -achv "${FILESDIR}/nvidia-settings-linker.patch" "${WORKDIR}"/ \
 			|| die "rsync failed"
-		sed -i -e 's:@PV@:'"${PV}"':g' "${WORKDIR}/nvidia-settings-linker.patch" \
+		sed -i -e 's:@PV@:'"${MM_PV}"':g' "${WORKDIR}/nvidia-settings-linker.patch" \
 			|| die "sed failed"
 		PATCHES+=( "${WORKDIR}/nvidia-settings-linker.patch" )
 	fi

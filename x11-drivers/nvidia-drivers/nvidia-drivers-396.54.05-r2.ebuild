@@ -89,6 +89,10 @@ nvidia_drivers_versions_check() {
 			ewarn "which are limited to the following kernels:"
 			ewarn "<sys-kernel/gentoo-sources-4.19"
 			ewarn "<sys-kernel/vanilla-sources-4.19"
+			ewarn "This version of ${CATEGORY}/${PN} has an unofficial patch"
+			ewarn "applied to enable support for the following kernels::"
+			ewarn "=sys-kernel/gentoo-sources-4.19"
+			ewarn "=sys-kernel/vanilla-sources-4.19"
 		elif use kms && kernel_is lt 4 2; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -223,7 +227,7 @@ pkg_setup() {
 }
 
 src_prepare() {
-	local -a PATCHES
+	local -a PATCHES=( "${FILESDIR}/${PN}-396.54-kernel-4.19.patch" )
 	if use tools; then
 		rsync -achv "${FILESDIR}/nvidia-settings-linker.patch" "${WORKDIR}"/ \
 			|| die "rsync failed"
