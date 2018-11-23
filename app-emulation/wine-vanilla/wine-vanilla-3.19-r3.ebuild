@@ -401,7 +401,7 @@ src_prepare() {
 
 	local md5hash
 	md5hash="$(md5sum server/protocol.def)" || die "md5sum failed"
-	[[ ! -z "${STABLE_PREFIX}" ]] && sed -i -e 's/[-.[:alnum:]]+$/'"${MY_PV}"'/' "${S}/VERSION"
+	[[ ! -z "${STABLE_PREFIX}" ]] && sed -i -e 's/[-.[:alnum:]]\+$/'"${MY_PV}"'/' "${S}/VERSION"
 	local -a PATCHES PATCHES_BIN
 	PATCHES+=(
 		"${WORKDIR}/${GENTOO_WINE_EBUILD_COMMON_P%/}/patches/${MY_PN}-1.8_winecfg_detailed_version.patch"
