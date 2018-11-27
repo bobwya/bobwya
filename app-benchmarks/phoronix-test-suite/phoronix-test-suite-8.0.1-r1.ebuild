@@ -41,7 +41,8 @@ DEPEND=""
 RDEPEND="${DEPEND}
 		app-arch/p7zip
 		media-libs/libpng
-		>=dev-lang/php-5.3:=[cli,curl,gd,json,posix,pcntl,sockets,truetype,zip]
+		>=dev-lang/php-5.3:=[cli,curl,gd,json,posix,pcntl,sockets,ssl,truetype,xml,zip,zlib]
+		dev-php/fpdf
 		www-servers/apache
 		x11-base/xorg-server
 		sdl? (
