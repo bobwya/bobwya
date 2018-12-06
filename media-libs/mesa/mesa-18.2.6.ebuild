@@ -216,11 +216,6 @@ x86? (
 	)
 "
 
-PATCHES=(
-	"${FILESDIR}/${P}-meson-link-gallium-nine-with-pthreads.patch"
-	"${FILESDIR}/${P}-meson-fix-libatomic-tests.patch"
-)
-
 # driver_enable()
 #	1>	 driver array (reference)
 #	2>	 -- / driver USE flag (main category)
