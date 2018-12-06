@@ -537,7 +537,16 @@ src_install-libs() {
 		if use kernel_linux; then
 			NV_GLX_LIBRARIES+=(
 				"libnvidia-ml.so.${NV_SOVER}" .
-				"tls/libnvidia-tls.so.${NV_SOVER}" .
+				"libnvidia-tls.so.${NV_SOVER}" .
+			)
+		fi
+
+		if use kernel_linux && has_multilib_profile && [[ ${ABI} == "amd64" ]]
+		then
+			NV_GLX_LIBRARIES+=(
+				"libnvidia-cbl.so.${NV_SOVER}" .
+				"libnvidia-rtcore.so.${NV_SOVER}" .
+				"libnvoptix.so.${NV_SOVER}" .
 			)
 		fi
 

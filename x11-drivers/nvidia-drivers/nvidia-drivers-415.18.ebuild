@@ -84,11 +84,11 @@ nvidia_drivers_versions_check() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 19; then
+		if kernel_is ge 4 20; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.19"
-			ewarn "<sys-kernel/vanilla-sources-4.19"
+			ewarn "<sys-kernel/gentoo-sources-4.20"
+			ewarn "<sys-kernel/vanilla-sources-4.20"
 		elif use kms && kernel_is lt 4 2; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -537,7 +537,16 @@ src_install-libs() {
 		if use kernel_linux; then
 			NV_GLX_LIBRARIES+=(
 				"libnvidia-ml.so.${NV_SOVER}" .
-				"tls/libnvidia-tls.so.${NV_SOVER}" .
+				"libnvidia-tls.so.${NV_SOVER}" .
+			)
+		fi
+
+		if use kernel_linux && has_multilib_profile && [[ ${ABI} == "amd64" ]]
+		then
+			NV_GLX_LIBRARIES+=(
+				"libnvidia-cbl.so.${NV_SOVER}" .
+				"libnvidia-rtcore.so.${NV_SOVER}" .
+				"libnvoptix.so.${NV_SOVER}" .
 			)
 		fi
 

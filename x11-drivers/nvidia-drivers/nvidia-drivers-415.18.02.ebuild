@@ -14,7 +14,7 @@ AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
 DESCRIPTION="NVIDIA Accelerated Graphics Driver"
 HOMEPAGE="https://www.nvidia.com/ https://www.nvidia.com/Download/Find.aspx"
 SRC_URI="
-	amd64? ( "https://developer.nvidia.com/linux-${DL_PV}" -> ${AMD64_NV_PACKAGE}.run )
+	amd64? ( "https://developer.nvidia.com/vulkan-beta-${DL_PV}-linux" -> ${AMD64_NV_PACKAGE}.run )
 	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${MM_PV}.tar.bz2 )
 "
 
@@ -84,11 +84,11 @@ nvidia_drivers_versions_check() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 19; then
+		if kernel_is ge 4 20; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.19"
-			ewarn "<sys-kernel/vanilla-sources-4.19"
+			ewarn "<sys-kernel/gentoo-sources-4.20"
+			ewarn "<sys-kernel/vanilla-sources-4.20"
 		elif use kms && kernel_is lt 4 2; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -352,7 +352,7 @@ src_install() {
 		doins "${NV_X11}/nvidia_drv.so"
 
 		# Xorg GLX driver
-		donvidia "${NV_X11}/libglx.so.${NV_SOVER}" \
+		donvidia "${NV_X11}/libglxserver_nvidia.so.${NV_SOVER}" \
 			"/usr/$(get_libdir)/xorg/nvidia/extensions"
 
 		# Xorg nvidia.conf
@@ -518,7 +518,7 @@ src_install-libs() {
 
 		if use wayland && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then
 			NV_GLX_LIBRARIES+=(
-				"libnvidia-egl-wayland.so.1.0.3" .
+				"libnvidia-egl-wayland.so.1.1.0" .
 			)
 		fi
 
@@ -537,7 +537,16 @@ src_install-libs() {
 		if use kernel_linux; then
 			NV_GLX_LIBRARIES+=(
 				"libnvidia-ml.so.${NV_SOVER}" .
-				"tls/libnvidia-tls.so.${NV_SOVER}" .
+				"libnvidia-tls.so.${NV_SOVER}" .
+			)
+		fi
+
+		if use kernel_linux && has_multilib_profile && [[ ${ABI} == "amd64" ]]
+		then
+			NV_GLX_LIBRARIES+=(
+				"libnvidia-cbl.so.${NV_SOVER}" .
+				"libnvidia-rtcore.so.${NV_SOVER}" .
+				"libnvoptix.so.${NV_SOVER}" .
 			)
 		fi
 
