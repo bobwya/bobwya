@@ -4,6 +4,7 @@
 # @ECLASS: mozconfig-v6.58.eclass
 # @MAINTAINER:
 # mozilla team <mozilla@gentoo.org>
+# @SUPPORTED_EAPIS: 5 6 7
 # @BLURB: the new mozilla common configuration eclass for FF33 and newer, v6
 # @DESCRIPTION:
 # This eclass is used in mozilla ebuilds (firefox, thunderbird, seamonkey)
@@ -266,7 +267,6 @@ mozconfig_config() {
 	mozconfig_annotate '' --enable-system-ffi
 	mozconfig_annotate '' --disable-gconf
 	mozconfig_annotate '' --with-intl-api
-	mozconfig_annotate '' --enable-system-pixman
 
 	# skia has no support for big-endian platforms
 	if [[ $(tc-endian) == "big" ]]; then

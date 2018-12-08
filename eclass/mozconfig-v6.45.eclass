@@ -4,6 +4,7 @@
 # @ECLASS: mozconfig-v6.45.eclass
 # @MAINTAINER:
 # mozilla team <mozilla@gentoo.org>
+# @SUPPORTED_EAPIS: 5 6 7
 # @BLURB: the new mozilla common configuration eclass for FF33 and newer, v6
 # @DESCRIPTION:
 # This eclass is used in mozilla ebuilds (firefox, thunderbird, seamonkey)
@@ -29,6 +30,7 @@ esac
 inherit flag-o-matic toolchain-funcs mozcoreconf-v4
 
 # @ECLASS-VARIABLE: MOZCONFIG_OPTIONAL_WIFI
+# @DEFAULT_UNSET
 # @DESCRIPTION:
 # Set this variable before the inherit line, when an ebuild needs to provide
 # optional necko-wifi support via IUSE="wifi".  Currently this would include
@@ -39,6 +41,7 @@ inherit flag-o-matic toolchain-funcs mozcoreconf-v4
 # Set the variable to any value if the use flag should exist but not be default-enabled.
 
 # @ECLASS-VARIABLE: MOZCONFIG_OPTIONAL_JIT
+# @DEFAULT_UNSET
 # @DESCRIPTION:
 # Set this variable before the inherit line, when an ebuild needs to provide
 # optional necko-wifi support via IUSE="jit".  Currently this would include
@@ -49,6 +52,7 @@ inherit flag-o-matic toolchain-funcs mozcoreconf-v4
 # Set the variable to any value if the use flag should exist but not be default-enabled.
 
 # @ECLASS-VARIABLE: MOZCONFIG_OPTIONAL_GTK3
+# @DEFAULT_UNSET
 # @DESCRIPTION:
 # Set this variable before the inherit line, when an ebuild can provide
 # optional gtk3 support via IUSE="gtk3".  Currently this would include
@@ -59,6 +63,7 @@ inherit flag-o-matic toolchain-funcs mozcoreconf-v4
 # Set the variable to any value if the use flag should exist but not be default-enabled.
 
 # @ECLASS-VARIABLE: MOZCONFIG_OPTIONAL_QT5
+# @DEFAULT_UNSET
 # @DESCRIPTION:
 # Set this variable before the inherit line, when an ebuild can provide
 # optional qt5 support via IUSE="qt5".  Currently this would include
@@ -75,6 +80,7 @@ IUSE="${IUSE} dbus debug ffmpeg +gstreamer +jemalloc3 neon pulseaudio selinux st
 # some notes on deps:
 # gtk:2 minimum is technically 2.10 but gio support (enabled by default) needs 2.14
 # media-libs/mesa needs to be 10.2 or above due to a bug with flash+vdpau
+# media-libs/libcanberra is dlopen'ed rather than linked
 
 RDEPEND=">=app-text/hunspell-1.2:=
 	dev-libs/atk
@@ -87,6 +93,7 @@ RDEPEND=">=app-text/hunspell-1.2:=
 	>=media-libs/mesa-10.2:*
 	media-libs/fontconfig
 	>=media-libs/freetype-2.4.10
+	media-libs/libcanberra:*[pulseaudio?]
 	kernel_linux? ( media-libs/alsa-lib )
 	pulseaudio? ( media-sound/pulseaudio )
 	virtual/freedesktop-icon-theme
@@ -118,7 +125,7 @@ RDEPEND=">=app-text/hunspell-1.2:=
 	system-harfbuzz? ( >=media-libs/harfbuzz-1.1.3:0=[graphite,icu] >=media-gfx/graphite2-1.3.8 )
 "
 
-if [[ ${PV} == "45.0" ]]; then
+if [[ ${PV/45.0*/} == "" ]]; then
 	RDEPEND+="
 	system-libvpx? ( >=media-libs/libvpx-1.3.0:0=[postproc] )"
 else

@@ -87,7 +87,7 @@ moz_pkgsetup() {
 	# Ensure we use correct toolchain
 	export HOST_CC="$(tc-getBUILD_CC)"
 	export HOST_CXX="$(tc-getBUILD_CXX)"
-	tc-export CC CXX LD PKG_CONFIG AR RANLIB
+	tc-export CC CXX LD PKG_CONFIG
 
 	# Ensure that we have a sane build enviroment
 	export MOZILLA_CLIENT=1
