@@ -158,11 +158,6 @@ src_prepare() {
 
 	default
 
-	if ((WINE_IS_RC_VERSION)); then
-		sed -i -e '/^m4_define/{s/\[\\1\]/\[\\1\]'"${WINE_PV/#*-rc/-rc}"'/}' \
-			"${S}/configure.ac" || die "sed failed"
-	fi
-
 	wine_eapply_bin
 	eautoreconf
 
