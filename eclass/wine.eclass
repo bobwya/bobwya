@@ -1287,12 +1287,6 @@ wine_eapply_esync_patchset() {
 		3.1[7-8])
 			_esync_rebase_patchset="24f47812165a5dcb2b22825e47ccccbbd7437b8b"
 			;;
-		3.19)
-			_esync_rebase_patchset="2f17e0112dc0af3f0b246cf377e2cb8fd7a6cf58"
-			;;
-		3.2[0-1]|4.0_rc[1-9]|4.0)
-			_esync_rebase_patchset="2600ecd4edfdb71097105c74312f83845305a4f2"
-			;;
 		9999)
 			_sieved_esync_patchset_commits=( "${_esync_patchset_commits[@]}" )
 			wine_sieve_arrays_by_git_commit "${S}" "_sieved_esync_patchset_commits"
@@ -1500,7 +1494,7 @@ wine_add_stock_gentoo_patches() {
 			;;
 	esac
 	use osmesa && case "${WINE_PV}" in
-		1.8*|1.9*|2.0.[1-4]|2.0.[1-4]-rc[1-9]|2.0.5_rc1|2.[0-6]|9999)
+		1.8*|1.9*|2.0.[1-4]|2.0.[1-4]-rc[1-9]|2.0.5-rc1|2.[0-6]|9999)
 			PATCHES+=( "${_patch_directory}/wine-2.7-osmesa-configure_support_recent_versions.patch" ) #429386
 			;;
 		*)
