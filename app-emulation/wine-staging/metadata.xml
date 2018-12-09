@@ -18,7 +18,7 @@ For this Wine variant - the external Wine Staging patchset is always applied whe
 		<flag name="esync">Add support for the wine-esync patchset (unofficial).
 		See: https://github.com/zfigura/wine</flag>
 		<flag name="ffmpeg">Use ffmpeg to convert WMA formats, requires:
-			<pkg>media-video/ffmpeg</pkg> (this feature may work with <pkg>media-video/libav</pkg>).</flag>
+			<pkg>media-video/ffmpeg</pkg> (this feature is not supported by <pkg>media-video/libav</pkg>).</flag>
 		<flag name="gecko">Add support for the Gecko engine when using iexplore</flag>
 		<flag name="gstreamer">Use <pkg>media-libs/gstreamer</pkg> to provide DirectShow functionality.</flag>
 		<flag name="mono">Add support for .NET using Wine's Mono add-on.</flag>
