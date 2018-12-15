@@ -21,7 +21,6 @@ DESCRIPTION="Free implementation of Windows(tm) on Unix, with Wine Staging patch
 HOMEPAGE="https://www.winehq.org/"
 SRC_URI="${SRC_URI}
 	esync? (
-		https://github.com/zfigura/wine/releases/download/${WINE_ESYNC_VERSION}/esync.tgz -> esync-${WINE_ESYNC_VERSION}.tar.gz
 		https://github.com/bobwya/${WINE_ESYNC_PN}/archive/${WINE_ESYNC_PV}.tar.gz -> ${WINE_ESYNC_P}.tar.gz
 	)
 	pba? (
@@ -170,7 +169,7 @@ src_prepare() {
 	wine_eapply_staging_patchset
 	wine_src_set_staging_versioning
 
-	use esync && wine_eapply_esync_patchset "${WORKDIR}/esync"
+	use esync && wine_eapply_esync_patchset "${WORKDIR}/${WINE_ESYNC_P}"
 
 	use pba && wine_eapply_pba_patchset "${WORKDIR}/${WINE_PBA_P%/}/${PN}-pba"
 	#617864 Generate wine64 man pages for 64-bit bit only installation
