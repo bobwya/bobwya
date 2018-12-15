@@ -107,17 +107,10 @@ readonly WINE_EBUILD_COMMON_PN
 WINE_EBUILD_COMMON_PV="${WINE_EBUILD_COMMON_P##*-}"
 readonly WINE_EBUILD_COMMON_PV
 
-# wine-esync support
-# @ECLASS-VARIABLE: WINE_ESYNC_VERSION
-# @DESCRIPTION:
-# Currently base (reference) wine-esync release version.
-WINE_ESYNC_VERSION="esyncb4478b7"
-readonly WINE_ESYNC_VERSION
-
 # @ECLASS-VARIABLE: WINE_ESYNC_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-esync; tarball.
-WINE_ESYNC_P="gentoo-wine-esync-20181112"
+WINE_ESYNC_P="gentoo-wine-esync-20181215"
 readonly WINE_ESYNC_P
 
 # @ECLASS-VARIABLE: WINE_ESYNC_PN
@@ -597,18 +590,18 @@ _wine_staging_walk_git_tree() {
 		_prev_wine_staging_commit="${_target_wine_staging_commit:-${_wine_staging_commit}}"
 		_wine_staging_commit="${wine_staging_git_log_array[_ilog]:0:40}"
 		_wine_staging_parent_commit="${wine_staging_git_log_array[_ilog]:40:40}"
-		if [[ ! -z "${_prev_wine_staging_commit}" && ( "${_wine_staging_parent_commit}" != "${_prev_wine_staging_commit}" ) ]]; then
+		if [[ -n "${_prev_wine_staging_commit}" && ( "${_wine_staging_parent_commit}" != "${_prev_wine_staging_commit}" ) ]]; then
 			continue
 		fi
 
 		_wine_staging_get_upstream_commit "${_wine_staging_git_directory}" "${_wine_staging_commit}" "wine_git_commit"
 		if [[ "${wine_git_commit}" == "${_target_wine_git_commit}" ]]; then
 			_target_wine_staging_commit="${_wine_staging_commit}"
-		elif [[ ! -z "${_target_wine_staging_commit}" ]]; then
+		elif [[ -n "${_target_wine_staging_commit}" ]]; then
 			break
 		fi
 	done
-	if [[ ! -z "${_target_wine_staging_commit}" ]]; then
+	if [[ -n "${_target_wine_staging_commit}" ]]; then
 		local -a _git_reset_arguments_array=( "--hard" "--quiet" "${_target_wine_staging_commit}" )
 	# shellcheck disable=SC2068
 		git reset ${_git_reset_arguments_array[@]} || die "git reset ${_git_reset_arguments_array[*]} failed"
@@ -863,13 +856,13 @@ wine_get_git_commit_info() {
 		die "unable to determine current HEAD Git commit for repository: '${_git_directory}'"
 	fi
 
-	if [[ ! -z "${2}" && "${2}" =~ ${_WINE_VARIABLE_NAME_REGEXP} ]]; then
+	if [[ -n "${2}" && "${2}" =~ ${_WINE_VARIABLE_NAME_REGEXP} ]]; then
 		declare -n _git_commit_hash="${2}"
 		# shellcheck disable=SC2034
 		_git_commit_hash="${_commit_hash}"
 	fi
 
-	if [[ ! -z "${3}" && "${3}" =~ ${_WINE_VARIABLE_NAME_REGEXP} ]]; then
+	if [[ -n "${3}" && "${3}" =~ ${_WINE_VARIABLE_NAME_REGEXP} ]]; then
 		declare -n _git_commit_date="${3}"
 		local -a _git_show_arguments_array=( "-s" "--format=%cd" "${_commit_hash}" )
 		# shellcheck disable=SC2068
@@ -888,7 +881,7 @@ wine_get_git_commit_info() {
 wine_staging_git_src_unpack() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
-	if [[ ! -z "${EGIT_OVERRIDE_COMMIT_WINE_STAGING_WINE_STAGING:-${EGIT_OVERRIDE_BRANCH_WINE_STAGING_WINE_STAGING}}" ]]; then
+	if [[ -n "${EGIT_OVERRIDE_COMMIT_WINE_STAGING_WINE_STAGING:-${EGIT_OVERRIDE_BRANCH_WINE_STAGING_WINE_STAGING}}" ]]; then
 		# References are relative to Wine Staging git tree (Wine Staging Git tree -> Wine Git tree)
 		# Use env variables "EGIT_OVERRIDE_COMMIT_WINE_STAGING_WINE_STAGING" or "EGIT_OVERRIDE_BRANCH_WINE_STAGING_WINE_STAGING" to reference Wine Staging git tree
 		#588604 Use git-r3 internal functions for secondary Wine Staging repository
@@ -938,9 +931,9 @@ _wine_env_vcs_variable_prechecks() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
 	local _env_error=0
-	if [[ ! -z "${EGIT_COMMIT:-${EGIT_BRANCH}}" || ! -z "${EGIT_WINE_COMMIT:-${EGIT_WINE_BRANCH}}" ]]; then
+	if [[ -n "${EGIT_COMMIT:-${EGIT_BRANCH}}" || -n "${EGIT_WINE_COMMIT:-${EGIT_WINE_BRANCH}}" ]]; then
 		_env_error=1
-	elif [[ ! -z "${EGIT_STAGING_COMMIT:-${EGIT_STAGING_BRANCH}}" ]]; then
+	elif [[ -n "${EGIT_STAGING_COMMIT:-${EGIT_STAGING_BRANCH}}" ]]; then
 		_env_error=$((_WINE_IS_STAGING))
 	fi
 
@@ -1084,10 +1077,10 @@ _wine_generic_compiler_pretests() {
 wine_src_set_staging_versioning() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
-	if [[ ! -z "${_WINE_STAGING_SUFFIX}" ]]; then
+	if [[ -n "${_WINE_STAGING_SUFFIX}" ]]; then
 		sed -i -e 's/Staging/Staging'"${_WINE_STAGING_SUFFIX}"'/' "${S}/libs/wine/Makefile.in" || die "sed failed"
 	fi
-	if [[ ! -z "${_WINE_STAGING_REVISION}" ]]; then
+	if [[ -n "${_WINE_STAGING_REVISION}" ]]; then
 		sed -i -e '/^AC_INIT(.*)$/{s/\[Wine\]/\[Wine Staging\]/}' \
 			-e '/^m4_define/{s/\[\\1\]/\[\\1\]'"${_WINE_STAGING_REVISION}"'/}' \
 			"${S}/configure.ac" || die "sed failed"
@@ -1258,10 +1251,11 @@ wine_eapply_staging_patchset() {
 wine_eapply_esync_patchset() {
 	(($# == 1)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (1)"
 
-	local _esync_patchset_directory="${1%/}" _i_array _esync_awk_dir _esync_error=0 _esync_rebase_patchset _esync_patch
-	local -a _esync_patchset_commits _sieved_esync_patchset_commits
-	if [[ ! -d "${_esync_patchset_directory}" ]]; then
-		die "${FUNCNAME[0]}(): argument (1): path '${_esync_patchset_directory}' is not a valid directory"
+	local _esync_patchsets_base_directory="${1%/}" \
+		_i_array _esync_error=0 _esync_patchset_directory _esync_rebased_patchset
+	local -a _base_commit _esync_patchset_commits _sieved_esync_patchset_commits
+	if [[ ! -d "${_esync_patchsets_base_directory}" ]]; then
+		die "${FUNCNAME[0]}(): argument (1): path '${_esync_patchsets_base_directory}' is not a valid directory"
 	fi
 
 	_esync_patchset_commits=(
@@ -1273,31 +1267,41 @@ wine_eapply_esync_patchset() {
 
 	case "${WINE_PV}" in
 		3.0.[1-4]-rc[1-9]|3.0.[1-4]|3.0-rc[1-6]|3.[0-2])
-			_esync_rebase_patchset="f8e0bd1b0d189d5950dc39082f439cd1fc9569d5"
+			_esync_rebased_patchset="f8e0bd1b0d189d5950dc39082f439cd1fc9569d5"
 			;;
 		3.[3-5])
-			_esync_rebase_patchset="a7aa192a78d02d28f2bbae919a3f5c726e4e9e60"
+			_esync_rebased_patchset="a7aa192a78d02d28f2bbae919a3f5c726e4e9e60"
 			;;
 		3.[6-9]|3.1[0-3])
-			_esync_rebase_patchset="c61c33ee66ea0e97450ac793ebc4ac41a1ccc793"
+			_esync_rebased_patchset="c61c33ee66ea0e97450ac793ebc4ac41a1ccc793"
 			;;
 		3.1[4-6])
-			_esync_rebase_patchset="57212f64f8e4fef0c63c633940e13d407c0f2069"
+			_esync_rebased_patchset="57212f64f8e4fef0c63c633940e13d407c0f2069"
 			;;
 		3.1[7-8])
-			_esync_rebase_patchset="24f47812165a5dcb2b22825e47ccccbbd7437b8b"
+			_esync_rebased_patchset="24f47812165a5dcb2b22825e47ccccbbd7437b8b"
+			;;
+		3.19)
+			_esync_rebased_patchset="2f17e0112dc0af3f0b246cf377e2cb8fd7a6cf58"
+			;;
+		3.2[0-1]|4.0-rc[1-9]|4.0)
+			_esync_rebased_patchset="2600ecd4edfdb71097105c74312f83845305a4f2"
 			;;
 		9999)
+			((_WINE_IS_STAGING)) \
+				&& _base_commit="f9e1dbb83d850a2f7cb17079e02de139e2f8b920" \
+				|| _base_commit="f8e0bd1b0d189d5950dc39082f439cd1fc9569d5"
+
 			_sieved_esync_patchset_commits=( "${_esync_patchset_commits[@]}" )
 			wine_sieve_arrays_by_git_commit "${S}" "_sieved_esync_patchset_commits"
 			for _i_array in "${!_esync_patchset_commits[@]}"; do
 				# shellcheck disable=SC2068
 				has "${_esync_patchset_commits[_i_array]}" ${_sieved_esync_patchset_commits[@]} && break
 
-				_esync_rebase_patchset="${_esync_patchset_commits[_i_array]}"
+				_esync_rebased_patchset="${_esync_patchset_commits[_i_array]}"
 			done
-			if [[ -z "${_esync_rebase_patchset}" ]]; then
-				ewarn "The esync patchset is only supported for Wine Git commit (+child commits): '${_esync_patchset_commits[_WINE_IS_STAGING]}'"
+			if [[ -z "${_esync_rebased_patchset}" ]]; then
+				ewarn "The esync patchset is only supported for Wine Git commit (+child commits): '${_base_commit}'"
 				ewarn "The esync patchset cannot be applied on Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
 				_esync_error=1
 			fi
@@ -1313,22 +1317,8 @@ wine_eapply_esync_patchset() {
 		return 1
 	fi
 
-	einfo "Using esync rebase revision: '${_esync_rebase_patchset}'"
-	_esync_awk_dir="${WORKDIR}/${WINE_ESYNC_P%/}"
-	for _esync_patch in "${_esync_patchset_directory}/00"{01..83}*".patch"; do
-		if awk 	-vesync_patchset_commits="${_esync_patchset_commits[*]}" \
-			-vesync_rebase_patchset="${_esync_rebase_patchset}" \
-			-vstaging="$((_WINE_IS_STAGING))" \
-			-f "${_esync_awk_dir}/wine-esync-common.awk" \
-			-f "${_esync_awk_dir}/wine-esync-preprocess.awk" \
-			"${_esync_patch}"
-		then
-			mv "${_esync_patch}.new" "${_esync_patch}" || die "mv failed"
-		elif (($?!=255)); then
-			die "wine-esync-preprocess.awk script: esync patchset rebasing failed"
-		fi
-	done
-
+	einfo "Using esync rebase revision: '${_esync_rebased_patchset}'"
+	_esync_patchset_directory="${_esync_patchsets_base_directory}/${PN}/${_esync_rebased_patchset}"
 	ewarn "Applying the wine-esync patchset."
 	ewarn "Note: this third-party patchset is not officially supported!"
 
