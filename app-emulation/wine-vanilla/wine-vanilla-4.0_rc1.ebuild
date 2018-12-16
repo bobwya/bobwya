@@ -20,7 +20,6 @@ DESCRIPTION="Free implementation of Windows(tm) on Unix, without any external pa
 HOMEPAGE="https://www.winehq.org/"
 SRC_URI="${SRC_URI}
 	esync? (
-		https://github.com/zfigura/wine/releases/download/${WINE_ESYNC_VERSION}/esync.tgz -> esync-${WINE_ESYNC_VERSION}.tar.gz
 		https://github.com/bobwya/${WINE_ESYNC_PN}/archive/${WINE_ESYNC_PV}.tar.gz -> ${WINE_ESYNC_P}.tar.gz
 	)"
 
@@ -145,7 +144,7 @@ src_unpack() {
 src_prepare() {
 	local md5hash
 	md5hash="$(md5sum server/protocol.def)" || die "md5sum failed"
-	[[ ! -z "${WINE_STABLE_PREFIX}" ]] && sed -i -e 's/[-.[:alnum:]]\+$/'"${WINE_PV}"'/' "${S}/VERSION"
+	[[ -n "${WINE_STABLE_PREFIX}" ]] && sed -i -e 's/[-.[:alnum:]]\+$/'"${WINE_PV}"'/' "${S}/VERSION"
 	local -a PATCHES PATCHES_BIN
 
 	wine_add_stock_gentoo_patches
@@ -154,7 +153,7 @@ src_prepare() {
 
 	wine_fix_gentoo_multilib_support
 
-	use esync && wine_eapply_esync_patchset "${WORKDIR}/esync"
+	use esync && wine_eapply_esync_patchset "${WORKDIR}/${WINE_ESYNC_P}"
 	#617864 Generate wine64 man pages for 64-bit bit only installation
 	if use abi_x86_64 && ! use abi_x86_32; then
 		wine_src_force_64bit_manpages

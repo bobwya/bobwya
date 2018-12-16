@@ -135,7 +135,7 @@ src_unpack() {
 src_prepare() {
 	local md5hash
 	md5hash="$(md5sum server/protocol.def)" || die "md5sum failed"
-	[[ ! -z "${WINE_STABLE_PREFIX}" ]] && sed -i -e 's/[-.[:alnum:]]\+$/'"${WINE_PV}"'/' "${S}/VERSION"
+	[[ -n "${WINE_STABLE_PREFIX}" ]] && sed -i -e 's/[-.[:alnum:]]\+$/'"${WINE_PV}"'/' "${S}/VERSION"
 	local -a PATCHES PATCHES_BIN
 
 	wine_add_stock_gentoo_patches
