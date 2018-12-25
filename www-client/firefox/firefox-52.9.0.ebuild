@@ -14,21 +14,31 @@ MOZ_LANGS=( "ach" "af" "an" "ar" "as" "ast" "az" "bg" "bn-BD" "bn-IN" "br" "bs" 
 "mai" "mk" "ml" "mr" "ms" "nb-NO" "nl" "nn-NO" "or" "pa-IN" "pl" "pt-BR" "pt-PT" "rm" "ro" "ru" "si" "sk" "sl" "son" "sq"
 "sr" "sv-SE" "ta" "te" "th" "tr" "uk" "uz" "vi" "xh" "zh-CN" "zh-TW" )
 
+# Convert the ebuild version to the upstream mozilla version, used by mozlinguas
+MOZ_PV="${PV/_alpha/a}" # Handle alpha for SRC_URI
+MOZ_PV="${MOZ_PV/_beta/b}" # Handle beta for SRC_URI
+MOZ_PV="${MOZ_PV/_rc/rc}" # Handle rc for SRC_URI
+
+if [[ ${MOZ_ESR} == 1 ]]; then
+	# ESR releases have slightly different version numbers
+	MOZ_PV="${MOZ_PV}esr"
+fi
+
 # Patch version
-MOZ_PV="${PV}"
-[[ ${MOZ_ESR} == 1 ]] && MOZ_PV="${MOZ_PV}esr"
 PATCH="${PN}-52.0-patches-07"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 
+# Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
+HG_MOZ_REVISION="d9b28dbb04f2"
+HG_MOZ_PV="${MOZ_PV/%.*/.0}"
+HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
+
+MOZCONFIG_OPTIONAL_GTK2ONLY=1
 #MOZCONFIG_OPTIONAL_QT5=1
 MOZCONFIG_OPTIONAL_WIFI=1
-MOZCONFIG_OPTIONAL_GTK2ONLY=1
 
-# Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-EHG_REPO_URI="https://www.rosenauer.org/hg/mozilla"
-
-inherit autotools check-reqs flag-o-matic gnome2-utils mercurial mozconfig-v6.52 \
-	mozlinguas-v2 pax-utils toolchain-funcs virtualx xdg-utils
+inherit autotools check-reqs flag-o-matic gnome2-utils mozconfig-v6.52 mozlinguas-v2 \
+	pax-utils toolchain-funcs virtualx xdg-utils
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.org/firefox
@@ -39,28 +49,31 @@ KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~ia64 ~ppc ~ppc64 ~x86 ~amd64-linux ~x86-lin
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist eme-free +gmp-autoupdate hardened hwaccel jack kde pgo rust selinux test"
-REQUIRED_USE="kde? ( || ( amd64 x86 ) )"
 RESTRICT="!bindist? ( bindist )"
 
 PATCH_URIS=( "https://dev.gentoo.org"/~{anarchy,axs,polynomial-c}/"mozilla/patchsets/${PATCH}.tar.xz" )
 # shellcheck disable=SC2124
 SRC_URI="${SRC_URI}
 	${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz
-	${PATCH_URIS[@]}"
+	${PATCH_URIS[@]}
+	kde? (
+		${HG_MOZILLA_URI}/raw-file/${HG_MOZ_REVISION}/mozilla-kde.patch -> ${PN}-${HG_MOZ_PV}-mozilla-kde.patch
+		${HG_MOZILLA_URI}/raw-file/${HG_MOZ_REVISION}/mozilla-language.patch -> ${PN}-${HG_MOZ_PV}-mozilla-language.patch
+		${HG_MOZILLA_URI}/raw-file/${HG_MOZ_REVISION}/mozilla-nongnome-proxies.patch -> ${PN}-${HG_MOZ_PV}-mozilla-nongnome-proxies.patch
+		${HG_MOZILLA_URI}/raw-file/${HG_MOZ_REVISION}/firefox-branded-icons.patch -> ${PN}-${HG_MOZ_PV}-firefox-branded-icons.patch
+		${HG_MOZILLA_URI}/raw-file/${HG_MOZ_REVISION}/firefox-kde.patch -> ${PN}-${HG_MOZ_PV}-firefox-kde.patch
+		${HG_MOZILLA_URI}/raw-file/${HG_MOZ_REVISION}/firefox-no-default-ualocale.patch -> ${PN}-${HG_MOZ_PV}-firefox-no-default-ualocale.patch
+	)"
 
 ASM_DEPEND=">=dev-lang/yasm-1.1"
 
 RDEPEND="
 	jack? ( virtual/jack )
+	kde? ( kde-misc/kmozillahelper:=  )
 	>=dev-libs/nss-3.28.3
 	>=dev-libs/nspr-4.13.1
 	selinux? ( sec-policy/selinux-mozilla )
-	amd64? (
-		kde? ( kde-misc/kmozillahelper:= )
-	)
-	x86? (
-		kde? ( kde-misc/kmozillahelper:= )
-	)"
+	kde? ( kde-misc/kmozillahelper:=  )"
 
 DEPEND="${RDEPEND}
 	pgo? ( >=sys-devel/gcc-4.5 )
@@ -85,7 +98,7 @@ pkg_setup() {
 
 	# Avoid PGO profiling problems due to enviroment leakage
 	# These should *always* be cleaned up anyway
-	unset -v DBUS_SESSION_BUS_ADDRESS \
+	unset DBUS_SESSION_BUS_ADDRESS \
 		DISPLAY \
 		ORBIT_SOCKETDIR \
 		SESSION_MANAGER \
@@ -127,46 +140,32 @@ src_unpack() {
 
 	# Unpack language packs
 	mozlinguas_src_unpack
-
-	if [[ "${MOZ_PV}" =~ ^\(10|17|24\)\..*esr$ ]]; then
-		EHG_REVISION="esr${MOZ_PV%%.*}"
-	else
-		EHG_REVISION="firefox${MOZ_PV%%.*}"
-	fi
-	KDE_PATCHSET="firefox-kde-patchset"
-	EHG_CHECKOUT_DIR="${WORKDIR}/${KDE_PATCHSET}"
-	if use kde; then
-		mercurial_fetch "${EHG_REPO_URI}" "${KDE_PATCHSET}"
-	else
-		# quieten the mercurial module for app-portage/smart-live-rebuild
-		export HG_REV_ID="${EHG_REVISION}"
-	fi
 }
 
 src_prepare() {
 	# Default to our patchset
 	local PATCHES=( "${WORKDIR}/firefox" )
-	PATCHES+=( "${FILESDIR}/${PN}-52.4.0-fix_lto.patch" )
 	PATCHES+=( "${FILESDIR}/${PN}-fix_lto.patch" )
 	if use kde; then
-		sed -i -e 's:@BINPATH@/defaults/pref/kde.js:@RESPATH@/browser/@PREF_DIR@/kde.js:' \
-			"${EHG_CHECKOUT_DIR}/firefox-kde.patch" || die "sed failed"
-		# Gecko/toolkit OpenSUSE KDE integration patchset
+		sed -e 's:@BINPATH@/defaults/pref/kde.js:@RESPATH@/browser/@PREF_DIR@/kde.js:' \
+			"${DISTDIR}/${PN}-${HG_MOZ_PV}-firefox-kde.patch" > \
+			"${T}/${PN}-${HG_MOZ_PV}-firefox-kde.patch" || die "sed failed"
+		# Toolkit OpenSUSE KDE integration patchset
 		PATCHES+=(
-			"${EHG_CHECKOUT_DIR}/mozilla-kde.patch"
-			"${EHG_CHECKOUT_DIR}/mozilla-language.patch"
-			"${EHG_CHECKOUT_DIR}/mozilla-nongnome-proxies.patch"
+			"${DISTDIR}/${PN}-${HG_MOZ_PV}-mozilla-kde.patch"
+			"${DISTDIR}/${PN}-${HG_MOZ_PV}-mozilla-language.patch"
+			"${DISTDIR}/${PN}-${HG_MOZ_PV}-mozilla-nongnome-proxies.patch"
 		)
 		# Firefox OpenSUSE KDE integration patchset
 		PATCHES+=(
-			"${EHG_CHECKOUT_DIR}/firefox-branded-icons.patch"
-			"${EHG_CHECKOUT_DIR}/firefox-kde.patch"
-			"${EHG_CHECKOUT_DIR}/firefox-no-default-ualocale.patch"
+			"${DISTDIR}/${PN}-${HG_MOZ_PV}-firefox-branded-icons.patch"
+			"${DISTDIR}/${PN}-${HG_MOZ_PV}-firefox-kde.patch"
+			"${DISTDIR}/${PN}-${HG_MOZ_PV}-firefox-no-default-ualocale.patch"
 		)
 		# Uncomment the next line to enable KDE support debugging (additional console output)...
-		#PATCHES+=( "${FILESDIR}/firefox-kde-debug.patch" )
+		#PATCHES+=( "${FILESDIR}/${PN}-kde-debug.patch" )
 		# Uncomment the following patch line to force Plasma/Qt file dialog for Firefox...
-		#PATCHES+=( "${FILESDIR}/firefox-force-qt-dialog.patch" )
+		#PATCHES+=( "${FILESDIR}/${PN}-force-qt-dialog.patch" )
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox/)
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
@@ -197,7 +196,6 @@ src_prepare() {
 		"${S}"/xpcom/io/nsAppFileLocationProvider.cpp || die "sed failed to replace plugin path for 64bit!"
 
 	# Fix sandbox violations during make clean, bug 372817
-	# shellcheck disable=SC1117
 	sed -e "s:\(/no-such-file\):${T}\1:g" \
 		-i "${S}"/config/rules.mk \
 		-i "${S}"/nsprpub/configure{.in,} \
@@ -251,7 +249,7 @@ src_configure() {
 	# enable JACK, bug 600002
 	mozconfig_use_enable jack
 
-	use eme-free && mozconfig_annotate '+eme-free' --disable-eme
+	use eme-free && mozconfig_annotate '+eme-free' "--disable-eme"
 
 	# It doesn't compile on alpha without this LDFLAGS
 	use alpha && append-ldflags "-Wl,--no-relax"
@@ -260,13 +258,13 @@ src_configure() {
 	use hardened && append-ldflags "-Wl,-z,relro,-z,now"
 
 	# Only available on mozilla-overlay for experimentation -- Removed in Gentoo repo per bug 571180
-	#use egl && mozconfig_annotate 'Enable EGL as GL provider' --with-gl-provider=EGL
+	#use egl && mozconfig_annotate 'Enable EGL as GL provider' "--with-gl-provider=EGL"
 
 	# Setup api key for location services
 	echo -n "${_google_api_key}" > "${S}"/google-api-key
-	mozconfig_annotate '' --with-google-api-keyfile="${S}/google-api-key"
+	mozconfig_annotate '' "--with-google-api-keyfile=${S}/google-api-key"
 
-	mozconfig_annotate '' --enable-extensions="${MEXTENSIONS}"
+	mozconfig_annotate '' "--enable-extensions=${MEXTENSIONS}"
 
 	mozconfig_use_enable rust
 
@@ -325,11 +323,11 @@ src_install() {
 	cd "${BUILD_OBJ_DIR}" || die "cd failed"
 
 	# Pax mark xpcshell for hardened support, only used for startupcache creation.
-	pax-mark m "${BUILD_OBJ_DIR}"/dist/bin/xpcshell
+	pax-mark m "${BUILD_OBJ_DIR}/dist/bin/xpcshell"
 
 	# Add our default prefs for firefox
 	local pkg_default_pref_dir="dist/bin/browser/defaults/preferences"
-	cp "${FILESDIR}"/gentoo-default-prefs.js-1 \
+	cp "${FILESDIR}/gentoo-default-prefs.js-1" \
 		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
 		|| die "cp failed"
 
@@ -338,7 +336,7 @@ src_install() {
 
 	# Augment this with hwaccel prefs
 	if use hwaccel; then
-		cat "${FILESDIR}"/gentoo-hwaccel-prefs.js-1 >> \
+		cat "${FILESDIR}/gentoo-hwaccel-prefs.js-1" >> \
 		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
 		|| die "cat failed"
 	fi
@@ -349,8 +347,7 @@ src_install() {
 
 	if use kde; then
 		# Add our kde prefs for firefox
-		cp "${EHG_CHECKOUT_DIR}/MozillaFirefox/kde.js" \
-			"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/kde.js" \
+		cp "${FILESDIR}/kde.js" "${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/kde.js" \
 			|| die "cp failed"
 	fi
 
@@ -397,6 +394,9 @@ PROFILE_EOF
 		insinto "/usr/share/icons/hicolor/${size}x${size}/apps"
 		newins "${icon_path}/default${size}.png" "${icon}.png"
 	done
+	# The 128x128 icon has a different name
+	insinto "/usr/share/icons/hicolor/128x128/apps"
+	newins "${icon_path}/mozicon128.png" "${icon}.png"
 	# Install a 48x48 icon into /usr/share/pixmaps for legacy DEs
 	newicon "${icon_path}/content/icon48.png" "${icon}.png"
 	newmenu "${FILESDIR}/icon/${PN}.desktop" "${PN}.desktop"
@@ -443,7 +443,7 @@ pkg_postinst() {
 		elog "USE='-gmp-autoupdate' has disabled the following plugins from updating or"
 		elog "installing into new profiles:"
 		local plugin
-		for plugin in "${GMP_PLUGIN_LIST[@]}"; do elog "\\t ${plugin}" ; done
+		for plugin in "${GMP_PLUGIN_LIST[@]}"; do elog "\t ${plugin}" ; done
 	fi
 
 	if use pulseaudio && has_version ">=media-sound/apulse-0.1.9"; then
