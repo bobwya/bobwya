@@ -40,8 +40,7 @@ RDEPEND="
 	sys-auth/polkit
 	sys-process/psmisc
 	x11-apps/xrandr
-	x11-apps/xgamma
-	x11-base/xorg-server[xephyr]"
+	x11-apps/xgamma"
 
 S="${WORKDIR}/${MY_P}"
 
@@ -97,6 +96,7 @@ pkg_postinst() {
 		"games-util/xboxdrv"
 		"sys-apps/pciutils"
 		"virtual/wine"
+		"x11-base/xorg-server[xephyr]"
 	)
 
 	gnome2_icon_cache_update
