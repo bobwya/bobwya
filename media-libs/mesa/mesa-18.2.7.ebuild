@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=6
 
-PYTHON_COMPAT=( python3_4 python3_5 python3_6 python3_7 )
+PYTHON_COMPAT=( python2_7 )
 
 inherit llvm meson multilib-minimal pax-utils python-any-r1
 
@@ -45,8 +45,7 @@ REQUIRED_USE="
 	d3d9?   ( dri3 || ( video_cards_r300 video_cards_r600 video_cards_radeonsi video_cards_nouveau video_cards_vmware ) )
 	gles1?  ( egl )
 	gles2?  ( egl )
-	vulkan? ( dri3
-		|| ( video_cards_i965 video_cards_radeonsi )
+	vulkan? ( || ( video_cards_i965 video_cards_radeonsi )
 		video_cards_radeonsi? ( llvm ) )
 	wayland? ( egl gbm )
 	video_cards_freedreno?  ( gallium )
@@ -68,7 +67,7 @@ REQUIRED_USE="
 	video_cards_vmware? ( gallium )
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.96"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.93"
 # shellcheck disable=SC2124
 RDEPEND="
 	!app-eselect/eselect-mesa
@@ -96,7 +95,7 @@ RDEPEND="
 		)
 		lm_sensors? ( sys-apps/lm_sensors:=[${MULTILIB_USEDEP}] )
 		opencl? (
-			dev-libs/ocl-icd[khronos-headers,${MULTILIB_USEDEP}]
+			dev-libs/ocl-icd
 			dev-libs/libclc
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
 		)
@@ -135,7 +134,6 @@ RDEPEND="${RDEPEND}
 # we need to *really* make sure we're only using one slot.
 LLVM_DEPSTR="
 	|| (
-		sys-devel/llvm:8[${MULTILIB_USEDEP}]
 		sys-devel/llvm:7[${MULTILIB_USEDEP}]
 		sys-devel/llvm:6[${MULTILIB_USEDEP}]
 		sys-devel/llvm:5[${MULTILIB_USEDEP}]
@@ -344,6 +342,9 @@ multilib_src_configure() {
 	local -a emesonargs=()
 
 	if use classic; then
+		# Configurable DRI drivers
+		driver_enable DRI_DRIVERS -- swrast
+
 		# Intel code
 		driver_enable DRI_DRIVERS video_cards_i915 i915
 		driver_enable DRI_DRIVERS video_cards_i965 i965

@@ -1,10 +1,10 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
 EAPI=6
 
-PYTHON_COMPAT=( python2_7 )
+PYTHON_COMPAT=( python3_4 python3_5 python3_6 python3_7 )
 
 inherit llvm meson multilib-minimal pax-utils python-any-r1
 
@@ -67,7 +67,7 @@ REQUIRED_USE="
 	video_cards_vmware? ( gallium )
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.93"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.96"
 # shellcheck disable=SC2124
 RDEPEND="
 	!app-eselect/eselect-mesa
@@ -198,8 +198,6 @@ DEPEND="${RDEPEND}
 	virtual/pkgconfig
 	valgrind? ( dev-util/valgrind )
 	x11-base/xorg-proto
-	x11-libs/libXrandr[${MULTILIB_USEDEP}]
-	$(python_gen_any_dep ">=dev-python/mako-0.8.0[\${PYTHON_USEDEP}]")
 "
 
 S="${WORKDIR}/${MY_P}"
