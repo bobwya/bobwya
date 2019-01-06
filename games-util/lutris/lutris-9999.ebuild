@@ -33,14 +33,20 @@ DEPEND="
 "
 RDEPEND="
 	${DEPEND}
+	dev-lang/python[sqlite,threads]
 	dev-python/dbus-python[${PYTHON_USEDEP}]
 	dev-python/python-evdev[${PYTHON_USEDEP}]
 	dev-python/pyyaml[${PYTHON_USEDEP}]
+	gnome-base/gnome-desktop[introspection]
 	net-libs/libsoup
+	net-libs/webkit-gtk:4[introspection]
 	sys-auth/polkit
 	sys-process/psmisc
 	x11-apps/xrandr
-	x11-apps/xgamma"
+	x11-apps/xgamma
+	x11-libs/gdk-pixbuf[introspection]
+	x11-libs/gtk+:3[introspection]
+	x11-libs/pango[introspection]"
 
 S="${WORKDIR}/${MY_P}"
 
