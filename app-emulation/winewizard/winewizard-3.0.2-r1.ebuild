@@ -38,7 +38,10 @@ RDEPEND="${CDEPEND}
 "
 
 src_prepare() {
-	local PATCHES=( "${FILESDIR}/${PN}-3.0.0_purge_ad_support.patch" )
+	local PATCHES=(
+		"${FILESDIR}/${PN}-3.0.0_purge_ad_support.patch"
+		"${FILESDIR}/${PN}-3.0.2-qt-5.11.patch"
+	)
 	default
 }
 

@@ -1,4 +1,4 @@
-diff -u1rN a/src/mainwindow.cpp b/src/mainwindow.cpp
+diff -urN a/src/mainwindow.cpp b/src/mainwindow.cpp
 --- a/src/mainwindow.cpp	2018-01-10 14:37:40.975655365 +0000
 +++ b/src/mainwindow.cpp	2018-01-10 14:43:29.018502341 +0000
 @@ -41,3 +41,2 @@
