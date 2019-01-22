@@ -28,7 +28,7 @@ KEYWORDS="-* ~amd64 ~x86 ~amd64-fbsd ~x86-fbsd"
 RESTRICT="bindist mirror"
 EMULTILIB_PKG="true"
 
-IUSE="acpi +driver multilib kernel_FreeBSD kernel_linux pax_kernel static-libs +tools +X"
+IUSE="acpi +driver multilib kernel_FreeBSD kernel_linux static-libs +tools +X"
 REQUIRED_USE="
 	tools? ( X )
 	static-libs? ( tools )
@@ -47,9 +47,7 @@ COMMON="
 		x11-libs/pango[X]
 		x11-libs/pangox-compat
 	)
-	X? (
-		~app-eselect/eselect-opengl-1.3.3
-	)
+	X? ( ~app-eselect/eselect-opengl-1.3.3 )
 "
 DEPEND="
 	${COMMON}
@@ -212,16 +210,6 @@ pkg_setup() {
 
 src_prepare() {
 	local -a PATCHES
-	if use pax_kernel; then
-		ewarn "Using PAX patches is not supported. You will be asked to"
-		ewarn "use a standard kernel should you have issues. Should you"
-		ewarn "need support with these patches, contact the PaX team."
-		PATCHES+=(
-			"${FILESDIR}/${PN}-331.13-pax-usercopy.patch"
-			"${FILESDIR}/${PN}-337.12-pax-constify.patch"
-		)
-	fi
-
 	local man_file
 	while IFS= read -r -d '' man_file; do
 		gunzip "${man_file}" || die "gunzip failed"

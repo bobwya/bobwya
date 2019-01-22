@@ -24,7 +24,7 @@ KEYWORDS="-* ~amd64"
 RESTRICT="bindist mirror"
 EMULTILIB_PKG="true"
 
-IUSE="acpi compat +driver gtk3 kernel_FreeBSD kernel_linux +kms multilib pax_kernel static-libs +tools uvm wayland +X"
+IUSE="acpi compat +driver gtk3 kernel_FreeBSD kernel_linux +kms multilib static-libs +tools uvm wayland +X"
 REQUIRED_USE=" tools? ( X ) "
 
 COMMON="
@@ -47,10 +47,7 @@ COMMON="
 		x11-libs/libXxf86vm
 		x11-libs/pango[X]
 	)
-	X? (
-		~app-eselect/eselect-opengl-1.3.3
-		app-misc/pax-utils
-	)
+	X? ( ~app-eselect/eselect-opengl-1.3.3 )
 "
 DEPEND="
 	${COMMON}
@@ -230,13 +227,6 @@ src_prepare() {
 			|| die "sed failed"
 		PATCHES+=( "${WORKDIR}/nvidia-settings-linker.patch" )
 	fi
-	if use pax_kernel; then
-		ewarn "Using PAX patches is not supported. You will be asked to"
-		ewarn "use a standard kernel should you have issues. Should you"
-		ewarn "need support with these patches, contact the PaX team."
-		PATCHES+=( "${FILESDIR}/${PN}-384.47-pax-r1.patch" )
-	fi
-
 	local man_file
 	while IFS= read -r -d '' man_file; do
 		gunzip "${man_file}" || die "gunzip failed"
