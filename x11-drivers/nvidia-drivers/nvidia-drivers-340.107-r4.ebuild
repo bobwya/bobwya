@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -53,6 +53,7 @@ COMMON="
 "
 DEPEND="
 	${COMMON}
+	app-arch/xz-utils
 	kernel_linux? (
 		virtual/linux-sources
 		virtual/pkgconfig
@@ -62,12 +63,13 @@ RDEPEND="
 	${COMMON}
 	acpi? ( sys-power/acpid )
 	X? (
-		<x11-base/xorg-server-1.19.99:=
-		>=x11-libs/libX11-1.6.2[${MULTILIB_USEDEP}]
-		>=x11-libs/libXext-1.3.2[${MULTILIB_USEDEP}]
+		<x11-base/xorg-server-1.20.99:=
 		>=x11-libs/libvdpau-0.3-r1[${MULTILIB_USEDEP}]
 		sys-libs/zlib[${MULTILIB_USEDEP}]
-		x11-libs/libXvMC[${MULTILIB_USEDEP}]
+		multilib? (
+			>=x11-libs/libX11-1.6.2[${MULTILIB_USEDEP}]
+			>=x11-libs/libXext-1.3.2[${MULTILIB_USEDEP}]
+		)
 	)
 "
 
@@ -84,11 +86,11 @@ nvidia_drivers_versions_check() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 13; then
+		if kernel_is ge 4 18; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.13"
-			ewarn "<sys-kernel/vanilla-sources-4.13"
+			ewarn "<sys-kernel/gentoo-sources-4.18"
+			ewarn "<sys-kernel/vanilla-sources-4.18"
 		fi
 	fi
 
@@ -99,7 +101,7 @@ nvidia_drivers_versions_check() {
 	nvidia-driver-check-warning
 
 	# Kernel features/options to check for
-	CONFIG_CHECK+=" ~ZONE_DMA ~MTRR ~SYSVIPC ~!LOCKDEP"
+	CONFIG_CHECK+=" !DEBUG_MUTEXES ~!LOCKDEP ~MTRR ~SYSVIPC ~ZONE_DMA"
 	use x86 && CONFIG_CHECK+=" ~HIGHMEM"
 
 	# Now do the above checks
@@ -165,6 +167,7 @@ pkg_setup() {
 
 	if use driver && use kernel_linux; then
 		MODULE_NAMES="nvidia(video:${S}/kernel)"
+		use uvm && MODULE_NAMES+=" nvidia-uvm(video:${S}/kernel/uvm)"
 
 		# This needs to run after MODULE_NAMES (so that the eclass checks
 		# whether the kernel supports loadable modules) but before BUILD_PARAMS

@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -109,8 +109,7 @@ nvidia_drivers_versions_check() {
 	nvidia-driver-check-warning
 
 	# Kernel features/options to check for
-	CONFIG_CHECK+=" ~ZONE_DMA ~MTRR ~SYSVIPC ~!LOCKDEP"
-	use x86 && CONFIG_CHECK+=" ~HIGHMEM"
+	CONFIG_CHECK+=" !DEBUG_MUTEXES ~!LOCKDEP ~MTRR ~PM ~SYSVIPC ~ZONE_DMA"
 
 	# Now do the above checks
 	use kernel_linux && check_extra_config
