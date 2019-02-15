@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 #
 # @ECLASS: mozcoreconf-v6.eclass
@@ -15,12 +15,6 @@
 # product will be installed in.  Read-only
 
 if [[ ! ${_MOZCORECONF} ]]; then
-
-# for compatibility with packages prior to v1
-if [[ -z ${PYTHON_COMPAT[@]} ]]; then
-PYTHON_COMPAT=( python2_7 )
-PYTHON_REQ_USE='ncurses,sqlite,ssl,threads'
-fi
 
 inherit multilib toolchain-funcs flag-o-matic python-any-r1 versionator
 
@@ -210,7 +204,14 @@ mozconfig_init() {
 	case "${ARCH}" in
 	arm)
 		# Reduce the memory requirements for linking
-		append-ldflags -Wl,--no-keep-memory -Wl,--reduce-memory-overheads
+		if use clang ; then
+			# Nothing to do
+			:;
+		elif tc-ld-is-gold ; then
+			append-ldflags -Wl,--no-keep-memory
+		else
+			append-ldflags -Wl,--no-keep-memory -Wl,--reduce-memory-overheads
+		fi
 		;;
 	alpha)
 		# Historically we have needed to add -fPIC manually for 64-bit.
@@ -225,7 +226,14 @@ mozconfig_init() {
 	ppc64)
 		append-flags -fPIC -mminimal-toc
 		# Reduce the memory requirements for linking
-		append-ldflags -Wl,--no-keep-memory -Wl,--reduce-memory-overheads
+		if use clang ; then
+			# Nothing to do
+			:;
+		elif tc-ld-is-gold ; then
+			append-ldflags -Wl,--no-keep-memory
+		else
+			append-ldflags -Wl,--no-keep-memory -Wl,--reduce-memory-overheads
+		fi
 		;;
 	esac
 
