@@ -1266,7 +1266,7 @@ wine_eapply_esync_patchset() {
 	)
 
 	case "${WINE_PV}" in
-		3.0.[1-4]-rc[1-9]|3.0.[1-4]|3.0-rc[1-6]|3.[0-2])
+		3.0.[1-5]-rc[1-9]|3.0.[1-5]|3.0-rc[1-6]|3.[0-2])
 			_esync_rebased_patchset="f8e0bd1b0d189d5950dc39082f439cd1fc9569d5"
 			;;
 		3.[3-5])
@@ -1372,7 +1372,7 @@ wine_eapply_pba_patchset() {
 	esac
 
 	((_WINE_IS_STAGING)) || case "${WINE_PV}" in
-		3.0.[1-4]|3.0.[1-4]-rc[1-9]|3.[01]|3.0-rc[1-6])
+		3.0.[1-5]|3.0.[1-5]-rc[1-9]|3.[01]|3.0-rc[1-6])
 			_pba_patchset="429e0c913087bdc2c183f74f346a9438278ec960"
 			;;
 		3.2)
