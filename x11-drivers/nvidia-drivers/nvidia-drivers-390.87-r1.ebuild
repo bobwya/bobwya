@@ -76,8 +76,6 @@ RDEPEND="
 
 QA_PREBUILT="opt/* usr/lib*"
 S="${WORKDIR}"
-NVIDIA_SETTINGS_SRC_DIR="${S%/}/${P/drivers/settings}/src"
-
 nvidia_drivers_versions_check() {
 	if use amd64 && has_multilib_profile && \
 		[[ "${DEFAULT_ABI}" != "amd64" ]]; then
@@ -248,13 +246,14 @@ src_prepare() {
 		sed -i -e 's:__NV_VK_ICD__:libGLX_nvidia.so.0:g' "nvidia_icd.json" || die "sed failed"
 	fi
 	if use tools; then
+		pushd "${S%/}/nvidia-settings-${PV}" || die "pushd failed"
 		# FIXME: horrible hack!
 		if has_multilib_profile && use multilib && use abi_x86_32; then
-			pushd "${NVIDIA_SETTINGS_SRC_DIR}" || die "pushd failed"
+			cd "src" || die "cd failed"
 			rsync -ach "libXNVCtrl/" "libXNVCtrl/32/" || die "rsync failed"
 			eapply "${FILESDIR}/${PN}-make_libxnvctrl_multilib.patch"
-			popd || die "popd failed"
 		fi
+		popd || die "popd failed"
 	fi
 }
 
@@ -288,10 +287,10 @@ src_compile() {
 			"RANLIB=$(tc-getRANLIB)"
 		)
 		# shellcheck disable=SC2068
-		emake -C "${NVIDIA_SETTINGS_SRC_DIR}" ${myemakeargs[@]} build-xnvctrl
+		emake -C "${S%/}/nvidia-settings-${PV}/src" ${myemakeargs[@]} build-xnvctrl
 		if has_multilib_profile && use multilib && use abi_x86_32; then
 			# shellcheck disable=SC2068
-			emake -C "${NVIDIA_SETTINGS_SRC_DIR}" ${myemakeargs[@]} build-xnvctrl32
+			emake -C "${S%/}/nvidia-settings-${PV}/src" ${myemakeargs[@]} build-xnvctrl32
 		fi
 
 		myemakeargs=( "${mybaseemakeargs[@]}" )
@@ -301,7 +300,7 @@ src_compile() {
 			"NV_USE_BUNDLED_LIBJANSSON=0"
 		)
 		# shellcheck disable=SC2068
-		emake -C "${NVIDIA_SETTINGS_SRC_DIR}" ${myemakeargs[@]}
+		emake -C "${S%/}/nvidia-settings-${PV}/src" ${myemakeargs[@]}
 	fi
 }
 
@@ -428,10 +427,10 @@ src_install() {
 			"DO_STRIP="
 		)
 		# shellcheck disable=SC2068
-		emake -C "${NVIDIA_SETTINGS_SRC_DIR}" DESTDIR="${D}" ${myemakeargs[@]} install
+		emake -C "${S%/}/nvidia-settings-${PV}/src" DESTDIR="${D}" ${myemakeargs[@]} install
 
 		insinto "/usr/include/NVCtrl"
-		doins "${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl"/*.h
+		doins "${S%/}/nvidia-settings-${PV}/src/libXNVCtrl"/*.h
 
 		insinto "/usr/share/nvidia/"
 		doins "nvidia-application-profiles-${PV}-key-documentation"
@@ -475,11 +474,11 @@ src_install-libs() {
 	CL_ROOT="/usr/$(get_libdir)/OpenCL/vendors/nvidia"
 	if use kernel_linux && has_multilib_profile && [[ "${ABI}" == "x86" ]]; then
 		nv_libdir="${NV_OBJ}/32"
-		nv_static_libdir="${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl/32"
+		nv_static_libdir="${S%/}/nvidia-settings-${PV}/src/libXNVCtrl/32"
 	else
 
 		nv_libdir="${NV_OBJ}"
-		nv_static_libdir="${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl"
+		nv_static_libdir="${S%/}/nvidia-settings-${PV}/src/libXNVCtrl"
 	fi
 
 	if use X; then

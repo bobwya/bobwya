@@ -6,16 +6,16 @@ EAPI=6
 inherit eapi7-ver flag-o-matic linux-info linux-mod multilib-minimal \
 	nvidia-driver portability toolchain-funcs unpacker user udev
 
-MM_PV="$(ver_cut '1').30"
-DL_PV="$(ver_rs 1- '')"
+NV_SETTINGS_PV="$(ver_cut '1').30"
+NV_VULKAN_BETA_PV="$(ver_rs 1- '')"
 
 NV_URI="https://download.nvidia.com/XFree86/"
 AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
 DESCRIPTION="NVIDIA Accelerated Graphics Driver"
 HOMEPAGE="https://www.nvidia.com/ https://www.nvidia.com/Download/Find.aspx"
 SRC_URI="
-	amd64? ( "https://developer.nvidia.com/vulkan-beta-${DL_PV}-linux" -> ${AMD64_NV_PACKAGE}.run )
-	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${MM_PV}.tar.bz2 )
+	amd64? ( "https://developer.nvidia.com/vulkan-beta-${NV_VULKAN_BETA_PV}-linux" -> ${AMD64_NV_PACKAGE}.run )
+	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${NV_SETTINGS_PV}.tar.bz2 )
 "
 
 LICENSE="GPL-2 NVIDIA-r2"
@@ -70,8 +70,6 @@ RDEPEND="
 
 QA_PREBUILT="opt/* usr/lib*"
 S="${WORKDIR}"
-NVIDIA_SETTINGS_SRC_DIR="${S%/}/${PN/drivers/settings}-${MM_PV}/src"
-
 nvidia_drivers_versions_check() {
 	if use amd64 && has_multilib_profile && \
 		[[ "${DEFAULT_ABI}" != "amd64" ]]; then
@@ -221,9 +219,10 @@ pkg_setup() {
 src_prepare() {
 	local -a PATCHES
 	if use tools; then
+		mv "${S%/}/nvidia-settings-${NV_SETTINGS_PV}" "/${S%/}/nvidia-settings-${PV}" || die "mv failed"
 		rsync -achv "${FILESDIR}/nvidia-settings-linker.patch" "${WORKDIR}"/ \
 			|| die "rsync failed"
-		sed -i -e 's:@PV@:'"${MM_PV}"':g' "${WORKDIR}/nvidia-settings-linker.patch" \
+		sed -i -e 's:@PV@:'"${PV}"':g' "${WORKDIR}/nvidia-settings-linker.patch" \
 			|| die "sed failed"
 		PATCHES+=( "${WORKDIR}/nvidia-settings-linker.patch" )
 	fi
@@ -241,13 +240,23 @@ src_prepare() {
 		sed -i -e 's:__NV_VK_ICD__:libGLX_nvidia.so.0:g' "nvidia_icd.json" || die "sed failed"
 	fi
 	if use tools; then
+		pushd "${S%/}/nvidia-settings-${PV}" || die "pushd failed"
+		# Correct nvidia settings version, to support Vulkan beta driver releases
+		sed -i -e 's:^NVIDIA_VERSION = .*$:NVIDIA_VERSION = '"${PV}"':g' \
+			"doc/version.mk" "samples/version.mk" \
+			"src/version.h" "src/version.mk" "src/libXNVCtrl/version.mk" \
+			"version.mk" \
+			 || die "sed failed"
+		sed -i -e 's:^#define NVIDIA_VERSION ".*"$:#define NVIDIA_VERSION "'"${PV}"'":g' \
+			"src/version.h" \
+			 || die "sed failed"
 		# FIXME: horrible hack!
 		if has_multilib_profile && use multilib && use abi_x86_32; then
-			pushd "${NVIDIA_SETTINGS_SRC_DIR}" || die "pushd failed"
+			cd "src" || die "cd failed"
 			rsync -ach "libXNVCtrl/" "libXNVCtrl/32/" || die "rsync failed"
 			eapply "${FILESDIR}/${PN}-make_libxnvctrl_multilib.patch"
-			popd || die "popd failed"
 		fi
+		popd || die "popd failed"
 	fi
 }
 
@@ -281,10 +290,10 @@ src_compile() {
 			"RANLIB=$(tc-getRANLIB)"
 		)
 		# shellcheck disable=SC2068
-		emake -C "${NVIDIA_SETTINGS_SRC_DIR}" ${myemakeargs[@]} build-xnvctrl
+		emake -C "${S%/}/nvidia-settings-${PV}/src" ${myemakeargs[@]} build-xnvctrl
 		if has_multilib_profile && use multilib && use abi_x86_32; then
 			# shellcheck disable=SC2068
-			emake -C "${NVIDIA_SETTINGS_SRC_DIR}" ${myemakeargs[@]} build-xnvctrl32
+			emake -C "${S%/}/nvidia-settings-${PV}/src" ${myemakeargs[@]} build-xnvctrl32
 		fi
 
 		myemakeargs=( "${mybaseemakeargs[@]}" )
@@ -294,7 +303,7 @@ src_compile() {
 			"NV_USE_BUNDLED_LIBJANSSON=0"
 		)
 		# shellcheck disable=SC2068
-		emake -C "${NVIDIA_SETTINGS_SRC_DIR}" ${myemakeargs[@]}
+		emake -C "${S%/}/nvidia-settings-${PV}/src" ${myemakeargs[@]}
 	fi
 }
 
@@ -421,10 +430,10 @@ src_install() {
 			"DO_STRIP="
 		)
 		# shellcheck disable=SC2068
-		emake -C "${NVIDIA_SETTINGS_SRC_DIR}" DESTDIR="${D}" ${myemakeargs[@]} install
+		emake -C "${S%/}/nvidia-settings-${PV}/src" DESTDIR="${D}" ${myemakeargs[@]} install
 
 		insinto "/usr/include/NVCtrl"
-		doins "${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl"/*.h
+		doins "${S%/}/nvidia-settings-${PV}/src/libXNVCtrl"/*.h
 
 		insinto "/usr/share/nvidia/"
 		doins "nvidia-application-profiles-${PV}-key-documentation"
@@ -468,11 +477,11 @@ src_install-libs() {
 	CL_ROOT="/usr/$(get_libdir)/OpenCL/vendors/nvidia"
 	if use kernel_linux && has_multilib_profile && [[ "${ABI}" == "x86" ]]; then
 		nv_libdir="${NV_OBJ}/32"
-		nv_static_libdir="${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl/32"
+		nv_static_libdir="${S%/}/nvidia-settings-${PV}/src/libXNVCtrl/32"
 	else
 
 		nv_libdir="${NV_OBJ}"
-		nv_static_libdir="${NVIDIA_SETTINGS_SRC_DIR}/libXNVCtrl"
+		nv_static_libdir="${S%/}/nvidia-settings-${PV}/src/libXNVCtrl"
 	fi
 
 	if use X; then
