@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -50,7 +50,7 @@ RDEPEND="${COMMON_DEPEND}"
 src_prepare() {
 	# Don't allow running as root: may break sandboxing during Portage-based
 	# install of Mozilla applications (Firefox)
-	# See https://github.com/bobwya/bobwya/issues/7#issuecomment-201817441
+	# See https://github.com/bobwya/bobwya/issues/7#issuecomment-201917441
 	local PATCHES=(
 		"${FILESDIR}/${PN}-4.9.12-dont_run_as_root.patch"
 	)
