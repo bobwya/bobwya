@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -37,8 +37,6 @@ RDEPEND="
 	"
 
 S="${WORKDIR}/${MY_P}"
-
-PATCHES=( "${FILESDIR}/${PN}-3.0.00_fix_disk_usage_calculation.patch" )
 
 get_recommended_packages() {
 	local inxi_bin="${ROOT}/usr/bin/inxi"
