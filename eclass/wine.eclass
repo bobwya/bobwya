@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: wine.eclass
@@ -47,6 +47,12 @@ EXPORT_FUNCTIONS pkg_pretend pkg_setup src_configure multilib_src_test pkg_posti
 
 IUSE=""
 PATCHES=""
+# @ECLASS-VARIABLE: _WINE_USE_DISABLED
+# @INTERNAL
+# @DESCRIPTION:
+# USE flags that are disabled for the current Wine build.
+_WINE_USE_DISABLED=()
+
 # @ECLASS-VARIABLE: _WINE_SHA1_REGEXP
 # @INTERNAL
 # @DESCRIPTION:
@@ -110,7 +116,7 @@ readonly WINE_EBUILD_COMMON_PV
 # @ECLASS-VARIABLE: WINE_ESYNC_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-esync; tarball.
-WINE_ESYNC_P="gentoo-wine-esync-20181215"
+WINE_ESYNC_P="gentoo-wine-esync-20190308"
 readonly WINE_ESYNC_P
 
 # @ECLASS-VARIABLE: WINE_ESYNC_PN
@@ -148,12 +154,14 @@ readonly WINE_PBA_PV
 # @DESCRIPTION:
 # Wine release version. This will be stripped of components (see below).
 WINE_PV="${PV}"
+
 # @ECLASS-VARIABLE: _WINE_VERSION_ARRAY_COMPONENTS
 # @INTERNAL
 # @DESCRIPTION:
 # Wine release version components (array).
 # shellcheck disable=SC2207
 _WINE_VERSION_ARRAY_COMPONENTS=( $( ver_rs 1- ' ' ) )
+
 # @ECLASS-VARIABLE: _WINE_VERSION_COMPONENT_COUNT
 # @INTERNAL
 # @DESCRIPTION:
@@ -766,9 +774,7 @@ _wine_display_closest_commit_message() {
 	eerror
 }
 
-# EXTERNAL HELPER wine.eclass Git support function definitions
-
-# @FUNCTION: wine_sieve_arrays_by_git_commit
+# @FUNCTION: _wine_sieve_arrays_by_git_commit
 # @USAGE: <git_directory> <array_commits|array_patch_files>* ... [array_commits|array_patch_files]*
 #         (* passed-by-reference)
 # @DESCRIPTION:
@@ -782,7 +788,7 @@ _wine_display_closest_commit_message() {
 # These Git commit hashes are individually tested to see if they have been committed to HEAD, of the Git Source
 # directory tree. If a Git commit hash is in tree then delete the current array entry.
 # <git_directory> must reference a valid Git repository root directory.
-wine_sieve_arrays_by_git_commit() {
+_wine_sieve_arrays_by_git_commit() {
 	(($# >= 2))  || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (2-)"
 
 	local _commit_hash _git_directory _git_log _i_arg=1 _i_array _line _patch_array_reference _patch_file
@@ -829,6 +835,8 @@ wine_sieve_arrays_by_git_commit() {
 		done
 	done
 }
+
+# EXTERNAL HELPER wine.eclass Git support function definitions
 
 # @FUNCTION: wine_get_git_commit_info
 # @USAGE: <git_directory> [git_commit_hash]* [git_commit_date]*
@@ -1090,6 +1098,7 @@ wine_src_set_staging_versioning() {
 }
 
 # @FUNCTION: _wine_src_disable_man_file
+# @INTERNAL
 # @USAGE: <makefile> <man_file> <locale>
 # @DESCRIPTION:
 # This function alters the Wine Source, to disable a specified (non-english)
@@ -1147,6 +1156,40 @@ _wine_register_new_variant() {
 
 # EXTERNAL HELPER wine.eclass general support function definitions
 
+# @FUNCTION: wine_use_disabled
+# @USAGE: <use-flag>
+# @DESCRIPTION:
+# This function tests if <use-flag> is disabled for the current Wine ebuild.
+# Returns: 1=yes . 0=no
+wine_use_disabled() {
+	(($# == 1)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (1)"
+
+	# shellcheck disable=SC2068
+	has "${1}" ${_WINE_USE_DISABLED[@]}
+}
+
+# @FUNCTION: wine_src_prepare_git
+# @INTERNAL
+# @DESCRIPTION:
+# This functions supports git builds of:
+#   app-emulation/wine-staging, app-emulation/wine-vanilla
+# Removes redundant patches, that are already committed to the Git tree, and
+# tests for the transition from using the ffmpeg to the faudio (external) library.
+wine_src_prepare_git() {
+	local -a _sieved_faudio_commit=( "3e390b1aafff47df63376a8ca4293c515d74f4ba" )
+	_wine_sieve_arrays_by_git_commit "${S}" "_sieved_faudio_commit"
+	if ((${#_sieved_faudio_commit[@]})); then
+		use faudio && _WINE_USE_DISABLED+=( "faudio" )
+		ewarn "USE +faudio unsupported for Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
+		ewarn "USE +faudio will be omitted for this build."
+	elif ((_WINE_IS_STAGING)); then
+		use ffmpeg && _WINE_USE_DISABLED=( "ffmpeg" )
+		ewarn "USE +ffmpeg unsupported for Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
+		ewarn "USE +ffmpeg will be omitted for this build. USE +faudio supersedes this functionality."
+	fi
+	_wine_sieve_arrays_by_git_commit "${S}" "PATCHES" "PATCHES_BIN"
+}
+
 # @FUNCTION: wine_eapply_bin
 # @DESCRIPTION:
 # Use patch patchbin to apply all binary patches from the array variable PATCHES_BIN
@@ -1193,6 +1236,10 @@ wine_eapply_staging_patchset() {
 
 	if has esync ${IUSE} && use esync; then
 		_staging_exclude_patchsets+=( "msvfw32-ICGetDisplayFormat" )
+	fi
+
+	if has faudio ${IUSE} && use faudio; then
+		_staging_exclude_patchsets+=( "xaudio2_7-CreateFX-FXEcho" "xaudio2_7-WMA_support" "xaudio2_CommitChanges" "winepulse-PulseAudio_Support" "xaudio2-revert" )
 	fi
 
 	use pipelight || _staging_exclude_patchsets+=( "Pipelight" )
@@ -1261,8 +1308,9 @@ wine_eapply_esync_patchset() {
 	_esync_patchset_commits=(
 		"f8e0bd1b0d189d5950dc39082f439cd1fc9569d5" "12276796c95007fc12eb38a41ca25b4daee7e1b3"
 		"a7aa192a78d02d28f2bbae919a3f5c726e4e9e60" "c61c33ee66ea0e97450ac793ebc4ac41a1ccc793"
-		"57212f64f8e4fef0c63c633940e13d407c0f2069" "24f47812165a5dcb2b22825e47ccccbbd7437b8b"
-		"2f17e0112dc0af3f0b246cf377e2cb8fd7a6cf58" "2600ecd4edfdb71097105c74312f83845305a4f2"
+		"433788736bcb68b43a35749c28d6272e4041c857" "57212f64f8e4fef0c63c633940e13d407c0f2069"
+		"24f47812165a5dcb2b22825e47ccccbbd7437b8b" "2f17e0112dc0af3f0b246cf377e2cb8fd7a6cf58"
+		"2600ecd4edfdb71097105c74312f83845305a4f2"
 	)
 
 	case "${WINE_PV}" in
@@ -1272,8 +1320,11 @@ wine_eapply_esync_patchset() {
 		3.[3-5])
 			_esync_rebased_patchset="a7aa192a78d02d28f2bbae919a3f5c726e4e9e60"
 			;;
-		3.[6-9]|3.1[0-3])
+		3.[6-8])
 			_esync_rebased_patchset="c61c33ee66ea0e97450ac793ebc4ac41a1ccc793"
+			;;
+		3.9|3.1[0-3])
+			_esync_rebased_patchset="433788736bcb68b43a35749c28d6272e4041c857"
 			;;
 		3.1[4-6])
 			_esync_rebased_patchset="57212f64f8e4fef0c63c633940e13d407c0f2069"
@@ -1284,7 +1335,7 @@ wine_eapply_esync_patchset() {
 		3.19)
 			_esync_rebased_patchset="2f17e0112dc0af3f0b246cf377e2cb8fd7a6cf58"
 			;;
-		3.2[0-1]|4.0-rc[1-9]|4.[0-9])
+		3.2[0-1]|4.*)
 			_esync_rebased_patchset="2600ecd4edfdb71097105c74312f83845305a4f2"
 			;;
 		9999)
@@ -1293,7 +1344,7 @@ wine_eapply_esync_patchset() {
 				|| _base_commit="f8e0bd1b0d189d5950dc39082f439cd1fc9569d5"
 
 			_sieved_esync_patchset_commits=( "${_esync_patchset_commits[@]}" )
-			wine_sieve_arrays_by_git_commit "${S}" "_sieved_esync_patchset_commits"
+			_wine_sieve_arrays_by_git_commit "${S}" "_sieved_esync_patchset_commits"
 			for _i_array in "${!_esync_patchset_commits[@]}"; do
 				# shellcheck disable=SC2068
 				has "${_esync_patchset_commits[_i_array]}" ${_sieved_esync_patchset_commits[@]} && break
@@ -1372,7 +1423,7 @@ wine_eapply_pba_patchset() {
 	esac
 
 	((_WINE_IS_STAGING)) || case "${WINE_PV}" in
-		3.0.[1-5]|3.0.[1-5]-rc[1-9]|3.[01]|3.0-rc[1-6])
+		3.0.[1-4]|3.0.[1-4]-rc[1-9]|3.[01]|3.0-rc[1-6])
 			_pba_patchset="429e0c913087bdc2c183f74f346a9438278ec960"
 			;;
 		3.2)
@@ -1412,7 +1463,7 @@ wine_eapply_pba_patchset() {
 
 	if [[ "${WINE_PV}" == "9999" ]]; then
 		sieved_pba_patchset_commits=( "${pba_patchset_commits[@]}" )
-		wine_sieve_arrays_by_git_commit "${S}" "sieved_pba_patchset_commits"
+		_wine_sieve_arrays_by_git_commit "${S}" "sieved_pba_patchset_commits"
 		for _i_array in "${!pba_patchset_commits[@]}"; do
 			# shellcheck disable=SC2068
 			has "${pba_patchset_commits[_i_array]}" ${sieved_pba_patchset_commits[@]} && break
@@ -1665,7 +1716,7 @@ wine_src_configure() {
 # @FUNCTION: wine_multilib_src_test
 # @DESCRIPTION:
 # This ebuild phase function runs the Wine test suite.
-	wine_multilib_src_test() {
+wine_multilib_src_test() {
 	# FIXME: win32-only; wine64 tests fail with "could not find the Wine loader"
 	[[ "${ABI}" == "x86" ]] || return 1
 
