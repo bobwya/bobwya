@@ -28,7 +28,7 @@ IUSE="+abi_x86_32 +abi_x86_64 debug ffmpeg xnasong test utils"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )"
 
 COMMON_DEPEND="
-	media-libs/libsdl2:=[sound,${MULTILIB_USEDEP}]
+	>=media-libs/libsdl2-2.0.9[sound,${MULTILIB_USEDEP}]
 	ffmpeg? ( media-video/ffmpeg:=[${MULTILIB_USEDEP}] )
 "
 RDEPEND="${COMMON_DEPEND}
