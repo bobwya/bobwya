@@ -22,15 +22,12 @@ HOMEPAGE="https://www.winehq.org/"
 SRC_URI="${SRC_URI}
 	esync? (
 		https://github.com/bobwya/${WINE_ESYNC_PN}/archive/${WINE_ESYNC_PV}.tar.gz -> ${WINE_ESYNC_P}.tar.gz
-	)
-	pba? (
-		https://github.com/bobwya/${WINE_PBA_PN}/archive/${WINE_PBA_PV}.tar.gz -> ${WINE_PBA_P}.tar.gz
 	)"
 
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc esync faudio ffmpeg +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pba pcap +perl pipelight +png prelink prefix pulseaudio +realtime +run-exes s3tc samba scanner sdl2 selinux +ssl test themes +threads +truetype udev +udisks v4l vaapi vkd3d vulkan +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc esync faudio +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pcap +perl pipelight +png prelink prefix pulseaudio +realtime +run-exes s3tc samba scanner sdl2 selinux +ssl test themes +threads +truetype udev +udisks v4l vaapi vkd3d vulkan +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
@@ -57,7 +54,6 @@ COMMON_DEPEND="
 	capi? ( net-libs/libcapi[${MULTILIB_USEDEP}] )
 	cups? ( net-print/cups:=[${MULTILIB_USEDEP}] )
 	faudio? ( app-emulation/faudio[${MULTILIB_USEDEP}] )
-	ffmpeg? ( media-video/ffmpeg:=[${MULTILIB_USEDEP}] )
 	fontconfig? ( media-libs/fontconfig:=[${MULTILIB_USEDEP}] )
 	gphoto2? ( media-libs/libgphoto2:=[${MULTILIB_USEDEP}] )
 	gsm? ( media-sound/gsm:=[${MULTILIB_USEDEP}] )
@@ -171,8 +167,6 @@ src_prepare() {
 	wine_src_set_staging_versioning
 
 	use esync && wine_eapply_esync_patchset "${WORKDIR}/${WINE_ESYNC_P}"
-
-	use pba && wine_eapply_pba_patchset "${WORKDIR}/${WINE_PBA_P%/}/${PN}-pba"
 	#617864 Generate wine64 man pages for 64-bit bit only installation
 	if use abi_x86_64 && ! use abi_x86_32; then
 		wine_src_force_64bit_manpages
@@ -227,6 +221,7 @@ multilib_src_configure() {
 		"$(use_with lcms cms)"
 		"$(use_with cups)"
 		"$(use_with ncurses curses)"
+		"$(use_with faudio)"
 		"$(use_with fontconfig)"
 		"$(use_with ssl gnutls)"
 		"$(use_enable gecko mshtml)"
@@ -270,10 +265,6 @@ multilib_src_configure() {
 		"$(use_with xml)"
 		"$(use_with xml xslt)"
 	)
-
-	wine_use_disabled faudio || myconf+=( "$(use_with faudio)" )
-
-	wine_use_disabled ffmpeg || myconf+=( "$(use_with ffmpeg)" )
 
 	local PKG_CONFIG AR RANLIB
 	#472038 Avoid crossdev's i686-pc-linux-gnu-pkg-config if building wine32 on amd64
