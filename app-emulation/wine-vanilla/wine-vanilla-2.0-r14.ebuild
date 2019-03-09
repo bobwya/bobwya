@@ -140,7 +140,7 @@ src_prepare() {
 
 	wine_add_stock_gentoo_patches
 
-	[[ "${WINE_PV}" == "9999" ]] && wine_sieve_arrays_by_git_commit "${S}" "PATCHES" "PATCHES_BIN"
+	[[ "${WINE_PV}" == "9999" ]] && wine_src_prepare_git
 
 	wine_fix_gentoo_multilib_support
 	#617864 Generate wine64 man pages for 64-bit bit only installation
