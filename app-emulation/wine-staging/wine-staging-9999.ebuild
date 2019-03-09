@@ -162,7 +162,7 @@ src_prepare() {
 
 	wine_add_stock_gentoo_patches
 
-	[[ "${WINE_PV}" == "9999" ]] && wine_sieve_arrays_by_git_commit "${S}" "PATCHES" "PATCHES_BIN"
+	[[ "${WINE_PV}" == "9999" ]] && wine_src_prepare_git
 
 	wine_fix_gentoo_multilib_support
 
@@ -226,7 +226,6 @@ multilib_src_configure() {
 		"$(use_with lcms cms)"
 		"$(use_with cups)"
 		"$(use_with ncurses curses)"
-		"$(use_with ffmpeg)"
 		"$(use_with fontconfig)"
 		"$(use_with ssl gnutls)"
 		"$(use_enable gecko mshtml)"
@@ -270,6 +269,8 @@ multilib_src_configure() {
 		"$(use_with xml)"
 		"$(use_with xml xslt)"
 	)
+
+	wine_use_disabled ffmpeg || myconf+=( "$(use_with ffmpeg)" )
 
 	local PKG_CONFIG AR RANLIB
 	#472038 Avoid crossdev's i686-pc-linux-gnu-pkg-config if building wine32 on amd64
