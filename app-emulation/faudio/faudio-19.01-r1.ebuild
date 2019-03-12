@@ -4,6 +4,8 @@
 # shellcheck disable=SC2034
 EAPI=7
 
+CMAKE_MAKEFILE_GENERATOR="emake"
+
 inherit cmake-multilib virtualx
 
 FAUDIO_PN="FAudio"
