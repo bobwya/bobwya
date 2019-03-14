@@ -98,7 +98,7 @@ readonly _WINE_IS_STAGING
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-ebuild-common; tarball.
-WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20181204"
+WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20190312"
 readonly WINE_EBUILD_COMMON_P
 
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_PN
@@ -116,7 +116,7 @@ readonly WINE_EBUILD_COMMON_PV
 # @ECLASS-VARIABLE: WINE_ESYNC_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-esync; tarball.
-WINE_ESYNC_P="gentoo-wine-esync-20190308"
+WINE_ESYNC_P="gentoo-wine-esync-20190314"
 readonly WINE_ESYNC_P
 
 # @ECLASS-VARIABLE: WINE_ESYNC_PN
@@ -1310,7 +1310,8 @@ wine_eapply_esync_patchset() {
 		"a7aa192a78d02d28f2bbae919a3f5c726e4e9e60" "c61c33ee66ea0e97450ac793ebc4ac41a1ccc793"
 		"433788736bcb68b43a35749c28d6272e4041c857" "57212f64f8e4fef0c63c633940e13d407c0f2069"
 		"24f47812165a5dcb2b22825e47ccccbbd7437b8b" "2f17e0112dc0af3f0b246cf377e2cb8fd7a6cf58"
-		"2600ecd4edfdb71097105c74312f83845305a4f2"
+		"2600ecd4edfdb71097105c74312f83845305a4f2" "d3660e5901914daab38c95f6b2a7a43dfe6d3eee"
+		"7ba361b47bc95df624eac83c170d6c1a4041d8f8"
 	)
 
 	case "${WINE_PV}" in
@@ -1335,8 +1336,11 @@ wine_eapply_esync_patchset() {
 		3.19)
 			_esync_rebased_patchset="2f17e0112dc0af3f0b246cf377e2cb8fd7a6cf58"
 			;;
-		3.2[0-1]|4.*)
+		3.2[0-1]|4.[0-3])
 			_esync_rebased_patchset="2600ecd4edfdb71097105c74312f83845305a4f2"
+			;;
+		4.[4-9]|4.1[0-9])
+			_esync_rebased_patchset="7ba361b47bc95df624eac83c170d6c1a4041d8f8"
 			;;
 		9999)
 			((_WINE_IS_STAGING)) \
@@ -1504,7 +1508,6 @@ wine_add_stock_gentoo_patches() {
 	PATCHES+=(
 		"${_patch_directory}/wine-1.8_winecfg_detailed_version.patch"
 		"${_patch_directory}/wine-1.8-multislot-apploader.patch" #310611
-		"${_patch_directory}/wine-1.5.26-winegcc.patch" #260726
 		"${_patch_directory}/wine-1.6-memset-O3.patch" #480508
 	)
 
@@ -1590,11 +1593,11 @@ wine_add_locale_docs() {
 	[[ ! -e "S{S}/${_locale_doc}" ]] || DOCS+=( "${_locale_doc}" )
 }
 
-# @FUNCTION: wine_fix_gentoo_multilib_support
+# @FUNCTION: wine_fix_gentoo_cc_multilib_support
 # @DESCRIPTION:
-# This function fixes Gentoo Portage multilib support, applied to all Wine versions.
-# See: #395615 - combines both versions of the multilib-portage.patch
-wine_fix_gentoo_multilib_support() {
+# This function fixes Gentoo Portage cc multilib support, applied to all Wine versions.
+# See: #395615
+wine_fix_gentoo_cc_multilib_support() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
 	local _arch
