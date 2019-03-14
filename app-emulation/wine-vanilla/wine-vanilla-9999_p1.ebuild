@@ -42,7 +42,7 @@ REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 RESTRICT="test"
 
 COMMON_DEPEND="
-	>=app-emulation/wine-desktop-common-20180412
+	>=app-emulation/wine-desktop-common-20190312
 	X? (
 		x11-libs/libXcursor[${MULTILIB_USEDEP}]
 		x11-libs/libXext[${MULTILIB_USEDEP}]
@@ -87,7 +87,7 @@ COMMON_DEPEND="
 	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
 	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
-	vkd3d? ( app-emulation/vkd3d[${MULTILIB_USEDEP}] )
+	vkd3d? ( >=app-emulation/vkd3d-1.1[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
 	vulkan? ( media-libs/vulkan-loader[X,${MULTILIB_USEDEP}] )
 	xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
@@ -156,7 +156,8 @@ src_prepare() {
 
 	[[ "${WINE_PV}" == "9999" ]] && wine_src_prepare_git
 
-	wine_fix_gentoo_multilib_support
+	wine_fix_gentoo_cc_multilib_support
+	wine_fix_gentoo_winegcc_support
 
 	use esync && wine_eapply_esync_patchset "${WORKDIR}/${WINE_ESYNC_P}"
 
