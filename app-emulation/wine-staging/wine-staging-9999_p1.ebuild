@@ -44,7 +44,7 @@ RESTRICT="test"
 
 COMMON_DEPEND="
 	sys-apps/attr[${MULTILIB_USEDEP}]
-	>=app-emulation/wine-desktop-common-20180412
+	>=app-emulation/wine-desktop-common-20190312
 	X? (
 		x11-libs/libXcursor[${MULTILIB_USEDEP}]
 		x11-libs/libXext[${MULTILIB_USEDEP}]
@@ -95,7 +95,7 @@ COMMON_DEPEND="
 	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
 	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
-	vkd3d? ( app-emulation/vkd3d[${MULTILIB_USEDEP}] )
+	vkd3d? ( >=app-emulation/vkd3d-1.1[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
 	vaapi? ( x11-libs/libva:=[drm,X?,${MULTILIB_USEDEP}] )
 	vulkan? ( media-libs/vulkan-loader[X,${MULTILIB_USEDEP}] )
@@ -165,7 +165,8 @@ src_prepare() {
 
 	[[ "${WINE_PV}" == "9999" ]] && wine_src_prepare_git
 
-	wine_fix_gentoo_multilib_support
+	wine_fix_gentoo_cc_multilib_support
+	wine_fix_gentoo_winegcc_support
 
 	wine_eapply_staging_patchset
 	wine_src_set_staging_versioning
