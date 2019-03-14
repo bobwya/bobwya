@@ -1610,6 +1610,42 @@ wine_fix_gentoo_cc_multilib_support() {
 	done
 }
 
+# @FUNCTION: wine_fix_gentoo_winegcc_support
+# @DESCRIPTION:
+# This function fixes Gentoo Portage winegcc multilib support, applied to all Wine versions.
+# See: 260726
+wine_fix_gentoo_winegcc_support() {
+	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
+
+	local -a source_files=( "tools/winebuild/main.c" "tools/winegcc/winegcc.c" )
+	local source_file
+
+	# shellcheck disable=SC2068
+	for source_file in ${source_files[@]}; do
+		sed -i \
+		-e '/^#ifdef __i386__$/ i #undef FORCE_POINTER_SIZE' \
+		-e '/^#elif defined(__x86_64__)$/ i #define FORCE_POINTER_SIZE' \
+		-e '/^#elif defined(__powerpc__)$/ i #define FORCE_POINTER_SIZE' \
+		"${source_file}" || die "sed failed"
+	done
+
+	# shellcheck disable=SC1004
+	sed -i -e '/^    signal[(] SIGINT, exit_on_signal [)];$/a\
+\
+#ifdef FORCE_POINTER_SIZE\
+    force_pointer_size = sizeof(size_t);\
+#endif' \
+		"${source_files[0]}" || die "sed failed"
+
+	# shellcheck disable=SC1004
+	sed -i -e '/^    signal[(] SIGINT, exit_on_signal [)];$/a\
+\
+#ifdef FORCE_POINTER_SIZE\
+    opts.force_pointer_size = sizeof(size_t);\
+#endif' \
+		"${source_files[1]}" || die "sed failed"
+}
+
 # @FUNCTION: wine_src_prepare_generate_64bit_manpages
 # @DESCRIPTION:
 # This functions ensures that 64-bit Wine manpages are generated.
