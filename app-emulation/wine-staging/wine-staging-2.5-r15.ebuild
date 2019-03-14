@@ -35,7 +35,7 @@ RESTRICT="test"
 
 COMMON_DEPEND="
 	sys-apps/attr[${MULTILIB_USEDEP}]
-	>=app-emulation/wine-desktop-common-20190312
+	>=app-emulation/wine-desktop-common-20180412
 	X? (
 		x11-libs/libXcursor[${MULTILIB_USEDEP}]
 		x11-libs/libXext[${MULTILIB_USEDEP}]
