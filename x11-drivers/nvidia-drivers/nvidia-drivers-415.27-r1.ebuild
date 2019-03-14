@@ -79,11 +79,11 @@ nvidia_drivers_versions_check() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 20; then
+		if kernel_is ge 4 21; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.20"
-			ewarn "<sys-kernel/vanilla-sources-4.20"
+			ewarn "<sys-kernel/gentoo-sources-4.21"
+			ewarn "<sys-kernel/vanilla-sources-4.21"
 		elif use kms && kernel_is lt 4 2; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -306,7 +306,15 @@ src_install() {
 		# pkg_preinst, see bug #491414
 		insinto "/etc/modprobe.d"
 		newins "${FILESDIR}/nvidia-169.07" "nvidia.conf"
-		doins "${FILESDIR}/nvidia-rmmod.conf"
+		if use uvm; then
+			doins "${FILESDIR}/nvidia-rmmod.conf"
+			
+		else
+			sed -e 's|nvidia-uvm ||g' "${FILESDIR}/nvidia-rmmod.conf" \
+				> "${T}/nvidia-rmmod.conf" \
+				|| die "sed failed"
+			doins "${T}/nvidia-rmmod.conf"
+		fi
 
 		# Ensures that our device nodes are created when not using X
 		exeinto "$(get_udevdir)"
@@ -506,9 +514,16 @@ src_install-libs() {
 
 		if use wayland && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then
 			NV_GLX_LIBRARIES+=(
-				"libnvidia-egl-wayland.so.1.1.2" .
+				"libnvidia-egl-wayland.so.1.1.0" .
 			)
 		fi
+
+		if use kernel_linux && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then
+			NV_GLX_LIBRARIES+=(
+				"libnvidia-wfb.so.${NV_SOVER}" .
+			)
+		fi
+
 		if use kernel_FreeBSD; then
 			NV_GLX_LIBRARIES+=(
 				"libnvidia-tls.so.${NV_SOVER}" .

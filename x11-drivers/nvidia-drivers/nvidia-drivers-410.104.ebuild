@@ -60,7 +60,7 @@ RDEPEND="
 	tools? ( !media-video/nvidia-settings )
 	wayland? ( dev-libs/wayland[${MULTILIB_USEDEP}] )
 	X? (
-		<x11-base/xorg-server-1.20.99:=
+		<x11-base/xorg-server-1.19.99:=
 		>=x11-libs/libX11-1.6.2[${MULTILIB_USEDEP}]
 		>=x11-libs/libXext-1.3.2[${MULTILIB_USEDEP}]
 		>=x11-libs/libvdpau-1.0[${MULTILIB_USEDEP}]
@@ -79,11 +79,11 @@ nvidia_drivers_versions_check() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 4 20; then
+		if kernel_is ge 5 1; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-4.20"
-			ewarn "<sys-kernel/vanilla-sources-4.20"
+			ewarn "<sys-kernel/gentoo-sources-5.1"
+			ewarn "<sys-kernel/vanilla-sources-5.1"
 		elif use kms && kernel_is lt 4 2; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -306,7 +306,15 @@ src_install() {
 		# pkg_preinst, see bug #491414
 		insinto "/etc/modprobe.d"
 		newins "${FILESDIR}/nvidia-169.07" "nvidia.conf"
-		doins "${FILESDIR}/nvidia-rmmod.conf"
+		if use uvm; then
+			doins "${FILESDIR}/nvidia-rmmod.conf"
+			
+		else
+			sed -e 's|nvidia-uvm ||g' "${FILESDIR}/nvidia-rmmod.conf" \
+				> "${T}/nvidia-rmmod.conf" \
+				|| die "sed failed"
+			doins "${T}/nvidia-rmmod.conf"
+		fi
 
 		# Ensures that our device nodes are created when not using X
 		exeinto "$(get_udevdir)"
