@@ -1,10 +1,10 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=5
+EAPI=7
 
 XORG_DOC=doc
-inherit eapi7-ver flag-o-matic multilib xorg-2-r1
+inherit flag-o-matic multilib xorg-3-r1
 EGIT_REPO_URI="https://anongit.freedesktop.org/git/xorg/xserver.git"
 
 DESCRIPTION="X.Org X servers"
@@ -14,7 +14,7 @@ if [[ ${PV} != 9999* ]]; then
 fi
 
 IUSE_SERVERS="dmx kdrive wayland xephyr xnest xorg xvfb"
-IUSE="${IUSE_SERVERS} debug +fop glamor ipv6 libressl minimal selinux systemd +udev unwind xcsecurity"
+IUSE="${IUSE_SERVERS} debug +fop glamor ipv6 libressl minimal selinux +suid systemd +udev unwind xcsecurity"
 
 CDEPEND="~app-eselect/eselect-opengl-1.3.3
 	!libressl? ( dev-libs/openssl:0= )
@@ -107,11 +107,11 @@ PDEPEND="
 REQUIRED_USE="!minimal? (
 		|| ( ${IUSE_SERVERS} )
 	)
+	minimal? ( !glamor !wayland )
 	xephyr? ( kdrive )"
 
-#UPSTREAMED_PATCHES=(
-#	"${WORKDIR}/patches/"
-#)
+UPSTREAMED_PATCHES=(
+)
 
 PATCHES=(
 	"${UPSTREAMED_PATCHES[@]}"
@@ -120,23 +120,17 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-1.18-support-multiple-Files-sections.patch
 )
 
-pkg_pretend() {
-	# older gcc is not supported
-	[[ "${MERGE_TYPE}" != "binary" && $(gcc-major-version) -lt 4 ]] && \
-		die "Sorry, but gcc earlier than 4.0 will not work for xorg-server."
-}
-
 pkg_setup() {
 	if use wayland && ! use glamor; then
 		ewarn "glamor is necessary for acceleration under Xwayland."
 		ewarn "Performance may be unacceptable without it."
 	fi
-}
 
-src_configure() {
 	# localstatedir is used for the log location; we need to override the default
 	#	from ebuild.sh
 	# sysconfdir is used for the xorg.conf location; same applies
+	# NOTE: fop is used for doc generating; and I have no idea if Gentoo
+	#	package it somewhere
 	XORG_CONFIGURE_OPTIONS=(
 		$(use_enable ipv6)
 		$(use_enable debug)
@@ -149,6 +143,7 @@ src_configure() {
 		$(use_enable !minimal xfree86-utils)
 		$(use_enable !minimal dri)
 		$(use_enable !minimal dri2)
+		$(use_enable !minimal dri3)
 		$(use_enable !minimal glx)
 		$(use_enable xcsecurity)
 		$(use_enable xephyr)
@@ -158,11 +153,10 @@ src_configure() {
 		$(use_enable udev config-udev)
 		$(use_with doc doxygen)
 		$(use_with doc xmlto)
-		$(use_with fop)
 		$(use_with systemd systemd-daemon)
 		$(use_enable systemd systemd-logind)
-		$(use_enable systemd suid-wrapper)
-		$(use_enable !systemd install-setuid)
+		$(usex suid $(use_enable systemd suid-wrapper) '--disable-suid-wrapper')
+		$(usex suid $(use_enable !systemd install-setuid) '--disable-install-setuid')
 		--enable-libdrm
 		--sysconfdir="${EPREFIX}"/etc/X11
 		--localstatedir="${EPREFIX}"/var
@@ -171,21 +165,19 @@ src_configure() {
 		--disable-config-hal
 		--disable-linux-acpi
 		--without-dtrace
-		--with-os-vendor=Gentoo
+		--without-fop
 		--with-sha1=libcrypto
 	)
-
-	xorg-2-r1_src_configure
 }
 
 src_install() {
-	xorg-2-r1_src_install
+	xorg-3-r1_src_install
 
 	server_based_install
 
 	if ! use minimal && use xorg; then
 		# Install xorg.conf.example into docs
-		dodoc "${AUTOTOOLS_BUILD_DIR}"/hw/xfree86/xorg.conf.example
+		dodoc "${S}"/hw/xfree86/xorg.conf.example
 	fi
 
 	newinitd "${FILESDIR}"/xdm-setup.initd-1 xdm-setup
@@ -195,11 +187,15 @@ src_install() {
 	# install the @x11-module-rebuild set for Portage
 	insinto /usr/share/portage/config/sets
 	newins "${FILESDIR}"/xorg-sets.conf xorg.conf
+
+	find "${ED}"/var -type d -empty -delete || die
 }
 
 pkg_postinst() {
-	# sets up libGL and DRI2 symlinks if needed (ie, on a fresh install)
-	eselect opengl set mesa --use-old
+	if ! use minimal; then
+		# sets up libGL and DRI2 symlinks if needed (ie, on a fresh install)
+		eselect opengl set mesa --use-old
+	fi
 
 	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix various issues"
 	ewarn "when switching GL providers."
