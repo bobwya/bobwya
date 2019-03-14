@@ -48,9 +48,12 @@ multilib_src_configure() {
 		"-DFORCE_ENABLE_DEBUGCONFIGURATION=$(usex debug ON OFF)"
 		"-DBUILD_TESTS=$(usex test ON OFF)"
 		"-DBUILD_UTILS=$(usex utils ON OFF)"
-		"-DFFMPEG=$(usex ffmpeg 1 0)"
+		"-DFFMPEG=$(usex ffmpeg ON OFF)"
 		"-DXNASONG=$(usex xnasong ON OFF)"
 	)
+	if use ffmpeg; then
+		mycmakeargs+=( "-DFFmpeg_LIBRARY_DIRS=${PREFIX%/}/usr/$(get_libdir)"  )
+	fi
 	cmake-utils_src_configure
 }
 
@@ -86,6 +89,7 @@ faudio_test() {
 pkg_postinst() {
 	use test || return
 
-	# FIXME: horrible hack! FAudio tests don't appear to work in the Portage sandbox.
+	# FIXME: FAudio tests are broken and also don't appear to work
+	# in the Portage sandbox.
 	multilib_foreach_abi faudio_test
 }
