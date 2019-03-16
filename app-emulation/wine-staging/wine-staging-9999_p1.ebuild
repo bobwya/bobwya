@@ -228,6 +228,7 @@ multilib_src_configure() {
 		"$(use_with lcms cms)"
 		"$(use_with cups)"
 		"$(use_with ncurses curses)"
+		"$(use_with ffmpeg)"
 		"$(use_with fontconfig)"
 		"$(use_with ssl gnutls)"
 		"$(use_enable gecko mshtml)"
