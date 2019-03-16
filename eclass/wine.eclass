@@ -1182,10 +1182,6 @@ wine_src_prepare_git() {
 		use faudio && _WINE_USE_DISABLED+=( "faudio" )
 		ewarn "USE +faudio unsupported for Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
 		ewarn "USE +faudio will be omitted for this build."
-	elif ((_WINE_IS_STAGING)); then
-		use ffmpeg && _WINE_USE_DISABLED=( "ffmpeg" )
-		ewarn "USE +ffmpeg unsupported for Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
-		ewarn "USE +ffmpeg will be omitted for this build. USE +faudio supersedes this functionality."
 	fi
 	_wine_sieve_arrays_by_git_commit "${S}" "PATCHES" "PATCHES_BIN"
 }
