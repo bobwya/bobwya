@@ -228,7 +228,6 @@ multilib_src_configure() {
 		"$(use_with lcms cms)"
 		"$(use_with cups)"
 		"$(use_with ncurses curses)"
-		"$(use_with ffmpeg)"
 		"$(use_with fontconfig)"
 		"$(use_with ssl gnutls)"
 		"$(use_enable gecko mshtml)"
@@ -273,9 +272,11 @@ multilib_src_configure() {
 		"$(use_with xml xslt)"
 	)
 
-	wine_use_disabled faudio || myconf+=( "$(use_with faudio)" )
-
-	wine_use_disabled ffmpeg || myconf+=( "$(use_with ffmpeg)" )
+	if use ffmpeg; then
+		wine_use_disabled ffmpeg || myconf+=( "$(use_with ffmpeg)" )
+	else
+		wine_use_disabled faudio || myconf+=( "$(use_with faudio)" )
+	fi
 
 	local PKG_CONFIG AR RANLIB
 	#472038 Avoid crossdev's i686-pc-linux-gnu-pkg-config if building wine32 on amd64
