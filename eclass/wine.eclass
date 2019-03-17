@@ -1173,16 +1173,25 @@ wine_use_disabled() {
 # @DESCRIPTION:
 # This functions supports git builds of:
 #   app-emulation/wine-staging, app-emulation/wine-vanilla
-# Removes redundant patches, that are already committed to the Git tree, and
-# tests for the transition from using the ffmpeg to the faudio (external) library.
+# Removes redundant patches, that are already committed to the Git tree.
+# Also tests for Wine Git commits introducing initial support, via new
+# app-emulation/wine-staging patchsets, for the ffmpeg and faudio (external) libraries.
 wine_src_prepare_git() {
-	local -a _sieved_faudio_commit=( "3e390b1aafff47df63376a8ca4293c515d74f4ba" )
-	_wine_sieve_arrays_by_git_commit "${S}" "_sieved_faudio_commit"
-	if ((${#_sieved_faudio_commit[@]})); then
-		use faudio && _WINE_USE_DISABLED+=( "faudio" )
+	local -a _sieved_ffmpeg_commit=( "6a04cf4a69205ddf6827fb2a4b97862fd1947c62" ) \
+		_sieved_faudio_commit=( "3e390b1aafff47df63376a8ca4293c515d74f4ba" )
+
+	_wine_sieve_arrays_by_git_commit "${S}" "_sieved_faudio_commit" "_sieved_ffmpeg_commit"
+	if use faudio && ((${#_sieved_faudio_commit[@]})); then
+		_WINE_USE_DISABLED+=( "faudio" )
 		ewarn "USE +faudio unsupported for Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
 		ewarn "USE +faudio will be omitted for this build."
 	fi
+	if use ffmpeg && ((${#_sieved_ffmpeg_commit[@]})); then
+		_WINE_USE_DISABLED+=( "ffmpeg" )
+		ewarn "USE +ffmpeg unsupported for Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
+		ewarn "USE +ffmpeg will be omitted for this build."
+	fi
+
 	_wine_sieve_arrays_by_git_commit "${S}" "PATCHES" "PATCHES_BIN"
 }
 
