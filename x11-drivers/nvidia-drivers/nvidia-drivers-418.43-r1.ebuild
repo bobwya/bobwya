@@ -60,7 +60,7 @@ RDEPEND="
 	tools? ( !media-video/nvidia-settings )
 	wayland? ( dev-libs/wayland[${MULTILIB_USEDEP}] )
 	X? (
-		<x11-base/xorg-server-1.19.99:=
+		<x11-base/xorg-server-1.20.99:=
 		>=x11-libs/libX11-1.6.2[${MULTILIB_USEDEP}]
 		>=x11-libs/libXext-1.3.2[${MULTILIB_USEDEP}]
 		>=x11-libs/libvdpau-1.0[${MULTILIB_USEDEP}]
@@ -370,24 +370,6 @@ src_install() {
 		doins "${NV_OBJ}/nvidia.icd"
 	fi
 
-	# Documentation
-	if use kernel_FreeBSD; then
-		dodoc "${NV_DOC}/README"
-		use X && doman "${NV_MAN}/nvidia-xconfig.1"
-		use tools && doman "${NV_MAN}/nvidia-settings.1"
-	else
-		# Docs
-		newdoc "${NV_DOC}/README.txt" README
-		dodoc "${NV_DOC}/NVIDIA_Changelog"
-		doman "${NV_MAN}/nvidia-smi.1"
-		use X && doman "${NV_MAN}/nvidia-xconfig.1"
-		use tools && doman "${NV_MAN}/nvidia-settings.1"
-		doman "${NV_MAN}/nvidia-cuda-mps-control.1"
-	fi
-
-	docinto html
-	dodoc -r "${NV_DOC}/html"/*
-
 	# Helper Apps
 	exeinto "/opt/bin/"
 
@@ -465,7 +447,26 @@ src_install() {
 
 	is_final_abi || die "failed to iterate through all ABIs"
 
+	# Documentation
+	if use kernel_FreeBSD; then
+		dodoc "${NV_DOC}/README"
+		use X && doman "${NV_MAN}/nvidia-xconfig.1"
+		use tools && doman "${NV_MAN}/nvidia-settings.1"
+	else
+		# Docs
+		newdoc "${NV_DOC}/README.txt" README
+		dodoc "${NV_DOC}/NVIDIA_Changelog"
+		doman "${NV_MAN}/nvidia-smi.1"
+		use X && doman "${NV_MAN}/nvidia-xconfig.1"
+		use tools && doman "${NV_MAN}/nvidia-settings.1"
+		doman "${NV_MAN}/nvidia-cuda-mps-control.1"
+	fi
+
 	readme.gentoo_create_doc
+
+	docinto html
+	dodoc -r "${NV_DOC}/html"/*
+
 }
 
 src_install-libs() {
@@ -514,16 +515,9 @@ src_install-libs() {
 
 		if use wayland && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then
 			NV_GLX_LIBRARIES+=(
-				"libnvidia-egl-wayland.so.1.1.0" .
+				"libnvidia-egl-wayland.so.1.1.2" .
 			)
 		fi
-
-		if use kernel_linux && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then
-			NV_GLX_LIBRARIES+=(
-				"libnvidia-wfb.so.${NV_SOVER}" .
-			)
-		fi
-
 		if use kernel_FreeBSD; then
 			NV_GLX_LIBRARIES+=(
 				"libnvidia-tls.so.${NV_SOVER}" .

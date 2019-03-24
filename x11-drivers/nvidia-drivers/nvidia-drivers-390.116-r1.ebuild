@@ -7,7 +7,10 @@ inherit flag-o-matic linux-info linux-mod multilib-minimal \
 	nvidia-driver portability toolchain-funcs unpacker user udev
 
 NV_URI="https://download.nvidia.com/XFree86/"
+X86_NV_PACKAGE="NVIDIA-Linux-x86-${PV}"
 AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
+ARM_NV_PACKAGE="NVIDIA-Linux-armv7l-gnueabihf-${PV}"
+X86_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86-${PV}"
 AMD64_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86_64-${PV}"
 
 DESCRIPTION="NVIDIA Accelerated Graphics Driver"
@@ -15,12 +18,15 @@ HOMEPAGE="https://www.nvidia.com/ https://www.nvidia.com/Download/Find.aspx"
 SRC_URI="
 	amd64-fbsd? ( ${NV_URI%/}/FreeBSD-x86_64/${PV}/${AMD64_FBSD_NV_PACKAGE}.tar.gz )
 	amd64? ( ${NV_URI%/}/Linux-x86_64/${PV}/${AMD64_NV_PACKAGE}.run )
+	arm? ( ${NV_URI%/}/Linux-32bit-ARM/${PV}/${ARM_NV_PACKAGE}.run )
+	x86-fbsd? ( ${NV_URI%/}/FreeBSD-x86/${PV}/${X86_FBSD_NV_PACKAGE}.tar.gz )
+	x86? ( ${NV_URI%/}/Linux-x86/${PV}/${X86_NV_PACKAGE}.run )
 	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${PV}.tar.bz2 )
 "
 
 LICENSE="GPL-2 NVIDIA-r2"
 SLOT="0/${PV%.*}"
-KEYWORDS="-* ~amd64 ~amd64-fbsd"
+KEYWORDS="-* ~amd64 ~x86 ~amd64-fbsd ~x86-fbsd"
 RESTRICT="bindist mirror"
 EMULTILIB_PKG="true"
 
@@ -60,7 +66,7 @@ RDEPEND="
 	tools? ( !media-video/nvidia-settings )
 	wayland? ( dev-libs/wayland[${MULTILIB_USEDEP}] )
 	X? (
-		<x11-base/xorg-server-1.20.99:=
+		<x11-base/xorg-server-1.19.99:=
 		>=x11-libs/libX11-1.6.2[${MULTILIB_USEDEP}]
 		>=x11-libs/libXext-1.3.2[${MULTILIB_USEDEP}]
 		>=x11-libs/libvdpau-1.0[${MULTILIB_USEDEP}]
@@ -104,7 +110,8 @@ nvidia_drivers_versions_check() {
 	nvidia-driver-check-warning
 
 	# Kernel features/options to check for
-	CONFIG_CHECK+=" !DEBUG_MUTEXES ~!LOCKDEP ~MTRR ~PM ~SYSVIPC ~ZONE_DMA"
+	CONFIG_CHECK+=" !DEBUG_MUTEXES ~!LOCKDEP ~MTRR ~SYSVIPC ~ZONE_DMA"
+	use x86 && CONFIG_CHECK+=" ~HIGHMEM"
 
 	# Now do the above checks
 	use kernel_linux && check_extra_config
@@ -348,7 +355,7 @@ src_install() {
 		doins "${NV_X11}/nvidia_drv.so"
 
 		# Xorg GLX driver
-		donvidia "${NV_X11}/libglxserver_nvidia.so.${NV_SOVER}" \
+		donvidia "${NV_X11}/libglx.so.${NV_SOVER}" \
 			"/usr/$(get_libdir)/xorg/nvidia/extensions"
 
 		# Xorg nvidia.conf
@@ -369,24 +376,6 @@ src_install() {
 		insinto "/etc/OpenCL/vendors"
 		doins "${NV_OBJ}/nvidia.icd"
 	fi
-
-	# Documentation
-	if use kernel_FreeBSD; then
-		dodoc "${NV_DOC}/README"
-		use X && doman "${NV_MAN}/nvidia-xconfig.1"
-		use tools && doman "${NV_MAN}/nvidia-settings.1"
-	else
-		# Docs
-		newdoc "${NV_DOC}/README.txt" README
-		dodoc "${NV_DOC}/NVIDIA_Changelog"
-		doman "${NV_MAN}/nvidia-smi.1"
-		use X && doman "${NV_MAN}/nvidia-xconfig.1"
-		use tools && doman "${NV_MAN}/nvidia-settings.1"
-		doman "${NV_MAN}/nvidia-cuda-mps-control.1"
-	fi
-
-	docinto html
-	dodoc -r "${NV_DOC}/html"/*
 
 	# Helper Apps
 	exeinto "/opt/bin/"
@@ -465,7 +454,26 @@ src_install() {
 
 	is_final_abi || die "failed to iterate through all ABIs"
 
+	# Documentation
+	if use kernel_FreeBSD; then
+		dodoc "${NV_DOC}/README"
+		use X && doman "${NV_MAN}/nvidia-xconfig.1"
+		use tools && doman "${NV_MAN}/nvidia-settings.1"
+	else
+		# Docs
+		newdoc "${NV_DOC}/README.txt" README
+		dodoc "${NV_DOC}/NVIDIA_Changelog"
+		doman "${NV_MAN}/nvidia-smi.1"
+		use X && doman "${NV_MAN}/nvidia-xconfig.1"
+		use tools && doman "${NV_MAN}/nvidia-settings.1"
+		doman "${NV_MAN}/nvidia-cuda-mps-control.1"
+	fi
+
 	readme.gentoo_create_doc
+
+	docinto html
+	dodoc -r "${NV_DOC}/html"/*
+
 }
 
 src_install-libs() {
@@ -505,7 +513,6 @@ src_install-libs() {
 			"libnvidia-fbc.so.${NV_SOVER}" .
 			"libnvidia-glcore.so.${NV_SOVER}" .
 			"libnvidia-glsi.so.${NV_SOVER}" .
-			"libnvidia-glvkspirv.so.${NV_SOVER}" .
 			"libnvidia-ifr.so.${NV_SOVER}" .
 			"libnvidia-opencl.so.${NV_SOVER}" .
 			"libnvidia-ptxjitcompiler.so.${NV_SOVER}" .
@@ -514,9 +521,16 @@ src_install-libs() {
 
 		if use wayland && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then
 			NV_GLX_LIBRARIES+=(
-				"libnvidia-egl-wayland.so.1.1.2" .
+				"libnvidia-egl-wayland.so.1.0.2" .
 			)
 		fi
+
+		if use kernel_linux && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then
+			NV_GLX_LIBRARIES+=(
+				"libnvidia-wfb.so.${NV_SOVER}" .
+			)
+		fi
+
 		if use kernel_FreeBSD; then
 			NV_GLX_LIBRARIES+=(
 				"libnvidia-tls.so.${NV_SOVER}" .
@@ -526,16 +540,7 @@ src_install-libs() {
 		if use kernel_linux; then
 			NV_GLX_LIBRARIES+=(
 				"libnvidia-ml.so.${NV_SOVER}" .
-				"libnvidia-tls.so.${NV_SOVER}" .
-			)
-		fi
-
-		if use kernel_linux && has_multilib_profile && [[ ${ABI} == "amd64" ]]
-		then
-			NV_GLX_LIBRARIES+=(
-				"libnvidia-cbl.so.${NV_SOVER}" .
-				"libnvidia-rtcore.so.${NV_SOVER}" .
-				"libnvoptix.so.${NV_SOVER}" .
+				"tls/libnvidia-tls.so.${NV_SOVER}" .
 			)
 		fi
 

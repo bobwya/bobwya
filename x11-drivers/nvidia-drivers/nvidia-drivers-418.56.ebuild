@@ -3,24 +3,24 @@
 
 # shellcheck disable=SC2034
 EAPI=6
-inherit eapi7-ver flag-o-matic linux-info linux-mod multilib-minimal \
+inherit flag-o-matic linux-info linux-mod multilib-minimal \
 	nvidia-driver portability toolchain-funcs unpacker user udev
-
-NV_SETTINGS_PV="$(ver_cut '1').43"
-NV_VULKAN_BETA_PV="$(ver_rs 1- '')"
 
 NV_URI="https://download.nvidia.com/XFree86/"
 AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
+AMD64_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86_64-${PV}"
+
 DESCRIPTION="NVIDIA Accelerated Graphics Driver"
 HOMEPAGE="https://www.nvidia.com/ https://www.nvidia.com/Download/Find.aspx"
 SRC_URI="
-	amd64? ( "https://developer.nvidia.com/vulkan-beta-${NV_VULKAN_BETA_PV}-linux" -> ${AMD64_NV_PACKAGE}.run )
-	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${NV_SETTINGS_PV}.tar.bz2 )
+	amd64-fbsd? ( ${NV_URI%/}/FreeBSD-x86_64/${PV}/${AMD64_FBSD_NV_PACKAGE}.tar.gz )
+	amd64? ( ${NV_URI%/}/Linux-x86_64/${PV}/${AMD64_NV_PACKAGE}.run )
+	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${PV}.tar.bz2 )
 "
 
 LICENSE="GPL-2 NVIDIA-r2"
 SLOT="0/${PV%.*}"
-KEYWORDS="-* ~amd64"
+KEYWORDS="-* ~amd64 ~amd64-fbsd"
 RESTRICT="bindist mirror"
 EMULTILIB_PKG="true"
 
@@ -219,7 +219,6 @@ pkg_setup() {
 src_prepare() {
 	local -a PATCHES
 	if use tools; then
-		mv "${S%/}/nvidia-settings-${NV_SETTINGS_PV}" "/${S%/}/nvidia-settings-${PV}" || die "mv failed"
 		rsync -achv "${FILESDIR}/nvidia-settings-linker.patch" "${WORKDIR}"/ \
 			|| die "rsync failed"
 		sed -i -e 's:@PV@:'"${PV}"':g' "${WORKDIR}/nvidia-settings-linker.patch" \
@@ -241,15 +240,6 @@ src_prepare() {
 	fi
 	if use tools; then
 		pushd "${S%/}/nvidia-settings-${PV}" || die "pushd failed"
-		# Correct nvidia settings version, to support Vulkan beta driver releases
-		sed -i -e 's:^NVIDIA_VERSION = .*$:NVIDIA_VERSION = '"${PV}"':g' \
-			"doc/version.mk" "samples/version.mk" \
-			"src/version.h" "src/version.mk" "src/libXNVCtrl/version.mk" \
-			"version.mk" \
-			 || die "sed failed"
-		sed -i -e 's:^#define NVIDIA_VERSION ".*"$:#define NVIDIA_VERSION "'"${PV}"'":g' \
-			"src/version.h" \
-			 || die "sed failed"
 		# FIXME: horrible hack!
 		if has_multilib_profile && use multilib && use abi_x86_32; then
 			cd "src" || die "cd failed"
@@ -380,24 +370,6 @@ src_install() {
 		doins "${NV_OBJ}/nvidia.icd"
 	fi
 
-	# Documentation
-	if use kernel_FreeBSD; then
-		dodoc "${NV_DOC}/README"
-		use X && doman "${NV_MAN}/nvidia-xconfig.1"
-		use tools && doman "${NV_MAN}/nvidia-settings.1"
-	else
-		# Docs
-		newdoc "${NV_DOC}/README.txt" README
-		dodoc "${NV_DOC}/NVIDIA_Changelog"
-		doman "${NV_MAN}/nvidia-smi.1"
-		use X && doman "${NV_MAN}/nvidia-xconfig.1"
-		use tools && doman "${NV_MAN}/nvidia-settings.1"
-		doman "${NV_MAN}/nvidia-cuda-mps-control.1"
-	fi
-
-	docinto html
-	dodoc -r "${NV_DOC}/html"/*
-
 	# Helper Apps
 	exeinto "/opt/bin/"
 
@@ -475,7 +447,26 @@ src_install() {
 
 	is_final_abi || die "failed to iterate through all ABIs"
 
+	# Documentation
+	if use kernel_FreeBSD; then
+		dodoc "${NV_DOC}/README"
+		use X && doman "${NV_MAN}/nvidia-xconfig.1"
+		use tools && doman "${NV_MAN}/nvidia-settings.1"
+	else
+		# Docs
+		newdoc "${NV_DOC}/README.txt" README
+		dodoc "${NV_DOC}/NVIDIA_Changelog"
+		doman "${NV_MAN}/nvidia-smi.1"
+		use X && doman "${NV_MAN}/nvidia-xconfig.1"
+		use tools && doman "${NV_MAN}/nvidia-settings.1"
+		doman "${NV_MAN}/nvidia-cuda-mps-control.1"
+	fi
+
 	readme.gentoo_create_doc
+
+	docinto html
+	dodoc -r "${NV_DOC}/html"/*
+
 }
 
 src_install-libs() {
