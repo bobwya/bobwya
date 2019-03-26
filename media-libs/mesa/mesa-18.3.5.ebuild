@@ -95,7 +95,7 @@ RDEPEND="
 		)
 		lm_sensors? ( sys-apps/lm_sensors:=[${MULTILIB_USEDEP}] )
 		opencl? (
-			dev-libs/ocl-icd
+			dev-libs/ocl-icd[khronos-headers,${MULTILIB_USEDEP}]
 			dev-libs/libclc
 			virtual/libelf:0=[${MULTILIB_USEDEP}]
 		)
@@ -132,13 +132,13 @@ RDEPEND="${RDEPEND}
 
 # Please keep the LLVM dependency block separate. Since LLVM is slotted,
 # we need to *really* make sure we're only using one slot.
+LLVM_MAX_SLOT="7"
 LLVM_DEPSTR="
 	|| (
 		sys-devel/llvm:7[${MULTILIB_USEDEP}]
 		sys-devel/llvm:6[${MULTILIB_USEDEP}]
 		sys-devel/llvm:5[${MULTILIB_USEDEP}]
 		sys-devel/llvm:4[${MULTILIB_USEDEP}]
-		>=sys-devel/llvm-3.9.0:0[${MULTILIB_USEDEP}]
 	)
 	sys-devel/llvm:=[${MULTILIB_USEDEP}]
 "
@@ -340,9 +340,6 @@ multilib_src_configure() {
 	local -a emesonargs=()
 
 	if use classic; then
-		# Configurable DRI drivers
-		driver_enable DRI_DRIVERS -- swrast
-
 		# Intel code
 		driver_enable DRI_DRIVERS video_cards_i915 i915
 		driver_enable DRI_DRIVERS video_cards_i965 i965
@@ -419,6 +416,8 @@ multilib_src_configure() {
 		if ! use video_cards_i915 && ! use video_cards_i965; then
 			driver_enable GALLIUM_DRIVERS video_cards_intel i915
 		fi
+
+		driver_enable GALLIUM_DRIVERS video_cards_iris iris
 
 		driver_enable GALLIUM_DRIVERS video_cards_r300 r300
 		driver_enable GALLIUM_DRIVERS video_cards_r600 r600

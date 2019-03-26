@@ -28,7 +28,7 @@ SLOT="0"
 RESTRICT="!test? ( test )"
 
 AMD_CARDS=( "r100" "r200" "r300" "r600" "radeon" "radeonsi" )
-INTEL_CARDS=( "i915" "i965" "intel" )
+INTEL_CARDS=( "i915" "i965" "intel" "iris" )
 VIDEO_CARDS=( "freedreno" "imx" "nouveau" "vc4" "virgl" "vivante" "vmware" )
 VIDEO_CARDS+=( "${AMD_CARDS[@]}" )
 VIDEO_CARDS+=( "${INTEL_CARDS[@]}" )
@@ -37,22 +37,23 @@ for card in "${VIDEO_CARDS[@]}"; do
 done
 
 IUSE="${IUSE_VIDEO_CARDS}
-	+classic d3d9 debug +dri3 +egl +gallium +gbm gles1 gles2 +llvm lm_sensors +nptl
-	opencl osmesa pax_kernel pic selinux test unwind vaapi valgrind vdpau vulkan
-	wayland xa xvmc"
+	+classic d3d9 debug +dri3 +egl +gallium +gbm gles1 gles2 +libglvnd +llvm lm_sensors
+	+nptl opencl osmesa pax_kernel pic selinux test unwind vaapi valgrind vdpau vulkan
+	vulkan-overlay wayland xa xvmc"
 
 REQUIRED_USE="
 	d3d9?   ( dri3 || ( video_cards_r300 video_cards_r600 video_cards_radeonsi video_cards_nouveau video_cards_vmware ) )
 	gles1?  ( egl )
 	gles2?  ( egl )
-	vulkan? ( dri3
-		|| ( video_cards_i965 video_cards_radeonsi )
+	vulkan? ( || ( video_cards_i965 video_cards_radeonsi )
 		video_cards_radeonsi? ( llvm ) )
+	vulkan-overlay? ( vulkan )
 	wayland? ( egl gbm )
 	video_cards_freedreno?  ( gallium )
 	video_cards_intel?  ( classic )
 	video_cards_i915?   ( || ( classic gallium ) )
 	video_cards_i965?   ( classic )
+	video_cards_iris?   ( gallium )
 	video_cards_imx?	( gallium video_cards_vivante )
 	video_cards_nouveau? ( || ( classic gallium ) )
 	video_cards_radeon? ( || ( classic gallium )
@@ -68,11 +69,10 @@ REQUIRED_USE="
 	video_cards_vmware? ( gallium )
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.96"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.97"
 # shellcheck disable=SC2124
 RDEPEND="
 	!app-eselect/eselect-mesa
-	~app-eselect/eselect-opengl-1.3.3
 	>=dev-libs/expat-2.1.0-r3:=[${MULTILIB_USEDEP}]
 	>=sys-libs/zlib-1.2.8[${MULTILIB_USEDEP}]
 	>=x11-libs/libX11-1.6.2:=[${MULTILIB_USEDEP}]
@@ -82,6 +82,13 @@ RDEPEND="
 	>=x11-libs/libXxf86vm-1.1.3:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libxcb-1.13:=[${MULTILIB_USEDEP}]
 	x11-libs/libXfixes:=[${MULTILIB_USEDEP}]
+	libglvnd? (
+		media-libs/libglvnd[${MULTILIB_USEDEP}]
+		!app-eselect/eselect-opengl
+	)
+	!libglvnd? (
+		~app-eselect/eselect-opengl-1.3.3
+	)
 	gallium? (
 		llvm? (
 			video_cards_radeonsi? (
@@ -133,14 +140,12 @@ RDEPEND="${RDEPEND}
 
 # Please keep the LLVM dependency block separate. Since LLVM is slotted,
 # we need to *really* make sure we're only using one slot.
+LLVM_MAX_SLOT="9"
 LLVM_DEPSTR="
 	|| (
+		sys-devel/llvm:9[${MULTILIB_USEDEP}]
 		sys-devel/llvm:8[${MULTILIB_USEDEP}]
 		sys-devel/llvm:7[${MULTILIB_USEDEP}]
-		sys-devel/llvm:6[${MULTILIB_USEDEP}]
-		sys-devel/llvm:5[${MULTILIB_USEDEP}]
-		sys-devel/llvm:4[${MULTILIB_USEDEP}]
-		>=sys-devel/llvm-3.9.0:0[${MULTILIB_USEDEP}]
 	)
 	sys-devel/llvm:=[${MULTILIB_USEDEP}]
 "
@@ -421,6 +426,8 @@ multilib_src_configure() {
 			driver_enable GALLIUM_DRIVERS video_cards_intel i915
 		fi
 
+		driver_enable GALLIUM_DRIVERS video_cards_iris iris
+
 		driver_enable GALLIUM_DRIVERS video_cards_r300 r300
 		driver_enable GALLIUM_DRIVERS video_cards_r600 r600
 		driver_enable GALLIUM_DRIVERS video_cards_radeonsi radeonsi
@@ -434,6 +441,7 @@ multilib_src_configure() {
 
 	if use vulkan; then
 		driver_enable VULKAN_DRIVERS video_cards_i965 intel
+		driver_enable VULKAN_DRIVERS video_cards_iris intel
 		driver_enable VULKAN_DRIVERS video_cards_radeonsi amd
 	fi
 	# x86 hardened pax_kernel needs glx-rts, bug 240956
@@ -463,10 +471,12 @@ multilib_src_configure() {
 		"$(meson_use gbm)"
 		"$(meson_use gles1)"
 		"$(meson_use gles2)"
+		"$(meson_use libglvnd glvnd)"
 		"-Dvalgrind=$(usex valgrind auto false)"
 		"-Ddri-drivers=$(driver_list "${DRI_DRIVERS[*]}")"
 		"-Dgallium-drivers=$(driver_list "${GALLIUM_DRIVERS[*]}")"
 		"-Dvulkan-drivers=$(driver_list "${VULKAN_DRIVERS[*]}")"
+		"$(meson_use vulkan-overlay vulkan-overlay-layer)"
 		"--buildtype" "$(usex debug debug plain)"
 		"-Db_ndebug=$(usex debug false true)"
 	)
@@ -479,6 +489,8 @@ multilib_src_compile() {
 
 multilib_src_install() {
 	meson_src_install
+
+	use libglvnd && rm -f "${D}/usr/$(get_libdir)"/libGLESv{1_CM,2}.so*
 
 	# Move lib{EGL*,GL*,OpenVG,OpenGL}.{la,a,so*} files from /usr/lib to /usr/lib/opengl/mesa/lib
 	ebegin "(subshell): moving lib{EGL*,GL*,OpenGL}.{la,a,so*} in order to implement dynamic GL switching support"
