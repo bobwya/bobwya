@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-EAPI="6"
+EAPI=6
 VIRTUALX_REQUIRED="pgo"
 WANT_AUTOCONF="2.1"
 MOZ_ESR=""
@@ -20,7 +20,7 @@ MOZ_LANGS=( "ach" "af" "an" "ar" "as" "ast" "az" "bg" "bn-BD" "bn-IN" "br" "bs" 
 # Convert the ebuild version to the upstream mozilla version, used by mozlinguas
 MOZ_PV="${PV/_alpha/a}" # Handle alpha for SRC_URI
 MOZ_PV="${MOZ_PV/_beta/b}" # Handle beta for SRC_URI
-MOZ_PV="${MOZ_PV/_rc/rc}" # Handle rc for SRC_URI
+MOZ_PV="${MOZ_PV%%_rc*}" # Handle rc for SRC_URI
 
 if [[ ${MOZ_ESR} == 1 ]]; then
 	# ESR releases have slightly different version numbers
@@ -28,16 +28,31 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${PN}-65.0-patches-01"
+PATCH="${PN}-66.0-patches-06"
+
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-HG_MOZ_REVISION="87f893cf45b9"
+HG_MOZ_REVISION="eca1c1f2fe50"
 HG_MOZ_PV="${MOZ_PV/%.*/.0}"
 HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
+MOZ_SRC_URI="${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz"
 
-inherit autotools check-reqs flag-o-matic gnome2-utils llvm mozcoreconf-v6 mozlinguas-v2 \
-	pax-utils toolchain-funcs virtualx xdg-utils
+if [[ "${PV}" == *_rc* ]]; then
+	MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/candidates/${MOZ_PV}-candidates/build${PV##*_rc}"
+
+# Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
+HG_MOZ_REVISION="eca1c1f2fe50"
+HG_MOZ_PV="${MOZ_PV/%.*/.0}"
+HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
+	MOZ_LANGPACK_PREFIX="linux-i686/xpi/"
+	MOZ_SRC_URI="${MOZ_HTTP_URI}/source/${PN}-${MOZ_PV}.source.tar.xz -> $P.tar.xz"
+fi
+
+LLVM_MAX_SLOT=8
+
+inherit autotools check-reqs eapi7-ver flag-o-matic gnome2-utils llvm mozcoreconf-v6 \
+	mozlinguas-v2 pax-utils toolchain-funcs virtualx xdg-utils
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.com/firefox
@@ -47,16 +62,17 @@ KEYWORDS="~amd64 ~x86"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist clang dbus debug egl eme-free geckodriver +gmp-autoupdate hardened hwaccel kde
-	jack lto neon pgo pulseaudio +screenshot selinux startup-notification
-	+system-harfbuzz +system-icu +system-jpeg +system-libevent +system-sqlite
-	+system-libvpx +system-webp test wayland wifi"
+IUSE="bindist clang cpu_flags_x86_avx2 dbus debug egl eme-free geckodriver kde
+	+gmp-autoupdate hardened hwaccel jack lto neon pgo pulseaudio
+	+screenshot selinux startup-notification +system-av1
+	+system-harfbuzz +system-icu +system-jpeg +system-libevent
+	+system-sqlite +system-libvpx +system-webp test wayland wifi"
 RESTRICT="!bindist? ( bindist )"
 
 PATCH_URIS=( "https://dev.gentoo.org"/~{anarchy,axs,polynomial-c,whissi}/"mozilla/patchsets/${PATCH}.tar.xz" )
 # shellcheck disable=SC2124
 SRC_URI="${SRC_URI}
-	${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz
+	${MOZ_SRC_URI}
 	${PATCH_URIS[@]}
 	kde? (
 		${HG_MOZILLA_URI}/raw-file/${HG_MOZ_REVISION}/mozilla-kde.patch -> ${PN}-${HG_MOZ_PV}-mozilla-kde.patch
@@ -66,7 +82,7 @@ SRC_URI="${SRC_URI}
 	)"
 
 CDEPEND="
-	>=dev-libs/nss-3.41
+	>=dev-libs/nss-3.42
 	>=dev-libs/nspr-4.19
 	>=app-text/hunspell-1.5.4:*
 	dev-libs/atk
@@ -97,13 +113,20 @@ CDEPEND="
 	x11-libs/libXfixes
 	x11-libs/libXrender
 	x11-libs/libXt
-	system-harfbuzz? ( >=media-libs/harfbuzz-1.4.2:0= >=media-gfx/graphite2-1.3.9-r1 )
-	system-icu? ( >=dev-libs/icu-60.2:= )
+	system-av1? (
+		>=media-libs/dav1d-0.2.0:=
+		>=media-libs/libaom-1.0.0:=
+	)
+	system-harfbuzz? ( >=media-libs/harfbuzz-2.3.1:0= >=media-gfx/graphite2-1.3.13 )
+	system-icu? ( >=dev-libs/icu-63.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
-	system-libevent? ( >=dev-libs/libevent-2.0:0= )
-	system-libvpx? ( >=media-libs/libvpx-1.7.0:0=[postproc] )
-	system-sqlite? ( >=dev-db/sqlite-3.25.3:3[secure-delete,debug=] )
-	system-webp? ( >=media-libs/libwebp-1.0.1:0= )
+	system-libevent? ( >=dev-libs/libevent-2.0:0=[threads] )
+	system-libvpx? (
+		>=media-libs/libvpx-1.7.0:0=[postproc]
+		<media-libs/libvpx-1.8:0=[postproc]
+	)
+	system-sqlite? ( >=dev-db/sqlite-3.26:3[secure-delete,debug=] )
+	system-webp? ( >=media-libs/libwebp-1.0.2:0= )
 	wifi? ( kernel_linux? ( >=sys-apps/dbus-0.60
 			>=dev-libs/dbus-glib-0.72
 			net-misc/networkmanager ) )
@@ -121,23 +144,49 @@ RDEPEND="${CDEPEND}
 DEPEND="${CDEPEND}
 	app-arch/zip
 	app-arch/unzip
-	>=dev-util/cbindgen-0.6.7
+	>=dev-util/cbindgen-0.6.8
 	>=net-libs/nodejs-8.11.0
 	>=sys-devel/binutils-2.30
 	sys-apps/findutils
-	>=sys-devel/llvm-4.0.1
-	>=sys-devel/clang-4.0.1
-	clang? (
-		>=sys-devel/llvm-4.0.1[gold]
-		>=sys-devel/lld-4.0.1
+	|| (
+		(
+			sys-devel/clang:8
+			!clang? ( sys-devel/llvm:8 )
+			clang? (
+				=sys-devel/lld-8*
+				sys-devel/llvm:8[gold]
+				pgo? ( =sys-libs/compiler-rt-sanitizers-8*[profile] )
+			)
+		)
+		(
+			sys-devel/clang:7
+			!clang? ( sys-devel/llvm:7 )
+			clang? (
+				=sys-devel/lld-7*
+				sys-devel/llvm:7[gold]
+				pgo? ( =sys-libs/compiler-rt-sanitizers-7*[profile] )
+			)
+		)
+		(
+			sys-devel/clang:6
+			!clang? ( sys-devel/llvm:6 )
+			clang? (
+				=sys-devel/lld-6*
+				sys-devel/llvm:6[gold]
+				pgo? ( =sys-libs/compiler-rt-sanitizers-6*[profile] )
+			)
+		)
 	)
 	pulseaudio? ( media-sound/pulseaudio )
-	>=virtual/cargo-1.30.0
-	>=virtual/rust-1.30.0
+	>=virtual/cargo-1.31.0
+	>=virtual/rust-1.31.0
 	wayland? ( >=x11-libs/gtk+-3.11:3[wayland] )
 	amd64? ( >=dev-lang/yasm-1.1 virtual/opengl )
-	x86? ( >=dev-lang/yasm-1.1 virtual/opengl )"
+	x86? ( >=dev-lang/yasm-1.1 virtual/opengl )
+	!system-av1? ( dev-lang/nasm )"
 
+# Due to a bug in GCC, profile guided optimization will produce
+# AVX2 instructions, bug #677052
 REQUIRED_USE="wifi? ( dbus )
 	pgo? ( lto )"
 
@@ -154,7 +203,26 @@ if [[ -z $GMP_PLUGIN_LIST ]]; then
 fi
 
 llvm_check_deps() {
-	has_version "sys-devel/clang:${LLVM_SLOT}"
+	if ! has_version --host-root "sys-devel/clang:${LLVM_SLOT}"; then
+		ewarn "sys-devel/clang:${LLVM_SLOT} is missing! Cannot use LLVM slot ${LLVM_SLOT} ..."
+		return 1
+	fi
+
+	if use clang; then
+		if ! has_version --host-root "=sys-devel/lld-${LLVM_SLOT}*"; then
+			ewarn "=sys-devel/lld-${LLVM_SLOT}* is missing! Cannot use LLVM slot ${LLVM_SLOT} ..."
+			return 1
+		fi
+
+		if use pgo; then
+			if ! has_version --host-root "=sys-libs/compiler-rt-sanitizers-${LLVM_SLOT}*"; then
+				ewarn "=sys-libs/compiler-rt-sanitizers-${LLVM_SLOT}* is missing! Cannot use LLVM slot ${LLVM_SLOT} ..."
+				return 1
+			fi
+		fi
+	fi
+
+	einfo "Will use LLVM slot ${LLVM_SLOT}!"
 }
 
 pkg_setup() {
@@ -347,6 +415,22 @@ src_configure() {
 				show_old_compiler_warning=1
 			fi
 
+			if ! use cpu_flags_x86_avx2; then
+				local _gcc_version_with_ipa_cdtor_fix="8.3"
+				local _current_gcc_version="$(gcc-major-version).$(gcc-minor-version)"
+
+				if ver_test "${_current_gcc_version}" -lt "${_gcc_version_with_ipa_cdtor_fix}"; then
+					# due to a GCC bug, GCC will produce AVX2 instructions
+					# even if the CPU doesn't support AVX2, https://gcc.gnu.org/ml/gcc-patches/2018-12/msg01142.html
+					einfo "Disable IPA cdtor due to bug in GCC and missing AVX2 support -- triggered by USE=lto"
+					append-ldflags -fdisable-ipa-cdtor
+				else
+					einfo "No GCC workaround required, GCC version is already patched!"
+				fi
+			else
+				einfo "No GCC workaround required, system supports AVX2"
+			fi
+
 			# Linking only works when using ld.gold when LTO is enabled
 			mozconfig_annotate "forcing ld=gold due to USE=lto" "--enable-linker=gold"
 		fi
@@ -445,19 +529,13 @@ src_configure() {
 		mozconfig_annotate '' "--enable-rust-simd"
 	fi
 
-	# skia has no support for big-endian platforms
-	if [[ $(tc-endian) == "big" ]]; then
-		mozconfig_annotate 'big endian target' "--disable-skia"
-	else
-		mozconfig_annotate '' "--enable-skia"
-	fi
-
 	# use the gtk3 toolkit (the only one supported at this point)
 	# TODO: Will this result in automagic dependency on x11-libs/gtk+[wayland]?
 	mozconfig_annotate '' "--enable-default-toolkit=cairo-gtk3"
 
 	mozconfig_use_enable startup-notification
 	mozconfig_use_enable system-sqlite
+	mozconfig_use_with system-av1
 	mozconfig_use_with system-harfbuzz
 	mozconfig_use_with system-harfbuzz system-graphite2
 	mozconfig_use_with system-icu
@@ -489,18 +567,25 @@ src_configure() {
 	# Enable/Disable eme support
 	use eme-free && mozconfig_annotate '+eme-free' "--disable-eme"
 
-	# Setup api key for location services
+	# Setup api key for location services and safebrowsing, https://bugzilla.mozilla.org/show_bug.cgi?id=1531176#c34
 	echo -n "${_google_api_key}" > "${S}"/google-api-key
-	mozconfig_annotate '' "--with-google-api-keyfile=${S}/google-api-key"
+	mozconfig_annotate '' "--with-google-location-service-api-keyfile=${S}/google-api-key"
+	mozconfig_annotate '' "--with-google-safebrowsing-api-keyfile=${S}/google-api-key"
 
 	mozconfig_annotate '' "--enable-extensions=${MEXTENSIONS}"
 
 	# disable webrtc for now, bug 667642
 	use arm && mozconfig_annotate 'broken on arm' "--disable-webrtc"
 
-	# https://bugzilla.mozilla.org/show_bug.cgi?id=1423822
-	# bug #669382 #676908
-	mozconfig_annotate 'elf-hack is broken' "--disable-elf-hack"
+	# allow elfhack to work in combination with unstripped binaries
+	# when they would normally be larger than 2GiB.
+	append-ldflags "-Wl,"--compress-debug-sections=zlib""
+
+	if use clang; then
+		# https://bugzilla.mozilla.org/show_bug.cgi?id=1482204
+		# https://bugzilla.mozilla.org/show_bug.cgi?id=1483822
+		mozconfig_annotate 'elf-hack is broken when using Clang' "--disable-elf-hack"
+	fi
 
 	echo "mk_add_options MOZ_OBJDIR=${BUILD_OBJ_DIR}" >> "${S}/.mozconfig"
 	echo "mk_add_options XARGS=/usr/bin/xargs" >> "${S}/.mozconfig"

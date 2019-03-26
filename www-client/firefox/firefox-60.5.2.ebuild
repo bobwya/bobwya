@@ -32,12 +32,14 @@ PATCH="${PN}-60.5-patches-01"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-HG_MOZ_REVISION="af29b3ac33ae"
+HG_MOZ_REVISION="cbed5671ff47"
 HG_MOZ_PV="${MOZ_PV/%.*/.0}"
 HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
 
 #MOZCONFIG_OPTIONAL_QT5=1
 MOZCONFIG_OPTIONAL_WIFI=1
+
+LLVM_MAX_SLOT=8
 
 inherit autotools check-reqs flag-o-matic gnome2-utils llvm mozconfig-v6.60 mozlinguas-v2 \
 	pax-utils toolchain-funcs xdg-utils
@@ -74,14 +76,12 @@ RDEPEND="
 	system-icu? ( >=dev-libs/icu-60.2 )
 	jack? ( virtual/jack )
 	kde? ( kde-misc/kmozillahelper:=  )
-	>=dev-libs/nss-3.36.4
+	>=dev-libs/nss-3.36.7
 	>=dev-libs/nspr-4.19
 	selinux? ( sec-policy/selinux-mozilla )
 	kde? ( kde-misc/kmozillahelper:=  )"
 
 DEPEND="${RDEPEND}
-	>=sys-devel/llvm-4.0.1
-	>=sys-devel/clang-4.0.1
 	amd64? ( ${ASM_DEPEND} virtual/opengl )
 	x86? ( ${ASM_DEPEND} virtual/opengl )"
 
@@ -98,7 +98,19 @@ if [[ -z $GMP_PLUGIN_LIST ]]; then
 fi
 
 llvm_check_deps() {
-	has_version "sys-devel/clang:${LLVM_SLOT}"
+	if ! has_version --host-root "sys-devel/clang:${LLVM_SLOT}"; then
+		ewarn "sys-devel/clang:${LLVM_SLOT} is missing! Cannot use LLVM slot ${LLVM_SLOT} ..."
+		return 1
+	fi
+
+	if use clang; then
+		if ! has_version --host-root "=sys-devel/lld-${LLVM_SLOT}*"; then
+			ewarn "=sys-devel/lld-${LLVM_SLOT}* is missing! Cannot use LLVM slot ${LLVM_SLOT} ..."
+			return 1
+		fi
+	fi
+
+	einfo "Will use LLVM slot ${LLVM_SLOT}!"
 }
 
 pkg_setup() {
@@ -272,6 +284,10 @@ src_configure() {
 	mozconfig_annotate '' "--with-google-api-keyfile=${S}/google-api-key"
 
 	mozconfig_annotate '' "--enable-extensions=${MEXTENSIONS}"
+
+	# allow elfhack to work in combination with unstripped binaries
+	# when they would normally be larger than 2GiB.
+	append-ldflags "-Wl,"--compress-debug-sections=zlib""
 
 	if use clang; then
 		# https://bugzilla.mozilla.org/show_bug.cgi?id=1423822
