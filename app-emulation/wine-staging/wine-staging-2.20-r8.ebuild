@@ -149,7 +149,7 @@ src_prepare() {
 
 	wine_add_stock_gentoo_patches
 
-	[[ "${WINE_PV}" == "9999" ]] && wine_src_prepare_git
+	[[ "${WINE_PV}" == "9999" ]] && wine_staging_src_prepare_git
 
 	wine_fix_gentoo_cc_multilib_support
 	wine_fix_gentoo_winegcc_support
