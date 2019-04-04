@@ -116,7 +116,7 @@ readonly WINE_EBUILD_COMMON_PV
 # @ECLASS-VARIABLE: WINE_ESYNC_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-esync; tarball.
-WINE_ESYNC_P="gentoo-wine-esync-20190314"
+WINE_ESYNC_P="gentoo-wine-esync-20190404"
 readonly WINE_ESYNC_P
 
 # @ECLASS-VARIABLE: WINE_ESYNC_PN
@@ -1171,28 +1171,38 @@ wine_use_disabled() {
 # @FUNCTION: wine_src_prepare_git
 # @INTERNAL
 # @DESCRIPTION:
-# This functions supports git builds of:
-#   app-emulation/wine-staging, app-emulation/wine-vanilla
+# This functions supports git builds of: app-emulation/wine-vanilla
 # Removes redundant patches, that are already committed to the Git tree.
-# Also tests for Wine Git commits introducing initial support, via new
-# app-emulation/wine-staging patchsets, for the ffmpeg and faudio (external) libraries.
+# Also tests for Wine Git commits introducing initial support, for the
+# faudio (external) library.
 wine_src_prepare_git() {
-	local -a _sieved_ffmpeg_commit=( "6a04cf4a69205ddf6827fb2a4b97862fd1947c62" ) \
-		_sieved_faudio_commit=( "3e390b1aafff47df63376a8ca4293c515d74f4ba" )
-
-	_wine_sieve_arrays_by_git_commit "${S}" "_sieved_faudio_commit" "_sieved_ffmpeg_commit"
+	local -a _sieved_faudio_commit=( "3e390b1aafff47df63376a8ca4293c515d74f4ba" )
+	_wine_sieve_arrays_by_git_commit "${S}" "_sieved_faudio_commit"
 	if use faudio && ((${#_sieved_faudio_commit[@]})); then
 		_WINE_USE_DISABLED+=( "faudio" )
 		ewarn "USE +faudio unsupported for Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
 		ewarn "USE +faudio will be omitted for this build."
 	fi
+	_wine_sieve_arrays_by_git_commit "${S}" "PATCHES" "PATCHES_BIN"
+}
+
+# @FUNCTION: wine_staging_src_prepare_git
+# @INTERNAL
+# @DESCRIPTION:
+# This functions supports git builds of: app-emulation/wine-staging
+# Removes redundant patches, that are already committed to the Git tree.
+# Also tests for Wine Git commits introducing initial support, via a new
+# app-emulation/wine-staging patchset, for the ffmpeg (external) library.
+wine_staging_src_prepare_git() {
+	local -a _sieved_ffmpeg_commit=( "6a04cf4a69205ddf6827fb2a4b97862fd1947c62" )
+	_wine_sieve_arrays_by_git_commit "${S}" "_sieved_ffmpeg_commit"
 	if use ffmpeg && ((${#_sieved_ffmpeg_commit[@]})); then
 		_WINE_USE_DISABLED+=( "ffmpeg" )
 		ewarn "USE +ffmpeg unsupported for Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
 		ewarn "USE +ffmpeg will be omitted for this build."
 	fi
 
-	_wine_sieve_arrays_by_git_commit "${S}" "PATCHES" "PATCHES_BIN"
+	wine_src_prepare_git
 }
 
 # @FUNCTION: wine_eapply_bin
@@ -1304,7 +1314,7 @@ wine_eapply_esync_patchset() {
 	(($# == 1)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (1)"
 
 	local _esync_patchsets_base_directory="${1%/}" \
-		_i_array _esync_error=0 _esync_patchset_directory _esync_rebased_patchset
+		_i_array _esync_error=0 _esync_patchset_directory _rebased_patchset _max_rebased_patchset
 	local -a _base_commit _esync_patchset_commits _sieved_esync_patchset_commits
 	if [[ ! -d "${_esync_patchsets_base_directory}" ]]; then
 		die "${FUNCNAME[0]}(): argument (1): path '${_esync_patchsets_base_directory}' is not a valid directory"
@@ -1316,52 +1326,57 @@ wine_eapply_esync_patchset() {
 		"433788736bcb68b43a35749c28d6272e4041c857" "57212f64f8e4fef0c63c633940e13d407c0f2069"
 		"24f47812165a5dcb2b22825e47ccccbbd7437b8b" "2f17e0112dc0af3f0b246cf377e2cb8fd7a6cf58"
 		"2600ecd4edfdb71097105c74312f83845305a4f2" "d3660e5901914daab38c95f6b2a7a43dfe6d3eee"
-		"7ba361b47bc95df624eac83c170d6c1a4041d8f8"
+		"7ba361b47bc95df624eac83c170d6c1a4041d8f8" "817fb9755cbf48162fe1b7d37e77d7e25afa7520"
+		"b2a546c92dabee8ab1c3d5b9fecc84d99caf0e76" "0decadd62a76b968abf75c9943dd0869249ec716"
 	)
 
 	case "${WINE_PV}" in
 		3.0.[1-5]-rc[1-9]|3.0.[1-5]|3.0-rc[1-6]|3.[0-2])
-			_esync_rebased_patchset="f8e0bd1b0d189d5950dc39082f439cd1fc9569d5"
+			_rebased_patchset="f8e0bd1b0d189d5950dc39082f439cd1fc9569d5"
 			;;
 		3.[3-5])
-			_esync_rebased_patchset="a7aa192a78d02d28f2bbae919a3f5c726e4e9e60"
+			_rebased_patchset="a7aa192a78d02d28f2bbae919a3f5c726e4e9e60"
 			;;
 		3.[6-8])
-			_esync_rebased_patchset="c61c33ee66ea0e97450ac793ebc4ac41a1ccc793"
+			_rebased_patchset="c61c33ee66ea0e97450ac793ebc4ac41a1ccc793"
 			;;
 		3.9|3.1[0-3])
-			_esync_rebased_patchset="433788736bcb68b43a35749c28d6272e4041c857"
+			_rebased_patchset="433788736bcb68b43a35749c28d6272e4041c857"
 			;;
 		3.1[4-6])
-			_esync_rebased_patchset="57212f64f8e4fef0c63c633940e13d407c0f2069"
+			_rebased_patchset="57212f64f8e4fef0c63c633940e13d407c0f2069"
 			;;
 		3.1[7-8])
-			_esync_rebased_patchset="24f47812165a5dcb2b22825e47ccccbbd7437b8b"
+			_rebased_patchset="24f47812165a5dcb2b22825e47ccccbbd7437b8b"
 			;;
 		3.19)
-			_esync_rebased_patchset="2f17e0112dc0af3f0b246cf377e2cb8fd7a6cf58"
+			_rebased_patchset="2f17e0112dc0af3f0b246cf377e2cb8fd7a6cf58"
 			;;
 		3.2[0-1]|4.[0-3])
-			_esync_rebased_patchset="2600ecd4edfdb71097105c74312f83845305a4f2"
+			_rebased_patchset="2600ecd4edfdb71097105c74312f83845305a4f2"
 			;;
-		4.[4-9]|4.1[0-9])
-			_esync_rebased_patchset="7ba361b47bc95df624eac83c170d6c1a4041d8f8"
+		4.4)
+			_rebased_patchset="817fb9755cbf48162fe1b7d37e77d7e25afa7520"
 			;;
 		9999)
-			((_WINE_IS_STAGING)) \
-				&& _base_commit="f9e1dbb83d850a2f7cb17079e02de139e2f8b920" \
-				|| _base_commit="f8e0bd1b0d189d5950dc39082f439cd1fc9569d5"
+			_max_rebased_patchset="12"
+			if ((_WINE_IS_STAGING)); then
+				_base_commit="f9e1dbb83d850a2f7cb17079e02de139e2f8b920"
+			else
+				_base_commit="f8e0bd1b0d189d5950dc39082f439cd1fc9569d5"
 
+			fi
 			_sieved_esync_patchset_commits=( "${_esync_patchset_commits[@]}" )
 			_wine_sieve_arrays_by_git_commit "${S}" "_sieved_esync_patchset_commits"
 			for _i_array in "${!_esync_patchset_commits[@]}"; do
 				# shellcheck disable=SC2068
 				has "${_esync_patchset_commits[_i_array]}" ${_sieved_esync_patchset_commits[@]} && break
 
-				_esync_rebased_patchset="${_esync_patchset_commits[_i_array]}"
+				_rebased_patchset="${_esync_patchset_commits[_i_array]}"
 			done
-			if [[ -z "${_esync_rebased_patchset}" ]]; then
-				ewarn "The esync patchset is only supported for Wine Git commit (+child commits): '${_base_commit}'"
+			# shellcheck disable=SC2068
+			if [[ -z "${_rebased_patchset}" ]] || ! has "${_esync_patchset_commits[_max_rebased_patchset]}" ${_sieved_esync_patchset_commits[@]}; then
+				ewarn "The esync patchset is only supported for Wine Git commit range: ['${_base_commit}'-'${_esync_patchset_commits[_max_rebased_patchset]}')"
 				ewarn "The esync patchset cannot be applied on Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
 				_esync_error=1
 			fi
@@ -1377,8 +1392,8 @@ wine_eapply_esync_patchset() {
 		return 1
 	fi
 
-	einfo "Using esync rebase revision: '${_esync_rebased_patchset}'"
-	_esync_patchset_directory="${_esync_patchsets_base_directory}/${PN}/${_esync_rebased_patchset}"
+	einfo "Using esync rebase revision: '${_rebased_patchset}'"
+	_esync_patchset_directory="${_esync_patchsets_base_directory}/${PN}/${_rebased_patchset}"
 	ewarn "Applying the wine-esync patchset."
 	ewarn "Note: this third-party patchset is not officially supported!"
 
@@ -1397,28 +1412,28 @@ wine_eapply_esync_patchset() {
 wine_eapply_pba_patchset() {
 	(($# == 1)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (1)"
 
-	local _pba_patchset_directory="${1%/}" _i_array _pba_error=0 _pba_patchset _max_pba_patchset
-	if [[ ! -d "${_pba_patchset_directory}" ]]; then
-		die "${FUNCNAME[0]}(): argument (1): path '${_pba_patchset_directory}' is not a valid directory"
+	local _rebased_patchset_directory="${1%/}" _i_array _pba_error=0 _rebased_patchset _max_rebased_patchset
+	if [[ ! -d "${_rebased_patchset_directory}" ]]; then
+		die "${FUNCNAME[0]}(): argument (1): path '${_rebased_patchset_directory}' is not a valid directory"
 	fi
-	declare -a pba_patchset_commits sieved_pba_patchset_commits
+	declare -a _rebased_patchset_commits _sieved_rebased_patchset_commits
 
 	((_WINE_IS_STAGING)) && case "${WINE_PV}" in
 		3.[34])
-			_pba_patchset="9ae8b8c00f2cca205fdf4ce76e221778b7dfbea7"
+			_rebased_patchset="9ae8b8c00f2cca205fdf4ce76e221778b7dfbea7"
 			;;
 		3.[5-9]|3.1[0-3])
-			_pba_patchset="be002fd92b9d72163bf130ab8ade8aa4d9cdbad0"
+			_rebased_patchset="be002fd92b9d72163bf130ab8ade8aa4d9cdbad0"
 			;;
 		3.1[4-6])
-			_pba_patchset="c698682b3286d72cc7c4c4624b4d14b03dbe6908"
+			_rebased_patchset="c698682b3286d72cc7c4c4624b4d14b03dbe6908"
 			;;
 		3.1[78])
-			_pba_patchset="f11563c65fa50e2f8b7e39cade34bb7a998b26f7"
+			_rebased_patchset="f11563c65fa50e2f8b7e39cade34bb7a998b26f7"
 			;;
 		9999)
-			_max_pba_patchset="6"
-			pba_patchset_commits=(
+			_max_rebased_patchset="6"
+			_rebased_patchset_commits=(
 				"9ae8b8c00f2cca205fdf4ce76e221778b7dfbea7" "afef57f872433bcd3032c2ccbc0453bef5b62178"
 				"5946973021285dd6ecb8df224956fea4817f8fed" "be002fd92b9d72163bf130ab8ade8aa4d9cdbad0"
 				"c698682b3286d72cc7c4c4624b4d14b03dbe6908" "f11563c65fa50e2f8b7e39cade34bb7a998b26f7"
@@ -1433,29 +1448,29 @@ wine_eapply_pba_patchset() {
 
 	((_WINE_IS_STAGING)) || case "${WINE_PV}" in
 		3.0.[1-4]|3.0.[1-4]-rc[1-9]|3.[01]|3.0-rc[1-6])
-			_pba_patchset="429e0c913087bdc2c183f74f346a9438278ec960"
+			_rebased_patchset="429e0c913087bdc2c183f74f346a9438278ec960"
 			;;
 		3.2)
-			_pba_patchset="f08342f5737c2bb3f965059f930e5d9a25ff6268"
+			_rebased_patchset="f08342f5737c2bb3f965059f930e5d9a25ff6268"
 			;;
 		3.[34])
-			_pba_patchset="6eb562210cb154749b1da5c399a69320d87365e6"
+			_rebased_patchset="6eb562210cb154749b1da5c399a69320d87365e6"
 			;;
 		3.[56])
-			_pba_patchset="1251fe692165077f9ee38992ac33a999bf26b69d"
+			_rebased_patchset="1251fe692165077f9ee38992ac33a999bf26b69d"
 			;;
 		3.[7-9]|3.1[0-3])
-			_pba_patchset="ea7186348f48a749ab28ecc405fb56601c56e4f8"
+			_rebased_patchset="ea7186348f48a749ab28ecc405fb56601c56e4f8"
 			;;
 		3.1[4-6])
-			_pba_patchset="cf9536b6bfbefbf5003c7633446a91f6e399c4de"
+			_rebased_patchset="cf9536b6bfbefbf5003c7633446a91f6e399c4de"
 			;;
 		3.1[78])
-			_pba_patchset="580ea44bc65472c0304d74b7e873acfb7f680b85"
+			_rebased_patchset="580ea44bc65472c0304d74b7e873acfb7f680b85"
 			;;
 		9999)
-			_max_pba_patchset="9"
-			pba_patchset_commits=(
+			_max_rebased_patchset="9"
+			_rebased_patchset_commits=(
 				"429e0c913087bdc2c183f74f346a9438278ec960" "7772c4fdbf33507b2262da375b465d4c2cbc316d"
 				"f08342f5737c2bb3f965059f930e5d9a25ff6268" "6eb562210cb154749b1da5c399a69320d87365e6"
 				"1251fe692165077f9ee38992ac33a999bf26b69d" "0e9f94ec1c201c56442124eb8754be1e30840299"
@@ -1471,23 +1486,23 @@ wine_eapply_pba_patchset() {
 	esac
 
 	if [[ "${WINE_PV}" == "9999" ]]; then
-		sieved_pba_patchset_commits=( "${pba_patchset_commits[@]}" )
-		_wine_sieve_arrays_by_git_commit "${S}" "sieved_pba_patchset_commits"
-		for _i_array in "${!pba_patchset_commits[@]}"; do
+		_sieved_rebased_patchset_commits=( "${_rebased_patchset_commits[@]}" )
+		_wine_sieve_arrays_by_git_commit "${S}" "_sieved_rebased_patchset_commits"
+		for _i_array in "${!_rebased_patchset_commits[@]}"; do
 			# shellcheck disable=SC2068
-			has "${pba_patchset_commits[_i_array]}" ${sieved_pba_patchset_commits[@]} && break
+			has "${_rebased_patchset_commits[_i_array]}" ${_sieved_rebased_patchset_commits[@]} && break
 
-			_pba_patchset="${_pba_patchset_directory}/${pba_patchset_commits[_i_array]}"
+			_rebased_patchset="${_rebased_patchset_directory}/${_rebased_patchset_commits[_i_array]}"
 		done
 		# shellcheck disable=SC2068
-		if [[ -z "${_pba_patchset}" ]] || ! has "${pba_patchset_commits[_max_pba_patchset]}" ${sieved_pba_patchset_commits[@]}; then
-			ewarn "The PBA patchset is only supported for Wine Git commit range: ['${pba_patchset_commits[0]}'-'${pba_patchset_commits[_max_pba_patchset]}')"
+		if [[ -z "${_rebased_patchset}" ]] || ! has "${_rebased_patchset_commits[_max_rebased_patchset]}" ${_sieved_rebased_patchset_commits[@]}; then
+			ewarn "The PBA patchset is only supported for Wine Git commit range: ['${_rebased_patchset_commits[0]}'-'${_rebased_patchset_commits[_max_rebased_patchset]}')"
 			ewarn "The PBA patchset cannot be applied on Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
 			_pba_error=1
 		fi
 	fi
 
-	unset -v pba_patchset_commits sieved_pba_patchset_commits
+	unset -v _rebased_patchset_commits _sieved_rebased_patchset_commits
 
 	if ((_pba_error)); then
 		[[ "${WINE_PV}" != "9999" ]] && ewarn "The PBA patchset is unsupported for package: =${P}"
@@ -1498,7 +1513,7 @@ wine_eapply_pba_patchset() {
 	ewarn "Applying the wine-pba patchset."
 	ewarn "Note: this third-party patchset is not officially supported!"
 
-	eapply "${_pba_patchset_directory}/${_pba_patchset}"
+	eapply "${_rebased_patchset_directory}/${_rebased_patchset}"
 }
 
 # @FUNCTION: wine_add_stock_gentoo_patches
