@@ -2,53 +2,58 @@
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-EAPI=6
+EAPI=7
 
-PYTHON_COMPAT=( python3_{4,5,6,7} )
+PYTHON_COMPAT=( python3_{5,6,7} )
+PYTHON_REQ_USE="sqlite,threads(+)"
 
-inherit distutils-r1 gnome2-utils python-r1
+inherit distutils-r1 virtualx xdg
 
-DESCRIPTION="Lutris is an open source gaming platform for GNU/Linux."
+DESCRIPTION="An open source gaming platform for GNU/Linux"
 HOMEPAGE="https://lutris.net/"
 
-MY_PN="${PN}"
-MY_PV="${PV}"
-MY_P="${MY_PN}-${MY_PV}"
-if [[ "${MY_PV}" == "9999" ]] ; then
+if [[ "${PV}" == "9999" ]] ; then
 	EGIT_REPO_URI="https://github.com/lutris/${MY_PN}.git"
 	inherit git-r3
 else
-	MY_PV="${PV//_/}"
-	MY_P="${MY_PN}-${MY_PV}"
-	SRC_URI="https://github.com/lutris/${MY_PN}/archive/v${MY_PV}.tar.gz -> ${MY_P}.tar.gz"
+	SRC_URI="https://lutris.net/releases/${P/-/_}.tar.xz"
 	KEYWORDS="~amd64 ~x86"
+	S="${WORKDIR}/${PN}"
 fi
 
 LICENSE="GPL-3"
 SLOT="0"
 
-DEPEND="
-	dev-python/pygobject:3[${PYTHON_USEDEP}]
-	dev-python/setuptools[${PYTHON_USEDEP}]
+BDEPEND="
+	test? ( dev-python/nose[${PYTHON_USEDEP}] )
 "
+
 RDEPEND="
-	${DEPEND}
-	dev-lang/python[sqlite,threads]
+	app-arch/cabextract
+	app-arch/p7zip
+	app-arch/unrar
+	app-arch/unzip
 	dev-python/dbus-python[${PYTHON_USEDEP}]
+	dev-python/pillow[${PYTHON_USEDEP}]
+	dev-python/pygobject:3[${PYTHON_USEDEP}]
 	dev-python/python-evdev[${PYTHON_USEDEP}]
 	dev-python/pyyaml[${PYTHON_USEDEP}]
+	dev-python/requests[${PYTHON_USEDEP}]
+	dev-python/setuptools[${PYTHON_USEDEP}]
 	gnome-base/gnome-desktop[introspection]
+	media-sound/fluid-soundfont
 	net-libs/libsoup
 	net-libs/webkit-gtk:4[introspection]
 	sys-auth/polkit
 	sys-process/psmisc
-	x11-apps/xrandr
+	x11-apps/mesa-progs
 	x11-apps/xgamma
+	x11-apps/xrandr
 	x11-libs/gdk-pixbuf[introspection]
 	x11-libs/gtk+:3[introspection]
-	x11-libs/pango[introspection]"
-
-S="${WORKDIR}/${MY_P}"
+	x11-libs/pango[introspection]
+	x11-libs/libnotify
+"
 
 list_optional_dependencies() {
 	local i package IFS
@@ -72,27 +77,18 @@ list_optional_dependencies() {
 	done
 }
 
-python_install() {
-	distutils-r1_python_install
-}
-
-src_prepare() {
-	distutils-r1_src_prepare
-}
-
-src_compile() {
-	distutils-r1_src_compile
-}
-
-src_install() {
+python_install_all() {
 	# README.rst contains list of optional deps
-	DOCS=( AUTHORS README.rst INSTALL.rst )
-	distutils-r1_src_install
+	local DOCS=( "AUTHORS" "README.rst" "docs/installers.rst" )
+	distutils-r1_python_install_all
+}
+
+python_test() {
+	virtx nosetests -v || die
 }
 
 pkg_preinst() {
-	gnome2_icon_savelist
-	gnome2_schemas_savelist
+	xdg_pkg_preinst
 }
 
 pkg_postinst() {
@@ -105,16 +101,20 @@ pkg_postinst() {
 		"x11-base/xorg-server[xephyr]"
 	)
 
-	gnome2_icon_cache_update
-	gnome2_schemas_update
+	xdg_pkg_postinst
 
 	list_optional_dependencies "${optional_packages_array[@]}"
 
 	elog "For a list of optional dependencies (runners) see:"
 	elog "/usr/share/doc/${PF}/README.rst.bz2"
+
+	# Quote README.rst
+	elog "Lutris installations are fully automated through scripts, which can"
+	elog "be written in either JSON or YAML. The scripting syntax is described"
+	elog "in ${EROOT}/usr/share/doc/${PF}/installers.rst.bz2, and is also"
+	elog "available online at lutris.net."
 }
 
 pkg_postrm() {
-	gnome2_icon_cache_update
-	gnome2_schemas_update
+	xdg_pkg_postrm
 }

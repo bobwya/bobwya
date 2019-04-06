@@ -46,7 +46,6 @@ RDEPEND="
 	net-libs/webkit-gtk:4[introspection]
 	sys-auth/polkit
 	sys-process/psmisc
-	x11-apps/mesa-progs
 	x11-apps/xgamma
 	x11-apps/xrandr
 	x11-libs/gdk-pixbuf[introspection]
