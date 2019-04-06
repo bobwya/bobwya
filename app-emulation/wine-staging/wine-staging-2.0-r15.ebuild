@@ -125,18 +125,12 @@ DEPEND="${COMMON_DEPEND}
 	xinerama? ( x11-base/xorg-proto )"
 
 S="${WORKDIR}/${WINE_P}"
-[[ "${WINE_PV}" == "9999" ]] && EGIT_CHECKOUT_DIR="${S}"
-
 src_unpack() {
 	# Fully Mirror git tree, Wine, so we can access commits in all branches
 	[[ "${WINE_PV}" == "9999" ]] && EGIT_MIN_CLONE_TYPE="mirror"
 
 	default
 
-	if [[ "${WINE_PV}" == "9999" ]]; then
-		wine_staging_git_src_unpack
-		wine_get_git_commit_info "${S}" WINE_GIT_COMMIT_HASH WINE_GIT_COMMIT_DATE
-	fi
 
 	l10n_find_plocales_changes "${S}/po" "" ".po"
 }
@@ -148,13 +142,12 @@ src_prepare() {
 
 	wine_add_stock_gentoo_patches
 
-	[[ "${WINE_PV}" == "9999" ]] && wine_staging_src_prepare_git
-
 	wine_fix_gentoo_cc_multilib_support
 	wine_fix_gentoo_winegcc_support
 
 	wine_eapply_staging_patchset
 	wine_src_set_staging_versioning
+
 	#617864 Generate wine64 man pages for 64-bit bit only installation
 	if use abi_x86_64 && ! use abi_x86_32; then
 		wine_src_force_64bit_manpages
