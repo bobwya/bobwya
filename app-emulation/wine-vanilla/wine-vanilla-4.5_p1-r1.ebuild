@@ -18,10 +18,15 @@ fi
 
 DESCRIPTION="Free implementation of Windows(tm) on Unix, without any external patchsets"
 HOMEPAGE="https://www.winehq.org/"
+SRC_URI="${SRC_URI}
+	esync? (
+		https://github.com/bobwya/${WINE_ESYNC_PN}/archive/${WINE_ESYNC_PV}.tar.gz -> ${WINE_ESYNC_P}.tar.gz
+	)"
+
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc faudio +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pcap +perl +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test +threads +truetype udev +udisks v4l vkd3d vulkan +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc esync faudio +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pcap +perl +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test +threads +truetype udev +udisks v4l vkd3d vulkan +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
@@ -122,18 +127,12 @@ DEPEND="${COMMON_DEPEND}
 	xinerama? ( x11-base/xorg-proto )"
 
 S="${WORKDIR}/${WINE_P}"
-[[ "${WINE_PV}" == "9999" ]] && EGIT_CHECKOUT_DIR="${S}"
-
 src_unpack() {
 	# Fully Mirror git tree, Wine, so we can access commits in all branches
 	[[ "${WINE_PV}" == "9999" ]] && EGIT_MIN_CLONE_TYPE="mirror"
 
 	default
 
-	if [[ "${WINE_PV}" == "9999" ]]; then
-		git-r3_src_unpack
-		wine_get_git_commit_info "${S}" WINE_GIT_COMMIT_HASH WINE_GIT_COMMIT_DATE
-	fi
 
 	l10n_find_plocales_changes "${S}/po" "" ".po"
 }
@@ -146,10 +145,11 @@ src_prepare() {
 
 	wine_add_stock_gentoo_patches
 
-	[[ "${WINE_PV}" == "9999" ]] && wine_src_prepare_git
-
 	wine_fix_gentoo_cc_multilib_support
 	wine_fix_gentoo_winegcc_support
+
+	use esync && wine_eapply_esync_patchset "${WORKDIR}/${WINE_ESYNC_P}"
+
 	#617864 Generate wine64 man pages for 64-bit bit only installation
 	if use abi_x86_64 && ! use abi_x86_32; then
 		wine_src_force_64bit_manpages

@@ -162,6 +162,7 @@ src_prepare() {
 	use esync && wine_eapply_esync_patchset "${WORKDIR}/${WINE_ESYNC_P}"
 
 	use pba && wine_eapply_pba_patchset "${WORKDIR}/${WINE_PBA_P%/}/${PN}-pba"
+
 	#617864 Generate wine64 man pages for 64-bit bit only installation
 	if use abi_x86_64 && ! use abi_x86_32; then
 		wine_src_force_64bit_manpages
