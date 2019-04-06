@@ -116,7 +116,7 @@ readonly WINE_EBUILD_COMMON_PV
 # @ECLASS-VARIABLE: WINE_ESYNC_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-esync; tarball.
-WINE_ESYNC_P="gentoo-wine-esync-20190404"
+WINE_ESYNC_P="gentoo-wine-esync-20190406"
 readonly WINE_ESYNC_P
 
 # @ECLASS-VARIABLE: WINE_ESYNC_PN
@@ -1205,6 +1205,19 @@ wine_staging_src_prepare_git() {
 	wine_src_prepare_git
 }
 
+# @FUNCTION: wine_staging_patchset_support_test
+# @DESCRIPTION:
+# This function tests support for the specified Wine Staging patchset. Used for the package:
+#  app-emulation/wine-staging
+# Returns: 1=yes . 0=no
+wine_staging_patchset_support_test() {
+	(($# == 1)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (1)"
+
+	local _staging_patchset="${1}" _staging_patches_dir="${_WINE_STAGING_DIR}/patches"
+
+	grep -q "${_staging_patchset}" "${_staging_patches_dir}/patchinstall.sh"
+}
+
 # @FUNCTION: wine_eapply_bin
 # @DESCRIPTION:
 # Use patch patchbin to apply all binary patches from the array variable PATCHES_BIN
@@ -1251,6 +1264,8 @@ wine_eapply_staging_patchset() {
 
 	if has esync ${IUSE} && use esync; then
 		_staging_exclude_patchsets+=( "msvfw32-ICGetDisplayFormat" )
+	else
+		_staging_exclude_patchsets+=( "eventfd_synchronization" )
 	fi
 
 	if has faudio ${IUSE} && use faudio; then
@@ -1267,7 +1282,7 @@ wine_eapply_staging_patchset() {
 	# shellcheck disable=SC2206
 	local indices=( ${!_staging_exclude_patchsets[*]} )
 	for ((i=0; i<${#indices[*]}; i++)); do
-		if grep -q "${_staging_exclude_patchsets[indices[i]]}" "${_staging_patches_dir}/patchinstall.sh"; then
+		if wine_staging_patchset_support_test "${_staging_exclude_patchsets[indices[i]]}"; then
 			einfo "Excluding Wine Staging patchset: \"${_staging_exclude_patchsets[indices[i]]}\""
 		else
 			einfo "Ignoring Wine Staging patchset: \"${_staging_exclude_patchsets[indices[i]]}\""
@@ -1328,6 +1343,7 @@ wine_eapply_esync_patchset() {
 		"2600ecd4edfdb71097105c74312f83845305a4f2" "d3660e5901914daab38c95f6b2a7a43dfe6d3eee"
 		"7ba361b47bc95df624eac83c170d6c1a4041d8f8" "817fb9755cbf48162fe1b7d37e77d7e25afa7520"
 		"b2a546c92dabee8ab1c3d5b9fecc84d99caf0e76" "0decadd62a76b968abf75c9943dd0869249ec716"
+		"b3c8d5d36850e484b5cc84ab818a75db567a06a3"
 	)
 
 	case "${WINE_PV}" in
@@ -1358,8 +1374,14 @@ wine_eapply_esync_patchset() {
 		4.4)
 			_rebased_patchset="817fb9755cbf48162fe1b7d37e77d7e25afa7520"
 			;;
+		4.5)
+			_rebased_patchset="0decadd62a76b968abf75c9943dd0869249ec716"
+			;;
+		4.6)
+			_rebased_patchset="b3c8d5d36850e484b5cc84ab818a75db567a06a3"
+			;;
 		9999)
-			_max_rebased_patchset="12"
+			_max_rebased_patchset=""
 			if ((_WINE_IS_STAGING)); then
 				_base_commit="f9e1dbb83d850a2f7cb17079e02de139e2f8b920"
 			else
@@ -1375,8 +1397,8 @@ wine_eapply_esync_patchset() {
 				_rebased_patchset="${_esync_patchset_commits[_i_array]}"
 			done
 			# shellcheck disable=SC2068
-			if [[ -z "${_rebased_patchset}" ]] || ! has "${_esync_patchset_commits[_max_rebased_patchset]}" ${_sieved_esync_patchset_commits[@]}; then
-				ewarn "The esync patchset is only supported for Wine Git commit range: ['${_base_commit}'-'${_esync_patchset_commits[_max_rebased_patchset]}')"
+			if [[ -z "${_rebased_patchset}" ]]; then
+				ewarn "The esync patchset is only supported for Wine Git commit range: ['${_base_commit}'-master)"
 				ewarn "The esync patchset cannot be applied on Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
 				_esync_error=1
 			fi
