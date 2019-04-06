@@ -145,7 +145,6 @@ src_unpack() {
 
 	default
 
-
 	l10n_find_plocales_changes "${S}/po" "" ".po"
 }
 
