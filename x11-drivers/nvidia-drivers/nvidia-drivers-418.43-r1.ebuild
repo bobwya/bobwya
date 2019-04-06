@@ -308,7 +308,7 @@ src_install() {
 		newins "${FILESDIR}/nvidia-169.07" "nvidia.conf"
 		if use uvm; then
 			doins "${FILESDIR}/nvidia-rmmod.conf"
-			
+			udev_newrules "${FILESDIR}/nvidia-uvm.udev-rule 99-nvidia-uvm.rules"
 		else
 			sed -e 's|nvidia-uvm ||g' "${FILESDIR}/nvidia-rmmod.conf" \
 				> "${T}/nvidia-rmmod.conf" \

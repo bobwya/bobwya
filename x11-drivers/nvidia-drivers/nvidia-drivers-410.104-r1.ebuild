@@ -60,7 +60,7 @@ RDEPEND="
 	tools? ( !media-video/nvidia-settings )
 	wayland? ( dev-libs/wayland[${MULTILIB_USEDEP}] )
 	X? (
-		<x11-base/xorg-server-1.19.99:=
+		<x11-base/xorg-server-1.20.99:=
 		>=x11-libs/libX11-1.6.2[${MULTILIB_USEDEP}]
 		>=x11-libs/libXext-1.3.2[${MULTILIB_USEDEP}]
 		>=x11-libs/libvdpau-1.0[${MULTILIB_USEDEP}]
@@ -308,7 +308,7 @@ src_install() {
 		newins "${FILESDIR}/nvidia-169.07" "nvidia.conf"
 		if use uvm; then
 			doins "${FILESDIR}/nvidia-rmmod.conf"
-			
+			udev_newrules "${FILESDIR}/nvidia-uvm.udev-rule 99-nvidia-uvm.rules"
 		else
 			sed -e 's|nvidia-uvm ||g' "${FILESDIR}/nvidia-rmmod.conf" \
 				> "${T}/nvidia-rmmod.conf" \
