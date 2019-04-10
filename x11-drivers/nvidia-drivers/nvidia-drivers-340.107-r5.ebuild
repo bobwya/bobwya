@@ -129,7 +129,7 @@ donvidia() {
 		action="doexe"
 	fi
 	${action} "${nv_LIB}" || die "failed to install \"${nv_LIBNAME}\""
-	if [[ ! -z "${nv_SOVER}" && ( "${nv_SOVER}" != "${nv_LIBNAME}" ) ]]; then
+	if [[ -n "${nv_SOVER}" && ( "${nv_SOVER}" != "${nv_LIBNAME}" ) ]]; then
 		dosym "${nv_LIBNAME}" "${nv_DEST%/}/${nv_SOVER}" \
 			|| die "failed to create \"${nv_DEST%/}/${nv_SOVER}\" symlink"
 	fi
