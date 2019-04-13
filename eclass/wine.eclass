@@ -116,7 +116,7 @@ readonly WINE_EBUILD_COMMON_PV
 # @ECLASS-VARIABLE: WINE_ESYNC_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-esync; tarball.
-WINE_ESYNC_P="gentoo-wine-esync-20190406"
+WINE_ESYNC_P="gentoo-wine-esync-20190413"
 readonly WINE_ESYNC_P
 
 # @ECLASS-VARIABLE: WINE_ESYNC_PN
@@ -1329,8 +1329,9 @@ wine_eapply_esync_patchset() {
 	(($# == 1)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (1)"
 
 	local _esync_patchsets_base_directory="${1%/}" \
-		_i_array _esync_error=0 _esync_patchset_directory _rebased_patchset _max_rebased_patchset
-	local -a _base_commit _esync_patchset_commits _sieved_esync_patchset_commits
+		_i_array _esync_error=0 _esync_patchset_directory _min_rebase_commit _max_rebase_commit \
+		_rebased_patchset _max_rebased_patchset
+	local -a _esync_patchset_commits _sieved_esync_patchset_commits
 	if [[ ! -d "${_esync_patchsets_base_directory}" ]]; then
 		die "${FUNCNAME[0]}(): argument (1): path '${_esync_patchsets_base_directory}' is not a valid directory"
 	fi
@@ -1343,7 +1344,8 @@ wine_eapply_esync_patchset() {
 		"2600ecd4edfdb71097105c74312f83845305a4f2" "d3660e5901914daab38c95f6b2a7a43dfe6d3eee"
 		"7ba361b47bc95df624eac83c170d6c1a4041d8f8" "817fb9755cbf48162fe1b7d37e77d7e25afa7520"
 		"b2a546c92dabee8ab1c3d5b9fecc84d99caf0e76" "0decadd62a76b968abf75c9943dd0869249ec716"
-		"b3c8d5d36850e484b5cc84ab818a75db567a06a3"
+		"b3c8d5d36850e484b5cc84ab818a75db567a06a3" "8268c47462544baf5bc7e5071c0a9f2d00c5c2cb"
+		"4c0e81728f6db575d9cbd8feb8a5374f1adec9bb"
 	)
 
 	case "${WINE_PV}" in
@@ -1378,15 +1380,17 @@ wine_eapply_esync_patchset() {
 			_rebased_patchset="0decadd62a76b968abf75c9943dd0869249ec716"
 			;;
 		4.6)
-			_rebased_patchset="b3c8d5d36850e484b5cc84ab818a75db567a06a3"
+			_rebased_patchset="4c0e81728f6db575d9cbd8feb8a5374f1adec9bb"
 			;;
 		9999)
-			_max_rebased_patchset=""
 			if ((_WINE_IS_STAGING)); then
-				_base_commit="f9e1dbb83d850a2f7cb17079e02de139e2f8b920"
+				_min_rebase_commit="f9e1dbb83d850a2f7cb17079e02de139e2f8b920"
+				_max_rebase_commit="8268c47462544baf5bc7e5071c0a9f2d00c5c2cb"
+				_max_rebased_patchset="15"
 			else
-				_base_commit="f8e0bd1b0d189d5950dc39082f439cd1fc9569d5"
-
+				_min_rebase_commit="17"
+				_max_rebase_commit="master"
+				_max_rebased_patchset="0"
 			fi
 			_sieved_esync_patchset_commits=( "${_esync_patchset_commits[@]}" )
 			_wine_sieve_arrays_by_git_commit "${S}" "_sieved_esync_patchset_commits"
@@ -1397,8 +1401,8 @@ wine_eapply_esync_patchset() {
 				_rebased_patchset="${_esync_patchset_commits[_i_array]}"
 			done
 			# shellcheck disable=SC2068
-			if [[ -z "${_rebased_patchset}" ]]; then
-				ewarn "The esync patchset is only supported for Wine Git commit range: ['${_base_commit}'-master)"
+			if [[ -z "${_rebased_patchset}" ]] || ! has "${_esync_patchset_commits[_max_rebased_patchset]}" ${_sieved_esync_patchset_commits[@]}; then
+				ewarn "The esync patchset is only supported for Wine Git commit range: ['${_min_rebase_commit}'-${_max_rebase_commit})"
 				ewarn "The esync patchset cannot be applied on Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
 				_esync_error=1
 			fi
