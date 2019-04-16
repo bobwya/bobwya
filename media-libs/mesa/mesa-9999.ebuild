@@ -37,7 +37,7 @@ for card in "${VIDEO_CARDS[@]}"; do
 done
 
 IUSE="${IUSE_VIDEO_CARDS}
-	+classic d3d9 debug +dri3 +egl +gallium +gbm gles1 gles2 +libglvnd +llvm lm_sensors
+	+classic d3d9 debug +dri3 +egl +gallium +gbm gles1 +gles2 +libglvnd +llvm lm_sensors
 	+nptl opencl osmesa pax_kernel pic selinux test unwind vaapi valgrind vdpau vulkan
 	vulkan-overlay wayland xa xvmc"
 

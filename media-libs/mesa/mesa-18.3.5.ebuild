@@ -37,7 +37,7 @@ for card in "${VIDEO_CARDS[@]}"; do
 done
 
 IUSE="${IUSE_VIDEO_CARDS}
-	+classic d3d9 debug +dri3 +egl +gallium +gbm gles1 gles2 +llvm lm_sensors +nptl
+	+classic d3d9 debug +dri3 +egl +gallium +gbm gles1 +gles2 +llvm lm_sensors +nptl
 	opencl osmesa pax_kernel pic selinux test unwind vaapi valgrind vdpau vulkan
 	wayland xa xvmc"
 
@@ -198,6 +198,8 @@ DEPEND="${RDEPEND}
 	virtual/pkgconfig
 	valgrind? ( dev-util/valgrind )
 	x11-base/xorg-proto
+	x11-libs/libXrandr[${MULTILIB_USEDEP}]
+	$(python_gen_any_dep ">=dev-python/mako-0.8.0[\${PYTHON_USEDEP}]")
 "
 
 S="${WORKDIR}/${MY_P}"
