@@ -13,7 +13,7 @@ DESCRIPTION="An open source gaming platform for GNU/Linux"
 HOMEPAGE="https://lutris.net/"
 
 if [[ "${PV}" == "9999" ]] ; then
-	EGIT_REPO_URI="https://github.com/lutris/${MY_PN}.git"
+	EGIT_REPO_URI="https://github.com/lutris/lutris.git"
 	inherit git-r3
 else
 	SRC_URI="https://lutris.net/releases/${P/-/_}.tar.xz"
@@ -78,7 +78,6 @@ list_optional_dependencies() {
 }
 
 python_install_all() {
-	# README.rst contains list of optional deps
 	local DOCS=( "AUTHORS" "README.rst" "docs/installers.rst" )
 	distutils-r1_python_install_all
 }

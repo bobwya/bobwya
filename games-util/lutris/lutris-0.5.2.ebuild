@@ -13,7 +13,7 @@ DESCRIPTION="An open source gaming platform for GNU/Linux"
 HOMEPAGE="https://lutris.net/"
 
 if [[ "${PV}" == "9999" ]] ; then
-	EGIT_REPO_URI="https://github.com/lutris/${MY_PN}.git"
+	EGIT_REPO_URI="https://github.com/lutris/lutris.git"
 	inherit git-r3
 else
 	SRC_URI="https://lutris.net/releases/${P/-/_}.tar.xz"
@@ -46,6 +46,7 @@ RDEPEND="
 	net-libs/webkit-gtk:4[introspection]
 	sys-auth/polkit
 	sys-process/psmisc
+	x11-apps/mesa-progs
 	x11-apps/xgamma
 	x11-apps/xrandr
 	x11-libs/gdk-pixbuf[introspection]
@@ -77,7 +78,6 @@ list_optional_dependencies() {
 }
 
 python_install_all() {
-	# README.rst contains list of optional deps
 	local DOCS=( "AUTHORS" "README.rst" "docs/installers.rst" )
 	distutils-r1_python_install_all
 }
