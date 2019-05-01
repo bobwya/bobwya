@@ -166,6 +166,7 @@ src_prepare() {
 	[[ "${WINE_PV}" == "9999" ]] && wine_staging_src_prepare_git
 
 	wine_fix_gentoo_cc_multilib_support
+	wine_fix_gentoo_O3_compilation_support
 	wine_fix_gentoo_winegcc_support
 
 	wine_eapply_staging_patchset
