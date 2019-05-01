@@ -98,7 +98,7 @@ readonly _WINE_IS_STAGING
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-ebuild-common; tarball.
-WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20190312"
+WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20190428"
 readonly WINE_EBUILD_COMMON_P
 
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_PN
@@ -116,7 +116,7 @@ readonly WINE_EBUILD_COMMON_PV
 # @ECLASS-VARIABLE: WINE_ESYNC_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-esync; tarball.
-WINE_ESYNC_P="gentoo-wine-esync-20190413"
+WINE_ESYNC_P="gentoo-wine-esync-20190501"
 readonly WINE_ESYNC_P
 
 # @ECLASS-VARIABLE: WINE_ESYNC_PN
@@ -1297,6 +1297,12 @@ wine_eapply_staging_patchset() {
 			|| die "sed failed"
 	fi
 
+	if use esync && [[ "${WINE_PV}" == "4.7" ]]; then
+		pushd "${_WINE_STAGING_DIR}" || die "pushd failed"
+		eapply "${DISTDIR}/wine-staging-4.7_esync_fix_c48811407e3c9cb2d6a448d6664f89bacd9cc36f.patch"
+		popd || die "popd failed"
+	fi
+
 	# Launch wine-staging patcher in a subshell, using eapply as a backend, and gitapply.sh as a backend for binary patches
 	ebegin "Running Wine-Staging patch installer"
 	(
@@ -1345,7 +1351,9 @@ wine_eapply_esync_patchset() {
 		"7ba361b47bc95df624eac83c170d6c1a4041d8f8" "817fb9755cbf48162fe1b7d37e77d7e25afa7520"
 		"b2a546c92dabee8ab1c3d5b9fecc84d99caf0e76" "0decadd62a76b968abf75c9943dd0869249ec716"
 		"b3c8d5d36850e484b5cc84ab818a75db567a06a3" "8268c47462544baf5bc7e5071c0a9f2d00c5c2cb"
-		"4c0e81728f6db575d9cbd8feb8a5374f1adec9bb"
+		"4c0e81728f6db575d9cbd8feb8a5374f1adec9bb" "19bf03ed4b48b398236c8a998394089c93b50891"
+		"f534fbd3e3c83df49c7c6b8e608a99f2af65adc0" "07c2e8581a2745725cd7ce4282eedb9a8084a1e4"
+		"bf174815ba8529bfbbda8697503d3c2539f82359"
 	)
 
 	case "${WINE_PV}" in
@@ -1370,7 +1378,7 @@ wine_eapply_esync_patchset() {
 		3.19)
 			_rebased_patchset="2f17e0112dc0af3f0b246cf377e2cb8fd7a6cf58"
 			;;
-		3.2[0-1]|4.[0-3])
+		3.2[0-1]|4.[0-3]|4.0.1_rc[1-9]|4.0.1)
 			_rebased_patchset="2600ecd4edfdb71097105c74312f83845305a4f2"
 			;;
 		4.4)
@@ -1382,13 +1390,16 @@ wine_eapply_esync_patchset() {
 		4.6)
 			_rebased_patchset="4c0e81728f6db575d9cbd8feb8a5374f1adec9bb"
 			;;
+		4.7)
+			_rebased_patchset="bf174815ba8529bfbbda8697503d3c2539f82359"
+			;;
 		9999)
 			if ((_WINE_IS_STAGING)); then
 				_min_rebase_commit="f9e1dbb83d850a2f7cb17079e02de139e2f8b920"
 				_max_rebase_commit="8268c47462544baf5bc7e5071c0a9f2d00c5c2cb"
 				_max_rebased_patchset="15"
 			else
-				_min_rebase_commit="17"
+				_min_rebase_commit="f8e0bd1b0d189d5950dc39082f439cd1fc9569d5"
 				_max_rebase_commit="master"
 				_max_rebased_patchset="0"
 			fi
@@ -1401,7 +1412,7 @@ wine_eapply_esync_patchset() {
 				_rebased_patchset="${_esync_patchset_commits[_i_array]}"
 			done
 			# shellcheck disable=SC2068
-			if [[ -z "${_rebased_patchset}" ]] || ! has "${_esync_patchset_commits[_max_rebased_patchset]}" ${_sieved_esync_patchset_commits[@]}; then
+			if [[ -z "${_rebased_patchset}" ]] || ((_max_rebased_patchset)) && ! has "${_esync_patchset_commits[_max_rebased_patchset]}" ${_sieved_esync_patchset_commits[@]}; then
 				ewarn "The esync patchset is only supported for Wine Git commit range: ['${_min_rebase_commit}'-${_max_rebase_commit})"
 				ewarn "The esync patchset cannot be applied on Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
 				_esync_error=1
@@ -1422,6 +1433,12 @@ wine_eapply_esync_patchset() {
 	_esync_patchset_directory="${_esync_patchsets_base_directory}/${PN}/${_rebased_patchset}"
 	ewarn "Applying the wine-esync patchset."
 	ewarn "Note: this third-party patchset is not officially supported!"
+
+	# Pre-exclude SERVER_PROTOCOL_VERSION from the patch hunk context of all esync patches.
+	# This variable updates every Wine release - so is too hard to track.
+	# shellcheck disable=SC1003
+	sed -i -e '/^#define SERVER_PROTOCOL_VERSION /i\' "include/wine/server_protocol.h" \
+		|| die "sed failed"
 
 	eapply "${_esync_patchset_directory}"
 }
@@ -1554,7 +1571,6 @@ wine_add_stock_gentoo_patches() {
 	PATCHES+=(
 		"${_patch_directory}/wine-1.8_winecfg_detailed_version.patch"
 		"${_patch_directory}/wine-1.8-multislot-apploader.patch" #310611
-		"${_patch_directory}/wine-1.6-memset-O3.patch" #480508
 	)
 
 	case "${WINE_PV}" in
@@ -1641,7 +1657,8 @@ wine_add_locale_docs() {
 
 # @FUNCTION: wine_fix_gentoo_cc_multilib_support
 # @DESCRIPTION:
-# This function fixes Gentoo Portage cc multilib support, applied to all Wine versions.
+# This function fixes Gentoo Portage cc multilib support.
+# Applied to all Wine versions.
 # See: #395615
 wine_fix_gentoo_cc_multilib_support() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
@@ -1652,8 +1669,23 @@ wine_fix_gentoo_cc_multilib_support() {
 		sed -i '/CXX="\$CXX -'"${_arch}"'"/a \
 		CFLAGS="$CFLAGS -'"${_arch}"'"\
 		LDFLAGS="$LDFLAGS -'"${_arch}"'"\
-		CXXFLAGS="$CXXFLAGS -'"${_arch}"'"' configure.ac || die "sed failed"
+		CXXFLAGS="$CXXFLAGS -'"${_arch}"'"' \
+		configure.ac || die "sed failed"
 	done
+}
+
+# @FUNCTION: wine_fix_gentoo_O3_compilation_support
+# @DESCRIPTION:
+# This function fixes Wine compilation, when using -O3 in CFLAGS.
+# Applied to all Wine versions.
+# See: #480508
+wine_fix_gentoo_O3_compilation_support() {
+	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
+
+	# shellcheck disable=SC1004
+	sed -i '/^ dnl Check for some compiler flags/a \
+		 WINE_TRY_CFLAGS([-fno-tree-loop-distribute-patterns])' \
+		configure.ac || die "sed failed"
 }
 
 # @FUNCTION: wine_fix_gentoo_winegcc_support
