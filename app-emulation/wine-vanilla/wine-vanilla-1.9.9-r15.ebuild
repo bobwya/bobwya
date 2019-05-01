@@ -132,6 +132,7 @@ src_prepare() {
 	wine_add_stock_gentoo_patches
 
 	wine_fix_gentoo_cc_multilib_support
+	wine_fix_gentoo_O3_compilation_support
 	wine_fix_gentoo_winegcc_support
 
 	#617864 Generate wine64 man pages for 64-bit bit only installation
