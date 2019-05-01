@@ -1264,8 +1264,6 @@ wine_eapply_staging_patchset() {
 
 	if has esync ${IUSE} && use esync; then
 		_staging_exclude_patchsets+=( "msvfw32-ICGetDisplayFormat" )
-	else
-		_staging_exclude_patchsets+=( "eventfd_synchronization" )
 	fi
 
 	if has faudio ${IUSE} && use faudio; then
@@ -1297,7 +1295,7 @@ wine_eapply_staging_patchset() {
 			|| die "sed failed"
 	fi
 
-	if use esync && [[ "${WINE_PV}" == "4.7" ]]; then
+	if [[ "${WINE_PV}" == "4.7" ]]; then
 		pushd "${_WINE_STAGING_DIR}" || die "pushd failed"
 		eapply "${DISTDIR}/wine-staging-4.7_esync_fix_c48811407e3c9cb2d6a448d6664f89bacd9cc36f.patch"
 		popd || die "popd failed"
