@@ -22,17 +22,23 @@ RDEPEND="spirv-tools? ( dev-util/spirv-tools:=[${MULTILIB_USEDEP}] )
 			x11-libs/xcb-util-keysyms:=[${MULTILIB_USEDEP}]
 			x11-libs/xcb-util-wm:=[${MULTILIB_USEDEP}]
 		)
-		>=media-libs/vulkan-loader-1.1.88[${MULTILIB_USEDEP},X]"
+		>=media-libs/vulkan-loader-1.1.101[${MULTILIB_USEDEP},X]"
 
 DEPEND="${RDEPEND}
 		dev-util/spirv-headers
-		>=dev-util/vulkan-headers-1.1.88"
+		>=dev-util/vulkan-headers-1.1.101"
 
 DESCRIPTION="D3D12 to Vulkan translation library"
 HOMEPAGE="https://source.winehq.org/git/vkd3d.git/"
 
 LICENSE="LGPL-2.1"
 SLOT="0"
+
+src_prepare() {
+	default
+
+	./autogen.sh
+}
 
 multilib_src_configure() {
 	local myconf=(
