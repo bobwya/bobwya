@@ -116,7 +116,7 @@ readonly WINE_EBUILD_COMMON_PV
 # @ECLASS-VARIABLE: WINE_ESYNC_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-esync; tarball.
-WINE_ESYNC_P="gentoo-wine-esync-20190501"
+WINE_ESYNC_P="gentoo-wine-esync-master"
 readonly WINE_ESYNC_P
 
 # @ECLASS-VARIABLE: WINE_ESYNC_PN
@@ -1351,7 +1351,8 @@ wine_eapply_esync_patchset() {
 		"b3c8d5d36850e484b5cc84ab818a75db567a06a3" "8268c47462544baf5bc7e5071c0a9f2d00c5c2cb"
 		"4c0e81728f6db575d9cbd8feb8a5374f1adec9bb" "19bf03ed4b48b398236c8a998394089c93b50891"
 		"f534fbd3e3c83df49c7c6b8e608a99f2af65adc0" "07c2e8581a2745725cd7ce4282eedb9a8084a1e4"
-		"bf174815ba8529bfbbda8697503d3c2539f82359"
+		"bf174815ba8529bfbbda8697503d3c2539f82359" "781dd9a145d0ef8e4465f78b8916ea0861b5e161"
+		"29914d583fe098521472332687b8da69fc692690"
 	)
 
 	case "${WINE_PV}" in
