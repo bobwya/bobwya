@@ -116,7 +116,7 @@ readonly WINE_EBUILD_COMMON_PV
 # @ECLASS-VARIABLE: WINE_ESYNC_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-esync; tarball.
-WINE_ESYNC_P="gentoo-wine-esync-master"
+WINE_ESYNC_P="gentoo-wine-esync-20190506"
 readonly WINE_ESYNC_P
 
 # @ECLASS-VARIABLE: WINE_ESYNC_PN
@@ -1377,7 +1377,7 @@ wine_eapply_esync_patchset() {
 		3.19)
 			_rebased_patchset="2f17e0112dc0af3f0b246cf377e2cb8fd7a6cf58"
 			;;
-		3.2[0-1]|4.[0-3]|4.0.1_rc[1-9]|4.0.1)
+		3.2[0-1]|4.[0-3]|4.0.1-rc[1-9]|4.0.1)
 			_rebased_patchset="2600ecd4edfdb71097105c74312f83845305a4f2"
 			;;
 		4.4)
@@ -1418,7 +1418,7 @@ wine_eapply_esync_patchset() {
 			fi
 			;;
 		*)
-			ewarn "The esync patchset is unsupported for package: =${P}"
+			ewarn "The esync patchset is unsupported for package: =${CATEGORY}/${P}"
 			_esync_error=1
 			;;
 	esac
@@ -1547,7 +1547,7 @@ wine_eapply_pba_patchset() {
 	unset -v _rebased_patchset_commits _sieved_rebased_patchset_commits
 
 	if ((_pba_error)); then
-		[[ "${WINE_PV}" != "9999" ]] && ewarn "The PBA patchset is unsupported for package: =${P}"
+		[[ "${WINE_PV}" != "9999" ]] && ewarn "The PBA patchset is unsupported for package: =${CATEGORY}/${P}"
 		ewarn "USE +pba will be omitted for this build."
 		return 1
 	fi
