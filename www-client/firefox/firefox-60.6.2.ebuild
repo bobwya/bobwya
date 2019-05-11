@@ -17,6 +17,9 @@ MOZ_LANGS=( "ach" "af" "an" "ar" "as" "ast" "az" "bg" "bn-BD" "bn-IN" "br" "bs" 
 "mai" "mk" "ml" "mr" "ms" "nb-NO" "nl" "nn-NO" "or" "pa-IN" "pl" "pt-BR" "pt-PT" "rm" "ro" "ru" "si" "sk" "sl" "son" "sq"
 "sr" "sv-SE" "ta" "te" "th" "tr" "uk" "uz" "vi" "xh" "zh-CN" "zh-TW" )
 
+# Must be removed next bump
+MOZ_LANGPACK_PREFIX="60.6.1esr/linux-i686/xpi/"
+
 # Convert the ebuild version to the upstream mozilla version, used by mozlinguas
 MOZ_PV="${PV/_alpha/a}" # Handle alpha for SRC_URI
 MOZ_PV="${MOZ_PV/_beta/b}" # Handle beta for SRC_URI
@@ -28,7 +31,7 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${PN}-60.6-patches-03"
+PATCH="${PN}-60.6-patches-07"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
@@ -48,7 +51,7 @@ DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE inte
 HOMEPAGE="https://www.mozilla.com/firefox
 	https://www.rosenauer.org/hg/mozilla"
 
-KEYWORDS="~amd64 ~x86"
+KEYWORDS="~amd64 ~arm64 ~x86"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
