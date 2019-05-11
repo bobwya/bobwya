@@ -11,21 +11,23 @@
 # @DESCRIPTION:
 # Eclass to provide functionality common to the ::bobwya Overlay:
 #   app-emulation/wine-staging  app-emulation/wine-vanilla
-# Wine packages. This Eclass is not compatible with the ::gentoo
+# Wine packages. This eclass is not compatible with the ::gentoo
 # or ::wine Overlay Wine packages.
-# The functionality, this Eclass provides, includes:
-#    providing git helper functionality
-#    fully setting up the SRC_URI
-#    applying third party patchsets
-#    setting up stock Gentoo patches
-#    helper functions for manipulating source code / build files
-#    helper functions for clean up; when specific USE flags are specified
-#    overriding specific 'house keeping' ebuild phases
+# The functionality, this eclass provides, includes:
+#
+#  * providing git helper functionality
+#  * fully setting up the SRC_URI
+#  * applying third party patchsets
+#  * setting up stock Gentoo patches
+#  * helper functions for manipulating source code / build files
+#  * helper functions for clean up; when specific USE flags are specified
+#  * overriding specific 'house keeping' ebuild phases
 #    ...
-# Implementing this Eclass was motivated by the shear amount of
+#
+# Implementing this eclass was motivated by the shear amount of
 # redundant duplication, when maintaining a large set of versions
 # for legacy Wine packages.
-# Implementing a common Eclass for the in-tree Gentoo ::gentoo
+# Implementing a common eclass for the in-tree Gentoo ::gentoo
 # and ::wine Overlay has been discussed.
 # In fact setting up the ::wine Overlay was originally forced on the
 # Gentoo Wine Developers. The the Gentoo ::gentoo app-emulation/wine-*
@@ -390,12 +392,12 @@ fi
 
 # @FUNCTION: _wine_get_date_offset
 # @INTERNAL
-# @USAGE: <base_date> <base_offset> [offset_date_reference]*
-#         (* passed-by-reference)
+# @USAGE:  <base_date> <base_offset> [<offset_date_reference>*]
+# @RETURN: offset_date - via <offset_date_reference>* / stdout
+#          (* passed-by-reference)
 # @DESCRIPTION:
 # This function takes a <base_data> and offsets it by a specified amount: <base_offset>.
-# The date+offset is returned in the (passed-by-reference) variable [offset_date_reference],
-# or stdout if [offset_date_reference] is unspecified.
+# The date+offset is then returned.
 _wine_get_date_offset() {
 	(((2 <= $#) && ($# <= 3))) || die "${FUNCNAME[0]}(): invalid parameter count: ${#} (2-3)"
 	local _base_date="${1}" _base_offset="${2}" _offset_date_reference="${3}" \
@@ -422,13 +424,14 @@ _wine_get_date_offset() {
 
 # @FUNCTION: _wine_git_commit_to_date
 # @INTERNAL
-# @USAGE: <git_directory> <git_commit_hash> [git_commit_date_reference]*
-#         (* passed-by-reference)
+# @USAGE:  <_git_directory> <_git_commit_hash> [<_git_commit_date_reference>*]
+# @RETURN: git_commit_date - via <_git_commit_date_reference>* / stdout
+#          (* passed-by-reference)
 # @DESCRIPTION:
 # This function retrieves the commit date for the specified <git_commit_hash>
 # Git commit SHA-1 hash.
 # The function returns the Git commit date, either via stdout or the
-# (passed-by-reference) variable: [git_commit_date_reference] ; if this
+# (passed-by-reference) variable: <_git_commit_date_reference> ; if this
 # variable is set.
 # <git_directory> must reference a valid Git repository root directory.
 _wine_git_commit_to_date() {
@@ -463,17 +466,52 @@ _wine_git_commit_to_date() {
 	fi
 }
 
-# @FUNCTION: _wine_get_sieved_git_log
+# @FUNCTION:  function _wine_git_is_commit_in_range()
 # @INTERNAL
-# @USAGE: <git_directory> <start_date> <end_date> <git_log_array_reference*>
-#         (* passed-by-reference)
+# @USAGE:  <_git_directory> <_commit_range_start> <_commit_range_end>
+# @RETURN: 0='in range' 1='not in range'
+# @DESCRIPTION:
+# For the specified git repository (_git_directory) check if the current branch
+# HEAD commit falls within the git commit range:
+#   [ _commit_range_start ... _commit_range_end )
+# <git_directory> must reference a valid Git repository root directory.
+_wine_git_is_commit_in_range() {
+	(($# == 3)) || die "${FUNCNAME[0]}(): invalid parameter count: ${#} (3)"
+
+
+	local	 _git_directory="${1%/}"  _commit_range_start="${2}" \
+		_commit_range_end="${3}" _in_commit_range=0
+
+	if [[ ! -d "${_git_directory}/.git" ]]; then
+		die "${FUNCNAME[0]}(): argument (1): path '${_git_directory}' is not a valid Git repository directory"
+	elif [[ ! "${_commit_range_start}" =~ ${_WINE_SHA1_REGEXP} ]]; then
+		die "${FUNCNAME[0]}(): argument (2):  is not a valid git commit (${_commit_range_start})"
+	elif [[ ! "${_commit_range_end}" =~ ${_WINE_SHA1_REGEXP} ]]; then
+		die "${FUNCNAME[0]}(): argument (3): is not a valid git commit (${_commit_range_end})"
+	fi
+
+	pushd "${_git_directory}" >/dev/null || die "pushd failed"
+	if	git merge-base --is-ancestor "${_commit_range_start}" HEAD \
+		&& !	git merge-base --is-ancestor "${_commit_range_end}" HEAD; then
+		_in_commit_range=1
+	fi
+	popd >/dev/null || die "popd failed"
+
+	return $((!_in_commit_range))
+}
+
+# @FUNCTION: _wine_get_pruned_git_log
+# @INTERNAL
+# @USAGE:  <_git_directory> <_start_date> <_end_date> <_git_log_array_reference>*
+# @RETURN: git_log_array - via <_git_log_array_reference>*
+#          (* passed-by-reference)
 # @DESCRIPTION:
 # This internal function is used to support building app-emulation/wine-staging:9999, a multi-homed Git package.
 # This function returns a Git log between the specified: <start_date> and <end_date> (exclusive),
 # via the (passed-by-reference) array variable: <git_log_array_reference*>
 # Either range limit specifier argument: <start_date> <end_date> ; can be omitted, by passing a: '.' .
 # <git_directory> must reference a valid Git repository root directory.
-_wine_get_sieved_git_log() {
+_wine_get_pruned_git_log() {
 	(($# == 4)) || die "${FUNCNAME[0]}(): invalid parameter count: ${#} (4)"
 
 	# shellcheck disable=SC2124
@@ -502,8 +540,9 @@ _wine_get_sieved_git_log() {
 
 # @FUNCTION: _wine_staging_get_upstream_commit
 # @INTERNAL
-# @USAGE: <wine_staging_git_directory> <target_wine_staging_commit> [wine_git_commit_reference*]
-#         (* passed-by-reference)
+# @USAGE:  <wine_staging_git_directory> <target_wine_staging_commit> [<wine_git_commit_reference>*]
+# @RETURN: wine_git_commit - via <wine_git_commit_reference>* / stdout
+#          (* passed-by-reference)
 # @DESCRIPTION:
 # This internal function is used to support building app-emulation/wine-staging:9999, a multi-homed Git package.
 # This function returns the Wine Staging Git commit corresponding to the Wine Git commit: <target_wine_staging_commit>.
@@ -551,8 +590,10 @@ _wine_staging_get_upstream_commit() {
 
 # @FUNCTION: _wine_staging_walk_git_tree
 # @INTERNAL
-# @USAGE: <wine_staging_git_directory> <wine_git_directory> <target_wine_git_commit> [wine_staging_commit_reference*]
-#         (* passed-by-reference)
+# @USAGE:  <_wine_staging_git_directory> <_wine_git_directory> <_target_wine_git_commit> [<_wine_staging_commit_reference>*]
+# @RETURN: 0=success / 1=failure
+#          _target_wine_staging_commit - via <_wine_staging_commit_reference>* / stdout
+#          (* passed-by-reference)
 # @DESCRIPTION:
 # This internal function is used to support building app-emulation/wine-staging:9999, a multi-homed Git package.
 # This function converts a Wine Git commit into a date. Then this Git commit date is used to set the start date
@@ -562,8 +603,7 @@ _wine_staging_get_upstream_commit() {
 # We continue searching the Wine Staging Git log writing over stored Wine Staging commit, if we find a newer
 # (in time) match. We exit the loop with a match, if a subsequent Wine Staging child commit does not match our
 # Upstream Wine commit <target_wine_git_commit>.
-# The function returns the Wine Staging Git commit that corresponds to: <target_wine_git_commit>; either
-# via [wine_staging_commit_reference*] - if this variable is specified - or directly to stdout.
+# The function returns the Wine Staging Git commit that corresponds to: <target_wine_git_commit>.
 # <wine_staging_git_directory> must reference the root directory of a Wine Staging Git repository.
 # <wine_git_directory> must reference the root directory of a Wine Git repository.
 _wine_staging_walk_git_tree() {
@@ -593,7 +633,7 @@ _wine_staging_walk_git_tree() {
 	declare -a wine_staging_git_log_array
 	_wine_git_commit_to_date "${_wine_git_directory}" "${_target_wine_git_commit}" "target_wine_git_commit_date"
 	pushd "${_wine_staging_git_directory}" >/dev/null || die "pushd '${_wine_staging_git_directory}' failed"
-	_wine_get_sieved_git_log "${_wine_staging_git_directory}" "${target_wine_git_commit_date}" . "wine_staging_git_log_array"
+	_wine_get_pruned_git_log "${_wine_staging_git_directory}" "${target_wine_git_commit_date}" . "wine_staging_git_log_array"
 	for (( _ilog=0 ; _ilog<${#wine_staging_git_log_array[@]} ; ++_ilog )); do
 		_prev_wine_staging_commit="${_target_wine_staging_commit:-${_wine_staging_commit}}"
 		_wine_staging_commit="${wine_staging_git_log_array[_ilog]:0:40}"
@@ -631,8 +671,12 @@ _wine_staging_walk_git_tree() {
 
 # @FUNCTION: _wine_find_closest_commit
 # @INTERNAL
-# @USAGE: <wine_staging_git_directory> <wine_git_directory> <wine_git_commit_reference>* <wine_staging_commit_reference>* [wine_commit_diff_reference]*
-#         (* passed-by-reference)
+# @USAGE:   <wine_staging_git_directory> <wine_git_directory> <wine_git_commit_reference>* <wine_staging_commit_reference>* [<wine_commit_diff_reference>*]
+# @RETURN:  0=success / 1=failure
+#           wine_commit                - via <wine_git_commit_reference>*
+#           target_wine_staging_commit - via <wine_staging_commit_reference>*
+#         [ wine_commit_diff           - via <wine_git_commit_reference>* ]
+#           (* passed-by-reference)
 # @DESCRIPTION:
 # This internal function is used to support building app-emulation/wine-staging:9999, a multi-homed Git package.
 # This function takes a Wine Git commit, <wine_git_commit_reference>, and uses this as the centre of temporal search
@@ -641,12 +685,12 @@ _wine_staging_walk_git_tree() {
 # commit offset (from the originally specified Wine Git commit). If we find a match then we return both the
 # Wine Git commit we find, via the reference variable <wine_git_commit_reference> and corresponding Wine Staging Git
 # commit, via the reference variable <wine_staging_commit_reference>.
-# If [wine_commit_diff_reference] is specified, then we pass back the commit count offset in this variable. This
+# If <wine_commit_diff_reference> is specified, then we pass back the commit count offset in this variable. This
 # is the difference between the originally specified Wine Git commit <wine_git_commit_reference> and the Wine Git commit
 # we have just found with out search.
 # If however we don't find a valid downstream Wine Staging Git commit, within to the Wine Git search range
-# then function returns an error value, and the reference variable <wine_staging_commit_reference> is left unset
-# as is [wine_commit_diff_reference] (if specified).
+# then this function returns an error value (1=failure). The reference variable: <wine_staging_commit_reference>
+# is left unset, as is: <wine_commit_diff_reference> (if specified).
 # <wine_staging_git_directory> must reference the root directory of a Wine Staging Git repository.
 # <wine_git_directory> must reference the root directory of a Wine Git repository.
 _wine_find_closest_commit() {
@@ -682,7 +726,7 @@ _wine_find_closest_commit() {
 	_wine_git_commit_to_date "${_wine_git_directory}" "${wine_commit}" "_wine_commit_date"
 	_wine_get_date_offset "${_wine_commit_date}" "${_WINE_GIT_DATE_ROFFSET}" "_wine_reverse_date_limit"
 	_wine_get_date_offset "${_wine_commit_date}" "${_WINE_GIT_DATE_FOFFSET}" "_wine_forward_date_limit"
-	_wine_get_sieved_git_log "${_wine_git_directory}" "${_wine_reverse_date_limit}" "${_wine_forward_date_limit}" "wine_git_log_array"
+	_wine_get_pruned_git_log "${_wine_git_directory}" "${_wine_reverse_date_limit}" "${_wine_forward_date_limit}" "wine_git_log_array"
 
 	_ilog_pre=-1
 	_ilog_post=_ilog_total=${#wine_git_log_array[@]}
@@ -745,7 +789,7 @@ _wine_find_closest_commit() {
 
 # @FUNCTION: _wine_display_closest_commit_message
 # @INTERNAL
-# @USAGE: <target_wine_commit> <target_wine_staging_commit> <wine_commit_diff>
+# @USAGE: <_target_wine_commit> <_target_wine_staging_commit> <_wine_commit_diff>
 # @DESCRIPTION:
 # This internal function is used to support building app-emulation/wine-staging:9999, a multi-homed Git package.
 # It pretty prints suggested Wine and Wine Staging Git commits, in the event the end user attempts
@@ -774,37 +818,37 @@ _wine_display_closest_commit_message() {
 	eerror
 }
 
-# @FUNCTION: _wine_sieve_arrays_by_git_commit
-# @USAGE: <git_directory> <array_commits|array_patch_files>* ... [array_commits|array_patch_files]*
-#         (* passed-by-reference)
+# @FUNCTION: _wine_prune_commited_patches_from_array
+# @USAGE: <git_directory> <array[0]>* [... <array[N-1]>*]
+# @RETURN: patch_array[i] via <_patch_array_reference[i]>*)
+#          (* passed-by-reference)
 # @DESCRIPTION:
 # This function checks the specified Git repository, current HEAD, for the presence of a list of
 # Git array_commits.
 # Takes a list of variables, passed by reference, which should all be arrays.
-#  These arrays can contain a mixture of elements, of either:
-#   array_commits     : array of SHA-1 Git commit hashes
-#   array_patch_files : array of patch files, which must contain one, or more, embedded SHA-1 Git commit hashes
-#                       (the hashes must all be clustered, contiguously, at the head of each patch file)
+# These arrays can contain a mixture of elements, of either:
+#
+#   * array_commits     : array of SHA-1 Git commit hashes
+#   * array_patch_files : array of patch files, which must contain one, or more, embedded SHA-1 Git commit hashes
+#
+# NOTE: for the patch files, the original commit(s), SHA-1 hash(es) (one per supported Git branch), must all be clustered
+# on contiguous lines at the head of each patch file)
+#
 # These Git commit hashes are individually tested to see if they have been committed to HEAD, of the Git Source
 # directory tree. If a Git commit hash is in tree then delete the current array entry.
 # <git_directory> must reference a valid Git repository root directory.
-_wine_sieve_arrays_by_git_commit() {
+_wine_prune_commited_patches_from_array() {
 	(($# >= 2))  || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (2-)"
 
-	local _commit_hash _git_directory _git_log _i_arg=1 _i_array _line _patch_array_reference _patch_file
+	local _commit_hash _git_directory _i_arg=1 _i_array _line _patch_array_reference _patch_file
 
 	_git_directory="${1%/}"
 	if [[ ! -d "${_git_directory}/.git" ]]; then
 		die "${FUNCNAME[0]}(): argument (1): path '${_git_directory}' is not a valid Git repository directory"
 	fi
 
-	pushd "${_git_directory}" >/dev/null || die "pushd failed"
-	local -a _git_log_arguments_array=( "--pretty=format:%H" )
-	# shellcheck disable=SC2068
-	_git_log="$( git log ${_git_log_arguments_array[@]} 2>/dev/null )" || die "git log ${_git_log_arguments_array[*]} failed"
-	popd >/dev/null || die "popd failed"
-
 	shift 1
+	pushd "${_git_directory}" >/dev/null || die "pushd failed"
 	for _patch_array_reference; do
 		if [[ ! "${_patch_array_reference}" =~ ${_WINE_VARIABLE_NAME_REGEXP} ]]; then
 			die "${FUNCNAME[0]}(): argument ($((_i_arg+=1))): invalid reference name: '${_patch_array_reference}'"
@@ -825,7 +869,7 @@ _wine_sieve_arrays_by_git_commit() {
 				_commit_hash="$( sed -n -e "${_line}"'s/^.*\([[:xdigit:]]\{40\}\).*$/\1/p' "${patch_array[_i_array]}" )"
 				[[ "${_commit_hash}" =~ ${_WINE_SHA1_REGEXP} ]]
 			do
-				[[ "${_git_log}" =~ ${_commit_hash} ]] || continue
+				git merge-base --is-ancestor "${_commit_hash}" HEAD || continue
 
 				_patch_file="$(basename "${patch_array[_i_array]}")"
 				einfo "Excluding patch ${_patch_file} ... parent of (HEAD) Git commit: ${_commit_hash}"
@@ -834,13 +878,16 @@ _wine_sieve_arrays_by_git_commit() {
 			done
 		done
 	done
+	popd >/dev/null || die "popd failed"
 }
 
 # EXTERNAL HELPER wine.eclass Git support function definitions
 
 # @FUNCTION: wine_get_git_commit_info
-# @USAGE: <git_directory> [git_commit_hash]* [git_commit_date]*
-#         (* passed-by-reference)
+# @USAGE:  <git_directory> [<_git_commit_hash>*] [<_git_commit_date>*]
+# @RETURN: [<_git_commit_hash>*]
+#          [<_git_commit_date>*]
+#          (* passed-by-reference)
 # @DESCRIPTION:
 # This function retrieves specified information about the specified Git repository HEAD.
 # The function returns the Git commit hash <git_commit_hash> and the date <git_commit_date>,
@@ -1077,11 +1124,12 @@ _wine_generic_compiler_pretests() {
 # @INTERNAL
 # @DESCRIPTION:
 # This function alters the Wine Source, to set the Wine Staging version / branding.
-# Used for the package: 
-#  app-emulation/wine-staging
+# Used for the package: app-emulation/wine-staging
+#
 # Staging branding is applied to applied to the Wine version, reported by:
-#  wine --version
-#  winecfg
+#
+#   wine --version
+#   winecfg
 wine_src_set_staging_versioning() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
@@ -1157,10 +1205,10 @@ _wine_register_new_variant() {
 # EXTERNAL HELPER wine.eclass general support function definitions
 
 # @FUNCTION: wine_use_disabled
-# @USAGE: <use-flag>
+# @USAGE:  <use-flag>
+# @RETURN: 1=yes 0=no
 # @DESCRIPTION:
 # This function tests if <use-flag> is disabled for the current Wine ebuild.
-# Returns: 1=yes . 0=no
 wine_use_disabled() {
 	(($# == 1)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (1)"
 
@@ -1176,14 +1224,22 @@ wine_use_disabled() {
 # Also tests for Wine Git commits introducing initial support, for the
 # faudio (external) library.
 wine_src_prepare_git() {
-	local -a _sieved_faudio_commit=( "3e390b1aafff47df63376a8ca4293c515d74f4ba" )
-	_wine_sieve_arrays_by_git_commit "${S}" "_sieved_faudio_commit"
-	if use faudio && ((${#_sieved_faudio_commit[@]})); then
-		_WINE_USE_DISABLED+=( "faudio" )
-		ewarn "USE +faudio unsupported for Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
-		ewarn "USE +faudio will be omitted for this build."
+	if use faudio; then
+		local -a _pruned_faudio_commit=( "3e390b1aafff47df63376a8ca4293c515d74f4ba" )
+
+		_wine_prune_commited_patches_from_array "${S}" "_pruned_faudio_commit"
+		# shellcheck disable=SC2068
+		if ((${#_pruned_faudio_commit[@]})); then
+			_WINE_USE_DISABLED+=( "faudio" )
+			ewarn "USE +faudio unsupported for Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
+			ewarn "USE +faudio will be omitted for this build."
+		elif has "faudio" ${_WINE_USE_DISABLED[@]}; then
+			ewarn "USE +faudio disabled to support USE +ffmpeg"
+			ewarn "USE +faudio will be omitted for this build."
+		fi
 	fi
-	_wine_sieve_arrays_by_git_commit "${S}" "PATCHES" "PATCHES_BIN"
+
+	_wine_prune_commited_patches_from_array "${S}" "PATCHES" "PATCHES_BIN"
 }
 
 # @FUNCTION: wine_staging_src_prepare_git
@@ -1194,22 +1250,27 @@ wine_src_prepare_git() {
 # Also tests for Wine Git commits introducing initial support, via a new
 # app-emulation/wine-staging patchset, for the ffmpeg (external) library.
 wine_staging_src_prepare_git() {
-	local -a _sieved_ffmpeg_commit=( "6a04cf4a69205ddf6827fb2a4b97862fd1947c62" )
-	_wine_sieve_arrays_by_git_commit "${S}" "_sieved_ffmpeg_commit"
-	if use ffmpeg && ((${#_sieved_ffmpeg_commit[@]})); then
-		_WINE_USE_DISABLED+=( "ffmpeg" )
-		ewarn "USE +ffmpeg unsupported for Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
-		ewarn "USE +ffmpeg will be omitted for this build."
+	local -a _pruned_ffmpeg_commit=( "6a04cf4a69205ddf6827fb2a4b97862fd1947c62" )
+	_wine_prune_commited_patches_from_array "${S}" "_pruned_ffmpeg_commit"
+	if use ffmpeg; then
+		if ((${#_pruned_ffmpeg_commit[@]})); then
+			use faudio && _WINE_USE_DISABLED+=( "faudio" )
+		else
+			_WINE_USE_DISABLED+=( "ffmpeg" )
+			ewarn "USE +ffmpeg unsupported for Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
+			ewarn "USE +ffmpeg will be omitted for this build."
+		fi
 	fi
 
 	wine_src_prepare_git
 }
 
 # @FUNCTION: wine_staging_patchset_support_test
+# @USAGE:  <_staging_patchset>
+# @RETURN: 1=yes 0=no
 # @DESCRIPTION:
-# This function tests support for the specified Wine Staging patchset. Used for the package:
-#  app-emulation/wine-staging
-# Returns: 1=yes . 0=no
+# This function tests support for the specified Wine Staging patchset (_staging_patchset).
+# Used for the package: app-emulation/wine-staging
 wine_staging_patchset_support_test() {
 	(($# == 1)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (1)"
 
@@ -1220,7 +1281,8 @@ wine_staging_patchset_support_test() {
 
 # @FUNCTION: wine_eapply_bin
 # @DESCRIPTION:
-# Use patch patchbin to apply all binary patches from the array variable PATCHES_BIN
+# Use patch patchbin to apply all binary patches from the
+# global array variable: PATCHES_BIN
 wine_eapply_bin() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
@@ -1249,8 +1311,11 @@ wine_eapply_staging_patchset() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
 	local _staging_patches_dir="${_WINE_STAGING_DIR}/patches"
+	local -a _staging_exclude_patchsets \
+		_eventfd_synchronization_dir_change_fix_range=(
+			"f883c66e40ada01c4413c5f33912339f88bd8073" "c48811407e3c9cb2d6a448d6664f89bacd9cc36f"
+		)
 
-	local -a _staging_exclude_patchsets
 	ewarn "Applying the Wine Staging patchset. Any bug reports to Wine Bugzilla"
 	ewarn "should explicitly state that Wine Staging was used."
 
@@ -1295,11 +1360,21 @@ wine_eapply_staging_patchset() {
 			|| die "sed failed"
 	fi
 
-	if [[ "${WINE_PV}" == "4.7" ]]; then
-		pushd "${_WINE_STAGING_DIR}" || die "pushd failed"
-		eapply "${DISTDIR}/wine-staging-4.7_esync_fix_c48811407e3c9cb2d6a448d6664f89bacd9cc36f.patch"
-		popd || die "popd failed"
-	fi
+	pushd "${_WINE_STAGING_DIR}" || die "pushd failed"
+	case "${WINE_PV}" in
+		4.7)
+			eapply "${DISTDIR}/${PN}-4.7_c48811407e3c9cb2d6a448d6664f89bacd9cc36f_eventfd_synchronization_fix.patch"
+			;;
+		9999)
+			# shellcheck disable=SC2068
+			if _wine_git_is_commit_in_range "${_WINE_STAGING_DIR}" ${_eventfd_synchronization_dir_change_fix_range[@]}; then
+				eapply "${DISTDIR}/${PN}-4.7_c48811407e3c9cb2d6a448d6664f89bacd9cc36f_eventfd_synchronization_fix.patch"
+			fi
+			;;
+		*)
+			;;
+	esac
+	popd || die "popd failed"
 
 	# Launch wine-staging patcher in a subshell, using eapply as a backend, and gitapply.sh as a backend for binary patches
 	ebegin "Running Wine-Staging patch installer"
@@ -1323,8 +1398,7 @@ wine_eapply_staging_patchset() {
 # @FUNCTION: wine_eapply_esync_patchset
 # @USAGE: <esync_patchset_directory>
 # @DESCRIPTION:
-# This function supports the packages:
-#   app-emulation/wine-staging app-emulation/wine-vanilla
+# This function supports the packages: app-emulation/wine-staging app-emulation/wine-vanilla
 # This function applies the wine-esync patchset to the PWD - typically "${S}".
 # <esync_patchset_directory> should be set to the root directory of the unpacked esync
 # tarball.
@@ -1335,7 +1409,7 @@ wine_eapply_esync_patchset() {
 	local _esync_patchsets_base_directory="${1%/}" \
 		_i_array _esync_error=0 _esync_patchset_directory _min_rebase_commit _max_rebase_commit \
 		_rebased_patchset _max_rebased_patchset
-	local -a _esync_patchset_commits _sieved_esync_patchset_commits
+	local -a _esync_patchset_commits _pruned_esync_patchset_commits
 	if [[ ! -d "${_esync_patchsets_base_directory}" ]]; then
 		die "${FUNCNAME[0]}(): argument (1): path '${_esync_patchsets_base_directory}' is not a valid directory"
 	fi
@@ -1392,6 +1466,9 @@ wine_eapply_esync_patchset() {
 		4.7)
 			_rebased_patchset="bf174815ba8529bfbbda8697503d3c2539f82359"
 			;;
+		4.8)
+			_rebased_patchset="29914d583fe098521472332687b8da69fc692690"
+			;;
 		9999)
 			if ((_WINE_IS_STAGING)); then
 				_min_rebase_commit="f9e1dbb83d850a2f7cb17079e02de139e2f8b920"
@@ -1402,16 +1479,16 @@ wine_eapply_esync_patchset() {
 				_max_rebase_commit="master"
 				_max_rebased_patchset="0"
 			fi
-			_sieved_esync_patchset_commits=( "${_esync_patchset_commits[@]}" )
-			_wine_sieve_arrays_by_git_commit "${S}" "_sieved_esync_patchset_commits"
+			_pruned_esync_patchset_commits=( "${_esync_patchset_commits[@]}" )
+			_wine_prune_commited_patches_from_array "${S}" "_pruned_esync_patchset_commits"
 			for _i_array in "${!_esync_patchset_commits[@]}"; do
 				# shellcheck disable=SC2068
-				has "${_esync_patchset_commits[_i_array]}" ${_sieved_esync_patchset_commits[@]} && break
+				has "${_esync_patchset_commits[_i_array]}" ${_pruned_esync_patchset_commits[@]} && break
 
 				_rebased_patchset="${_esync_patchset_commits[_i_array]}"
 			done
 			# shellcheck disable=SC2068
-			if [[ -z "${_rebased_patchset}" ]] || ((_max_rebased_patchset)) && ! has "${_esync_patchset_commits[_max_rebased_patchset]}" ${_sieved_esync_patchset_commits[@]}; then
+			if [[ -z "${_rebased_patchset}" ]] || ((_max_rebased_patchset)) && ! has "${_esync_patchset_commits[_max_rebased_patchset]}" ${_pruned_esync_patchset_commits[@]}; then
 				ewarn "The esync patchset is only supported for Wine Git commit range: ['${_min_rebase_commit}'-${_max_rebase_commit})"
 				ewarn "The esync patchset cannot be applied on Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
 				_esync_error=1
@@ -1445,8 +1522,7 @@ wine_eapply_esync_patchset() {
 # @FUNCTION: wine_eapply_pba_patchset()
 # @USAGE: <pba_patchset_directory>
 # @DESCRIPTION:
-# This function supports the packages:
-#   app-emulation/wine-staging app-emulation/wine-vanilla
+# This function supports the packages: app-emulation/wine-staging app-emulation/wine-vanilla
 # This function applies the wine-pba patchset to the PWD - typically "${S}".
 # <pba_patchset_directory> should be set to the root directory of the unpacked gentoo_wine_pba
 # tarball.
@@ -1458,7 +1534,7 @@ wine_eapply_pba_patchset() {
 	if [[ ! -d "${_rebased_patchset_directory}" ]]; then
 		die "${FUNCNAME[0]}(): argument (1): path '${_rebased_patchset_directory}' is not a valid directory"
 	fi
-	declare -a _rebased_patchset_commits _sieved_rebased_patchset_commits
+	declare -a _rebased_patchset_commits _pruned_rebased_patchset_commits
 
 	((_WINE_IS_STAGING)) && case "${WINE_PV}" in
 		3.[34])
@@ -1528,23 +1604,23 @@ wine_eapply_pba_patchset() {
 	esac
 
 	if [[ "${WINE_PV}" == "9999" ]]; then
-		_sieved_rebased_patchset_commits=( "${_rebased_patchset_commits[@]}" )
-		_wine_sieve_arrays_by_git_commit "${S}" "_sieved_rebased_patchset_commits"
+		_pruned_rebased_patchset_commits=( "${_rebased_patchset_commits[@]}" )
+		_wine_prune_commited_patches_from_array "${S}" "_pruned_rebased_patchset_commits"
 		for _i_array in "${!_rebased_patchset_commits[@]}"; do
 			# shellcheck disable=SC2068
-			has "${_rebased_patchset_commits[_i_array]}" ${_sieved_rebased_patchset_commits[@]} && break
+			has "${_rebased_patchset_commits[_i_array]}" ${_pruned_rebased_patchset_commits[@]} && break
 
 			_rebased_patchset="${_rebased_patchset_directory}/${_rebased_patchset_commits[_i_array]}"
 		done
 		# shellcheck disable=SC2068
-		if [[ -z "${_rebased_patchset}" ]] || ! has "${_rebased_patchset_commits[_max_rebased_patchset]}" ${_sieved_rebased_patchset_commits[@]}; then
+		if [[ -z "${_rebased_patchset}" ]] || ! has "${_rebased_patchset_commits[_max_rebased_patchset]}" ${_pruned_rebased_patchset_commits[@]}; then
 			ewarn "The PBA patchset is only supported for Wine Git commit range: ['${_rebased_patchset_commits[0]}'-'${_rebased_patchset_commits[_max_rebased_patchset]}')"
 			ewarn "The PBA patchset cannot be applied on Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
 			_pba_error=1
 		fi
 	fi
 
-	unset -v _rebased_patchset_commits _sieved_rebased_patchset_commits
+	unset -v _rebased_patchset_commits _pruned_rebased_patchset_commits
 
 	if ((_pba_error)); then
 		[[ "${WINE_PV}" != "9999" ]] && ewarn "The PBA patchset is unsupported for package: =${CATEGORY}/${P}"
@@ -1656,7 +1732,7 @@ wine_add_locale_docs() {
 
 # @FUNCTION: wine_fix_gentoo_cc_multilib_support
 # @DESCRIPTION:
-# This function fixes Gentoo Portage cc multilib support.
+# This function fixes Gentoo Portage compiler (cc) multilib support.
 # Applied to all Wine versions.
 # See: #395615
 wine_fix_gentoo_cc_multilib_support() {
@@ -1690,7 +1766,7 @@ wine_fix_gentoo_O3_compilation_support() {
 # @FUNCTION: wine_fix_gentoo_winegcc_support
 # @DESCRIPTION:
 # This function fixes Gentoo Portage winegcc multilib support, applied to all Wine versions.
-# See: 260726
+# See: #260726
 wine_fix_gentoo_winegcc_support() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
@@ -1738,7 +1814,7 @@ wine_src_prepare_generate_64bit_manpages() {
 }
 
 # @FUNCTION: wine_src_disable_specfied_tools
-# @USAGE: <tool1> ... [toolN]
+# @USAGE: <_tool[0]> [... <_tool[N-1]>]
 # @DESCRIPTION:
 # This function disables building the specified Wine builtin tool(s),
 # e.g. if they are not supported by the current USE flag settings.
@@ -1747,7 +1823,8 @@ wine_src_prepare_generate_64bit_manpages() {
 
 	local _tool
 	for _tool; do
-		sed -i -e '\|WINE_CONFIG_TOOL(_tools/'"${_tool}"',[^[:blank:]]*)$|d' "${S%/}/configure.ac" \
+		sed -i -e '\|WINE_CONFIG_TOOL(_tools/'"${_tool}"',[^[:blank:]]*)$|d' \
+			"${S%/}/configure.ac" \
 			|| die "sed failed"
 	done
 }
