@@ -857,7 +857,7 @@ _wine_prune_commited_patches_from_array() {
 		declare -n patch_array="${_patch_array_reference}"
 		for _i_array in "${!patch_array[@]}"; do
 			if [[ "${patch_array[_i_array]}" =~ ${_WINE_SHA1_REGEXP} ]]; then
-				[[ "${_git_log}" =~ ${patch_array[_i_array]} ]] && unset -v 'patch_array[_i_array]'
+				git merge-base --is-ancestor "${patch_array[_i_array]}" HEAD && unset -v 'patch_array[_i_array]'
 				continue
 			fi
 
