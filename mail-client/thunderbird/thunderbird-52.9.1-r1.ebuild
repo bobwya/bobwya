@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -55,8 +55,8 @@ SRC_URI="${SRC_URI}
 	${MOZ_HTTP_URI}/${MOZ_PV}/source/${MOZ_P}.source.tar.xz
 	https://dev.gentoo.org/~axs/distfiles/lightning-${MOZ_LIGHTNING_VER}.tar.xz
 	kde? (
-		${HG_MOZILLA_URI}/${HG_REVISION}/raw-file/mozilla-kde.patch -> ${P}-mozilla-kde.patch
-		${HG_MOZILLA_URI}/${HG_REVISION}/raw-file/mozilla-nongnome-proxies.patch -> ${P}-mozilla-nongnome-proxies.patch
+		${HG_MOZILLA_URI}/raw-file/${HG_REVISION}/mozilla-kde.patch -> ${PN}-52.0-mozilla-kde.patch
+		${HG_MOZILLA_URI}/raw-file/${HG_REVISION}/mozilla-nongnome-proxies.patch -> ${PN}-52.0-mozilla-nongnome-proxies.patch
 	)
 	lightning? ( https://dev.gentoo.org/~axs/distfiles/gdata-provider-${MOZ_LIGHTNING_GDATA_VER}.tar.xz )
 	${PATCH_URIS[@]}"
@@ -129,8 +129,9 @@ src_prepare() {
 	pushd "${S}/mozilla" &>/dev/null || die "pushd failed"
 	if use kde; then
 		# Gecko/toolkit OpenSUSE KDE integration patchset
-		eapply "${DISTDIR}/${P}-mozilla-kde.patch"
-		eapply "${DISTDIR}/${P}-mozilla-nongnome-proxies.patch"
+
+		eapply "${DISTDIR}/${PN}-52.0-mozilla-kde.patch"
+		eapply "${DISTDIR}/${PN}-52.0-mozilla-nongnome-proxies.patch"
 		# Uncomment the next line to enable KDE support debugging (additional console output)...
 		#PATCHES+=( "${FILESDIR}/${PN}-kde-debug.patch" )
 		# Uncomment the following patch line to force Plasma/Qt file dialog for Thunderbird...
