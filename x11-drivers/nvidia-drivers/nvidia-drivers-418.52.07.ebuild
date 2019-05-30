@@ -79,11 +79,15 @@ nvidia_drivers_versions_check() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 5 1; then
+		if kernel_is ge 5 2; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-5.1"
-			ewarn "<sys-kernel/vanilla-sources-5.1"
+			ewarn "<sys-kernel/gentoo-sources-5.2"
+			ewarn "<sys-kernel/vanilla-sources-5.2"
+			ewarn "This version of ${CATEGORY}/${PN} has an unofficial patch"
+			ewarn "applied to enable support for the following kernels:"
+			ewarn "=sys-kernel/gentoo-sources-5.1"
+			ewarn "=sys-kernel/vanilla-sources-5.1"
 		elif use kms && kernel_is lt 4 2; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -217,7 +221,7 @@ pkg_setup() {
 }
 
 src_prepare() {
-	local -a PATCHES
+	local -a PATCHES=( "${FILESDIR}/${PN}-418.52-kernel-5.1.patch" )
 	if use tools; then
 		mv "${S%/}/nvidia-settings-${NV_SETTINGS_PV}" "/${S%/}/nvidia-settings-${PV}" || die "mv failed"
 		rsync -achv "${FILESDIR}/nvidia-settings-linker.patch" "${WORKDIR}"/ \
