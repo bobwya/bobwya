@@ -199,7 +199,6 @@ DEPEND="${RDEPEND}
 	valgrind? ( dev-util/valgrind )
 	x11-base/xorg-proto
 	x11-libs/libXrandr[${MULTILIB_USEDEP}]
-	$(python_gen_any_dep ">=dev-python/mako-0.8.0[\${PYTHON_USEDEP}]")
 "
 
 S="${WORKDIR}/${MY_P}"
@@ -258,17 +257,6 @@ pkg_pretend() {
 	ewarn " * x11-base/xorg-server"
 	ewarn " * x11-drivers/nvidia-drivers"
 	ewarn "from the bobwya overlay."
-
-	if use d3d9; then
-		if ! use video_cards_r300 &&
-			! use video_cards_r600 &&
-			! use video_cards_radeonsi &&
-			! use video_cards_nouveau &&
-			! use video_cards_vmware; then
-			ewarn "Ignoring USE=d3d9       since VIDEO_CARDS does not contain r300, r600, radeonsi, nouveau, or vmware"
-		fi
-	fi
-
 	if use opencl; then
 		if ! use video_cards_r600 &&
 			! use video_cards_radeonsi; then
@@ -325,6 +313,10 @@ pkg_pretend() {
 	fi
 }
 
+python_check_deps() {
+	has_version --host-root ">=dev-python/mako-0.8.0[${PYTHON_USEDEP}]"
+}
+
 pkg_setup() {
 	# warning message for bug 459306
 	if use llvm && has_version sys-devel/llvm[!debug=]; then
@@ -360,17 +352,16 @@ multilib_src_configure() {
 		fi
 	fi
 
-	if use egl; then
-		emesonargs+=( "-Dplatforms=x11,surfaceless$(use wayland && echo ",wayland")$(use gbm && echo ",drm")" )
-	fi
-
+	emesonargs+=( "-Dplatforms=x11,surfaceless$(use wayland && echo ",wayland")$(use gbm && echo ",drm")" )
 	if use gallium; then
 		emesonargs+=(
 			"$(meson_use llvm)"
+			"$(meson_use lm_sensors lmsensors)"
 			"$(meson_use unwind libunwind)"
 		)
 
-		if use video_cards_r300 ||
+		if use video_cards_iris ||
+			use video_cards_r300 ||
 			use video_cards_r600 ||
 			use video_cards_radeonsi ||
 			use video_cards_nouveau ||
@@ -383,7 +374,7 @@ multilib_src_configure() {
 			use video_cards_radeonsi ||
 			use video_cards_nouveau; then
 			emesonargs+=( "$(meson_use vaapi gallium-va)" )
-			use vaapi && emesonargs+=( "-Dva-libs-path=/usr/$(get_libdir)/va/drivers" )
+			use vaapi && emesonargs+=( "-Dva-libs-path=${EPREFIX}/usr/$(get_libdir)/va/drivers" )
 		else
 			emesonargs+=( "-Dgallium-va=false" )
 		fi
@@ -502,7 +493,7 @@ multilib_src_install_all() {
 }
 
 multilib_src_test() {
-	meson_src_test
+	meson test -v -C "${BUILD_DIR}" -t 100
 }
 
 pkg_postinst() {
