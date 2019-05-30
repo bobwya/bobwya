@@ -1,10 +1,10 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-EAPI=6
+EAPI=7
 
-inherit flag-o-matic libtool multilib multilib-build multilib-minimal toolchain-funcs
+inherit autotools multilib-minimal readme.gentoo-r1
 
 FONTCONFIG_ULTIMATE_BASE="fontconfig-ultimate-git"
 FONTCONFIG_ULTIMATE_COMMIT="820e74be8345a0da2cdcff0a05bf5fa10fd85740"
@@ -16,21 +16,28 @@ SRC_URI="
 "
 LICENSE="|| ( FTL GPL-2+ )"
 SLOT="1.0"
-KEYWORDS="alpha amd64 arm arm64 hppa ia64 ~m68k ~mips ppc ppc64 s390 ~sh sparc x86 ~amd64-fbsd ~amd64-linux ~arm-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos ~x86-winnt"
+if [[ $(ver_cut 3) -lt 90 ]]; then
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~m68k ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-fbsd ~amd64-linux ~arm-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos"
+fi
 IUSE="doc +infinality static-libs"
 
-# 283191
-RDEPEND="
-	>=dev-libs/expat-2.1.0-r3[${MULTILIB_USEDEP}]
-	>=media-libs/freetype-2.7.1[infinality?,${MULTILIB_USEDEP}]
-"
-DEPEND="${RDEPEND}
+BDEPEND="
 	virtual/pkgconfig
 	doc? (
 		=app-text/docbook-sgml-dtd-3.1*
 		app-text/docbook-sgml-utils[jadetex]
 	)
 "
+# 283191
+RDEPEND="
+	>=dev-libs/expat-2.1.0-r3[${MULTILIB_USEDEP}]
+	>=media-libs/freetype-2.9[infinality?,${MULTILIB_USEDEP}]
+	!elibc_Darwin? ( !elibc_SunOS? ( sys-apps/util-linux[${MULTILIB_USEDEP}] ) )
+	elibc_Darwin? ( sys-libs/native-uuid )
+	elibc_SunOS? ( sys-libs/libuuid )
+	virtual/libintl[${MULTILIB_USEDEP}]
+"
+BDEPEND="${RDEPEND}"
 PDEPEND="
 	!x86-winnt? ( app-eselect/eselect-fontconfig )
 	virtual/ttf-fonts
@@ -39,6 +46,9 @@ PDEPEND="
 PATCHES=(
 	"${FILESDIR}/${PN}-2.10.2-docbook.patch"      # 310157
 	"${FILESDIR}/${PN}-2.12.3-latin-update.patch" # 130466 + make liberation default
+	"${FILESDIR}/${P}-revert_delete_.uuid_for_empty_directory.patch" # 666418
+	"${FILESDIR}/${P}-static_build.patch"
+	"${FILESDIR}/${P}-proper_homedir.patch"
 )
 
 MULTILIB_CHOST_TOOLS=( "/usr/bin/fc-cache$(get_exeext)" )
@@ -53,16 +63,11 @@ pkg_setup() {
 src_prepare() {
 	if use infinality; then
 		PATCHES+=(
-			"${FILESDIR}/${PN}-2.12.6-infinality_ultimate.patch"
+			"${FILESDIR}/${PN}-2.13.0-infinality-ultimate.patch"
 		)
 		rsync -ach --safe-links "${WORKDIR}/${FONTCONFIG_ULTIMATE_BASE}/conf.d.infinality" .
 	fi
 	default
-	export GPERF
-	GPERF="$(type -P true)"  # 631980 : avoid dependency on gperf
-	sed -i -e 's/FC_GPERF_SIZE_T="unsigned int"/FC_GPERF_SIZE_T=size_t/' \
-		"${S}/configure.ac" \
-		|| die "sed failed" # 631920 : secondary gperf dependency fix
 	eautoreconf
 }
 
@@ -160,27 +165,24 @@ pkg_preinst() {
 	# 193476
 	ebegin "Syncing fontconfig configuration to system"
 		while IFS= read -r -d '' conf_file; do
-			[[ -f "${ED%/}/etc/fonts/conf.avail/${conf_file}" ]] || continue
+			[[ -f "${ED}/etc/fonts/conf.avail/${conf_file}" ]] || continue
 
-			if [[ -L "${EROOT%/}/etc/fonts/conf.d/${conf_file}" ]]; then
-				ln -sf ../"conf.avail/${conf_file}" "${ED%/}/etc/fonts/conf.d/" &>/dev/null
+			if [[ -L "${EROOT}/etc/fonts/conf.d/${conf_file}" ]]; then
+				ln -sf ../"conf.avail/${conf_file}" "${ED}/etc/fonts/conf.d/" &>/dev/null
 			else
-				rm "${ED%/}/etc/fonts/conf.d/${conf_file}" &>/dev/null
+				rm "${ED}/etc/fonts/conf.d/${conf_file}" &>/dev/null
 			fi
-		done < <(find "${EROOT%/}/etc/fonts/conf.avail" -mindepth 1 -type f -name "*.conf" -printf '%f\0' 2>/dev/null)
+		done < <(find "${EROOT}/etc/fonts/conf.avail" -mindepth 1 -type f -name "*.conf" -printf '%f\0' 2>/dev/null)
 	eend $?
 }
 
 pkg_postinst() {
-	einfo "Cleaning broken symlinks in \"${EROOT%/}/etc/fonts/conf.d/\""
-	find -L "${EROOT%/}/etc/fonts/conf.d/" -type l -delete
+	einfo "Cleaning broken symlinks in \"${EROOT}/etc/fonts/conf.d/\""
+	find -L "${EROOT}/etc/fonts/conf.d/" -type l -delete
 
 	readme.gentoo_print_elog
 
-	if [[ "${ROOT}" != "/" ]]; then
-		return 0
-	fi
-
+	[[ "${ROOT}" != "" ]] && return 0
 	multilib_pkg_postinst() {
 		ebegin "Creating global font cache for ${ABI}"
 			"${EPREFIX}/usr/bin/${CHOST}-fc-cache" -srf
