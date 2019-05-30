@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -7,20 +7,16 @@ EAPI=7
 
 inherit readme.gentoo-r1
 
-MY_PN="infinality_bundle"
+MY_PV="$(ver_rs 1- '-')"
 
 DESCRIPTION="A set of font rendering and replacement rules for fontconfig-infinality"
-HOMEPAGE="https://github.com/archfan/infinality_bundle"
-
-if [[ "${PV}" == "99999999" ]]; then
-	inherit git-r3
-	EGIT_REPO_URI="https://github.com/archfan/infinality_bundle.git"
-	EGIT_CHECKOUT_DIR="${WORKDIR}/${MY_PN}"
-fi
+HOMEPAGE="https://github.com/bohoomil"
+SRC_URI="https://github.com/bohoomil/${PN}/archive/${MY_PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="MIT"
 SLOT="0"
-IUSE=""
+KEYWORDS="~amd64 ~x86"
+
 DEPEND="
 	app-eselect/eselect-infinality
 	app-eselect/eselect-lcdfilter
@@ -28,14 +24,22 @@ DEPEND="
 	media-libs/freetype:2[infinality]"
 RDEPEND="${DEPEND}"
 
-blacklist_font_conf="43-wqy-zenhei-sharp.conf"
+S="${WORKDIR}/${PN}-${MY_PV}"
+
+blacklist_font_conf_array=( "43-wqy-zenhei-sharp.conf" )
 eselect_envfile="ultimate"
 
 create_fontconf_symlinks() {
-	local font_set="${1}" font_conf
-	pushd "${S}/fontconfig_patches/${font_set}" || die "pushd failed"
+	local font_set="${1}" font_conf font_set_directory
+	shift 1
+
+	if font_set_directory="$( find "${S}" -type d -name "${font_set}" -printf '%P\n' -exec false {} + )"; then
+		die "find \"${font_set}\" failed"
+	fi
+
+	pushd "${font_set_directory}" || die "pushd failed"
 	# shellcheck disable=SC2068
-	for font_conf in ${@:1} *.conf; do
+	for font_conf; do
 		dosym ../../"conf.src.ultimate/${font_conf}" \
 			"/etc/fonts/infinality/styles.conf.avail/ultimate-${font_set}/${font_conf}"
 	done
@@ -49,19 +53,13 @@ get_doc_contents() {
 		'3. Select ultimate lcdfilter settings using eselect lcdfilter'
 }
 
-src_unpack() {
-	default
-	if [[ "${PV}" == "99999999" ]]; then
-		git-r3_src_unpack
-		unpack "${WORKDIR}/${MY_PN}/02_fontconfig-iu/${PN}-git.tar.bz2"
-		mv "${PN}-git" "${P}" || die "mv failed"
-	fi
-}
-
 src_prepare() {
-	pushd "${S}/fontconfig_patches/fonts-settings" || die "pushd failed"
-	rm -f ${blacklist_font_conf} || die "rm failed"
-	popd || die "popd failed"
+	local blacklist_font_conf
+
+	# shellcheck disable=SC2068
+	for blacklist_font_conf in ${blacklist_font_conf_array[@]}; do
+		find "${S}" -type f -name "${blacklist_font_conf}" -delete
+	done
 
 	cp "${FILESDIR}/${eselect_envfile}" "${T}/${eselect_envfile}" || die "cp failed"
 
@@ -69,14 +67,21 @@ src_prepare() {
 }
 
 src_install() {
+	local -ar fontconfig_sets_array=( "combi" "free" "ms" )
+	local base_font_confs fontconfig_set fonts_settings_directory \
+		DISABLE_AUTOFORMATTING="1" DOC_CONTENTS
+
 	insinto "/etc/fonts/infinality/conf.src.ultimate"
 	doins "conf.d.infinality"/*.conf
-	doins "fontconfig_patches"/{ms,free,combi,fonts-settings}/*.conf
+
+	# shellcheck disable=SC2068
+	for fontconfig_set in "fonts-settings" ${fontconfig_sets_array[@]}; do
+		doins "${S}/fontconfig_patches/${fontconfig_set}"/*.conf
+	done
 
 	# Extract a list of default .conf files out of Makefile.am
-	local base_font_confs
-	base_font_confs="$(awk \
-		'{
+	base_font_confs="$( \
+		awk '{
 			in_conflinks=in_conflinks || ($0 ~ /^CONF_LINKS\s*=/)
 			if (in_conflinks && ($0 ~ /conf\s*(\\){,1}$/))
 				printf("%s ", $1)
@@ -85,23 +90,21 @@ src_install() {
 			|| die "awk failed"
 	)"
 
-	base_font_confs+="$(
-		find "${S}/fontconfig_patches/fonts-settings" -type f -name "*.conf" -printf '%f ' -exec false {} + \
-			&& die "find failed"
-	)"
-
-	local font_set
-	for font_set in ms free combi; do
+	fonts_settings_directory="${S}/fontconfig_patches/fonts-settings"
+	if base_font_confs+="$( find "${fonts_settings_directory}" -type f -name "*.conf" -printf '%f ' -exec false {} + )"; then
+		die "find \"${fonts_settings_directory}/*.conf\" failed"
+	fi
+s
+	# shellcheck disable=SC2068
+	for fontconfig_set in ${fontconfig_sets_array[@]}; do
 		# shellcheck disable=SC2086
-		create_fontconf_symlinks "${font_set}" ${base_font_confs}
+		create_fontconf_symlinks "${fontconfig_set}" ${base_font_confs}
 	done
 	insinto "/usr/share/eselect-lcdfilter/env.d"
 	doins "${T}/${eselect_envfile}"
 
-	local	DISABLE_AUTOFORMATTING="1" DOC_CONTENTS
 	DOC_CONTENTS="$(get_doc_contents)"
 	readme.gentoo_create_doc
 
-	unset -f create_fontconf_symlinks
-	unset -v blacklist_font_conf eselect_envfile
+	unset -v blacklist_font_conf_array eselect_envfile
 }
