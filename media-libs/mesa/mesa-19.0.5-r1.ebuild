@@ -203,6 +203,7 @@ DEPEND="${RDEPEND}
 	valgrind? ( dev-util/valgrind )
 	x11-base/xorg-proto
 	x11-libs/libXrandr[${MULTILIB_USEDEP}]
+	$(python_gen_any_dep ">=dev-python/mako-0.8.0[\${PYTHON_USEDEP}]")
 "
 
 S="${WORKDIR}/${MY_P}"

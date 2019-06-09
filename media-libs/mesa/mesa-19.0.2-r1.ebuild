@@ -37,8 +37,8 @@ for card in "${VIDEO_CARDS[@]}"; do
 done
 
 IUSE="${IUSE_VIDEO_CARDS}
-	+classic d3d9 debug +dri3 +egl +gallium +gbm gles1 +gles2 +llvm lm_sensors +nptl
-	opencl osmesa pax_kernel pic selinux test unwind vaapi valgrind vdpau vulkan
+	+classic d3d9 debug +dri3 +egl +gallium +gbm gles1 +gles2 +libglvnd +llvm lm_sensors
+	+nptl opencl osmesa pax_kernel pic selinux test unwind vaapi valgrind vdpau vulkan
 	wayland xa xvmc"
 
 REQUIRED_USE="
@@ -52,7 +52,7 @@ REQUIRED_USE="
 	video_cards_intel?  ( classic )
 	video_cards_i915?   ( || ( classic gallium ) )
 	video_cards_i965?   ( classic )
-	video_cards_imx?	( gallium video_cards_vivante )
+	video_cards_imx?	( gallium )
 	video_cards_nouveau? ( || ( classic gallium ) )
 	video_cards_radeon? ( || ( classic gallium )
 						  gallium? ( x86? ( llvm ) amd64? ( llvm ) ) )
@@ -67,11 +67,10 @@ REQUIRED_USE="
 	video_cards_vmware? ( gallium )
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.96"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.97"
 # shellcheck disable=SC2124
 RDEPEND="
 	!app-eselect/eselect-mesa
-	~app-eselect/eselect-opengl-1.3.3
 	>=dev-libs/expat-2.1.0-r3:=[${MULTILIB_USEDEP}]
 	>=sys-libs/zlib-1.2.8[${MULTILIB_USEDEP}]
 	>=x11-libs/libX11-1.6.2:=[${MULTILIB_USEDEP}]
@@ -81,6 +80,13 @@ RDEPEND="
 	>=x11-libs/libXxf86vm-1.1.3:=[${MULTILIB_USEDEP}]
 	>=x11-libs/libxcb-1.13:=[${MULTILIB_USEDEP}]
 	x11-libs/libXfixes:=[${MULTILIB_USEDEP}]
+	libglvnd? (
+		media-libs/libglvnd[${MULTILIB_USEDEP}]
+		!app-eselect/eselect-opengl
+	)
+	!libglvnd? (
+		~app-eselect/eselect-opengl-1.3.3
+	)
 	gallium? (
 		llvm? (
 			video_cards_radeonsi? (
@@ -132,13 +138,11 @@ RDEPEND="${RDEPEND}
 
 # Please keep the LLVM dependency block separate. Since LLVM is slotted,
 # we need to *really* make sure we're only using one slot.
-LLVM_MAX_SLOT="7"
+LLVM_MAX_SLOT="8"
 LLVM_DEPSTR="
 	|| (
+		sys-devel/llvm:8[${MULTILIB_USEDEP}]
 		sys-devel/llvm:7[${MULTILIB_USEDEP}]
-		sys-devel/llvm:6[${MULTILIB_USEDEP}]
-		sys-devel/llvm:5[${MULTILIB_USEDEP}]
-		sys-devel/llvm:4[${MULTILIB_USEDEP}]
 	)
 	sys-devel/llvm:=[${MULTILIB_USEDEP}]
 "
@@ -199,6 +203,7 @@ DEPEND="${RDEPEND}
 	valgrind? ( dev-util/valgrind )
 	x11-base/xorg-proto
 	x11-libs/libXrandr[${MULTILIB_USEDEP}]
+	$(python_gen_any_dep ">=dev-python/mako-0.8.0[\${PYTHON_USEDEP}]")
 "
 
 S="${WORKDIR}/${MY_P}"
@@ -454,6 +459,7 @@ multilib_src_configure() {
 		"$(meson_use gbm)"
 		"$(meson_use gles1)"
 		"$(meson_use gles2)"
+		"$(meson_use libglvnd glvnd)"
 		"-Dvalgrind=$(usex valgrind auto false)"
 		"-Ddri-drivers=$(driver_list "${DRI_DRIVERS[*]}")"
 		"-Dgallium-drivers=$(driver_list "${GALLIUM_DRIVERS[*]}")"
@@ -470,6 +476,8 @@ multilib_src_compile() {
 
 multilib_src_install() {
 	meson_src_install
+
+	use libglvnd && rm -f "${D}/usr/$(get_libdir)"/libGLESv{1_CM,2}.so*
 
 	# Move lib{EGL*,GL*,OpenVG,OpenGL}.{la,a,so*} files from /usr/lib to /usr/lib/opengl/mesa/lib
 	ebegin "(subshell): moving lib{EGL*,GL*,OpenGL}.{la,a,so*} in order to implement dynamic GL switching support"
