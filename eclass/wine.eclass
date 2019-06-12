@@ -1466,7 +1466,7 @@ wine_eapply_esync_patchset() {
 		4.7)
 			_rebased_patchset="bf174815ba8529bfbbda8697503d3c2539f82359"
 			;;
-		4.8)
+		4.[89]|4.1[0-9])
 			_rebased_patchset="29914d583fe098521472332687b8da69fc692690"
 			;;
 		9999)
