@@ -196,6 +196,9 @@ src_prepare() {
 	default
 
 	wine_eapply_bin
+
+	wine_fix_block_scope_compound_literals
+
 	eautoreconf
 
 	# Modification of the server protocol requires regenerating the server requests
