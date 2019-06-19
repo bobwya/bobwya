@@ -49,6 +49,146 @@ EXPORT_FUNCTIONS pkg_pretend pkg_setup src_configure multilib_src_test pkg_posti
 
 IUSE=""
 PATCHES=""
+
+# Internal eclass variables: AWK function definitions
+# @ECLASS-VARIABLE: _WINE_AWK_FUNCTION_PROCESS_LITERAL_LINE
+# @INTERNAL
+# @DESCRIPTION:
+# awk function to fix the scope of a single compound literal.
+# The argument may be a single line or a split line.
+# shellcheck disable=SC2016
+_WINE_AWK_FUNCTION_PROCESS_LITERAL_LINE=\
+'function process_literal_line(line, offset, file_array,
+		line_prefix, value, value_start,
+		variable, variable_length, variable_start)
+{
+	match(file_array[line], idl_prefix_regex)
+	if (RSTART) line_prefix=substr(file_array[line],RSTART,RLENGTH)
+	match(file_array[line], define_regex)
+	if (RSTART) variable_start=RSTART+RLENGTH
+	match(file_array[line], define_variable_regex)
+	if (RSTART) variable_length=(RSTART+RLENGTH-variable_start)
+	match(file_array[line+offset], const_wchar_regex)
+	if (RSTART) value_start=RSTART+RLENGTH
+	if (!variable_start || !variable_length || !value_start)
+		return 0
+	variable=substr(file_array[line],variable_start,variable_length)
+	value=substr(file_array[line+offset],value_start)
+	if (offset) {
+		file_array[line]=sprintf("%sstatic const WCHAR %s[] =\\",
+			line_prefix, variable)
+		file_array[line+offset]=sprintf("%*s%s",
+			value_start, "", value)
+	}
+	else {
+		file_array[line]=sprintf("%sstatic const WCHAR %s[] = %s",
+			line_prefix, variable, value)
+	}
+	return 1
+}'
+
+# @ECLASS-VARIABLE: _WINE_AWK_FUNCTION_IS_BROKEN_LITERAL
+# @INTERNAL
+# @DESCRIPTION:
+# awk function predicate to test if line1 or (if line2 is specified)
+# line1+line2 contain a broken literal term.
+# shellcheck disable=SC2016
+_WINE_AWK_FUNCTION_IS_BROKEN_LITERAL=\
+'function is_broken_literal(line1, line2,
+		is_broken)
+{
+	is_broken=line2 && (line1 ~ (split_first_line_regex)) && (line2 ~ ("^" const_wchar_regex))
+	is_broken=is_broken || ((line1 ~ header_line_regex) || (line1 ~ idl_line_regex))
+	return is_broken
+}'
+
+# @ECLASS-VARIABLE: _WINE_AWK_FUNCTION_PROCESS_SOURCE_FILE
+# @INTERNAL
+# @DESCRIPTION:
+# awk function to fix the scope of compound literals, in an array
+# which holds the entire contents of a source file.
+# shellcheck disable=SC1004,SC2016
+_WINE_AWK_FUNCTION_PROCESS_SOURCE_FILE=\
+'function process_source_file(filename, file_array,
+		changed_file, continuation_line, line, value_start)
+{
+	for (line=1 ; line<=file_array[0] ; ++line) {
+		if (!(line in file_array)) continue
+		if (is_broken_literal(file_array[line]))
+			continuation_line=process_literal_line(line, 0, file_array)
+		else if ((line<file_array[0]) && is_broken_literal(file_array[line], file_array[line+1]))
+			continuation_line=process_literal_line(line, 1, file_array)
+		if (!continuation_line) continue
+		changed_file=1
+		if (!sub(line_continuation_regex,"",file_array[line])) {
+			continuation_line=!(sub("\"\)$",";&",file_array[line])\
+				|| sub("[^;]$","&;",file_array[line]))
+		}
+	}
+	return changed_file
+}'
+
+# @ECLASS-VARIABLE: _WINE_AWK_FUNCTION_UPDATE_SOURCE_FILE
+# @INTERNAL
+# @DESCRIPTION:
+# awk function to rewrite the contents of a source file. Uses the argument
+# which holds the updated contents of the target source file.
+# shellcheck disable=SC2016
+_WINE_AWK_FUNCTION_UPDATE_SOURCE_FILE=\
+'function update_source_file(filename, file_array,
+		line)
+{
+	if (!file_array[0]) return
+	printf(" * Updating %04d %s ...\n", ++file_count, filename)
+	printf("") >filename
+	for (line=1 ; line<=file_array[0] ; ++line)
+		if (line in file_array) printf("%s\n", file_array[line]) >>filename
+	printf(" [ ok ]\n")
+}'
+
+# @ECLASS-VARIABLE: _WINE_AWK_FIX_BLOCK_SCOPE_LITERALS
+# @INTERNAL
+# @DESCRIPTION:
+# awk function to fix the scope of compound literal's.
+# Transforms:
+#
+#     #define LDAP_CONTROL_VLVRESPONSE_W (const WCHAR []){'2','.','1','6','.', \
+#     '8','4','0','.','1','.','1','1','3','7','3','0','.','3','.','4','.','1','0',0}
+#
+# into:
+#
+#     static const WCHAR LDAP_CONTROL_VLVRESPONSE_W[] = {'2','.','1','6','.',
+#     '8','4','0','.','1','.','1','1','3','7','3','0','.','3','.','4','.','1','0',0};
+#
+# See: https://www.gnu.org/software/gcc/gcc-9/porting_to.html#complit
+# shellcheck disable=SC2016
+_WINE_AWK_FIX_BLOCK_SCOPE_LITERALS=\
+'BEGIN{
+	const_wchar_regex="[[:blank:]][[:blank:]]*\(const[[:space:]]*WCHAR[[:space:]]*\[\]\)"
+	define_regex="#[[:space:]]?define[[:blank:]][[:blank:]]*"
+	define_variable_regex=(define_regex "[^[:blank:]]*")
+	escape_code_regex="\\134"
+	header_line_regex=("^" define_variable_regex const_wchar_regex)
+	idl_prefix_regex="^cpp_quote\(\""
+	idl_line_regex=(idl_prefix_regex define_variable_regex const_wchar_regex)
+	line_continuation_regex=("[[:blank:]]*" escape_code_regex "$")
+	split_first_line_regex=("^" define_variable_regex line_continuation_regex)
+}
+{
+	if (filename != FILENAME) {
+		if (filename && process_source_file(filename, file_array))
+			update_source_file(filename, file_array)
+		filename=FILENAME
+		delete file_array
+	}
+	file_array[++file_array[0]]=$0
+}
+END{
+	if (filename && process_source_file(filename, file_array))
+		update_source_file(filename, file_array)
+}'
+
+# Internal eclass variables: general
 # @ECLASS-VARIABLE: _WINE_USE_DISABLED
 # @INTERNAL
 # @DESCRIPTION:
@@ -1098,7 +1238,7 @@ _wine_gcc_specific_pretests() {
 	fi
 }
 
-# @FUNCTION: _wine_gcc_specific_pretests
+# @FUNCTION: _wine_generic_compiler_pretests
 # @INTERNAL
 # @DESCRIPTION:
 # This function tests generic compiler support for critical functionality, for the packages:
@@ -1797,6 +1937,33 @@ wine_fix_gentoo_winegcc_support() {
     opts.force_pointer_size = sizeof(size_t);\
 #endif' \
 		"${source_files[1]}" || die "sed failed"
+}
+
+# @FUNCTION: wine_fix_block_scope_compound_literals
+# @DESCRIPTION:
+# This function fixes issues with the lifetime of block scope compound literal's
+# definitions, in Wine. This fix is applied to Wine versions <=4.10. Technically this
+# issue only affects >=sys-devel/gcc-9.1.0, which checks for invalid literal scoping.
+# This global fix is applied unequivocally, irrespective of the compiler version
+# being used. Wine versions <=4.10, use invalid block scoping for a large number
+# of compound literals (potentially leading to issues, with more aggressive compiler
+# optimisations).
+# See: https://www.gnu.org/software/gcc/gcc-9/porting_to.html#complit
+# See: https://bugzilla.suse.com/show_bug.cgi?id=1137071
+wine_fix_block_scope_compound_literals() {
+	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
+
+	einfo "Fixing compound literals (violating block scoping) ..."
+local -r awk_fix_block_scope_literals="${_WINE_AWK_FUNCTION_PROCESS_LITERAL_LINE} \
+${_WINE_AWK_FUNCTION_IS_BROKEN_LITERAL} \
+${_WINE_AWK_FUNCTION_PROCESS_SOURCE_FILE} \
+${_WINE_AWK_FUNCTION_UPDATE_SOURCE_FILE} \
+${_WINE_AWK_FIX_BLOCK_SCOPE_LITERALS}"
+
+	find "${S}" -type f \( -name "*.h" -o -name "*.idl" \) -print0 \
+	| sort -z \
+	| xargs -0 awk "${awk_fix_block_scope_literals}" \
+		|| die "awk failed"
 }
 
 # @FUNCTION: wine_src_prepare_generate_64bit_manpages
