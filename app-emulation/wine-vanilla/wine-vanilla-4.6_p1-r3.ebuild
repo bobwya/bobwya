@@ -100,7 +100,7 @@ RDEPEND="${COMMON_DEPEND}
 	>=app-eselect/eselect-wine-1.5.5
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
 	gecko? ( app-emulation/wine-gecko:2.47[abi_x86_32?,abi_x86_64?] )
-	mono? ( app-emulation/wine-mono:4.8.3 )
+	mono? ( app-emulation/wine-mono:4.8.1 )
 	perl? (
 		dev-lang/perl
 		dev-perl/XML-Simple
@@ -167,6 +167,9 @@ src_prepare() {
 	default
 
 	wine_eapply_bin
+
+	wine_fix_block_scope_compound_literals
+
 	eautoreconf
 
 	# Modification of the server protocol requires regenerating the server requests
