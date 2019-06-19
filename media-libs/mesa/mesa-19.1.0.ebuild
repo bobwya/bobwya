@@ -2,9 +2,9 @@
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-EAPI=6
+EAPI=7
 
-PYTHON_COMPAT=( python3_4 python3_5 python3_6 python3_7 )
+PYTHON_COMPAT=( python3_5 python3_6 python3_7 )
 
 inherit llvm meson multilib-minimal pax-utils python-any-r1
 
@@ -28,8 +28,8 @@ SLOT="0"
 RESTRICT="!test? ( test )"
 
 AMD_CARDS=( "r100" "r200" "r300" "r600" "radeon" "radeonsi" )
-INTEL_CARDS=( "i915" "i965" "intel" )
-VIDEO_CARDS=( "freedreno" "imx" "nouveau" "vc4" "virgl" "vivante" "vmware" )
+INTEL_CARDS=( "i915" "i965" "intel" "iris" )
+VIDEO_CARDS=( "freedreno" "nouveau" "vc4" "virgl" "vivante" "vmware" )
 VIDEO_CARDS+=( "${AMD_CARDS[@]}" )
 VIDEO_CARDS+=( "${INTEL_CARDS[@]}" )
 for card in "${VIDEO_CARDS[@]}"; do
@@ -39,20 +39,22 @@ done
 IUSE="${IUSE_VIDEO_CARDS}
 	+classic d3d9 debug +dri3 +egl +gallium +gbm gles1 +gles2 +libglvnd +llvm lm_sensors
 	+nptl opencl osmesa pax_kernel pic selinux test unwind vaapi valgrind vdpau vulkan
-	wayland xa xvmc"
+	vulkan-overlay wayland xa xvmc"
 
 REQUIRED_USE="
 	d3d9?   ( dri3 || ( video_cards_r300 video_cards_r600 video_cards_radeonsi video_cards_nouveau video_cards_vmware ) )
 	gles1?  ( egl )
 	gles2?  ( egl )
-	vulkan? ( || ( video_cards_i965 video_cards_radeonsi )
+	vulkan? ( dri3
+		|| ( video_cards_i965 video_cards_iris video_cards_radeonsi )
 		video_cards_radeonsi? ( llvm ) )
+	vulkan-overlay? ( vulkan )
 	wayland? ( egl gbm )
 	video_cards_freedreno?  ( gallium )
 	video_cards_intel?  ( classic )
 	video_cards_i915?   ( || ( classic gallium ) )
 	video_cards_i965?   ( classic )
-	video_cards_imx?	( gallium )
+	video_cards_iris?   ( gallium )
 	video_cards_nouveau? ( || ( classic gallium ) )
 	video_cards_radeon? ( || ( classic gallium )
 						  gallium? ( x86? ( llvm ) amd64? ( llvm ) ) )
@@ -118,10 +120,13 @@ RDEPEND="
 		>=dev-libs/wayland-protocols-1.8
 	)
 	${LIBDRM_DEPSTRING}[video_cards_freedreno?,video_cards_nouveau?,video_cards_vc4?,video_cards_vivante?,video_cards_vmware?,${MULTILIB_USEDEP}]
+	vulkan-overlay? ( dev-util/glslang:0=[${MULTILIB_USEDEP}] )
 "
 
 # shellcheck disable=SC2068
 for card in ${INTEL_CARDS[@]}; do
+	[[ "${card}" == "i965" ]] && continue
+
 	RDEPEND="${RDEPEND}
 		video_cards_${card}? ( ${LIBDRM_DEPSTRING}[video_cards_intel] )
 	"
@@ -138,9 +143,10 @@ RDEPEND="${RDEPEND}
 
 # Please keep the LLVM dependency block separate. Since LLVM is slotted,
 # we need to *really* make sure we're only using one slot.
-LLVM_MAX_SLOT="8"
+LLVM_MAX_SLOT="9"
 LLVM_DEPSTR="
 	|| (
+		sys-devel/llvm:9[${MULTILIB_USEDEP}]
 		sys-devel/llvm:8[${MULTILIB_USEDEP}]
 		sys-devel/llvm:7[${MULTILIB_USEDEP}]
 	)
@@ -192,6 +198,11 @@ RDEPEND="${RDEPEND}
 unset {LLVM,CLANG}_DEPSTR{,_AMDGPU}
 
 DEPEND="${RDEPEND}
+	valgrind? ( dev-util/valgrind )
+	x11-base/xorg-proto
+	x11-libs/libXrandr[${MULTILIB_USEDEP}]
+"
+BDEPEND="
 	${PYTHON_DEPS}
 	opencl? (
 		>=sys-devel/gcc-4.6
@@ -200,9 +211,6 @@ DEPEND="${RDEPEND}
 	sys-devel/flex
 	sys-devel/gettext
 	virtual/pkgconfig
-	valgrind? ( dev-util/valgrind )
-	x11-base/xorg-proto
-	x11-libs/libXrandr[${MULTILIB_USEDEP}]
 	$(python_gen_any_dep ">=dev-python/mako-0.8.0[\${PYTHON_USEDEP}]")
 "
 
@@ -319,7 +327,7 @@ pkg_pretend() {
 }
 
 python_check_deps() {
-	has_version --host-root ">=dev-python/mako-0.8.0[${PYTHON_USEDEP}]"
+	has_version -b ">=dev-python/mako-0.8.0[${PYTHON_USEDEP}]"
 }
 
 pkg_setup() {
@@ -404,13 +412,17 @@ multilib_src_configure() {
 		else
 			emesonargs+=( "-Dgallium-xvmc=false" )
 		fi
+		if use video_cards_freedreno ||
+			use video_cards_vc4 ||
+			use video_cards_vivante; then
+			driver_enable GALLIUM_DRIVERS kmsro
+		fi
 		driver_enable GALLIUM_DRIVERS video_cards_vc4 vc4
 		driver_enable GALLIUM_DRIVERS video_cards_virgl virgl
 		driver_enable GALLIUM_DRIVERS video_cards_vivante etnaviv
 		driver_enable GALLIUM_DRIVERS video_cards_vmware svga
 		driver_enable GALLIUM_DRIVERS video_cards_nouveau nouveau
 		driver_enable GALLIUM_DRIVERS video_cards_i915 i915
-		driver_enable GALLIUM_DRIVERS video_cards_imx imx
 		if ! use video_cards_i915 && ! use video_cards_i965; then
 			driver_enable GALLIUM_DRIVERS video_cards_intel i915
 		fi
@@ -430,6 +442,7 @@ multilib_src_configure() {
 
 	if use vulkan; then
 		driver_enable VULKAN_DRIVERS video_cards_i965 intel
+		driver_enable VULKAN_DRIVERS video_cards_iris intel
 		driver_enable VULKAN_DRIVERS video_cards_radeonsi amd
 	fi
 	# x86 hardened pax_kernel needs glx-rts, bug 240956
@@ -464,6 +477,7 @@ multilib_src_configure() {
 		"-Ddri-drivers=$(driver_list "${DRI_DRIVERS[*]}")"
 		"-Dgallium-drivers=$(driver_list "${GALLIUM_DRIVERS[*]}")"
 		"-Dvulkan-drivers=$(driver_list "${VULKAN_DRIVERS[*]}")"
+		"$(meson_use vulkan-overlay vulkan-overlay-layer)"
 		"--buildtype" "$(usex debug debug plain)"
 		"-Db_ndebug=$(usex debug false true)"
 	)
