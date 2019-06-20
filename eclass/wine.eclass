@@ -121,7 +121,7 @@ _WINE_AWK_FUNCTION_PROCESS_SOURCE_FILE=\
 		if (!continuation_line) continue
 		changed_file=1
 		if (!sub(line_continuation_regex,"",file_array[line])) {
-			continuation_line=!(sub("\"\)$",";&",file_array[line])\
+			continuation_line=!(sub("[\"][)]$",";&",file_array[line])\
 				|| sub("[^;]$","&;",file_array[line]))
 		}
 	}
@@ -164,14 +164,13 @@ _WINE_AWK_FUNCTION_UPDATE_SOURCE_FILE=\
 # shellcheck disable=SC2016
 _WINE_AWK_FIX_BLOCK_SCOPE_LITERALS=\
 'BEGIN{
-	const_wchar_regex="[[:blank:]][[:blank:]]*\(const[[:space:]]*WCHAR[[:space:]]*\[\]\)"
+	const_wchar_regex="[[:blank:]][[:blank:]]*[(]const[[:space:]]*WCHAR[[:space:]]*[[][]][)]"
 	define_regex="#[[:space:]]?define[[:blank:]][[:blank:]]*"
 	define_variable_regex=(define_regex "[^[:blank:]]*")
-	escape_code_regex="\\134"
 	header_line_regex=("^" define_variable_regex const_wchar_regex)
-	idl_prefix_regex="^cpp_quote\(\""
+	idl_prefix_regex=("^cpp_quote[(][\"]")
 	idl_line_regex=(idl_prefix_regex define_variable_regex const_wchar_regex)
-	line_continuation_regex=("[[:blank:]]*" escape_code_regex "$")
+	line_continuation_regex="[[:blank:]]*[\\134\\134]$"
 	split_first_line_regex=("^" define_variable_regex line_continuation_regex)
 }
 {
