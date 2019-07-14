@@ -14,7 +14,7 @@ However Wine can optionally use native Windows DLLs if they are available.Wine p
 		<flag name="esync">Add support for the wine-esync patchset (unofficial).
 		See: https://github.com/zfigura/wine</flag>
 		<flag name="faudio">Enable support using FAudio, in place of the Wine XAudio 2 layer (unofficial).
-		Injects the <pkg>app-emulation/wine-vanilla-faudio</pkg> package, into the current Wine variant.
+		Injects the <pkg>app-emulation/faudio</pkg> package, into the current Wine variant.
 		See: https://github.com/FNA-XNA/FAudio</flag>
 		<flag name="gecko">Add support for the Gecko engine when using iexplore</flag>
 		<flag name="gstreamer">Use <pkg>media-libs/gstreamer</pkg> to provide DirectShow functionality.</flag>
