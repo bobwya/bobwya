@@ -18,7 +18,7 @@ For this Wine variant - the external Wine Staging patchset is always applied whe
 		<flag name="esync">Add support for the wine-esync patchset (unofficial).
 		See: https://github.com/zfigura/wine</flag>
 		<flag name="faudio">Enable support using FAudio, in place of the Wine XAudio 2 layer (unofficial).
-		Injects the <pkg>app-emulation/wine-staging-faudio</pkg> package, into the current Wine variant.
+		Injects the <pkg>app-emulation/faudio</pkg> package, into the current Wine variant.
 		See: https://github.com/FNA-XNA/FAudio</flag>
 		<flag name="ffmpeg">Use ffmpeg to convert WMA formats, requires:
 			<pkg>media-video/ffmpeg</pkg> (this feature is not supported by <pkg>media-video/libav</pkg>).</flag>
