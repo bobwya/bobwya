@@ -3,6 +3,7 @@
 <pkgmetadata>
 <use>
 	<flag name="dmx">Build the Distributed Multiheaded X server</flag>
+	<flag name="elogind">Use elogind to get control over framebuffer when running as regular user</flag>
 	<flag name="fop">Support for generating pdf documentation using <pkg>dev-java/fop</pkg></flag>
 	<flag name="glamor">Enable Glamor OpenGL 2D acceleration</flag>
 	<flag name="kdrive">Build the kdrive X servers</flag>
