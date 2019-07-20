@@ -226,7 +226,7 @@ x86? (
 		usr/lib*/libGL.so.1.2.0
 		usr/lib*/libOSMesa.so.8.0.0
 	)
-"
+)"
 
 # driver_enable()
 #	1>	 driver array (reference)

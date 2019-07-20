@@ -29,7 +29,7 @@ RESTRICT="!test? ( test )"
 
 AMD_CARDS=( "r100" "r200" "r300" "r600" "radeon" "radeonsi" )
 INTEL_CARDS=( "i915" "i965" "intel" "iris" )
-VIDEO_CARDS=( "freedreno" "lima" "nouveau" "panfrost" "vc4" "virgl" "vivante" "vmware" )
+VIDEO_CARDS=( "freedreno" "nouveau" "vc4" "virgl" "vivante" "vmware" )
 VIDEO_CARDS+=( "${AMD_CARDS[@]}" )
 VIDEO_CARDS+=( "${INTEL_CARDS[@]}" )
 for card in "${VIDEO_CARDS[@]}"; do
@@ -38,7 +38,7 @@ done
 
 IUSE="${IUSE_VIDEO_CARDS}
 	+classic d3d9 debug +dri3 +egl +gallium +gbm gles1 +gles2 +libglvnd +llvm lm_sensors
-	+nptl opencl osmesa pax_kernel selinux test unwind vaapi valgrind vdpau vulkan
+	+nptl opencl osmesa pax_kernel pic selinux test unwind vaapi valgrind vdpau vulkan
 	vulkan-overlay wayland xa xvmc"
 
 REQUIRED_USE="
@@ -55,9 +55,7 @@ REQUIRED_USE="
 	video_cards_i915?   ( || ( classic gallium ) )
 	video_cards_i965?   ( classic )
 	video_cards_iris?   ( gallium )
-	video_cards_lima?   ( gallium )
 	video_cards_nouveau? ( || ( classic gallium ) )
-	video_cards_panfrost? ( gallium )
 	video_cards_radeon? ( || ( classic gallium )
 						  gallium? ( x86? ( llvm ) amd64? ( llvm ) ) )
 	video_cards_r100?   ( classic )
@@ -71,7 +69,7 @@ REQUIRED_USE="
 	video_cards_vmware? ( gallium )
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.99"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.97"
 # shellcheck disable=SC2124
 RDEPEND="
 	!app-eselect/eselect-mesa
@@ -221,11 +219,13 @@ EGIT_CHECKOUT_DIR="${S}"
 
 QA_WX_LOAD="
 x86? (
-	usr/lib*/libglapi.so.0.0.0
-	usr/lib*/libGLESv1_CM.so.1.0.0
-	usr/lib*/libGLESv2.so.2.0.0
-	usr/lib*/libGL.so.1.2.0
-	usr/lib*/libOSMesa.so.8.0.0
+	!pic? (
+		usr/lib*/libglapi.so.0.0.0
+		usr/lib*/libGLESv1_CM.so.1.0.0
+		usr/lib*/libGLESv2.so.2.0.0
+		usr/lib*/libGL.so.1.2.0
+		usr/lib*/libOSMesa.so.8.0.0
+	)
 )"
 
 # driver_enable()
@@ -413,14 +413,10 @@ multilib_src_configure() {
 			emesonargs+=( "-Dgallium-xvmc=false" )
 		fi
 		if use video_cards_freedreno ||
-			use video_cards_lima ||
-			use video_cards_panfrost ||
 			use video_cards_vc4 ||
 			use video_cards_vivante; then
 			driver_enable GALLIUM_DRIVERS kmsro
 		fi
-		driver_enable GALLIUM_DRIVERS video_cards_lima lima
-		driver_enable GALLIUM_DRIVERS video_cards_panfrost panfrost
 		driver_enable GALLIUM_DRIVERS video_cards_vc4 vc4
 		driver_enable GALLIUM_DRIVERS video_cards_virgl virgl
 		driver_enable GALLIUM_DRIVERS video_cards_vivante etnaviv
@@ -452,6 +448,11 @@ multilib_src_configure() {
 	# x86 hardened pax_kernel needs glx-rts, bug 240956
 	if [[ "${ABI}" == "x86" ]]; then
 		emesonargs+=( "$(meson_use pax_kernel glx-read-only-text)" )
+	fi
+
+	# on abi_x86_32 hardened we need to have asm disable
+	if [[ ${ABI} == x86* ]] && use pic; then
+		emesonargs+=( "-Dasm=false" )
 	fi
 
 	if use gallium; then
