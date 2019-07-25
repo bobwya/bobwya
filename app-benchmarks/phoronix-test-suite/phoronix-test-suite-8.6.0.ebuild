@@ -9,7 +9,6 @@ inherit bash-completion-r1 xdg-utils-r1
 
 DESCRIPTION="Phoronix's comprehensive, cross-platform testing and benchmark suite"
 HOMEPAGE="http://www.phoronix-test-suite.com"
-SRC_URI=""
 
 LICENSE="GPL-3"
 SLOT="0"
