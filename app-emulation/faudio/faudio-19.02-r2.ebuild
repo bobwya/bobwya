@@ -38,6 +38,8 @@ RDEPEND="${COMMON_DEPEND}
 DEPEND="${COMMON_DEPEND}
 "
 
+PATCHES=( "${FILESDIR}/${PN}-19.01-install_tests.patch" )
+
 multilib_src_configure() {
 	local mycmakeargs=(
 		"-DCMAKE_INSTALL_BINDIR=bin"
@@ -52,7 +54,7 @@ multilib_src_configure() {
 		"-DXNASONG=$(usex xnasong ON OFF)"
 	)
 	if use ffmpeg; then
-		mycmakeargs+=( "-DFFmpeg_LIBRARY_DIRS=${PREFIX%/}/usr/$(get_libdir)"  )
+		mycmakeargs+=( "-DFFmpeg_LIBRARY_DIRS=${PREFIX%/}/usr/$(get_libdir)" )
 	fi
 	cmake-utils_src_configure
 }
@@ -75,15 +77,10 @@ multilib_src_install() {
 		|| die "sed failed"
 	insinto "/usr/$(get_libdir)/pkgconfig"
 	doins "${T}/faudio.pc"
-
-	if use test; then
-		mkdir -p "${T}/$(get_libdir)"
-		cp "${BUILD_DIR}/faudio_tests" "${T}/$(get_libdir)/" || die "cp failed"
-	fi
 }
 
 faudio_test() {
-	XDG_RUNTIME_DIR="/run/user/0" virtx "${T}/$(get_libdir)/faudio_tests"
+	XDG_RUNTIME_DIR="/run/user/0" virtx "/usr/$(get_libdir)/faudio/faudio_tests"
 }
 
 pkg_postinst() {
