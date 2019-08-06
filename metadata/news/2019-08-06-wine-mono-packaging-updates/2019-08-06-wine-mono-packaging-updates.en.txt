@@ -1,0 +1,51 @@
+Title: >=app-emulation/wine-mono-4.8.1
+Author: Rob Walker <bob.mt.wya@gmail.com>
+Content-Type: text/plain
+Posted: 2019-08-06
+Revision: 1
+News-Item-Format: 1.0
+
+Following the change to split the Wine Mono package, back in April 2019,
+this is now finally implmented in the ::bobwya Wine Overlay packages. This
+affects all recent Wine packages:
+
+ * >=app-emulation/wine-staging-4.6
+ * >=app-emulation/wine-vanilla-4.6 
+
+and Wine Mono packages:
+
+ * >=app-emulation/wine-mono-4.8.1
+
+See the wine-devel mailing list thread, announcing this change:
+https://www.winehq.org/pipermail/wine-devel/2019-April/143379.html
+
+As this change is being applied retrospecitvely - you may find you
+have issuing updating existing WINEPREFIX's. Any WINEPREFIX's
+which have the standard MSI binary wine-mono package installed.
+These need to be updated to the new Wine Mono split (binary)
+packages. The new Wine Mono packages have a central
+shared component, stored in:
+
+    "/usr/share/wine/mono/${P}/"
+
+(where P = wine-mono-<version>)
+
+and a much smaller component which is installed to each WINEPREFIX.
+Overall, with multiple WINEPREFIX's, this should result in a small
+storage space saving.
+
+If a number of WINEPREFIX's are affected, then it is probably worth
+scripting this update. Something like:
+
+    wineboot -u &
+    sleep 10s
+    wineserver -k
+    wineboot -u
+
+will probably work. The first wineboot call should successfully
+uninstall the older MSI Wine Mono package. However it may
+get confused and try to download the newer Wine Mono split package.
+Hence killing the first update and restarting it... So the
+operating should succeed - without any end user intervention!
+
+-Robert
