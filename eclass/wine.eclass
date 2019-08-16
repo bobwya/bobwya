@@ -1590,7 +1590,7 @@ wine_eapply_esync_patchset() {
 		3.19)
 			_rebased_patchset="2f17e0112dc0af3f0b246cf377e2cb8fd7a6cf58"
 			;;
-		3.2[0-1]|4.[0-3]|4.0.1-rc[1-9]|4.0.1)
+		3.2[0-1]|4.[0-3]|4.0.1-rc[1-9]|4.0.1|4.0.2-rc[1-9]|4.0.2)
 			_rebased_patchset="2600ecd4edfdb71097105c74312f83845305a4f2"
 			;;
 		4.4)
