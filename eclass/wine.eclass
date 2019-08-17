@@ -1965,6 +1965,24 @@ ${_WINE_AWK_FIX_BLOCK_SCOPE_LITERALS}"
 		|| die "awk failed"
 }
 
+# @FUNCTION: wine_support_wine_mono_downgrade
+# @DESCRIPTION:
+# This function fixes installation of an earlier version of Wine Mono, to a WINEPREFIX,
+# when Wine is downgraded (e.g. with eselect wine).
+# The stock behaviour of Wine is to leave, newer versions of Wine Mono, installed in a
+# WINEPREFIX. This will break any applications that require Wine Mono support.
+# Applied to all Wine versions.
+# See: #480508
+wine_support_wine_mono_downgrade() {
+	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
+
+	sed -i \
+		-e '/else if (current_version\[i\] > wanted_version\[i\])/,+4d' \
+		-e 's/if (current_version\[i\] < wanted_version\[i\])/if (current_version[i] != wanted_version[i])/g' \
+		-e 's/if (compare_versions(WINE_MONO_VERSION, versionstringbuf) <= 0)/if (compare_versions(WINE_MONO_VERSION, versionstringbuf) == 0)/g' \
+		dlls/mscoree/mscoree_main.c || die "sed failed"
+}
+
 # @FUNCTION: wine_src_prepare_generate_64bit_manpages
 # @DESCRIPTION:
 # This functions ensures that 64-bit Wine manpages are generated.
