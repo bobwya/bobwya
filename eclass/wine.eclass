@@ -264,12 +264,14 @@ readonly WINE_ESYNC_P
 # @DESCRIPTION:
 # Name only, for current: gentoo-wine-esync; tarball.
 WINE_ESYNC_PN="${WINE_ESYNC_P%-*}"
+# shellcheck disable=SC2034
 readonly WINE_ESYNC_PN
 
 # @ECLASS-VARIABLE: WINE_ESYNC_PV
 # @DESCRIPTION:
 # Version only, for current: gentoo-wine-esync; tarball.
 WINE_ESYNC_PV="${WINE_ESYNC_P##*-}"
+# shellcheck disable=SC2034
 readonly WINE_ESYNC_PV
 
 # wine-pba support
@@ -283,12 +285,14 @@ readonly WINE_PBA_P
 # @DESCRIPTION:
 # Name only, for current: gentoo-wine-pba; tarball.
 WINE_PBA_PN="${WINE_PBA_P%-*}"
+# shellcheck disable=SC2034
 readonly WINE_PBA_PN
 
 # @ECLASS-VARIABLE: WINE_PBA_PV
 # @DESCRIPTION:
 # Version only, for current: gentoo-wine-pba; tarball.
 WINE_PBA_PV="${WINE_PBA_P##*-}"
+# shellcheck disable=SC2034
 readonly WINE_PBA_PV
 
 # @ECLASS-VARIABLE: WINE_PV
