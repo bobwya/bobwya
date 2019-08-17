@@ -145,6 +145,7 @@ src_prepare() {
 	wine_fix_gentoo_cc_multilib_support
 	wine_fix_gentoo_O3_compilation_support
 	wine_fix_gentoo_winegcc_support
+	wine_support_wine_mono_downgrade
 
 	use esync && wine_eapply_esync_patchset "${WORKDIR}/${WINE_ESYNC_P}"
 
