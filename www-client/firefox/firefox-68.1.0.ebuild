@@ -5,7 +5,7 @@
 EAPI=6
 VIRTUALX_REQUIRED="pgo"
 WANT_AUTOCONF="2.1"
-MOZ_ESR=""
+MOZ_ESR="1"
 
 PYTHON_COMPAT=( python3_{5,6,7} )
 PYTHON_REQ_USE='ncurses,sqlite,ssl,threads(+)'
@@ -28,12 +28,12 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${PN}-68.0-patches-09"
+PATCH="${PN}-68.0-patches-11"
 
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-HG_MOZ_REVISION="840132a4a9b3"
+HG_MOZ_REVISION="3f648b714230"
 HG_MOZ_PV="${MOZ_PV/%.*/.0}"
 HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
 MOZ_SRC_URI="${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz"
@@ -42,7 +42,7 @@ if [[ "${PV}" == *_rc* ]]; then
 	MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/candidates/${MOZ_PV}-candidates/build${PV##*_rc}"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-HG_MOZ_REVISION="840132a4a9b3"
+HG_MOZ_REVISION="3f648b714230"
 HG_MOZ_PV="${MOZ_PV/%.*/.0}"
 HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
 	MOZ_LANGPACK_PREFIX="linux-i686/xpi/"
@@ -58,7 +58,7 @@ DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE inte
 HOMEPAGE="https://www.mozilla.com/firefox
 	https://www.rosenauer.org/hg/mozilla"
 
-KEYWORDS="~amd64 ~ppc64 ~x86"
+KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
@@ -88,7 +88,7 @@ CDEPEND="
 	dev-libs/expat
 	>=x11-libs/cairo-1.10[X]
 	>=x11-libs/gtk+-2.18:2
-	>=x11-libs/gtk+-3.4.0:3=[X]
+	>=x11-libs/gtk+-3.4.0:3[X]
 	x11-libs/gdk-pixbuf
 	>=x11-libs/pango-1.22.0
 	>=media-libs/libpng-1.6.35:0=[apng]
@@ -120,10 +120,7 @@ CDEPEND="
 	system-icu? ( >=dev-libs/icu-63.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
 	system-libevent? ( >=dev-libs/libevent-2.0:0=[threads] )
-	system-libvpx? (
-		>=media-libs/libvpx-1.7.0:0=[postproc]
-		<media-libs/libvpx-1.8:0=[postproc]
-	)
+	system-libvpx? ( =media-libs/libvpx-1.7*:0=[postproc] )
 	system-sqlite? ( >=dev-db/sqlite-3.28.0:3[secure-delete,debug=] )
 	system-webp? ( >=media-libs/libwebp-1.0.2:0= )
 	wifi? ( kernel_linux? ( >=sys-apps/dbus-0.60
@@ -182,10 +179,11 @@ DEPEND="${CDEPEND}
 	wayland? ( >=x11-libs/gtk+-3.11:3[wayland] )
 	amd64? ( >=dev-lang/yasm-1.1 virtual/opengl )
 	x86? ( >=dev-lang/yasm-1.1 virtual/opengl )
-	!system-av1? ( >=dev-lang/nasm-2.13 )"
+	!system-av1? (
+		amd64? ( >=dev-lang/nasm-2.13 )
+		x86? ( >=dev-lang/nasm-2.13 )
+	)"
 
-# Due to a bug in GCC, profile guided optimization will produce
-# AVX2 instructions, bug #677052
 REQUIRED_USE="wifi? ( dbus )
 	pgo? ( lto )"
 
@@ -297,7 +295,7 @@ src_prepare() {
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox/)
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
-	use !wayland && rm -f "${WORKDIR}/firefox/2019_mozilla-bug1539471.patch"
+	rm "${WORKDIR}"/firefox/2013_avoid_noinline_on_GCC_with_skcms.patch
 
 	default
 
@@ -420,6 +418,9 @@ src_configure() {
 			if [[ $(gcc-major-version) -lt 8 ]]; then
 				show_old_compiler_warning=1
 			fi
+
+			# Bug 689358
+			append-cxxflags -flto
 
 			if ! use cpu_flags_x86_avx2; then
 				local _gcc_version_with_ipa_cdtor_fix="8.3"
@@ -627,8 +628,13 @@ src_compile() {
 		addpredict /etc/gconf
 	fi
 
-	MOZ_MAKE_FLAGS="${MAKEOPTS} -O" SHELL="${SHELL:-${EPREFIX}/bin/bash}" MOZ_NOSPAM=1 ${_virtx} \
-	./mach build --verbose || die "echo failed"
+	GDK_BACKEND=x11 \
+		MOZ_MAKE_FLAGS="${MAKEOPTS} -O" \
+		SHELL="${SHELL:-${EPREFIX}/bin/bash}" \
+		MOZ_NOSPAM=1 \
+		${_virtx} \
+		./mach build --verbose \
+		|| die "echo failed"
 }
 
 src_install() {
