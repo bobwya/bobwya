@@ -24,7 +24,7 @@ KEYWORDS="-* ~amd64 ~amd64-fbsd"
 RESTRICT="bindist mirror"
 EMULTILIB_PKG="true"
 
-IUSE="acpi compat +driver gtk3 kernel_FreeBSD kernel_linux +kms multilib static-libs +tools uvm wayland +X"
+IUSE="acpi compat +driver gtk3 kernel_FreeBSD kernel_linux +kms libglvnd multilib static-libs +tools uvm wayland +X"
 REQUIRED_USE=" tools? ( X ) "
 
 COMMON="
@@ -47,7 +47,14 @@ COMMON="
 		x11-libs/libXxf86vm
 		x11-libs/pango[X]
 	)
-	X? ( ~app-eselect/eselect-opengl-1.3.3 )
+	X? (
+		!libglvnd? ( >=app-eselect/eselect-opengl-1.3.3 )
+		libglvnd? (
+			media-libs/libglvnd[${MULTILIB_USEDEP}]
+			!app-eselect/eselect-opengl
+		)
+	)
+	app-misc/pax-utils
 "
 DEPEND="
 	${COMMON}
@@ -79,11 +86,11 @@ nvidia_drivers_versions_check() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 5 1; then
+		if kernel_is ge 5 3; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-5.1"
-			ewarn "<sys-kernel/vanilla-sources-5.1"
+			ewarn "<sys-kernel/gentoo-sources-5.3"
+			ewarn "<sys-kernel/vanilla-sources-5.3"
 		elif use kms && kernel_is lt 4 2; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -240,6 +247,7 @@ src_prepare() {
 	fi
 	if use tools; then
 		pushd "${S%/}/nvidia-settings-${PV}" || die "pushd failed"
+		eapply "${FILESDIR}/${PN}-make_libxnvctrl.patch"
 		# FIXME: horrible hack!
 		if has_multilib_profile && use multilib && use abi_x86_32; then
 			cd "src" || die "cd failed"
@@ -260,7 +268,7 @@ src_compile() {
 		MAKE="$(get_bmake)" CFLAGS="-Wno-sign-compare" emake CC="$(tc-getCC)" \
 			LD="$(tc-getLD)" LDFLAGS="$(raw-ldflags)" || die "emake"
 	elif use driver && use kernel_linux; then
-		MAKEOPTS=-j1 linux-mod_src_compile
+		linux-mod_src_compile
 	fi
 
 	if use tools; then
@@ -515,7 +523,7 @@ src_install-libs() {
 
 		if use wayland && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then
 			NV_GLX_LIBRARIES+=(
-				"libnvidia-egl-wayland.so.1.1.2" .
+				"libnvidia-egl-wayland.so.1.1.3" .
 			)
 		fi
 		if use kernel_FreeBSD; then
@@ -544,7 +552,7 @@ src_install-libs() {
 			donvidia "${nv_libdir}/${nv_LIB}" "${nv_DEST}"
 		done
 
-		use static-libs && dolib.a "${nv_static_libdir}/libXNVCtrl.a"
+		use static-libs && dolib.a "${nv_static_libdir}/_out/Linux_x86_64/libXNVCtrl.a"
 	fi
 }
 
@@ -578,7 +586,7 @@ pkg_postinst() {
 	use driver && use kernel_linux && linux-mod_pkg_postinst
 
 	# Switch to the nvidia implementation
-	use X && "${ROOT%/}/usr/bin/eselect" opengl set --use-old nvidia
+	! use libglvnd && use X && "${ROOT%/}/usr/bin/eselect" opengl set --use-old nvidia
 	"${ROOT%/}/usr/bin/eselect" opencl set --use-old nvidia
 
 	readme.gentoo_print_elog
@@ -604,10 +612,10 @@ pkg_postinst() {
 }
 
 pkg_prerm() {
-	use X && "${ROOT%/}/usr/bin/eselect" opengl set --use-old mesa
+	! use libglvnd && use X && "${ROOT%/}/usr/bin/eselect" opengl set --use-old mesa
 }
 
 pkg_postrm() {
 	use driver && use kernel_linux && linux-mod_pkg_postrm
-	use X && "${ROOT%/}/usr/bin/eselect" opengl set --use-old mesa
+	! use libglvnd && use X && "${ROOT%/}/usr/bin/eselect" opengl set --use-old mesa
 }

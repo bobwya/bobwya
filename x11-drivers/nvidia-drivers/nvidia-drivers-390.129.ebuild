@@ -3,24 +3,30 @@
 
 # shellcheck disable=SC2034
 EAPI=6
-inherit eapi7-ver flag-o-matic linux-info linux-mod multilib-minimal \
+inherit flag-o-matic linux-info linux-mod multilib-minimal \
 	nvidia-driver portability toolchain-funcs unpacker user udev
 
-NV_SETTINGS_PV="$(ver_cut '1').56"
-NV_VULKAN_BETA_PV="$(ver_rs 1- '')"
-
 NV_URI="https://download.nvidia.com/XFree86/"
+X86_NV_PACKAGE="NVIDIA-Linux-x86-${PV}"
 AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
+ARM_NV_PACKAGE="NVIDIA-Linux-armv7l-gnueabihf-${PV}"
+X86_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86-${PV}"
+AMD64_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86_64-${PV}"
+
 DESCRIPTION="NVIDIA Accelerated Graphics Driver"
 HOMEPAGE="https://www.nvidia.com/ https://www.nvidia.com/Download/Find.aspx"
 SRC_URI="
-	amd64? ( "https://developer.nvidia.com/vulkan-beta-${NV_VULKAN_BETA_PV}-linux" -> ${AMD64_NV_PACKAGE}.run )
-	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${NV_SETTINGS_PV}.tar.bz2 )
+	amd64-fbsd? ( ${NV_URI%/}/FreeBSD-x86_64/${PV}/${AMD64_FBSD_NV_PACKAGE}.tar.gz )
+	amd64? ( ${NV_URI%/}/Linux-x86_64/${PV}/${AMD64_NV_PACKAGE}.run )
+	arm? ( ${NV_URI%/}/Linux-32bit-ARM/${PV}/${ARM_NV_PACKAGE}.run )
+	x86-fbsd? ( ${NV_URI%/}/FreeBSD-x86/${PV}/${X86_FBSD_NV_PACKAGE}.tar.gz )
+	x86? ( ${NV_URI%/}/Linux-x86/${PV}/${X86_NV_PACKAGE}.run )
+	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${PV}.tar.bz2 )
 "
 
 LICENSE="GPL-2 NVIDIA-r2"
 SLOT="0/${PV%.*}"
-KEYWORDS="-* ~amd64"
+KEYWORDS="-* ~amd64 ~x86 ~amd64-fbsd ~x86-fbsd"
 RESTRICT="bindist mirror"
 EMULTILIB_PKG="true"
 
@@ -48,6 +54,7 @@ COMMON="
 		x11-libs/pango[X]
 	)
 	X? ( ~app-eselect/eselect-opengl-1.3.3 )
+	app-misc/pax-utils
 "
 DEPEND="
 	${COMMON}
@@ -79,11 +86,11 @@ nvidia_drivers_versions_check() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 5 3; then
+		if kernel_is ge 5 2; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-5.3"
-			ewarn "<sys-kernel/vanilla-sources-5.3"
+			ewarn "<sys-kernel/gentoo-sources-5.2"
+			ewarn "<sys-kernel/vanilla-sources-5.2"
 		elif use kms && kernel_is lt 4 2; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -104,7 +111,8 @@ nvidia_drivers_versions_check() {
 	nvidia-driver-check-warning
 
 	# Kernel features/options to check for
-	CONFIG_CHECK+=" !DEBUG_MUTEXES ~!LOCKDEP ~MTRR ~PM ~SYSVIPC ~ZONE_DMA"
+	CONFIG_CHECK+=" !DEBUG_MUTEXES ~!LOCKDEP ~MTRR ~SYSVIPC ~ZONE_DMA"
+	use x86 && CONFIG_CHECK+=" ~HIGHMEM"
 
 	# Now do the above checks
 	use kernel_linux && check_extra_config
@@ -219,7 +227,6 @@ pkg_setup() {
 src_prepare() {
 	local -a PATCHES
 	if use tools; then
-		mv "${S%/}/nvidia-settings-${NV_SETTINGS_PV}" "/${S%/}/nvidia-settings-${PV}" || die "mv failed"
 		rsync -achv "${FILESDIR}/nvidia-settings-linker.patch" "${WORKDIR}"/ \
 			|| die "rsync failed"
 		sed -i -e 's:@PV@:'"${PV}"':g' "${WORKDIR}/nvidia-settings-linker.patch" \
@@ -241,15 +248,6 @@ src_prepare() {
 	fi
 	if use tools; then
 		pushd "${S%/}/nvidia-settings-${PV}" || die "pushd failed"
-		# Correct nvidia settings version, to support Vulkan beta driver releases
-		sed -i -e 's:^NVIDIA_VERSION = .*$:NVIDIA_VERSION = '"${PV}"':g' \
-			"doc/version.mk" "samples/version.mk" \
-			"src/version.h" "src/version.mk" "src/libXNVCtrl/version.mk" \
-			"version.mk" \
-			 || die "sed failed"
-		sed -i -e 's:^#define NVIDIA_VERSION ".*"$:#define NVIDIA_VERSION "'"${PV}"'":g' \
-			"src/version.h" \
-			 || die "sed failed"
 		# FIXME: horrible hack!
 		if has_multilib_profile && use multilib && use abi_x86_32; then
 			cd "src" || die "cd failed"
@@ -270,7 +268,7 @@ src_compile() {
 		MAKE="$(get_bmake)" CFLAGS="-Wno-sign-compare" emake CC="$(tc-getCC)" \
 			LD="$(tc-getLD)" LDFLAGS="$(raw-ldflags)" || die "emake"
 	elif use driver && use kernel_linux; then
-		MAKEOPTS=-j1 linux-mod_src_compile
+		linux-mod_src_compile
 	fi
 
 	if use tools; then
@@ -358,7 +356,7 @@ src_install() {
 		doins "${NV_X11}/nvidia_drv.so"
 
 		# Xorg GLX driver
-		donvidia "${NV_X11}/libglxserver_nvidia.so.${NV_SOVER}" \
+		donvidia "${NV_X11}/libglx.so.${NV_SOVER}" \
 			"/usr/$(get_libdir)/xorg/nvidia/extensions"
 
 		# Xorg nvidia.conf
@@ -482,7 +480,11 @@ src_install() {
 src_install-libs() {
 	local inslibdir nv_libdir nv_static_libdir CL_ROOT GL_ROOT
 	inslibdir="$(get_libdir)"
-	GL_ROOT="/usr/$(get_libdir)/opengl/nvidia/lib"
+	if use libglvnd; then
+		GL_ROOT="/usr/$(get_libdir)"
+	else
+		GL_ROOT="/usr/$(get_libdir)/opengl/nvidia/lib"
+	fi
 	CL_ROOT="/usr/$(get_libdir)/OpenCL/vendors/nvidia"
 	if use kernel_linux && has_multilib_profile && [[ "${ABI}" == "x86" ]]; then
 		nv_libdir="${NV_OBJ}/32"
@@ -516,7 +518,6 @@ src_install-libs() {
 			"libnvidia-fbc.so.${NV_SOVER}" .
 			"libnvidia-glcore.so.${NV_SOVER}" .
 			"libnvidia-glsi.so.${NV_SOVER}" .
-			"libnvidia-glvkspirv.so.${NV_SOVER}" .
 			"libnvidia-ifr.so.${NV_SOVER}" .
 			"libnvidia-opencl.so.${NV_SOVER}" .
 			"libnvidia-ptxjitcompiler.so.${NV_SOVER}" .
@@ -525,9 +526,16 @@ src_install-libs() {
 
 		if use wayland && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then
 			NV_GLX_LIBRARIES+=(
-				"libnvidia-egl-wayland.so.1.1.2" .
+				"libnvidia-egl-wayland.so.1.0.2" .
 			)
 		fi
+
+		if use kernel_linux && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then
+			NV_GLX_LIBRARIES+=(
+				"libnvidia-wfb.so.${NV_SOVER}" .
+			)
+		fi
+
 		if use kernel_FreeBSD; then
 			NV_GLX_LIBRARIES+=(
 				"libnvidia-tls.so.${NV_SOVER}" .
@@ -537,16 +545,7 @@ src_install-libs() {
 		if use kernel_linux; then
 			NV_GLX_LIBRARIES+=(
 				"libnvidia-ml.so.${NV_SOVER}" .
-				"libnvidia-tls.so.${NV_SOVER}" .
-			)
-		fi
-
-		if use kernel_linux && has_multilib_profile && [[ ${ABI} == "amd64" ]]
-		then
-			NV_GLX_LIBRARIES+=(
-				"libnvidia-cbl.so.${NV_SOVER}" .
-				"libnvidia-rtcore.so.${NV_SOVER}" .
-				"libnvoptix.so.${NV_SOVER}" .
+				"tls/libnvidia-tls.so.${NV_SOVER}" .
 			)
 		fi
 

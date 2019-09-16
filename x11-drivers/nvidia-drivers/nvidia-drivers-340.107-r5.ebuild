@@ -48,6 +48,7 @@ COMMON="
 		x11-libs/pangox-compat
 	)
 	X? ( ~app-eselect/eselect-opengl-1.3.3 )
+	app-misc/pax-utils
 "
 DEPEND="
 	${COMMON}
@@ -228,7 +229,7 @@ src_compile() {
 		MAKE="$(get_bmake)" CFLAGS="-Wno-sign-compare" emake CC="$(tc-getCC)" \
 			LD="$(tc-getLD)" LDFLAGS="$(raw-ldflags)" || die "emake"
 	elif use driver && use kernel_linux; then
-		MAKEOPTS=-j1 linux-mod_src_compile
+		linux-mod_src_compile
 	fi
 
 	if use tools; then
@@ -422,7 +423,11 @@ src_install() {
 src_install-libs() {
 	local inslibdir nv_libdir nv_static_libdir CL_ROOT GL_ROOT
 	inslibdir="$(get_libdir)"
-	GL_ROOT="/usr/$(get_libdir)/opengl/nvidia/lib"
+	if use libglvnd; then
+		GL_ROOT="/usr/$(get_libdir)"
+	else
+		GL_ROOT="/usr/$(get_libdir)/opengl/nvidia/lib"
+	fi
 	CL_ROOT="/usr/$(get_libdir)/OpenCL/vendors/nvidia"
 	if use kernel_linux && has_multilib_profile && [[ "${ABI}" == "x86" ]]; then
 		nv_libdir="${NV_OBJ}/32"

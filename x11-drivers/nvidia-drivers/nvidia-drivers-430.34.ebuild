@@ -48,6 +48,7 @@ COMMON="
 		x11-libs/pango[X]
 	)
 	X? ( ~app-eselect/eselect-opengl-1.3.3 )
+	app-misc/pax-utils
 "
 DEPEND="
 	${COMMON}
@@ -240,6 +241,7 @@ src_prepare() {
 	fi
 	if use tools; then
 		pushd "${S%/}/nvidia-settings-${PV}" || die "pushd failed"
+		eapply "${FILESDIR}/${PN}-make_libxnvctrl.patch"
 		# FIXME: horrible hack!
 		if has_multilib_profile && use multilib && use abi_x86_32; then
 			cd "src" || die "cd failed"
@@ -260,7 +262,7 @@ src_compile() {
 		MAKE="$(get_bmake)" CFLAGS="-Wno-sign-compare" emake CC="$(tc-getCC)" \
 			LD="$(tc-getLD)" LDFLAGS="$(raw-ldflags)" || die "emake"
 	elif use driver && use kernel_linux; then
-		MAKEOPTS=-j1 linux-mod_src_compile
+		linux-mod_src_compile
 	fi
 
 	if use tools; then
@@ -472,7 +474,11 @@ src_install() {
 src_install-libs() {
 	local inslibdir nv_libdir nv_static_libdir CL_ROOT GL_ROOT
 	inslibdir="$(get_libdir)"
-	GL_ROOT="/usr/$(get_libdir)/opengl/nvidia/lib"
+	if use libglvnd; then
+		GL_ROOT="/usr/$(get_libdir)"
+	else
+		GL_ROOT="/usr/$(get_libdir)/opengl/nvidia/lib"
+	fi
 	CL_ROOT="/usr/$(get_libdir)/OpenCL/vendors/nvidia"
 	if use kernel_linux && has_multilib_profile && [[ "${ABI}" == "x86" ]]; then
 		nv_libdir="${NV_OBJ}/32"
@@ -544,7 +550,7 @@ src_install-libs() {
 			donvidia "${nv_libdir}/${nv_LIB}" "${nv_DEST}"
 		done
 
-		use static-libs && dolib.a "${nv_static_libdir}/libXNVCtrl.a"
+		use static-libs && dolib.a "${nv_static_libdir}/_out/Linux_x86_64/libXNVCtrl.a"
 	fi
 }
 
