@@ -17,7 +17,6 @@ if [[ "${PV}" == "9999" ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://gitlab.freedesktop.org/mesa/mesa.git"
 	EGIT_CHECKOUT_DIR="${WORKDIR}/${MY_P}"
-	SRC_URI=""
 else
 	SRC_URI="https://mesa.freedesktop.org/archive/${MY_P}.tar.xz"
 	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~x86-linux ~sparc-solaris ~x64-solaris ~x86-solaris"
@@ -37,9 +36,9 @@ for card in "${VIDEO_CARDS[@]}"; do
 done
 
 IUSE="${IUSE_VIDEO_CARDS}
-	+classic d3d9 debug +dri3 +egl +gallium +gbm gles1 +gles2 +libglvnd +llvm lm_sensors
-	+nptl opencl osmesa pax_kernel pic selinux test unwind vaapi valgrind vdpau vulkan
-	wayland xa xvmc"
+	+X +classic d3d9 debug +dri3 +egl +gallium +gbm gles1 +gles2 +libglvnd +llvm
+	lm-sensors opencl osmesa pax_kernel pic selinux test unwind vaapi valgrind vdpau
+	vulkan wayland xa xvmc"
 
 REQUIRED_USE="
 	d3d9?   ( dri3 || ( video_cards_r300 video_cards_r600 video_cards_radeonsi video_cards_nouveau video_cards_vmware ) )
@@ -65,6 +64,8 @@ REQUIRED_USE="
 	video_cards_virgl? ( gallium )
 	video_cards_vivante? ( gallium gbm )
 	video_cards_vmware? ( gallium )
+	xa? ( X )
+	xvmc? ( X )
 "
 
 LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.97"
@@ -73,13 +74,6 @@ RDEPEND="
 	!app-eselect/eselect-mesa
 	>=dev-libs/expat-2.1.0-r3:=[${MULTILIB_USEDEP}]
 	>=sys-libs/zlib-1.2.8[${MULTILIB_USEDEP}]
-	>=x11-libs/libX11-1.6.2:=[${MULTILIB_USEDEP}]
-	>=x11-libs/libxshmfence-1.1:=[${MULTILIB_USEDEP}]
-	>=x11-libs/libXdamage-1.1.4-r1:=[${MULTILIB_USEDEP}]
-	>=x11-libs/libXext-1.3.2:=[${MULTILIB_USEDEP}]
-	>=x11-libs/libXxf86vm-1.1.3:=[${MULTILIB_USEDEP}]
-	>=x11-libs/libxcb-1.13:=[${MULTILIB_USEDEP}]
-	x11-libs/libXfixes:=[${MULTILIB_USEDEP}]
 	libglvnd? (
 		media-libs/libglvnd[${MULTILIB_USEDEP}]
 		!app-eselect/eselect-opengl
@@ -99,7 +93,7 @@ RDEPEND="
 				virtual/libelf:0=[${MULTILIB_USEDEP}]
 			)
 		)
-		lm_sensors? ( sys-apps/lm_sensors:=[${MULTILIB_USEDEP}] )
+		lm-sensors? ( sys-apps/lm-sensors:=[${MULTILIB_USEDEP}] )
 		opencl? (
 			dev-libs/ocl-icd[khronos-headers,${MULTILIB_USEDEP}]
 			dev-libs/libclc
@@ -118,6 +112,20 @@ RDEPEND="
 		>=dev-libs/wayland-protocols-1.8
 	)
 	${LIBDRM_DEPSTRING}[video_cards_freedreno?,video_cards_nouveau?,video_cards_vc4?,video_cards_vivante?,video_cards_vmware?,${MULTILIB_USEDEP}]
+
+	video_cards_intel? (
+		!video_cards_i965? ( ${LIBDRM_DEPSTRING}[video_cards_intel] )
+	)
+	video_cards_i915? ( ${LIBDRM_DEPSTRING}[video_cards_intel] )
+	X? (
+		>=x11-libs/libX11-1.6.2:=[${MULTILIB_USEDEP}]
+		>=x11-libs/libxshmfence-1.1:=[${MULTILIB_USEDEP}]
+		>=x11-libs/libXdamage-1.1.4-r1:=[${MULTILIB_USEDEP}]
+		>=x11-libs/libXext-1.3.2:=[${MULTILIB_USEDEP}]
+		>=x11-libs/libXxf86vm-1.1.3:=[${MULTILIB_USEDEP}]
+		>=x11-libs/libxcb-1.13:=[${MULTILIB_USEDEP}]
+		x11-libs/libXfixes:=[${MULTILIB_USEDEP}]
+	)
 "
 
 # shellcheck disable=SC2068
@@ -195,8 +203,10 @@ unset {LLVM,CLANG}_DEPSTR{,_AMDGPU}
 
 DEPEND="${RDEPEND}
 	valgrind? ( dev-util/valgrind )
-	x11-base/xorg-proto
-	x11-libs/libXrandr[${MULTILIB_USEDEP}]
+	X? (
+		x11-libs/libXrandr[${MULTILIB_USEDEP}]
+		x11-base/xorg-proto
+	)
 "
 BDEPEND="
 	${PYTHON_DEPS}
@@ -294,7 +304,7 @@ pkg_pretend() {
 		if ! use video_cards_freedreno &&
 			! use video_cards_nouveau &&
 			! use video_cards_vmware; then
-			ewarn "Ignoring USE=xa         since VIDEO_CARDS does not contain freedreno or nouveau"
+			ewarn "Ignoring USE=xa         since VIDEO_CARDS does not contain freedreno, nouveau or vmware"
 		fi
 	fi
 
@@ -306,8 +316,7 @@ pkg_pretend() {
 	fi
 
 	if ! use gallium; then
-		use d3d9       && ewarn "Ignoring USE=d3d9       since USE does not contain gallium"
-		use lm_sensors && ewarn "Ignoring USE=lm_sensors since USE does not contain gallium"
+		use lm-sensors && ewarn "Ignoring USE=lm-sensors since USE does not contain gallium"
 		use llvm       && ewarn "Ignoring USE=llvm       since USE does not contain gallium"
 		use opencl     && ewarn "Ignoring USE=opencl     since USE does not contain gallium"
 		use vaapi      && ewarn "Ignoring USE=vaapi      since USE does not contain gallium"
@@ -365,7 +374,7 @@ multilib_src_configure() {
 	if use gallium; then
 		emesonargs+=(
 			"$(meson_use llvm)"
-			"$(meson_use lm_sensors lmsensors)"
+			"$(meson_use lm-sensors lmsensors)"
 			"$(meson_use unwind libunwind)"
 		)
 
@@ -408,17 +417,18 @@ multilib_src_configure() {
 			emesonargs+=( "-Dgallium-xvmc=false" )
 		fi
 		driver_enable GALLIUM_DRIVERS video_cards_vc4 vc4
-		driver_enable GALLIUM_DRIVERS video_cards_virgl virgl
 		driver_enable GALLIUM_DRIVERS video_cards_vivante etnaviv
 		driver_enable GALLIUM_DRIVERS video_cards_vmware svga
 		driver_enable GALLIUM_DRIVERS video_cards_nouveau nouveau
-		driver_enable GALLIUM_DRIVERS video_cards_i915 i915
 		driver_enable GALLIUM_DRIVERS video_cards_imx imx
-		if ! use video_cards_i915 && ! use video_cards_i965; then
-			driver_enable GALLIUM_DRIVERS video_cards_intel i915
-		fi
 
-		driver_enable GALLIUM_DRIVERS video_cards_iris iris
+		# Only one i915 driver (classic vs gallium). Default to classic.
+		if ! use classic; then
+			driver_enable GALLIUM_DRIVERS video_cards_i915 i915
+			if ! use video_cards_i915 && ! use video_cards_i965; then
+				driver_enable GALLIUM_DRIVERS video_cards_intel i915
+			fi
+		fi
 
 		driver_enable GALLIUM_DRIVERS video_cards_r300 r300
 		driver_enable GALLIUM_DRIVERS video_cards_r600 r600
@@ -428,6 +438,7 @@ multilib_src_configure() {
 		fi
 
 		driver_enable GALLIUM_DRIVERS video_cards_freedreno freedreno
+		driver_enable GALLIUM_DRIVERS video_cards_virgl virgl
 		emesonargs+=( "-Dgallium-opencl=$(usex opencl icd disabled)" )
 	fi
 
@@ -455,7 +466,7 @@ multilib_src_configure() {
 
 	emesonargs+=(
 		"$(meson_use test build-tests)"
-		"-Dglx=dri"
+		"-Dglx=$(usex X dri disabled)"
 		"-Dshared-glapi=true"
 		"$(meson_use dri3)"
 		"$(meson_use egl)"
@@ -463,6 +474,7 @@ multilib_src_configure() {
 		"$(meson_use gles1)"
 		"$(meson_use gles2)"
 		"$(meson_use libglvnd glvnd)"
+		"$(meson_use selinux)"
 		"-Dvalgrind=$(usex valgrind auto false)"
 		"-Ddri-drivers=$(driver_list "${DRI_DRIVERS[*]}")"
 		"-Dgallium-drivers=$(driver_list "${GALLIUM_DRIVERS[*]}")"
@@ -482,21 +494,23 @@ multilib_src_install() {
 
 	use libglvnd && rm -f "${D}/usr/$(get_libdir)"/libGLESv{1_CM,2}.so*
 
-	# Move lib{EGL*,GL*,OpenVG,OpenGL}.{la,a,so*} files from /usr/lib to /usr/lib/opengl/mesa/lib
-	ebegin "(subshell): moving lib{EGL*,GL*,OpenGL}.{la,a,so*} in order to implement dynamic GL switching support"
-	(
-		local gl_dir
-		gl_dir="/usr/$(get_libdir)/opengl/${PN}"
-		dodir "${gl_dir}/lib"
-		for library in "${ED%/}/usr/$(get_libdir)"/lib{EGL*,GL*,OpenGL}.{la,a,so*} ; do
-			if [[ -f "${library}" || -L "${library}" ]]; then
-				mv -f "${library}" "${ED%/}${gl_dir}"/lib \
-					|| die "Failed to move ${library}"
-			fi
-		done
-	)
-	eend $? || die "(subshell): failed to move lib{EGL*,GL*,OpenGL}.{la,a,so*}"
+	if ! use libglvnd; then
+		# Move lib{EGL*,GL*,OpenVG,OpenGL}.{la,a,so*} files from /usr/lib to /usr/lib/opengl/mesa/lib
+		ebegin "(subshell): moving lib{EGL*,GL*,OpenGL}.{la,a,so*} in order to implement dynamic GL switching support"
+		(
+			local gl_dir
+			gl_dir="/usr/$(get_libdir)/opengl/${PN}"
+			dodir "${gl_dir}/lib"
+			for library in "${ED%/}/usr/$(get_libdir)"/lib{EGL*,GL*,OpenGL}.{la,a,so*} ; do
+				if [[ -f "${library}" || -L "${library}" ]]; then
+					mv -f "${library}" "${ED%/}${gl_dir}"/lib \
+						|| die "Failed to move ${library}"
+				fi
+			done
+		)
+		eend $? || die "(subshell): failed to move lib{EGL*,GL*,OpenGL}.{la,a,so*}"
 
+	fi
 }
 
 multilib_src_install_all() {
