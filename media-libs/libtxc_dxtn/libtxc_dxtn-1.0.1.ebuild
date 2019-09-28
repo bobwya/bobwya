@@ -12,7 +12,7 @@ SRC_URI="https://people.freedesktop.org/~cbrill/${PN}/${P}.tar.bz2"
 LICENSE="MIT"
 SLOT="0"
 KEYWORDS="amd64 ~arm ~arm64 ~ppc ~ppc64 x86"
-IUSE=""
+IUSE="abi_x86_32 abi_x86_64"
 
 DEPEND="media-libs/mesa"
 RDEPEND=""
