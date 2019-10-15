@@ -41,10 +41,10 @@ HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
 #MOZCONFIG_OPTIONAL_QT5=1
 MOZCONFIG_OPTIONAL_WIFI=1
 
-LLVM_MAX_SLOT=8
+LLVM_MAX_SLOT=9
 
 inherit autotools check-reqs flag-o-matic gnome2-utils llvm mozconfig-v6.60 mozlinguas-v2 \
-	pax-utils toolchain-funcs xdg-utils
+	multiprocessing pax-utils toolchain-funcs xdg-utils
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.com/firefox
@@ -179,6 +179,7 @@ src_prepare() {
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox/)
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
+	PATCHES+=( "${FILESDIR}/${PN}-60.9.0-rust-1.38-compat.patch" )
 
 	# Enable gnomebreakpad
 	if use debug; then
@@ -222,6 +223,12 @@ src_prepare() {
 		-i "${S}"/browser/branding/aurora/configure.sh || die "sed failed"
 
 	default
+
+	local n_jobs=$(makeopts_jobs)
+	if [[ ${n_jobs} == 1 ]]; then
+		einfo "Building with MAKEOPTS=-j1 is known to fail (bug #687028); Forcing MAKEOPTS=-j2 ..."
+		export MAKEOPTS=-j2
+	fi
 
 	# Autotools configure is now called old-configure.in
 	# This works because there is still a configure.in that happens to be for the
