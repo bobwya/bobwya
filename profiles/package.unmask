@@ -1,2 +1,5 @@
+~media-libs/libtxc_dxtn-1.0.1
+
 # Use a VideoHelp mirror for this no-longer developed Nero library
-=media-sound/neroaac-1.5.4
+~media-sound/neroaac-1.5.4
+
