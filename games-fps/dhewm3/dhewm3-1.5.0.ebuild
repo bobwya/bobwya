@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -13,7 +13,7 @@ else
 	MY_PV="${PV/_rc/_RC}"
 	MY_P="${PN}-${MY_PV}"
 	SRC_URI="https://github.com/dhewm/${PN}/archive/${MY_PV}.tar.gz -> ${MY_P}.tar.gz"
-	KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
+	KEYWORDS="~amd64 ~x86 ~x86-linux"
 	S="${WORKDIR}/${MY_P}"
 fi
 
