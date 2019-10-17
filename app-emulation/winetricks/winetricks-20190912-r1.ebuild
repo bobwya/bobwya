@@ -1,4 +1,4 @@
-# Copyright 1999-2019 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -34,10 +34,11 @@ DEPEND="test? (
 		dev-util/shellcheck
 	)"
 
-RDEPEND="app-arch/cabextract
+RDEPEND="
+	|| ( net-misc/aria2 net-misc/curl net-misc/wget www-client/fetch )
+	app-arch/cabextract
 	app-arch/p7zip
 	app-arch/unzip
-	net-misc/wget
 	virtual/wine
 	x11-misc/xdg-utils
 	gtk? ( gnome-extra/zenity )
