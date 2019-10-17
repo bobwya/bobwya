@@ -40,13 +40,13 @@ MOZ_P="${PN}-${MOZ_PV}"
 LLVM_MAX_SLOT=8
 
 inherit autotools check-reqs flag-o-matic gnome2-utils llvm mozconfig-v6.60 mozcoreconf-v6 \
-	mozlinguas-v2 pax-utils toolchain-funcs xdg-utils
+	mozlinguas-v2 multiprocessing pax-utils toolchain-funcs xdg-utils
 
 DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.org/thunderbir
 	https://www.rosenauer.org/hg/mozilla"
 
-KEYWORDS="~amd64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~x86 ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist clang dbus debug hardened jack kde lightning kernel_linux neon pulseaudio
@@ -157,11 +157,9 @@ DEPEND="${CDEPEND}
 	)
 	pulseaudio? ( media-sound/pulseaudio )
 	elibc_glibc? (
-		virtual/cargo
 		virtual/rust
 	)
 	elibc_musl? (
-		virtual/cargo
 		virtual/rust
 	)
 	amd64? (
@@ -258,6 +256,7 @@ src_prepare() {
 	)
 
 	eapply "${FILESDIR}/thunderbird-60-sqlite3-fts3-tokenizer.patch"
+	eapply "${FILESDIR}/thunderbird-60.9.0-rust-1.38-compat.patch"
 
 	if use kde; then
 		# Gecko/toolkit OpenSUSE KDE integration patchset
@@ -316,6 +315,12 @@ src_prepare() {
 	popd &>/dev/null || die "popd failed"
 
 	default
+
+	local n_jobs=$(makeopts_jobs)
+	if [[ "${n_jobs}" == 1 ]]; then
+		einfo "Building with MAKEOPTS=-j1 is known to fail (bug #687028); Forcing MAKEOPTS=-j2 ..."
+		export MAKEOPTS=-j2
+	fi
 
 	# Autotools configure is now called old-configure.in
 	# This works because there is still a configure.in that happens to be for the

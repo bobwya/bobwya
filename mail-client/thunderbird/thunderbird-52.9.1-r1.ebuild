@@ -1,4 +1,4 @@
-# Copyright 1999-2019 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -42,7 +42,7 @@ DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE 
 HOMEPAGE="https://www.mozilla.com/en-US/thunderbird
 	https://www.rosenauer.org/hg/mozilla"
 
-KEYWORDS="~amd64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~x86 ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist crypt hardened kde ldap kernel_linux lightning +minimal mozdom rust selinux"
