@@ -1,4 +1,4 @@
-# Copyright 1999-2019 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -10,7 +10,7 @@ SRC_URI="https://dl.winehq.org/wine/${PN}/${PV}/${P}.msi"
 
 LICENSE="BSD-2 GPL-2 LGPL-2.1 MIT MPL-1.1"
 SLOT="${PV}"
-KEYWORDS="~amd64 ~x86 ~x86-fbsd"
+KEYWORDS="~amd64 ~x86"
 
 S="${WORKDIR}"
 
