@@ -8,4 +8,7 @@
 	<use>
 		<flag name="infinality">Add configuration hooks to support infinality font rendering</flag>
 	</use>
+	<upstream>
+		<remote-id type="cpe">cpe:/a:fontconfig_project:fontconfig</remote-id>
+	</upstream>
 </pkgmetadata>
