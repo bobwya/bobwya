@@ -4,12 +4,16 @@
 # shellcheck disable=SC2034
 EAPI=7
 
-inherit cmake-utils git-r3
+inherit cmake-utils
 
+MY_PN="SPIRV-Headers"
+MY_P="${MY_PN}-${PV}"
 DESCRIPTION="Machine-readable files for the SPIR-V Registry"
 HOMEPAGE="https://www.khronos.org/registry/spir-v/"
-EGIT_REPO_URI="https://github.com/KhronosGroup/SPIRV-Headers.git"
-SRC_URI=""
+SRC_URI="https://github.com/KhronosGroup/${MY_PN}/archive/${PV}.corrected.tar.gz -> ${P}.tar.gz"
 
 LICENSE="MIT"
 SLOT="0"
+KEYWORDS="amd64 x86"
+
+S="${WORKDIR}/${MY_P}"
