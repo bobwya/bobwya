@@ -2,10 +2,6 @@
 <!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
 	<use>
-		<flag name="aacplus">Add support for AAC audio encoding supprt via package <pkg>media-sound/aacplusenc</pkg>.</flag>
-		<flag name="faac">Add support for AAC audio encoding support via library <pkg>media-libs/faac</pkg>.</flag>
-		<flag name="fdkaac">Add support for AAC audio encoding support via library <pkg>media-libs/fdk-aac</pkg>.</flag>
-		<flag name="neroaac">Add support for AAC audio encoding support via binary package <pkg>media-sound/neroaac</pkg>.</flag>
 		<flag name="ogm">Support for OGM container format</flag>
 	</use>
 </pkgmetadata>

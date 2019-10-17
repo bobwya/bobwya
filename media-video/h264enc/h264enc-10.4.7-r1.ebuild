@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -10,8 +10,7 @@ SRC_URI="mirror://sourceforge/${PN}/${P}.tar.gz"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE="aac aacplus dvd faac fdkaac flac lame matroska mp4 neroaac ogm vorbis"
-REQUIRED_USE="aac? ( || ( aacplus faac fdkaac neroaac ) )"
+IUSE="aac dvd flac lame matroska mp4 ogm vorbis"
 
 RDEPEND="
 	media-video/mplayer[encode,x264]
@@ -20,10 +19,11 @@ RDEPEND="
 	sys-devel/bc
 	sys-process/time
 	aac? (
-		faac? ( media-libs/faac )
-		fdkaac? ( media-libs/fdk-aac )
-		aacplus? ( media-sound/aacplusenc )
-		neroaac? (	media-sound/neroaac )
+		|| (
+			media-libs/faac
+			media-libs/fdk-aac
+			media-sound/neroaac
+		)
 	)
 	dvd? ( media-video/lsdvd )
 	flac? ( media-libs/flac )
