@@ -1,4 +1,4 @@
-# Copyright 1999-2019 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -52,7 +52,7 @@ src_prepare() {
 	# install of Mozilla applications (Firefox)
 	# See https://github.com/bobwya/bobwya/issues/7#issuecomment-201917441
 	local PATCHES=(
-		"${FILESDIR}/${PN}-4.9.12-dont_run_as_root.patch"
+		"${FILESDIR}/${PN}-5.0.3-dont_run_as_root.patch"
 	)
 	default
 }
