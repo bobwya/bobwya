@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -15,7 +15,7 @@ if [ "${PV}" = "99999999" ]; then
 	EGIT_REPO_URI="https://github.com/bobwya/${PN}.git"
 	SRC_URI=""
 else
-	KEYWORDS="-* amd64 x86 ~x86-fbsd"
+	KEYWORDS="-* amd64 x86"
 	SRC_URI="https://github.com/bobwya/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 fi
 
