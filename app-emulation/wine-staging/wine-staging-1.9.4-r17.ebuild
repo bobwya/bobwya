@@ -1,4 +1,4 @@
-# Copyright 1999-2019 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -14,7 +14,7 @@ if [[ "${WINE_PV}" == "9999" ]]; then
 	EGIT_REPO_WINE_STAGING="https://github.com/wine-staging/wine-staging.git"
 	inherit git-r3
 else
-	KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
+	KEYWORDS="-* ~amd64 ~x86"
 fi
 
 DESCRIPTION="Free implementation of Windows(tm) on Unix, with Wine Staging patchset"
