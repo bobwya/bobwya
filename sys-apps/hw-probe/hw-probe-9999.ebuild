@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -17,7 +17,7 @@ if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
 else
 	SRC_URI="https://github.com/linuxhw/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="-* ~amd64 ~ppc ~x86 ~amd64-linux ~arm-linux ~x86-linux"
+	KEYWORDS="-* ~amd64 ~ppc ~x86 ~arm-linux ~x86-linux"
 fi
 
 LICENSE="LGPL-2.1+"
