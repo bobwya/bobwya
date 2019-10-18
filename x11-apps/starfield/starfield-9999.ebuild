@@ -1,7 +1,7 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=5
+EAPI=6
 
 inherit toolchain-funcs
 
@@ -16,7 +16,7 @@ if [[ ${PV} == 9999 ]]; then
 else
 	# Yes Lübking we are waiting for RC1!!
 	SRC_URI="https://github.com/luebking/${PN}/releases/download/${PV}/${P}.tar.gz"
-	KEYWORDS="-* ~amd64 ~x86 ~x86-fbsd"
+	KEYWORDS="-* ~amd64 ~x86"
 fi
 
 LICENSE="GPL-2"
