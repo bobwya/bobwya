@@ -1,7 +1,8 @@
 # Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
+# shellcheck disable=SC2034
+EAPI=7
 
 inherit kde5
 
