@@ -7,10 +7,11 @@ EAPI=7
 inherit cmake-utils
 
 MY_PN="SPIRV-Headers"
-MY_P="${MY_PN}-${PV}"
+MY_PV="${PV}.corrected"
+MY_P="${MY_PN}-${MY_PV}"
 DESCRIPTION="Machine-readable files for the SPIR-V Registry"
 HOMEPAGE="https://www.khronos.org/registry/spir-v/"
-SRC_URI="https://github.com/KhronosGroup/${MY_PN}/archive/${PV}.corrected.tar.gz -> ${P}.tar.gz"
+SRC_URI="https://github.com/KhronosGroup/${MY_PN}/archive/${MY_PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="MIT"
 SLOT="0"
