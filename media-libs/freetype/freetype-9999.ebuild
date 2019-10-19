@@ -7,7 +7,7 @@ EAPI=7
 inherit flag-o-matic libtool multilib multilib-build multilib-minimal toolchain-funcs
 
 FREETYPE_INFINALITY_PN="freetype-infinality"
-FREETYPE_INFINALITY_COMMIT="6050e5c22a8bc9ffca225c9d7ad4f73f5f6ce9d1"
+FREETYPE_INFINALITY_COMMIT="ad093c51fcdb19ea3ff33753c990027b1f547761"
 FREETYPE_INFINALITY_BASE="${FREETYPE_INFINALITY_PN}-${FREETYPE_INFINALITY_COMMIT}"
 FREETYPE_INFINALITY_URL="https://github.com/bobwya/${FREETYPE_INFINALITY_PN}/archive"
 
