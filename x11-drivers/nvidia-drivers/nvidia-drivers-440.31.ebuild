@@ -3,19 +3,19 @@
 
 # shellcheck disable=SC2034
 EAPI=6
-inherit eapi7-ver flag-o-matic linux-info linux-mod multilib-minimal \
+inherit flag-o-matic linux-info linux-mod multilib-minimal \
 	nvidia-driver portability toolchain-funcs unpacker user udev
-
-NV_SETTINGS_PV="$(ver_cut '1').21"
-NV_VULKAN_BETA_PV="$(ver_rs 1- '')"
 
 NV_URI="https://download.nvidia.com/XFree86/"
 AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
+AMD64_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86_64-${PV}"
+
 DESCRIPTION="NVIDIA Accelerated Graphics Driver"
 HOMEPAGE="https://www.nvidia.com/ https://www.nvidia.com/Download/Find.aspx"
 SRC_URI="
-	amd64? ( "https://developer.nvidia.com/vulkan-beta-${NV_VULKAN_BETA_PV}-linux" -> ${AMD64_NV_PACKAGE}.run )
-	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${NV_SETTINGS_PV}.tar.bz2 )
+	amd64-fbsd? ( ${NV_URI%/}/FreeBSD-x86_64/${PV}/${AMD64_FBSD_NV_PACKAGE}.tar.gz )
+	amd64? ( ${NV_URI%/}/Linux-x86_64/${PV}/${AMD64_NV_PACKAGE}.run )
+	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${PV}.tar.bz2 )
 "
 
 LICENSE="GPL-2 NVIDIA-r2"
@@ -86,11 +86,11 @@ nvidia_drivers_versions_check() {
 
 	CONFIG_CHECK=""
 	if use kernel_linux; then
-		if kernel_is ge 5 3; then
+		if kernel_is ge 5 4; then
 			ewarn "Gentoo supports kernels which are supported by NVIDIA"
 			ewarn "which are limited to the following kernels:"
-			ewarn "<sys-kernel/gentoo-sources-5.3"
-			ewarn "<sys-kernel/vanilla-sources-5.3"
+			ewarn "<sys-kernel/gentoo-sources-5.4"
+			ewarn "<sys-kernel/vanilla-sources-5.4"
 		elif use kms && kernel_is lt 4 2; then
 			ewarn "NVIDIA does not fully support kernel modesetting on"
 			ewarn "on the following kernels:"
@@ -225,14 +225,7 @@ pkg_setup() {
 
 src_prepare() {
 	local -a PATCHES
-	if use tools; then
-		mv "${S%/}/nvidia-settings-${NV_SETTINGS_PV}" "/${S%/}/nvidia-settings-${PV}" || die "mv failed"
-		rsync -achv "${FILESDIR}/nvidia-settings-linker.patch" "${WORKDIR}"/ \
-			|| die "rsync failed"
-		sed -i -e 's:@PV@:'"${PV}"':g' "${WORKDIR}/nvidia-settings-linker.patch" \
-			|| die "sed failed"
-		PATCHES+=( "${WORKDIR}/nvidia-settings-linker.patch" )
-	fi
+	PATCHES+=( "${FILESDIR}/${PN}-440.26-locale.patch" )
 	local man_file
 	while IFS= read -r -d '' man_file; do
 		gunzip "${man_file}" || die "gunzip failed"
@@ -248,15 +241,6 @@ src_prepare() {
 	fi
 	if use tools; then
 		pushd "${S%/}/nvidia-settings-${PV}" || die "pushd failed"
-		# Correct nvidia settings version, to support Vulkan beta driver releases
-		sed -i -e 's:^NVIDIA_VERSION = .*$:NVIDIA_VERSION = '"${PV}"':g' \
-			"doc/version.mk" "samples/version.mk" \
-			"src/version.h" "src/version.mk" "src/libXNVCtrl/version.mk" \
-			"version.mk" \
-			 || die "sed failed"
-		sed -i -e 's:^#define NVIDIA_VERSION ".*"$:#define NVIDIA_VERSION "'"${PV}"'":g' \
-			"src/version.h" \
-			 || die "sed failed"
 		eapply "${FILESDIR}/${PN}-make_libxnvctrl.patch"
 		# FIXME: horrible hack!
 		if has_multilib_profile && use multilib && use abi_x86_32; then
@@ -533,7 +517,7 @@ src_install-libs() {
 
 		if use wayland && has_multilib_profile && [[ "${ABI}" == "amd64" ]]; then
 			NV_GLX_LIBRARIES+=(
-				"libnvidia-egl-wayland.so.1.1.3" .
+				"libnvidia-egl-wayland.so.1.1.4" .
 			)
 		fi
 		if use kernel_FreeBSD; then
