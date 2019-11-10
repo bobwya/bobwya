@@ -374,7 +374,7 @@ multilib_src_configure() {
 		fi
 	fi
 
-	emesonargs+=( "-Dplatforms=x11,surfaceless$(use wayland && echo ",wayland")$(use gbm && echo ",drm")" )
+	emesonargs+=( "-Dplatforms=surfaceless$(use X && echo ",x11")$(use wayland && echo ",wayland")$(use gbm && echo ",drm")" )
 	if use gallium; then
 		emesonargs+=(
 			"$(meson_use llvm)"
