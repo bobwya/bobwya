@@ -1549,7 +1549,7 @@ wine_eapply_staging_patchset() {
 wine_eapply_esync_patchset() {
 	(($# == 1)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (1)"
 
-	local _esync_patchsets_base_directory="${1%/}" \
+	local _apply_sed_fix _esync_patchsets_base_directory="${1%/}" \
 		_i_array _esync_error=0 _esync_patchset_directory _min_rebase_commit _max_rebase_commit \
 		_rebased_patchset _max_rebased_patchset
 	local -a _esync_patchset_commits _pruned_esync_patchset_commits
@@ -1596,7 +1596,7 @@ wine_eapply_esync_patchset() {
 		3.19)
 			_rebased_patchset="2f17e0112dc0af3f0b246cf377e2cb8fd7a6cf58"
 			;;
-		3.2[0-1]|4.[0-3]|4.0.1-rc[1-9]|4.0.1|4.0.2-rc[1-9]|4.0.2)
+		3.2[0-1]|4.[0-3]|4.0.1-rc*|4.0.1|4.0.2-rc*|4.0.2|4.0.3-rc*|4.0.3)
 			_rebased_patchset="2600ecd4edfdb71097105c74312f83845305a4f2"
 			;;
 		4.4)
@@ -1656,6 +1656,32 @@ wine_eapply_esync_patchset() {
 			_esync_error=1
 			;;
 	esac
+
+	# Fixups for wine-stable
+	if ((_WINE_IS_STABLE)); then
+		ewarn "using wine-stable"
+		case "${WINE_PV}" in
+			4.0.3-rc*|4.0.3|4.0.4-rc*|4.0.4|4.0.5-rc*|4.0.5)
+				_apply_sed_fix=1
+				;;
+			9999)
+				_esync_patchset_commits=( "0a77cef2eef6fcb17cfecaa21ae7aed5cae535b9" )
+				_wine_prune_commited_patches_from_array "${S}" "_esync_patchset_commits"
+				_apply_sed_fix=$((! ${#_esync_patchset_commits[@]}))
+				;;
+			*)
+				_apply_sed_fix=0
+				;;
+		esac
+		if ((_apply_sed_fix)); then
+			einfo "Applying wine-stable wine-esync sed fix to 'wine-esync-dlls-kernel32-tests-sync_c.patch'"
+			sed -i -e 's/test_srwlock_example();$/test_alertable_wait();/g' \
+				-e 's/test_alertable_wait();$/test_apc_deadlock();/g' \
+				-e 's/test_apc_deadlock();$/test_crit_section();/g' \
+				"${_esync_patchsets_base_directory}/${PN}/${_rebased_patchset}/wine-esync-dlls-kernel32-tests-sync_c.patch" \
+				|| die "sed failed"
+		fi
+	fi
 
 	if ((_esync_error)); then
 		ewarn "USE +esync will be omitted for this build."
