@@ -257,7 +257,7 @@ readonly WINE_EBUILD_COMMON_PV
 # @ECLASS-VARIABLE: WINE_ESYNC_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-esync; tarball.
-WINE_ESYNC_P="gentoo-wine-esync-20191112"
+WINE_ESYNC_P="gentoo-wine-esync-20191202"
 readonly WINE_ESYNC_P
 
 # @ECLASS-VARIABLE: WINE_ESYNC_PN
@@ -1572,6 +1572,7 @@ wine_eapply_esync_patchset() {
 		"29914d583fe098521472332687b8da69fc692690" "5ddcfa019d027d9d690c98151c708eb4e7d5f72b"
 		"e2411ebecb13b1005c4d0a528056c9b8a1719049" "d1a7b681ead5fdf10bc2001d9841b7ad9b09423b"
 		"461b5e56f95eb095d97e4af1cb1c5fd64bb2862a" "608d086f1b1bb7168e9322c65224c23f34e75f29"
+		"4538a137e089240f1981f0d6f82fb8d63a65f4f6" "b934f6626ed7cb8a6cc18b261550d363a0068141"
 	)
 
 	case "${WINE_PV}" in
@@ -1623,8 +1624,11 @@ wine_eapply_esync_patchset() {
 		4.1[4-9])
 			_rebased_patchset="d1a7b681ead5fdf10bc2001d9841b7ad9b09423b"
 			;;
-		4.2[0-9])
+		4.20)
 			_rebased_patchset="608d086f1b1bb7168e9322c65224c23f34e75f29"
+			;;
+		4.2[1-9])
+			_rebased_patchset="b934f6626ed7cb8a6cc18b261550d363a0068141"
 			;;
 		9999)
 			if ((_WINE_IS_STAGING)); then
