@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=7
 
-inherit kde5
+inherit ecm kde.org
 
 DESCRIPTION="Mozilla KDE Desktop Integration"
 HOMEPAGE="https://github.com/openSUSE/kmozillahelper"
@@ -24,27 +24,27 @@ SLOT="5"
 IUSE=""
 
 COMMON_DEPEND="
-	$(add_frameworks_dep kconfig)
-	$(add_frameworks_dep kconfigwidgets)
-	$(add_frameworks_dep kcoreaddons)
-	$(add_frameworks_dep kdbusaddons)
-	$(add_frameworks_dep kguiaddons)
-	$(add_frameworks_dep ki18n)
-	$(add_frameworks_dep kio)
-	$(add_frameworks_dep knotifications)
-	$(add_frameworks_dep kservice)
-	$(add_frameworks_dep kwidgetsaddons)
-	$(add_frameworks_dep kwindowsystem)
+	kde-frameworks/kconfig:5
+	kde-frameworks/kconfigwidgets:5
+	kde-frameworks/kcoreaddons:5
+	kde-frameworks/kcrash:5
+	kde-frameworks/kdbusaddons:5
+	kde-frameworks/kguiaddons:5
+	kde-frameworks/ki18n:5
+	kde-frameworks/kio:5
+	kde-frameworks/knotifications:5
+	kde-frameworks/kservice:5
+	kde-frameworks/kwidgetsaddons:5
+	kde-frameworks/kwindowsystem:5
 	dev-qt/qtconcurrent:5
 	dev-qt/qtdbus:5
 	dev-qt/qtgui:5
 	dev-qt/qtwidgets:5
 "
 DEPEND="${COMMON_DEPEND}
-	$(add_frameworks_dep kinit)
+	kde-frameworks/kinit:5
 	dev-libs/mpfr:0
 	sys-devel/gettext
-	!kde-misc/kmozillahelper:4
 "
 RDEPEND="${COMMON_DEPEND}"
 
@@ -53,12 +53,22 @@ src_prepare() {
 	# install of Mozilla applications (Firefox)
 	# See https://github.com/bobwya/bobwya/issues/7#issuecomment-201917441
 	local PATCHES=(
-		"${FILESDIR}/${PN}-5.0.3-dont_run_as_root.patch"
+		"${FILESDIR}/${PN}-5.0.5-dont_run_as_root.patch"
 	)
-	default
+
+	ecm_src_prepare
 }
 
+src_configure() {
+	local mycmakeargs=()
+
+	ecm_src_configure
+}
+
+
 pkg_postinst() {
+	ecm_pkg_postinst
+
 	ewarn "To suppress the taskbar icon for ${PN} file dialog window - install Kwin rule"
 	ewarn "${FILESDIR}/kwinrulesrc to \"\${HOME}/.config/\""
 }
