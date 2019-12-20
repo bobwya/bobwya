@@ -177,15 +177,6 @@ DEPEND="${CDEPEND}
 				pgo? ( =sys-libs/compiler-rt-sanitizers-7*[profile] )
 			)
 		)
-		(
-			sys-devel/clang:6
-			!clang? ( sys-devel/llvm:6 )
-			clang? (
-				=sys-devel/lld-6*
-				sys-devel/llvm:6[gold]
-				pgo? ( =sys-libs/compiler-rt-sanitizers-6*[profile] )
-			)
-		)
 	)
 	pulseaudio? ( media-sound/pulseaudio )
 	>=virtual/rust-1.34.0
@@ -282,6 +273,8 @@ src_unpack() {
 }
 
 src_prepare() {
+	rm "${WORKDIR}/firefox/2013_avoid_noinline_on_GCC_with_skcms.patch"
+	rm "${WORKDIR}/firefox/2015_fix_cssparser.patch"
 	# Default to our patchset
 	local PATCHES=( "${WORKDIR}/firefox" )
 	if use kde; then
@@ -305,8 +298,8 @@ src_prepare() {
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox/)
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
-	rm "${WORKDIR}"/firefox/2013_avoid_noinline_on_GCC_with_skcms.patch
-	rm "${WORKDIR}"/firefox/2015_fix_cssparser.patch
+
+	PATCHES+=( "${FILESDIR}/${PN}-68.2.0-rust-1.39+.patch" )
 
 	default
 
