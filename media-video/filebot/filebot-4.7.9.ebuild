@@ -28,7 +28,7 @@ src_install() {
 	java-pkg_dojar "${MY_PN}.jar"
 	exeopts -m755
 	exeinto "/usr/bin"
-	newexe "${FILESDIR}/${PN}.sh" "${PN}"
+	newexe "${FILESDIR}/${PN}-4.1.sh" "${PN}"
 	insopts -m644
 	insinto "/usr/share/pixmaps"
 	doins "${FILESDIR}/${PN}.svg"
