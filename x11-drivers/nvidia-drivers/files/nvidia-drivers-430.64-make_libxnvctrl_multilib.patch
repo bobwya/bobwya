@@ -1,0 +1,26 @@
+--- a/libXNVCtrl/32/Makefile	2019-12-28 17:38:25.910844433 +0000
++++ b/libXNVCtrl/32/Makefile	2019-12-28 17:38:54.567283642 +0000
+@@ -42,2 +42,3 @@
+ CFLAGS += -I $(OUTPUTDIR)
++CFLAGS += -m32
+ CFLAGS += -I $(XNVCTRL_DIR)
+--- a/Makefile	2019-12-28 17:37:12.697721086 +0000
++++ b/Makefile	2019-12-28 17:38:54.567283642 +0000
+@@ -115,2 +115,4 @@
+ ##############################################################################
++XNVCTRL32_DIR           ?= libXNVCtrl/32
++XNVCTRL32_ARCHIVE       ?= $(XNVCTRL32_DIR)/libXNVCtrl.a
+ 
+@@ -308,2 +310,8 @@
+ 
++# define the rule to build $(XNVCTRL32_ARCHIVE)
++$(XNVCTRL32_ARCHIVE): build-xnvctrl32
++
++build-xnvctrl32:
++	@$(MAKE) -C $(XNVCTRL32_DIR) -f $(XNVCTRL_MAKEFILE)
++
+ clean clobber:
+@@ -314,2 +322,3 @@
+ 
++	@$(MAKE) -C $(XNVCTRL32_DIR) -f $(XNVCTRL_MAKEFILE) clean
+ $(foreach src,$(GTK_SRC), \
