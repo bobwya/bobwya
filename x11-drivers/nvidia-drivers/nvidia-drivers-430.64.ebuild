@@ -3,7 +3,7 @@
 
 # shellcheck disable=SC2034
 EAPI=7
-inherit flag-o-matic linux-info linux-mod multilib-minimal \
+inherit desktop flag-o-matic linux-info linux-mod multilib-minimal \
 	nvidia-driver portability toolchain-funcs unpacker udev
 
 NV_URI="https://download.nvidia.com/XFree86/"
@@ -228,13 +228,6 @@ src_prepare() {
 	fi
 	if use tools; then
 		pushd "${S%/}/nvidia-settings-${PV}" || die "pushd failed"
-		eapply "${FILESDIR}/${PN}-make_libxnvctrl.patch"
-		# FIXME: horrible hack!
-		if has_multilib_profile && use multilib && use abi_x86_32; then
-			cd "src" || die "cd failed"
-			rsync -ach "libXNVCtrl/" "libXNVCtrl/32/" || die "rsync failed"
-			eapply "${FILESDIR}/${PN}-430.64-make_libxnvctrl_multilib.patch"
-		fi
 		popd || die "popd failed"
 	fi
 }
@@ -261,6 +254,7 @@ src_compile() {
 			"LIBDIR=$(get_libdir)"
 			"NV_VERBOSE=1"
 			"DO_STRIP="
+			"OUTPUTDIR=."
 		)
 
 		myemakeargs=( "${mybaseemakeargs[@]}" )
@@ -269,11 +263,7 @@ src_compile() {
 			"RANLIB=$(tc-getRANLIB)"
 		)
 		# shellcheck disable=SC2068
-		emake -C "${S%/}/nvidia-settings-${PV}/src" ${myemakeargs[@]} build-xnvctrl
-		if has_multilib_profile && use multilib && use abi_x86_32; then
-			# shellcheck disable=SC2068
-			emake -C "${S%/}/nvidia-settings-${PV}/src" ${myemakeargs[@]} build-xnvctrl32
-		fi
+		emake -C "${S%/}/nvidia-settings-${PV}/src/libXNVCtrl" ${myemakeargs[@]}
 
 		myemakeargs=( "${mybaseemakeargs[@]}" )
 		myemakeargs+=(
@@ -395,25 +385,27 @@ src_install() {
 			"LIBDIR=${D}/usr/$(get_libdir)"
 			"NV_USE_BUNDLED_LIBJANSSON=0"
 			"NV_VERBOSE=1"
+			"OUTPUTDIR=."
 			"PREFIX=/usr"
 			"DO_STRIP="
 		)
 		# shellcheck disable=SC2068
 		emake -C "${S%/}/nvidia-settings-${PV}/src" DESTDIR="${D}" ${myemakeargs[@]} install
 
-		insinto "/usr/include/NVCtrl"
-		doins "${S%/}/nvidia-settings-${PV}/src/libXNVCtrl"/*.h
+		if use static-libs; then
+			dolib.a "${S}/nvidia-settings-${PV}/src/libXNVCtrl/libXNVCtrl.a"
+			insinto "/usr/include/NVCtrl"
+			doins "${S%/}/nvidia-settings-${PV}/src/libXNVCtrl"/*.h
+		fi
 
 		insinto "/usr/share/nvidia/"
 		doins "nvidia-application-profiles-${PV}-key-documentation"
 
 		insinto "/etc/nvidia"
-		newins "nvidia-application-profiles-${PV}-rc" \
-				"nvidia-application-profiles-rc"
+		newins "nvidia-application-profiles-${PV}-rc" "nvidia-application-profiles-rc"
 
 		# There is no icon in the FreeBSD tarball.
-		use kernel_FreeBSD || \
-			doicon "${NV_OBJ}/nvidia-settings.png"
+		use kernel_FreeBSD || doicon "${NV_OBJ}/nvidia-settings.png"
 
 		domenu "${FILESDIR}/nvidia-settings.desktop"
 
@@ -459,17 +451,15 @@ src_install() {
 }
 
 src_install-libs() {
-	local inslibdir nv_libdir nv_static_libdir CL_ROOT GL_ROOT
+	local inslibdir nv_libdir CL_ROOT GL_ROOT
 	inslibdir="$(get_libdir)"
 	GL_ROOT="/usr/$(get_libdir)/opengl/nvidia/lib"
 	CL_ROOT="/usr/$(get_libdir)/OpenCL/vendors/nvidia"
 	if use kernel_linux && has_multilib_profile && [[ "${ABI}" == "x86" ]]; then
 		nv_libdir="${NV_OBJ}/32"
-		nv_static_libdir="${S%/}/nvidia-settings-${PV}/src/libXNVCtrl/32"
 	else
 
 		nv_libdir="${NV_OBJ}"
-		nv_static_libdir="${S%/}/nvidia-settings-${PV}/src/libXNVCtrl"
 	fi
 
 	if use X; then
@@ -532,8 +522,6 @@ src_install-libs() {
 		xargs -n2 <<<"${NV_GLX_LIBRARIES[@]}" | while read -r nv_LIB nv_DEST; do
 			donvidia "${nv_libdir}/${nv_LIB}" "${nv_DEST}"
 		done
-
-		use static-libs && dolib.a "${nv_static_libdir}/_out/Linux_x86_64/libXNVCtrl.a"
 	fi
 }
 
