@@ -1,4 +1,4 @@
-# Copyright 1999-2019 Gentoo Authors
+# Copyright 1999-2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -9,7 +9,7 @@ MOZ_ESR=""
 MOZ_LIGHTNING_VER="6.2.5"
 MOZ_LIGHTNING_GDATA_VER="4.4.1"
 
-PYTHON_COMPAT=( python3_{5,6,7} )
+PYTHON_COMPAT=( python3_{6,7} )
 PYTHON_REQ_USE='ncurses,sqlite,ssl,threads(+)'
 
 # This list can be updated using scripts/get_langs.sh from the mozilla overlay
@@ -46,10 +46,10 @@ KEYWORDS="~amd64 ~x86 ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist clang cpu_flags_x86_avx2 dbus debug eme-free kde kernel_linux
-	+gmp-autoupdate hardened jack lightning lto neon pgo pulseaudio
-	 selinux startup-notification +system-av1 +system-harfbuzz +system-icu
-	+system-jpeg +system-libevent +system-sqlite +system-libvpx
-	+system-webp test wayland wifi"
+	+gmp-autoupdate hardened jack lightning lto cpu_flags_arm_neon pgo
+	pulseaudio selinux startup-notification +system-av1 +system-harfbuzz
+	+system-icu +system-jpeg +system-libevent +system-sqlite
+	+system-libvpx +system-webp test wayland wifi"
 RESTRICT="!bindist? ( bindist )
 	!test? ( test )"
 
@@ -194,35 +194,35 @@ fi
 
 llvm_check_deps() {
 	if ! has_version --host-root "sys-devel/clang:${LLVM_SLOT}"; then
-		ewarn "sys-devel/clang:${LLVM_SLOT} is missing! Cannot use LLVM slot ${LLVM_SLOT} ..."
+		ewarn "sys-devel/clang:${LLVM_SLOT} is missing! Cannot use LLVM slot ${LLVM_SLOT} ..." >&2
 		return 1
-	fi
-
-	if use pgo; then
-		if ! has usersandbox $FEATURES; then
-			eerror "You must enable usersandbox as X server can not run as root!"
-		fi
 	fi
 
 	if use clang; then
 		if ! has_version --host-root "=sys-devel/lld-${LLVM_SLOT}*"; then
-			ewarn "=sys-devel/lld-${LLVM_SLOT}* is missing! Cannot use LLVM slot ${LLVM_SLOT} ..."
+			ewarn "=sys-devel/lld-${LLVM_SLOT}* is missing! Cannot use LLVM slot ${LLVM_SLOT} ..." >&2
 			return 1
 		fi
 
 		if use pgo; then
 			if ! has_version --host-root "=sys-libs/compiler-rt-sanitizers-${LLVM_SLOT}*"; then
-				ewarn "=sys-libs/compiler-rt-sanitizers-${LLVM_SLOT}* is missing! Cannot use LLVM slot ${LLVM_SLOT} ..."
+				ewarn "=sys-libs/compiler-rt-sanitizers-${LLVM_SLOT}* is missing! Cannot use LLVM slot ${LLVM_SLOT} ..." >&2
 				return 1
 			fi
 		fi
 	fi
 
-	einfo "Will use LLVM slot ${LLVM_SLOT}!"
+	einfo "Will use LLVM slot ${LLVM_SLOT}!" >&2
 }
 
 pkg_setup() {
 	moz_pkgsetup
+
+	if use pgo; then
+		if ! has usersandbox $FEATURES; then
+			die "You must enable usersandbox as X server can not run as root!"
+		fi
+	fi
 
 	# Avoid PGO profiling problems due to enviroment leakage
 	# These should *always* be cleaned up anyway
@@ -267,6 +267,7 @@ src_unpack() {
 src_prepare() {
 	# Apply firefox patchset then apply thunderbird patches
 	rm "${WORKDIR}/firefox/2013_avoid_noinline_on_GCC_with_skcms.patch" || die "rm failed"
+	rm "${WORKDIR}/firefox/2015_fix_cssparser.patch" || die "rm failed"
 	local -a PATCHES
 	PATCHES=(
 		"${WORKDIR}/firefox"
@@ -467,7 +468,7 @@ src_configure() {
 	fi
 
 	# Modifications to better support ARM, bug 553364
-	if use neon; then
+	if use cpu_flags_arm_neon; then
 		mozconfig_annotate '' --with-fpu=neon
 
 		if ! tc-is-clang; then
@@ -476,6 +477,7 @@ src_configure() {
 			mozconfig_annotate '' --with-thumb-interwork=no
 		fi
 	fi
+
 	if [[ "${CHOST}" == armv*h* ]]; then
 		mozconfig_annotate '' --with-float-abi=hard
 		if ! use system-libvpx; then
