@@ -68,14 +68,14 @@ CDEPEND="libglvnd? (
 		>=x11-libs/libX11-1.1.5
 		>=x11-libs/libXext-1.0.5
 		>=media-libs/mesa-11.0.6-r1[X(+),egl,gbm]
-		>=media-libs/libepoxy-1.5.4[X,egl(+)]
+		media-libs/libepoxy[X,egl(+)]
 	)
 	udev? ( virtual/libudev:= )
 	unwind? ( sys-libs/libunwind )
 	wayland? (
 		>=dev-libs/wayland-1.3.0
-		>=media-libs/libepoxy-1.5.4[egl(+)]
-		>=dev-libs/wayland-protocols-1.18
+		media-libs/libepoxy[egl(+)]
+		>=dev-libs/wayland-protocols-1.1
 	)
 	>=x11-apps/xinit-1.3.3-r1
 	systemd? (
@@ -119,6 +119,9 @@ REQUIRED_USE="!minimal? (
 	xephyr? ( kdrive )"
 
 UPSTREAMED_PATCHES=(
+	"${FILESDIR}"/${PN}-1.20.4-shm-reindent-shm_tmpfile-to-follow-our-standards.patch
+	"${FILESDIR}"/${PN}-1.20.4-shm-Pick-the-shm-dir-at-run-time-not-build-time.patch
+	"${FILESDIR}"/${PN}-1.20.4-shm-Use-memfd_create-when-possible.patch
 )
 
 PATCHES=(
@@ -175,8 +178,15 @@ pkg_setup() {
 		--disable-linux-acpi
 		--without-dtrace
 		--without-fop
+		--with-os-vendor=Gentoo
 		--with-sha1=libcrypto
 	)
+}
+
+src_prepare() {
+	sed -i -e 's/"gl >= .*"/"gl"/' configure.ac || die "sed"
+	default
+	eautoreconf
 }
 
 src_install() {
