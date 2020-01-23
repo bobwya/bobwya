@@ -1,4 +1,4 @@
-# Copyright 1999-2019 Gentoo Authors
+# Copyright 1999-2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: wine.eclass
@@ -1631,7 +1631,7 @@ wine_eapply_esync_patchset() {
 		4.21)
 			_rebased_patchset="b934f6626ed7cb8a6cc18b261550d363a0068141"
 			;;
-		5.0-rc[1-6])
+		5.0-rc[1-6]|5.[0-9])
 			_rebased_patchset="fc17535eb98a4b200d6a418337a7e280568c7cfd"
 			;;
 		9999)
