@@ -1,4 +1,4 @@
-# Copyright 1999-2019 Gentoo Authors
+# Copyright 1999-2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -458,6 +458,7 @@ multilib_src_configure() {
 		driver_enable VULKAN_DRIVERS video_cards_iris intel
 		driver_enable VULKAN_DRIVERS video_cards_radeonsi amd
 	fi
+
 	# x86 hardened pax_kernel needs glx-rts, bug 240956
 	if [[ "${ABI}" == "x86" ]]; then
 		emesonargs+=( "$(meson_use pax_kernel glx-read-only-text)" )
@@ -505,9 +506,10 @@ multilib_src_compile() {
 multilib_src_install() {
 	meson_src_install
 
-	use libglvnd && rm -f "${D}/usr/$(get_libdir)"/libGLESv{1_CM,2}.so*
+	if use libglvnd; then
+		rm -f "${D}/usr/$(get_libdir)/pkgconfig"/{egl,gl}.pc
+	else
 
-	if ! use libglvnd; then
 		# Move lib{EGL*,GL*,OpenVG,OpenGL}.{la,a,so*} files from /usr/lib to /usr/lib/opengl/mesa/lib
 		ebegin "(subshell): moving lib{EGL*,GL*,OpenGL}.{la,a,so*} in order to implement dynamic GL switching support"
 		(
@@ -535,9 +537,12 @@ multilib_src_test() {
 }
 
 pkg_postinst() {
-	# Switch to the xorg implementation.
-	echo
-	eselect opengl set --use-old "${PN}"
+	if use libglvnd; then
+		# Switch to the xorg implementation.
+		echo
+		eselect opengl set --use-old "${PN}"
+
+	fi
 
 	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix various issues"
 	ewarn "when switching GL providers."

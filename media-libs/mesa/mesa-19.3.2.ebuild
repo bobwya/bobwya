@@ -1,10 +1,10 @@
-# Copyright 1999-2019 Gentoo Authors
+# Copyright 1999-2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
 EAPI=7
 
-PYTHON_COMPAT=( python3_5 python3_6 python3_7 )
+PYTHON_COMPAT=( python3_5 python3_6 python3_7 python3_8 )
 
 inherit llvm meson multilib-minimal pax-utils python-any-r1
 
@@ -28,7 +28,7 @@ RESTRICT="!test? ( test )"
 
 AMD_CARDS=( "r100" "r200" "r300" "r600" "radeon" "radeonsi" )
 INTEL_CARDS=( "i915" "i965" "intel" "iris" )
-VIDEO_CARDS=( "freedreno" "nouveau" "vc4" "virgl" "vivante" "vmware" )
+VIDEO_CARDS=( "freedreno" "lima" "nouveau" "panfrost" "vc4" "virgl" "vivante" "vmware" )
 VIDEO_CARDS+=( "${AMD_CARDS[@]}" )
 VIDEO_CARDS+=( "${INTEL_CARDS[@]}" )
 for card in "${VIDEO_CARDS[@]}"; do
@@ -37,7 +37,7 @@ done
 
 IUSE="${IUSE_VIDEO_CARDS}
 	+X +classic d3d9 debug +dri3 +egl +gallium +gbm gles1 +gles2 +libglvnd +llvm
-	lm-sensors opencl osmesa pax_kernel pic selinux test unwind vaapi valgrind vdpau
+	lm-sensors opencl osmesa pax_kernel selinux test unwind vaapi valgrind vdpau
 	vulkan vulkan-overlay wayland xa xvmc"
 
 REQUIRED_USE="
@@ -54,7 +54,9 @@ REQUIRED_USE="
 	video_cards_i915?   ( || ( classic gallium ) )
 	video_cards_i965?   ( classic )
 	video_cards_iris?   ( gallium )
+	video_cards_lima?   ( gallium )
 	video_cards_nouveau? ( || ( classic gallium ) )
+	video_cards_panfrost? ( gallium )
 	video_cards_radeon? ( || ( classic gallium )
 						  gallium? ( x86? ( llvm ) amd64? ( llvm ) ) )
 	video_cards_r100?   ( classic )
@@ -70,14 +72,14 @@ REQUIRED_USE="
 	xvmc? ( X )
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.97"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.100"
 # shellcheck disable=SC2124
 RDEPEND="
 	!app-eselect/eselect-mesa
 	>=dev-libs/expat-2.1.0-r3:=[${MULTILIB_USEDEP}]
 	>=sys-libs/zlib-1.2.8[${MULTILIB_USEDEP}]
 	libglvnd? (
-		media-libs/libglvnd[${MULTILIB_USEDEP}]
+		>=media-libs/libglvnd-1.2.0-r1[${MULTILIB_USEDEP}]
 		!app-eselect/eselect-opengl
 	)
 	!libglvnd? (
@@ -104,11 +106,11 @@ RDEPEND="
 		unwind? ( sys-libs/libunwind[${MULTILIB_USEDEP}] )
 		vaapi? (
 			>=x11-libs/libva-1.7.3:=[${MULTILIB_USEDEP}]
-			video_cards_nouveau? ( !<=x11-libs/libva-vdpau-driver-0.7.4-r3 )
 		)
 		vdpau? ( >=x11-libs/libvdpau-1.1:=[${MULTILIB_USEDEP}] )
 		xvmc? ( >=x11-libs/libXvMC-1.0.8:=[${MULTILIB_USEDEP}] )
 	)
+	selinux? ( sys-libs/libselinux[${MULTILIB_USEDEP}] )
 	wayland? (
 		>=dev-libs/wayland-1.15.0:=[${MULTILIB_USEDEP}]
 		>=dev-libs/wayland-protocols-1.8
@@ -156,7 +158,6 @@ LLVM_DEPSTR="
 	|| (
 		sys-devel/llvm:9[${MULTILIB_USEDEP}]
 		sys-devel/llvm:8[${MULTILIB_USEDEP}]
-		sys-devel/llvm:7[${MULTILIB_USEDEP}]
 	)
 	sys-devel/llvm:=[${MULTILIB_USEDEP}]
 "
@@ -164,39 +165,41 @@ LLVM_DEPSTR_AMDGPU="${LLVM_DEPSTR//]/,llvm_targets_AMDGPU(-)]}"
 CLANG_DEPSTR="${LLVM_DEPSTR//llvm/clang}"
 CLANG_DEPSTR_AMDGPU="${CLANG_DEPSTR//]/,llvm_targets_AMDGPU(-)]}"
 RDEPEND="${RDEPEND}
-	llvm? (
-		opencl? (
-			video_cards_r600? (
-				${CLANG_DEPSTR_AMDGPU}
-			)
-			!video_cards_r600? (
-				video_cards_radeonsi? (
+	gallium? (
+		llvm? (
+			opencl? (
+				video_cards_r600? (
 					${CLANG_DEPSTR_AMDGPU}
 				)
-				!video_cards_radeonsi? (
-					video_cards_radeon? (
+				!video_cards_r600? (
+					video_cards_radeonsi? (
 						${CLANG_DEPSTR_AMDGPU}
 					)
-					!video_cards_radeon? (
-						${CLANG_DEPSTR}
+					!video_cards_radeonsi? (
+						video_cards_radeon? (
+							${CLANG_DEPSTR_AMDGPU}
+						)
+						!video_cards_radeon? (
+							${CLANG_DEPSTR}
+						)
 					)
 				)
 			)
-		)
-		!opencl? (
-			video_cards_r600? (
-				${LLVM_DEPSTR_AMDGPU}
-			)
-			!video_cards_r600? (
-				video_cards_radeonsi? (
+			!opencl? (
+				video_cards_r600? (
 					${LLVM_DEPSTR_AMDGPU}
 				)
-				!video_cards_radeonsi? (
-					video_cards_radeon? (
+				!video_cards_r600? (
+					video_cards_radeonsi? (
 						${LLVM_DEPSTR_AMDGPU}
 					)
-					!video_cards_radeon? (
-						${LLVM_DEPSTR}
+					!video_cards_radeonsi? (
+						video_cards_radeon? (
+							${LLVM_DEPSTR_AMDGPU}
+						)
+						!video_cards_radeon? (
+							${LLVM_DEPSTR}
+						)
 					)
 				)
 			)
@@ -229,13 +232,12 @@ EGIT_CHECKOUT_DIR="${S}"
 
 QA_WX_LOAD="
 x86? (
-	!pic? (
-		usr/lib*/libglapi.so.0.0.0
-		usr/lib*/libGLESv1_CM.so.1.0.0
-		usr/lib*/libGLESv2.so.2.0.0
-		usr/lib*/libGL.so.1.2.0
-		usr/lib*/libOSMesa.so.8.0.0
-	)
+	usr/lib*/libglapi.so.0.0.0
+	usr/lib*/libGLESv1_CM.so.1.1.0
+	usr/lib*/libGLESv2.so.2.0.0
+	usr/lib*/libGL.so.1.2.0
+	usr/lib*/libOSMesa.so.8.0.0
+	libglvnd? ( usr/lib/libGLX_mesa.so.0.0.0 )
 )"
 
 # driver_enable()
@@ -422,10 +424,14 @@ multilib_src_configure() {
 			emesonargs+=( "-Dgallium-xvmc=false" )
 		fi
 		if use video_cards_freedreno ||
+			use video_cards_lima ||
+			use video_cards_panfrost ||
 			use video_cards_vc4 ||
 			use video_cards_vivante; then
 			driver_enable GALLIUM_DRIVERS kmsro
 		fi
+		driver_enable GALLIUM_DRIVERS video_cards_lima lima
+		driver_enable GALLIUM_DRIVERS video_cards_panfrost panfrost
 		driver_enable GALLIUM_DRIVERS video_cards_vc4 vc4
 		driver_enable GALLIUM_DRIVERS video_cards_vivante etnaviv
 		driver_enable GALLIUM_DRIVERS video_cards_vmware svga
@@ -458,14 +464,10 @@ multilib_src_configure() {
 		driver_enable VULKAN_DRIVERS video_cards_iris intel
 		driver_enable VULKAN_DRIVERS video_cards_radeonsi amd
 	fi
+
 	# x86 hardened pax_kernel needs glx-rts, bug 240956
 	if [[ "${ABI}" == "x86" ]]; then
 		emesonargs+=( "$(meson_use pax_kernel glx-read-only-text)" )
-	fi
-
-	# on abi_x86_32 hardened we need to have asm disable
-	if [[ ${ABI} == x86* ]] && use pic; then
-		emesonargs+=( "-Dasm=false" )
 	fi
 
 	if use gallium; then
@@ -505,9 +507,10 @@ multilib_src_compile() {
 multilib_src_install() {
 	meson_src_install
 
-	use libglvnd && rm -f "${D}/usr/$(get_libdir)"/libGLESv{1_CM,2}.so*
+	if use libglvnd; then
+		rm -f "${D}/usr/$(get_libdir)/pkgconfig"/{egl,gl}.pc
+	else
 
-	if ! use libglvnd; then
 		# Move lib{EGL*,GL*,OpenVG,OpenGL}.{la,a,so*} files from /usr/lib to /usr/lib/opengl/mesa/lib
 		ebegin "(subshell): moving lib{EGL*,GL*,OpenGL}.{la,a,so*} in order to implement dynamic GL switching support"
 		(
@@ -535,9 +538,12 @@ multilib_src_test() {
 }
 
 pkg_postinst() {
-	# Switch to the xorg implementation.
-	echo
-	eselect opengl set --use-old "${PN}"
+	if use libglvnd; then
+		# Switch to the xorg implementation.
+		echo
+		eselect opengl set --use-old "${PN}"
+
+	fi
 
 	ewarn "This is an experimental version of ${CATEGORY}/${PN} designed to fix various issues"
 	ewarn "when switching GL providers."

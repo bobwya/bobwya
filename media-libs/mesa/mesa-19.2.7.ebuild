@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=7
 
-PYTHON_COMPAT=( python3_5 python3_6 python3_7 python3_8 )
+PYTHON_COMPAT=( python3_5 python3_6 python3_7 )
 
 inherit llvm meson multilib-minimal pax-utils python-any-r1
 
@@ -37,8 +37,8 @@ done
 
 IUSE="${IUSE_VIDEO_CARDS}
 	+X +classic d3d9 debug +dri3 +egl +gallium +gbm gles1 +gles2 +libglvnd +llvm
-	lm-sensors opencl osmesa selinux test unwind vaapi valgrind vdpau vulkan vulkan-overlay
-	wayland xa xvmc"
+	lm-sensors opencl osmesa pax_kernel selinux test unwind vaapi valgrind vdpau
+	vulkan vulkan-overlay wayland xa xvmc"
 
 REQUIRED_USE="
 	d3d9?   ( dri3 || ( video_cards_iris video_cards_r300 video_cards_r600 video_cards_radeonsi video_cards_nouveau video_cards_vmware ) )
@@ -72,7 +72,7 @@ REQUIRED_USE="
 	xvmc? ( X )
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.100"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.99"
 # shellcheck disable=SC2124
 RDEPEND="
 	!app-eselect/eselect-mesa
@@ -106,11 +106,11 @@ RDEPEND="
 		unwind? ( sys-libs/libunwind[${MULTILIB_USEDEP}] )
 		vaapi? (
 			>=x11-libs/libva-1.7.3:=[${MULTILIB_USEDEP}]
+			video_cards_nouveau? ( !<=x11-libs/libva-vdpau-driver-0.7.4-r3 )
 		)
 		vdpau? ( >=x11-libs/libvdpau-1.1:=[${MULTILIB_USEDEP}] )
 		xvmc? ( >=x11-libs/libXvMC-1.0.8:=[${MULTILIB_USEDEP}] )
 	)
-	selinux? ( sys-libs/libselinux[${MULTILIB_USEDEP}] )
 	wayland? (
 		>=dev-libs/wayland-1.15.0:=[${MULTILIB_USEDEP}]
 		>=dev-libs/wayland-protocols-1.8
@@ -167,41 +167,39 @@ LLVM_DEPSTR_AMDGPU="${LLVM_DEPSTR//]/,llvm_targets_AMDGPU(-)]}"
 CLANG_DEPSTR="${LLVM_DEPSTR//llvm/clang}"
 CLANG_DEPSTR_AMDGPU="${CLANG_DEPSTR//]/,llvm_targets_AMDGPU(-)]}"
 RDEPEND="${RDEPEND}
-	gallium? (
-		llvm? (
-			opencl? (
-				video_cards_r600? (
+	llvm? (
+		opencl? (
+			video_cards_r600? (
+				${CLANG_DEPSTR_AMDGPU}
+			)
+			!video_cards_r600? (
+				video_cards_radeonsi? (
 					${CLANG_DEPSTR_AMDGPU}
 				)
-				!video_cards_r600? (
-					video_cards_radeonsi? (
+				!video_cards_radeonsi? (
+					video_cards_radeon? (
 						${CLANG_DEPSTR_AMDGPU}
 					)
-					!video_cards_radeonsi? (
-						video_cards_radeon? (
-							${CLANG_DEPSTR_AMDGPU}
-						)
-						!video_cards_radeon? (
-							${CLANG_DEPSTR}
-						)
+					!video_cards_radeon? (
+						${CLANG_DEPSTR}
 					)
 				)
 			)
-			!opencl? (
-				video_cards_r600? (
+		)
+		!opencl? (
+			video_cards_r600? (
+				${LLVM_DEPSTR_AMDGPU}
+			)
+			!video_cards_r600? (
+				video_cards_radeonsi? (
 					${LLVM_DEPSTR_AMDGPU}
 				)
-				!video_cards_r600? (
-					video_cards_radeonsi? (
+				!video_cards_radeonsi? (
+					video_cards_radeon? (
 						${LLVM_DEPSTR_AMDGPU}
 					)
-					!video_cards_radeonsi? (
-						video_cards_radeon? (
-							${LLVM_DEPSTR_AMDGPU}
-						)
-						!video_cards_radeon? (
-							${LLVM_DEPSTR}
-						)
+					!video_cards_radeon? (
+						${LLVM_DEPSTR}
 					)
 				)
 			)
@@ -465,6 +463,11 @@ multilib_src_configure() {
 		driver_enable VULKAN_DRIVERS video_cards_i965 intel
 		driver_enable VULKAN_DRIVERS video_cards_iris intel
 		driver_enable VULKAN_DRIVERS video_cards_radeonsi amd
+	fi
+
+	# x86 hardened pax_kernel needs glx-rts, bug 240956
+	if [[ "${ABI}" == "x86" ]]; then
+		emesonargs+=( "$(meson_use pax_kernel glx-read-only-text)" )
 	fi
 
 	if use gallium; then

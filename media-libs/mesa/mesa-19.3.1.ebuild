@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=7
 
-PYTHON_COMPAT=( python3_5 python3_6 python3_7 python3_8 )
+PYTHON_COMPAT=( python3_5 python3_6 python3_7 )
 
 inherit llvm meson multilib-minimal pax-utils python-any-r1
 
@@ -37,8 +37,8 @@ done
 
 IUSE="${IUSE_VIDEO_CARDS}
 	+X +classic d3d9 debug +dri3 +egl +gallium +gbm gles1 +gles2 +libglvnd +llvm
-	lm-sensors opencl osmesa selinux test unwind vaapi valgrind vdpau vulkan vulkan-overlay
-	wayland xa xvmc"
+	lm-sensors opencl osmesa pax_kernel selinux test unwind vaapi valgrind vdpau
+	vulkan vulkan-overlay wayland xa xvmc"
 
 REQUIRED_USE="
 	d3d9?   ( dri3 || ( video_cards_iris video_cards_r300 video_cards_r600 video_cards_radeonsi video_cards_nouveau video_cards_vmware ) )
@@ -110,7 +110,6 @@ RDEPEND="
 		vdpau? ( >=x11-libs/libvdpau-1.1:=[${MULTILIB_USEDEP}] )
 		xvmc? ( >=x11-libs/libXvMC-1.0.8:=[${MULTILIB_USEDEP}] )
 	)
-	selinux? ( sys-libs/libselinux[${MULTILIB_USEDEP}] )
 	wayland? (
 		>=dev-libs/wayland-1.15.0:=[${MULTILIB_USEDEP}]
 		>=dev-libs/wayland-protocols-1.8
@@ -153,13 +152,11 @@ RDEPEND="${RDEPEND}
 
 # Please keep the LLVM dependency block separate. Since LLVM is slotted,
 # we need to *really* make sure we're only using one slot.
-LLVM_MAX_SLOT="10"
+LLVM_MAX_SLOT="9"
 LLVM_DEPSTR="
 	|| (
-		sys-devel/llvm:10[${MULTILIB_USEDEP}]
 		sys-devel/llvm:9[${MULTILIB_USEDEP}]
 		sys-devel/llvm:8[${MULTILIB_USEDEP}]
-		sys-devel/llvm:7[${MULTILIB_USEDEP}]
 	)
 	sys-devel/llvm:=[${MULTILIB_USEDEP}]
 "
@@ -465,6 +462,11 @@ multilib_src_configure() {
 		driver_enable VULKAN_DRIVERS video_cards_i965 intel
 		driver_enable VULKAN_DRIVERS video_cards_iris intel
 		driver_enable VULKAN_DRIVERS video_cards_radeonsi amd
+	fi
+
+	# x86 hardened pax_kernel needs glx-rts, bug 240956
+	if [[ "${ABI}" == "x86" ]]; then
+		emesonargs+=( "$(meson_use pax_kernel glx-read-only-text)" )
 	fi
 
 	if use gallium; then
