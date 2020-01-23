@@ -1,4 +1,4 @@
-# Copyright 1999-2019 Gentoo Authors
+# Copyright 1999-2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -7,7 +7,7 @@ VIRTUALX_REQUIRED="pgo"
 WANT_AUTOCONF="2.1"
 MOZ_ESR=""
 
-PYTHON_COMPAT=( python3_{5,6,7} )
+PYTHON_COMPAT=( python3_{6,7,8} )
 PYTHON_REQ_USE='ncurses,sqlite,ssl,threads(+)'
 
 # This list can be updated with scripts/get_langs.sh from the mozilla overlay
@@ -28,12 +28,12 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${PN}-71.0-patches-04"
+PATCH="${PN}-72.0-patches-02"
 
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-HG_MOZ_REVISION="d6a688186de0"
+HG_MOZ_REVISION="4c5d44d40a03"
 HG_MOZ_PV="${MOZ_PV/%.*/.0}"
 HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
 MOZ_SRC_URI="${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz"
@@ -42,7 +42,7 @@ if [[ "${PV}" == *_rc* ]]; then
 	MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/candidates/${MOZ_PV}-candidates/build${PV##*_rc}"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-HG_MOZ_REVISION="d6a688186de0"
+HG_MOZ_REVISION="4c5d44d40a03"
 HG_MOZ_PV="${MOZ_PV/%.*/.0}"
 HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
 	MOZ_LANGPACK_PREFIX="linux-i686/xpi/"
@@ -62,11 +62,12 @@ KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
+# Remove system-harfbuzz until new working patch is generated
 IUSE="bindist clang cpu_flags_x86_avx2 debug egl eme-free geckodriver kde
 	+gmp-autoupdate hardened hwaccel jack lto cpu_flags_arm_neon pgo
 	pulseaudio +screenshot selinux startup-notification +system-av1
-	+system-harfbuzz +system-icu +system-jpeg +system-libevent
-	+system-sqlite +system-libvpx +system-webp test wayland wifi"
+	+system-icu +system-jpeg +system-libevent  +system-sqlite +system-libvpx
+	+system-webp test wayland wifi"
 
 REQUIRED_USE="pgo? ( lto )"
 
@@ -85,9 +86,11 @@ SRC_URI="${SRC_URI}
 		${HG_MOZILLA_URI}/raw-file/${HG_MOZ_REVISION}/firefox-kde.patch -> ${PN}-${HG_MOZ_PV}-firefox-kde.patch
 	)"
 
+# remove harfbuzz graphite dep until new working patch is generated for system libs
+#	system-harfbuzz? ( >=media-libs/harfbuzz-2.5.3:0= >=media-gfx/graphite2-1.3.13 )
 CDEPEND="
-	>=dev-libs/nss-3.47.1
-	>=dev-libs/nspr-4.23
+	>=dev-libs/nss-3.48
+	>=dev-libs/nspr-4.24
 	dev-libs/atk
 	dev-libs/expat
 	>=x11-libs/cairo-1.10[X]
@@ -120,12 +123,11 @@ CDEPEND="
 		>=media-libs/dav1d-0.3.0:=
 		>=media-libs/libaom-1.0.0:=
 	)
-	system-harfbuzz? ( >=media-libs/harfbuzz-2.5.3:0= >=media-gfx/graphite2-1.3.13 )
 	system-icu? ( >=dev-libs/icu-64.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
 	system-libevent? ( >=dev-libs/libevent-2.0:0=[threads] )
 	system-libvpx? ( =media-libs/libvpx-1.7*:0=[postproc] )
-	system-sqlite? ( >=dev-db/sqlite-3.29.0:3[secure-delete,debug=] )
+	system-sqlite? ( >=dev-db/sqlite-3.30.1:3[secure-delete,debug=] )
 	system-webp? ( >=media-libs/libwebp-1.0.2:0= )
 	wifi? (
 		kernel_linux? (
@@ -146,7 +148,7 @@ RDEPEND="${CDEPEND}
 DEPEND="${CDEPEND}
 	app-arch/zip
 	app-arch/unzip
-	>=dev-util/cbindgen-0.9.1
+	>=dev-util/cbindgen-0.10.1
 	>=net-libs/nodejs-8.11.0
 	>=sys-devel/binutils-2.30
 	sys-apps/findutils
@@ -299,8 +301,7 @@ src_prepare() {
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
 	PATCHES+=( "${FILESDIR}/${PN}-69.0-lto-gcc-fix.patch" )
-	PATCHES+=( "${FILESDIR}/mozilla-bug1601707-gcc-fixup.patch" )
-	PATCHES+=( "${FILESDIR}/${PN}-71.0-bug1602358-fix-older-builds-with-newer-cbindgen.patch" )
+	PATCHES+=( "${FILESDIR}/mozilla-bug1601707-gcc-fixup-72.patch" )
 
 	default
 
@@ -352,6 +353,9 @@ src_prepare() {
 	# Must run autoconf in js/src
 	cd "${S}"/js/src || die "cd failed"
 	eautoconf old-configure.in
+
+	# Clear checksums that present a problem
+	sed -i 's/\("files":{\)[^}]*/\1/' "${S}"/third_party/rust/backtrace-sys/.cargo-checksum.json || die "sed failed"
 }
 
 src_configure() {
@@ -559,8 +563,8 @@ src_configure() {
 	mozconfig_use_enable startup-notification
 	mozconfig_use_enable system-sqlite
 	mozconfig_use_with system-av1
-	mozconfig_use_with system-harfbuzz
-	mozconfig_use_with system-harfbuzz system-graphite2
+	#mozconfig_use_with system-harfbuzz
+	#mozconfig_use_with system-harfbuzz system-graphite2
 	mozconfig_use_with system-icu
 	mozconfig_use_with system-jpeg
 	mozconfig_use_with system-libvpx
@@ -656,10 +660,10 @@ src_install() {
 		>>"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" || die "echo failed"
 
 	# force the graphite pref if system-harfbuzz is enabled, since the pref cant disable it
-	if use system-harfbuzz; then
-		echo "sticky_pref(\"gfx.font_rendering.graphite.enabled\",true);" \
-			>>"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" || die "echo failed"
-	fi
+	#if use system-harfbuzz ; then
+	#	echo "sticky_pref(\"gfx.font_rendering.graphite.enabled\",true);" \
+	#		>>"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" || die "echo failed"
+	#fi
 
 	# force cairo as the canvas renderer on platforms without skia support
 	if [[ $(tc-endian) == "big" ]]; then
