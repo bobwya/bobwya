@@ -65,7 +65,6 @@ src_configure() {
 	ecm_src_configure
 }
 
-
 pkg_postinst() {
 	ecm_pkg_postinst
 
