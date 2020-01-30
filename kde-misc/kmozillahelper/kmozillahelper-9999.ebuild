@@ -1,4 +1,4 @@
-# Copyright 1999-2019 Gentoo Authors
+# Copyright 1999-2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -51,7 +51,7 @@ RDEPEND="${COMMON_DEPEND}"
 src_prepare() {
 	# Don't allow running as root: may break sandboxing during Portage-based
 	# install of Mozilla applications (Firefox)
-	# See https://github.com/bobwya/bobwya/issues/7#issuecomment-201917441
+	# See https://github.com/bobwya/bobwya/issues/7#issuecomment-202017441
 	local PATCHES=(
 		"${FILESDIR}/${PN}-5.0.5-dont_run_as_root.patch"
 	)
