@@ -26,7 +26,8 @@ HOMEPAGE="https://fna-xna.github.io/"
 LICENSE="ZLIB"
 SLOT="0"
 
-IUSE="+abi_x86_32 +abi_x86_64 debug ffmpeg xnasong test utils"
+IUSE="+abi_x86_32 +abi_x86_64 debug dumpvoices ffmpeg xnasong test utils"
+RESTRICT="!test? ( test )"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )"
 
 COMMON_DEPEND="
@@ -45,16 +46,17 @@ multilib_src_configure() {
 		"-DCMAKE_INSTALL_BINDIR=bin"
 		"-DCMAKE_INSTALL_INCLUDEDIR=include/${FAUDIO_PN}"
 		"-DCMAKE_INSTALL_LIBDIR=$(get_libdir)"
-		"-DCMAKE_INSTALL_PREFIX=${EPREFIX%/}/usr"
+		"-DCMAKE_INSTALL_PREFIX=${EPREFIX}/usr"
 		"-DCMAKE_BUILD_TYPE=$(usex debug Debug Release)"
 		"-DFORCE_ENABLE_DEBUGCONFIGURATION=$(usex debug ON OFF)"
 		"-DBUILD_TESTS=$(usex test ON OFF)"
 		"-DBUILD_UTILS=$(usex utils ON OFF)"
+		"-DDUMP_VOICES=$(usex dumpvoices ON OFF)"
 		"-DFFMPEG=$(usex ffmpeg ON OFF)"
 		"-DXNASONG=$(usex xnasong ON OFF)"
 	)
 	if use ffmpeg; then
-		mycmakeargs+=( "-DFFmpeg_LIBRARY_DIRS=${PREFIX%/}/usr/$(get_libdir)" )
+		mycmakeargs+=( "-DFFmpeg_LIBRARY_DIRS=${EPREFIX}/usr/$(get_libdir)"  )
 	fi
 	cmake-utils_src_configure
 }
@@ -72,8 +74,8 @@ multilib_src_install() {
 	# FIXME: do we want to install the FAudio tools?
 	cmake-utils_src_install
 
-	sed -e "s/%LIB%/$(get_libdir)/g" "${FILESDIR}/faudio.pc" \
-		> "${T}/faudio.pc" \
+	sed -e "s@%LIB%@$(get_libdir)@g" -e "s@%PREFIX%@${EPREFIX}/usr@g" \
+		"${FILESDIR}/faudio.pc" > "${T}/faudio.pc" \
 		|| die "sed failed"
 	insinto "/usr/$(get_libdir)/pkgconfig"
 	doins "${T}/faudio.pc"
