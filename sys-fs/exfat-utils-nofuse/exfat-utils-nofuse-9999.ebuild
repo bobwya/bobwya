@@ -1,4 +1,4 @@
-# Copyright 1999-2019 Gentoo Authors
+# Copyright 1999-2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -15,7 +15,7 @@ if [[ "${PV}" == "9999" ]]; then
 	SRC_URI=""
 else
 	SRC_URI="https://github.com/relan/exfat/releases/download/v${PV}/${MY_P}.tar.gz"
-	KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~m68k ~mips ~ppc64 ~s390 ~sh ~sparc ~x86 ~arm-linux ~x86-linux"
+	KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~m68k ~mips ~ppc64 ~s390 ~sparc ~x86 ~arm-linux ~x86-linux"
 	S="${WORKDIR}/${MY_P}"
 fi
 
