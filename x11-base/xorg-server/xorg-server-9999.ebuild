@@ -1,4 +1,4 @@
-# Copyright 1999-2019 Gentoo Authors
+# Copyright 1999-2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -11,15 +11,16 @@ EGIT_REPO_URI="https://gitlab.freedesktop.org/xorg/xserver.git"
 DESCRIPTION="X.Org X servers"
 SLOT="0/${PV}"
 if [[ ${PV} != 9999* ]]; then
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-linux ~x86-linux"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux"
 fi
 
 IUSE_SERVERS="dmx kdrive wayland xephyr xnest xorg xvfb"
-IUSE="${IUSE_SERVERS} debug elogind ipv6 libressl libglvnd minimal selinux +suid systemd +udev unwind xcsecurity"
+IUSE="${IUSE_SERVERS} debug elogind ipv6 libressl +libglvnd minimal selinux +suid systemd +udev unwind xcsecurity"
 
 CDEPEND="libglvnd? (
-		media-libs/libglvnd
+		media-libs/libglvnd[X]
 		!app-eselect/eselect-opengl
+		!!x11-drivers/nvidia-drivers[-libglvnd(-)]
 	)
 	!libglvnd? ( ~app-eselect/eselect-opengl-1.3.3	)
 	!libressl? ( dev-libs/openssl:0= )
@@ -104,7 +105,6 @@ DEPEND="${CDEPEND}
 
 RDEPEND="${CDEPEND}
 	selinux? ( sec-policy/selinux-xserver )
-	!x11-drivers/xf86-video-modesetting
 "
 
 PDEPEND="
