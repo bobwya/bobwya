@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=7
 
-PYTHON_COMPAT=( python3_5 python3_6 python3_7 )
+PYTHON_COMPAT=( python3_5 python3_6 python3_7 python3_8 )
 
 inherit llvm meson multilib-minimal pax-utils python-any-r1
 
@@ -19,7 +19,7 @@ if [[ "${PV}" == "9999" ]]; then
 	EGIT_CHECKOUT_DIR="${WORKDIR}/${MY_P}"
 else
 	SRC_URI="https://mesa.freedesktop.org/archive/${MY_P}.tar.xz"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-linux ~x86-linux ~sparc-solaris ~x64-solaris ~x86-solaris"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~sparc-solaris ~x64-solaris ~x86-solaris"
 fi
 
 LICENSE="MIT"
@@ -37,8 +37,8 @@ done
 
 IUSE="${IUSE_VIDEO_CARDS}
 	+X +classic d3d9 debug +dri3 +egl +gallium +gbm gles1 +gles2 +libglvnd +llvm
-	lm-sensors opencl osmesa pax_kernel selinux test unwind vaapi valgrind vdpau
-	vulkan vulkan-overlay wayland xa xvmc"
+	lm-sensors opencl osmesa selinux test unwind vaapi valgrind vdpau vulkan vulkan-overlay
+	wayland xa xvmc +zstd"
 
 REQUIRED_USE="
 	d3d9?   ( dri3 || ( video_cards_iris video_cards_r300 video_cards_r600 video_cards_radeonsi video_cards_nouveau video_cards_vmware ) )
@@ -110,6 +110,7 @@ RDEPEND="
 		vdpau? ( >=x11-libs/libvdpau-1.1:=[${MULTILIB_USEDEP}] )
 		xvmc? ( >=x11-libs/libXvMC-1.0.8:=[${MULTILIB_USEDEP}] )
 	)
+	selinux? ( sys-libs/libselinux[${MULTILIB_USEDEP}] )
 	wayland? (
 		>=dev-libs/wayland-1.15.0:=[${MULTILIB_USEDEP}]
 		>=dev-libs/wayland-protocols-1.8
@@ -130,6 +131,7 @@ RDEPEND="
 		>=x11-libs/libxcb-1.13:=[${MULTILIB_USEDEP}]
 		x11-libs/libXfixes:=[${MULTILIB_USEDEP}]
 	)
+	zstd? ( app-arch/zstd:=[${MULTILIB_USEDEP}] )
 "
 
 # shellcheck disable=SC2068
@@ -157,6 +159,7 @@ LLVM_DEPSTR="
 	|| (
 		sys-devel/llvm:9[${MULTILIB_USEDEP}]
 		sys-devel/llvm:8[${MULTILIB_USEDEP}]
+		sys-devel/llvm:7[${MULTILIB_USEDEP}]
 	)
 	sys-devel/llvm:=[${MULTILIB_USEDEP}]
 "
@@ -464,11 +467,6 @@ multilib_src_configure() {
 		driver_enable VULKAN_DRIVERS video_cards_radeonsi amd
 	fi
 
-	# x86 hardened pax_kernel needs glx-rts, bug 240956
-	if [[ "${ABI}" == "x86" ]]; then
-		emesonargs+=( "$(meson_use pax_kernel glx-read-only-text)" )
-	fi
-
 	if use gallium; then
 		driver_enable GALLIUM_DRIVERS -- swrast
 		emesonargs+=( "-Dosmesa=$(usex osmesa gallium none)" )
@@ -488,6 +486,7 @@ multilib_src_configure() {
 		"$(meson_use gles2)"
 		"$(meson_use libglvnd glvnd)"
 		"$(meson_use selinux)"
+		"$(meson_use zstd)"
 		"-Dvalgrind=$(usex valgrind auto false)"
 		"-Ddri-drivers=$(driver_list "${DRI_DRIVERS[*]}")"
 		"-Dgallium-drivers=$(driver_list "${GALLIUM_DRIVERS[*]}")"

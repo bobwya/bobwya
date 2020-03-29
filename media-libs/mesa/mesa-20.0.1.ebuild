@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=7
 
-PYTHON_COMPAT=( python3_5 python3_6 python3_7 )
+PYTHON_COMPAT=( python3_5 python3_6 python3_7 python3_8 )
 
 inherit llvm meson multilib-minimal pax-utils python-any-r1
 
@@ -19,7 +19,7 @@ if [[ "${PV}" == "9999" ]]; then
 	EGIT_CHECKOUT_DIR="${WORKDIR}/${MY_P}"
 else
 	SRC_URI="https://mesa.freedesktop.org/archive/${MY_P}.tar.xz"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-linux ~x86-linux ~sparc-solaris ~x64-solaris ~x86-solaris"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~sparc-solaris ~x64-solaris ~x86-solaris"
 fi
 
 LICENSE="MIT"
@@ -28,7 +28,7 @@ RESTRICT="!test? ( test )"
 
 AMD_CARDS=( "r100" "r200" "r300" "r600" "radeon" "radeonsi" )
 INTEL_CARDS=( "i915" "i965" "intel" "iris" )
-VIDEO_CARDS=( "freedreno" "nouveau" "vc4" "virgl" "vivante" "vmware" )
+VIDEO_CARDS=( "freedreno" "lima" "nouveau" "panfrost" "vc4" "virgl" "vivante" "vmware" )
 VIDEO_CARDS+=( "${AMD_CARDS[@]}" )
 VIDEO_CARDS+=( "${INTEL_CARDS[@]}" )
 for card in "${VIDEO_CARDS[@]}"; do
@@ -37,8 +37,8 @@ done
 
 IUSE="${IUSE_VIDEO_CARDS}
 	+X +classic d3d9 debug +dri3 +egl +gallium +gbm gles1 +gles2 +libglvnd +llvm
-	lm-sensors opencl osmesa pax_kernel pic selinux test unwind vaapi valgrind vdpau
-	vulkan vulkan-overlay wayland xa xvmc"
+	lm-sensors opencl osmesa selinux test unwind vaapi valgrind vdpau vulkan vulkan-overlay
+	wayland xa xvmc +zstd"
 
 REQUIRED_USE="
 	d3d9?   ( dri3 || ( video_cards_iris video_cards_r300 video_cards_r600 video_cards_radeonsi video_cards_nouveau video_cards_vmware ) )
@@ -54,7 +54,9 @@ REQUIRED_USE="
 	video_cards_i915?   ( || ( classic gallium ) )
 	video_cards_i965?   ( classic )
 	video_cards_iris?   ( gallium )
+	video_cards_lima?   ( gallium )
 	video_cards_nouveau? ( || ( classic gallium ) )
+	video_cards_panfrost? ( gallium )
 	video_cards_radeon? ( || ( classic gallium )
 						  gallium? ( x86? ( llvm ) amd64? ( llvm ) ) )
 	video_cards_r100?   ( classic )
@@ -70,14 +72,14 @@ REQUIRED_USE="
 	xvmc? ( X )
 "
 
-LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.97"
+LIBDRM_DEPSTRING=">=x11-libs/libdrm-2.4.100"
 # shellcheck disable=SC2124
 RDEPEND="
 	!app-eselect/eselect-mesa
 	>=dev-libs/expat-2.1.0-r3:=[${MULTILIB_USEDEP}]
 	>=sys-libs/zlib-1.2.8[${MULTILIB_USEDEP}]
 	libglvnd? (
-		media-libs/libglvnd[${MULTILIB_USEDEP}]
+		>=media-libs/libglvnd-1.2.0-r1[${MULTILIB_USEDEP}]
 		!app-eselect/eselect-opengl
 	)
 	!libglvnd? (
@@ -104,11 +106,11 @@ RDEPEND="
 		unwind? ( sys-libs/libunwind[${MULTILIB_USEDEP}] )
 		vaapi? (
 			>=x11-libs/libva-1.7.3:=[${MULTILIB_USEDEP}]
-			video_cards_nouveau? ( !<=x11-libs/libva-vdpau-driver-0.7.4-r3 )
 		)
 		vdpau? ( >=x11-libs/libvdpau-1.1:=[${MULTILIB_USEDEP}] )
 		xvmc? ( >=x11-libs/libXvMC-1.0.8:=[${MULTILIB_USEDEP}] )
 	)
+	selinux? ( sys-libs/libselinux[${MULTILIB_USEDEP}] )
 	wayland? (
 		>=dev-libs/wayland-1.15.0:=[${MULTILIB_USEDEP}]
 		>=dev-libs/wayland-protocols-1.8
@@ -129,6 +131,7 @@ RDEPEND="
 		>=x11-libs/libxcb-1.13:=[${MULTILIB_USEDEP}]
 		x11-libs/libXfixes:=[${MULTILIB_USEDEP}]
 	)
+	zstd? ( app-arch/zstd:=[${MULTILIB_USEDEP}] )
 "
 
 # shellcheck disable=SC2068
@@ -164,39 +167,41 @@ LLVM_DEPSTR_AMDGPU="${LLVM_DEPSTR//]/,llvm_targets_AMDGPU(-)]}"
 CLANG_DEPSTR="${LLVM_DEPSTR//llvm/clang}"
 CLANG_DEPSTR_AMDGPU="${CLANG_DEPSTR//]/,llvm_targets_AMDGPU(-)]}"
 RDEPEND="${RDEPEND}
-	llvm? (
-		opencl? (
-			video_cards_r600? (
-				${CLANG_DEPSTR_AMDGPU}
-			)
-			!video_cards_r600? (
-				video_cards_radeonsi? (
+	gallium? (
+		llvm? (
+			opencl? (
+				video_cards_r600? (
 					${CLANG_DEPSTR_AMDGPU}
 				)
-				!video_cards_radeonsi? (
-					video_cards_radeon? (
+				!video_cards_r600? (
+					video_cards_radeonsi? (
 						${CLANG_DEPSTR_AMDGPU}
 					)
-					!video_cards_radeon? (
-						${CLANG_DEPSTR}
+					!video_cards_radeonsi? (
+						video_cards_radeon? (
+							${CLANG_DEPSTR_AMDGPU}
+						)
+						!video_cards_radeon? (
+							${CLANG_DEPSTR}
+						)
 					)
 				)
 			)
-		)
-		!opencl? (
-			video_cards_r600? (
-				${LLVM_DEPSTR_AMDGPU}
-			)
-			!video_cards_r600? (
-				video_cards_radeonsi? (
+			!opencl? (
+				video_cards_r600? (
 					${LLVM_DEPSTR_AMDGPU}
 				)
-				!video_cards_radeonsi? (
-					video_cards_radeon? (
+				!video_cards_r600? (
+					video_cards_radeonsi? (
 						${LLVM_DEPSTR_AMDGPU}
 					)
-					!video_cards_radeon? (
-						${LLVM_DEPSTR}
+					!video_cards_radeonsi? (
+						video_cards_radeon? (
+							${LLVM_DEPSTR_AMDGPU}
+						)
+						!video_cards_radeon? (
+							${LLVM_DEPSTR}
+						)
 					)
 				)
 			)
@@ -229,13 +234,12 @@ EGIT_CHECKOUT_DIR="${S}"
 
 QA_WX_LOAD="
 x86? (
-	!pic? (
-		usr/lib*/libglapi.so.0.0.0
-		usr/lib*/libGLESv1_CM.so.1.0.0
-		usr/lib*/libGLESv2.so.2.0.0
-		usr/lib*/libGL.so.1.2.0
-		usr/lib*/libOSMesa.so.8.0.0
-	)
+	usr/lib*/libglapi.so.0.0.0
+	usr/lib*/libGLESv1_CM.so.1.1.0
+	usr/lib*/libGLESv2.so.2.0.0
+	usr/lib*/libGL.so.1.2.0
+	usr/lib*/libOSMesa.so.8.0.0
+	libglvnd? ( usr/lib/libGLX_mesa.so.0.0.0 )
 )"
 
 # driver_enable()
@@ -422,10 +426,14 @@ multilib_src_configure() {
 			emesonargs+=( "-Dgallium-xvmc=false" )
 		fi
 		if use video_cards_freedreno ||
+			use video_cards_lima ||
+			use video_cards_panfrost ||
 			use video_cards_vc4 ||
 			use video_cards_vivante; then
 			driver_enable GALLIUM_DRIVERS kmsro
 		fi
+		driver_enable GALLIUM_DRIVERS video_cards_lima lima
+		driver_enable GALLIUM_DRIVERS video_cards_panfrost panfrost
 		driver_enable GALLIUM_DRIVERS video_cards_vc4 vc4
 		driver_enable GALLIUM_DRIVERS video_cards_vivante etnaviv
 		driver_enable GALLIUM_DRIVERS video_cards_vmware svga
@@ -459,16 +467,6 @@ multilib_src_configure() {
 		driver_enable VULKAN_DRIVERS video_cards_radeonsi amd
 	fi
 
-	# x86 hardened pax_kernel needs glx-rts, bug 240956
-	if [[ "${ABI}" == "x86" ]]; then
-		emesonargs+=( "$(meson_use pax_kernel glx-read-only-text)" )
-	fi
-
-	# on abi_x86_32 hardened we need to have asm disable
-	if [[ ${ABI} == x86* ]] && use pic; then
-		emesonargs+=( "-Dasm=false" )
-	fi
-
 	if use gallium; then
 		driver_enable GALLIUM_DRIVERS -- swrast
 		emesonargs+=( "-Dosmesa=$(usex osmesa gallium none)" )
@@ -488,6 +486,7 @@ multilib_src_configure() {
 		"$(meson_use gles2)"
 		"$(meson_use libglvnd glvnd)"
 		"$(meson_use selinux)"
+		"$(meson_use zstd)"
 		"-Dvalgrind=$(usex valgrind auto false)"
 		"-Ddri-drivers=$(driver_list "${DRI_DRIVERS[*]}")"
 		"-Dgallium-drivers=$(driver_list "${GALLIUM_DRIVERS[*]}")"
