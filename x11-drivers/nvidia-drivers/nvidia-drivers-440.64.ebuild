@@ -6,16 +6,16 @@ EAPI=7
 inherit desktop flag-o-matic linux-info linux-mod multilib-minimal \
 	nvidia-driver portability toolchain-funcs unpacker udev
 
-NV_SETTINGS_PV="$(ver_cut '1').44"
-NV_VULKAN_BETA_PV="$(ver_rs 1- '')"
-
 NV_URI="https://download.nvidia.com/XFree86/"
 AMD64_NV_PACKAGE="NVIDIA-Linux-x86_64-${PV}"
+AMD64_FBSD_NV_PACKAGE="NVIDIA-FreeBSD-x86_64-${PV}"
+
 DESCRIPTION="NVIDIA Accelerated Graphics Driver"
 HOMEPAGE="https://www.nvidia.com/ https://www.nvidia.com/Download/Find.aspx"
 SRC_URI="
-	amd64? ( "https://developer.nvidia.com/vulkan-beta-${NV_VULKAN_BETA_PV}-linux" -> ${AMD64_NV_PACKAGE}.run )
-	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${NV_SETTINGS_PV}.tar.bz2 )
+	amd64-fbsd? ( ${NV_URI%/}/FreeBSD-x86_64/${PV}/${AMD64_FBSD_NV_PACKAGE}.tar.gz )
+	amd64? ( ${NV_URI%/}/Linux-x86_64/${PV}/${AMD64_NV_PACKAGE}.run )
+	tools? ( ${NV_URI%/}/nvidia-settings/nvidia-settings-${PV}.tar.bz2 )
 "
 
 LICENSE="GPL-2 NVIDIA-r2"
@@ -132,7 +132,7 @@ pkg_pretend() {
 }
 
 pkg_setup() {
-	NV_KV_MAX_PLUS="5.5"
+	NV_KV_MAX_PLUS="5.7"
 	nvidia-driver_check
 
 	# try to turn off distcc and ccache for people that have a problem with it
@@ -212,7 +212,6 @@ src_prepare() {
 	local -a PATCHES
 	PATCHES+=( "${FILESDIR}/${PN}-440.26-locale.patch" )
 	if use tools; then
-		mv "${S%/}/nvidia-settings-${NV_SETTINGS_PV}" "/${S%/}/nvidia-settings-${PV}" || die "mv failed"
 		rsync -achv "${FILESDIR}/nvidia-settings-linker.patch" "${WORKDIR}"/ \
 			|| die "rsync failed"
 		sed -i -e 's:@PV@:'"${PV}"':g' "${WORKDIR}/nvidia-settings-linker.patch" \
@@ -234,15 +233,6 @@ src_prepare() {
 	fi
 	if use tools; then
 		pushd "${S%/}/nvidia-settings-${PV}" || die "pushd failed"
-		# Correct nvidia settings version, to support Vulkan beta driver releases
-		sed -i -e 's:^NVIDIA_VERSION = .*$:NVIDIA_VERSION = '"${PV}"':g' \
-			"doc/version.mk" "samples/version.mk" \
-			"src/version.h" "src/version.mk" "src/libXNVCtrl/version.mk" \
-			"version.mk" \
-			 || die "sed failed"
-		sed -i -e 's:^#define NVIDIA_VERSION ".*"$:#define NVIDIA_VERSION "'"${PV}"'":g' \
-			"src/version.h" \
-			 || die "sed failed"
 		popd || die "popd failed"
 	fi
 }

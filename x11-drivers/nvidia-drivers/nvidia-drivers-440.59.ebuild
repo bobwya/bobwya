@@ -132,7 +132,7 @@ pkg_pretend() {
 }
 
 pkg_setup() {
-	NV_KV_MAX_PLUS="5.5"
+	NV_KV_MAX_PLUS="5.6"
 	nvidia-driver_check
 
 	# try to turn off distcc and ccache for people that have a problem with it
