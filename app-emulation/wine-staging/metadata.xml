@@ -22,6 +22,7 @@ For this Wine variant - the external Wine Staging patchset is always applied whe
 		See: https://github.com/FNA-XNA/FAudio</flag>
 		<flag name="ffmpeg">Use ffmpeg to convert WMA formats, requires:
 			<pkg>media-video/ffmpeg</pkg> (this feature is not supported by <pkg>media-video/libav</pkg>).</flag>
+		<flag name="gcrypt">Add support for the Diffie-Hellman key exchanges using <pkg>dev-libs/libgcrypt</pkg>.</flag>
 		<flag name="gecko">Add support for the Gecko engine when using iexplore</flag>
 		<flag name="gstreamer">Use <pkg>media-libs/gstreamer</pkg> to provide DirectShow functionality.</flag>
 		<flag name="mono">Add support for .NET using Wine's Mono add-on.</flag>
