@@ -35,6 +35,7 @@ However Wine can optionally use native Windows DLLs if they are available.Wine p
 			https://web.archive.org/web/20150906013746/http://wiki.winehq.org/NtlmSigningAndSealing
 			(these pages are not currently in the updated WineHQ Wiki).</flag>
 		<flag name="udev">Use <pkg>virtual/libudev</pkg> to provide plug and play support.</flag>
+		<flag name="unwind">Use external <pkg>sys-libs/libunwind</pkg> library for stack unwinding (exception handling).</flag>
 		<flag name="vkd3d">Use <pkg>app-emulation/vkd3d</pkg> to provide DirectX D3D12 support</flag>
 		<flag name="vulkan">Enable Vulkan layer graphics support using <pkg>media-libs/vulkan-loader</pkg>.</flag>
 	</use>
