@@ -49,7 +49,7 @@ HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
 	MOZ_SRC_URI="${MOZ_HTTP_URI}/source/${PN}-${MOZ_PV}.source.tar.xz -> $P.tar.xz"
 fi
 
-LLVM_MAX_SLOT=9
+LLVM_MAX_SLOT=10
 
 inherit autotools check-reqs eapi7-ver flag-o-matic gnome2-utils llvm mozcoreconf-v6 \
 	mozlinguas-v2 pax-utils toolchain-funcs virtualx xdg-utils
@@ -151,6 +151,15 @@ DEPEND="${CDEPEND}
 	sys-apps/findutils
 	|| (
 		(
+			sys-devel/clang:10
+			!clang? ( sys-devel/llvm:10 )
+			clang? (
+				=sys-devel/lld-10*
+				sys-devel/llvm:10[gold]
+				pgo? ( =sys-libs/compiler-rt-sanitizers-10*[profile] )
+			)
+		)
+		(
 			sys-devel/clang:9
 			!clang? ( sys-devel/llvm:9 )
 			clang? (
@@ -223,14 +232,34 @@ llvm_check_deps() {
 	einfo "Will use LLVM slot ${LLVM_SLOT}!" >&2
 }
 
-pkg_setup() {
-	moz_pkgsetup
-
+pkg_pretend() {
 	if use pgo; then
 		if ! has usersandbox $FEATURES; then
 			die "You must enable usersandbox as X server can not run as root!"
 		fi
 	fi
+
+	# Ensure we have enough disk space to compile
+	if use pgo || use lto || use debug || use test; then
+		CHECKREQS_DISK_BUILD="8G"
+	else
+		CHECKREQS_DISK_BUILD="4G"
+	fi
+
+	check-reqs_pkg_pretend
+}
+
+pkg_setup() {
+	moz_pkgsetup
+
+	# Ensure we have enough disk space to compile
+	if use pgo || use lto || use debug || use test; then
+		CHECKREQS_DISK_BUILD="8G"
+	else
+		CHECKREQS_DISK_BUILD="4G"
+	fi
+
+	check-reqs_pkg_setup
 
 	# Avoid PGO profiling problems due to enviroment leakage
 	# These should *always* be cleaned up anyway
@@ -238,6 +267,7 @@ pkg_setup() {
 		DISPLAY \
 		ORBIT_SOCKETDIR \
 		SESSION_MANAGER \
+		XDG_CACHE_HOME \
 		XDG_SESSION_COOKIE \
 		XAUTHORITY
 
@@ -252,17 +282,6 @@ pkg_setup() {
 	addpredict /proc/self/oom_score_adj
 
 	llvm_pkg_setup
-}
-
-pkg_pretend() {
-	# Ensure we have enough disk space to compile
-	if use pgo || use lto || use debug || use test; then
-		CHECKREQS_DISK_BUILD="8G"
-	else
-		CHECKREQS_DISK_BUILD="4G"
-	fi
-
-	check-reqs_pkg_setup
 }
 
 src_unpack() {
@@ -597,7 +616,7 @@ src_configure() {
 	# when they would normally be larger than 2GiB.
 	append-ldflags "-Wl,--compress-debug-sections=zlib"
 
-	if use clang; then
+	if use clang && ! use arm64; then
 		# https://bugzilla.mozilla.org/show_bug.cgi?id=1482204
 		# https://bugzilla.mozilla.org/show_bug.cgi?id=1483822
 		mozconfig_annotate 'elf-hack is broken when using Clang' "--disable-elf-hack"
@@ -708,7 +727,7 @@ src_install() {
 	fi
 
 	# Install language packs
-	MOZ_INSTALL_L10N_XPIFILE="1" mozlinguas_src_install
+	MOZEXTENSION_TARGET="distribution/extensions" MOZ_INSTALL_L10N_XPIFILE="1" mozlinguas_src_install
 
 	local size sizes icon_path icon name
 	if use bindist; then

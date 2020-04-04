@@ -5,9 +5,9 @@
 EAPI=6
 VIRTUALX_REQUIRED="pgo"
 WANT_AUTOCONF="2.1"
-MOZ_ESR="1"
+MOZ_ESR=""
 
-PYTHON_COMPAT=( python3_{6,7} )
+PYTHON_COMPAT=( python3_{6,7,8} )
 PYTHON_REQ_USE='ncurses,sqlite,ssl,threads(+)'
 
 # This list can be updated with scripts/get_langs.sh from the mozilla overlay
@@ -28,12 +28,12 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${PN}-68.0-patches-12"
+PATCH="${PN}-74.0-patches-04"
 
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-HG_MOZ_REVISION="3f648b714230"
+HG_MOZ_REVISION="7fa561e5d7c7"
 HG_MOZ_PV="${MOZ_PV/%.*/.0}"
 HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
 MOZ_SRC_URI="${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz"
@@ -42,17 +42,17 @@ if [[ "${PV}" == *_rc* ]]; then
 	MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/candidates/${MOZ_PV}-candidates/build${PV##*_rc}"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-HG_MOZ_REVISION="3f648b714230"
+HG_MOZ_REVISION="7fa561e5d7c7"
 HG_MOZ_PV="${MOZ_PV/%.*/.0}"
 HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
 	MOZ_LANGPACK_PREFIX="linux-i686/xpi/"
 	MOZ_SRC_URI="${MOZ_HTTP_URI}/source/${PN}-${MOZ_PV}.source.tar.xz -> $P.tar.xz"
 fi
 
-LLVM_MAX_SLOT=9
+LLVM_MAX_SLOT=10
 
-inherit autotools check-reqs eapi7-ver flag-o-matic gnome2-utils llvm mozcoreconf-v6 \
-	mozlinguas-v2 pax-utils toolchain-funcs virtualx xdg-utils
+inherit autotools check-reqs eapi7-ver eapi7-ver flag-o-matic gnome2-utils llvm \
+	mozcoreconf-v6 mozlinguas-v2 pax-utils toolchain-funcs virtualx xdg-utils
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.com/firefox
@@ -62,14 +62,13 @@ KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist clang cpu_flags_x86_avx2 dbus debug egl eme-free geckodriver kde
-	+gmp-autoupdate hardened hwaccel jack lto cpu_flags_arm_neon
-	pgo pulseaudio +screenshot selinux startup-notification +system-av1
-	+system-harfbuzz +system-icu +system-jpeg +system-libevent
-	+system-sqlite +system-libvpx +system-webp test wayland wifi"
+IUSE="bindist clang cpu_flags_x86_avx2 debug egl eme-free geckodriver kde
+	+gmp-autoupdate hardened hwaccel jack lto cpu_flags_arm_neon pgo
+	pulseaudio +screenshot selinux startup-notification +system-av1
+	+system-harfbuzz +system-icu +system-jpeg +system-libevent  +system-sqlite
+	 +system-libvpx +system-webp test wayland wifi"
 
-REQUIRED_USE="pgo? ( lto )
-	wifi? ( dbus )"
+REQUIRED_USE="pgo? ( lto )"
 
 RESTRICT="!bindist? ( bindist )
 	!test? ( test )"
@@ -87,8 +86,8 @@ SRC_URI="${SRC_URI}
 	)"
 
 CDEPEND="
-	>=dev-libs/nss-3.44.3
-	>=dev-libs/nspr-4.21
+	>=dev-libs/nss-3.50
+	>=dev-libs/nspr-4.25
 	dev-libs/atk
 	dev-libs/expat
 	>=x11-libs/cairo-1.10[X]
@@ -102,13 +101,13 @@ CDEPEND="
 	>=media-libs/freetype-2.4.10
 	kernel_linux? ( !pulseaudio? ( media-libs/alsa-lib ) )
 	virtual/freedesktop-icon-theme
-	dbus? ( >=sys-apps/dbus-0.60
-		>=dev-libs/dbus-glib-0.72 )
+	sys-apps/dbus
+	dev-libs/dbus-glib
 	startup-notification? ( >=x11-libs/startup-notification-0.8 )
 	>=x11-libs/pixman-0.19.2
 	>=dev-libs/glib-2.26:2
 	>=sys-libs/zlib-1.2.3
-	>=virtual/libffi-3.0.10:=
+	>=dev-libs/libffi-3.0.10:=
 	virtual/ffmpeg
 	x11-libs/libX11
 	x11-libs/libXcomposite
@@ -121,16 +120,18 @@ CDEPEND="
 		>=media-libs/dav1d-0.3.0:=
 		>=media-libs/libaom-1.0.0:=
 	)
-	system-harfbuzz? ( >=media-libs/harfbuzz-2.4.0:0= >=media-gfx/graphite2-1.3.13 )
-	system-icu? ( >=dev-libs/icu-63.1:= )
+	system-harfbuzz? ( >=media-libs/harfbuzz-2.6.4:0= >=media-gfx/graphite2-1.3.13 )
+	system-icu? ( >=dev-libs/icu-64.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
 	system-libevent? ( >=dev-libs/libevent-2.0:0=[threads] )
-	system-libvpx? ( =media-libs/libvpx-1.7*:0=[postproc] )
-	system-sqlite? ( >=dev-db/sqlite-3.28.0:3[secure-delete,debug=] )
-	system-webp? ( >=media-libs/libwebp-1.0.2:0= )
-	wifi? ( kernel_linux? ( >=sys-apps/dbus-0.60
-			>=dev-libs/dbus-glib-0.72
-			net-misc/networkmanager ) )
+	system-libvpx? ( >=media-libs/libvpx-1.8.2:0=[postproc] )
+	system-sqlite? ( >=dev-db/sqlite-3.31.1:3[secure-delete,debug=] )
+	system-webp? ( >=media-libs/libwebp-1.1.0:0= )
+	wifi? (
+		kernel_linux? (
+			net-misc/networkmanager
+		)
+	)
 	jack? ( virtual/jack )
 	selinux? ( sec-policy/selinux-mozilla )"
 
@@ -145,11 +146,20 @@ RDEPEND="${CDEPEND}
 DEPEND="${CDEPEND}
 	app-arch/zip
 	app-arch/unzip
-	>=dev-util/cbindgen-0.8.7
+	>=dev-util/cbindgen-0.13.0
 	>=net-libs/nodejs-8.11.0
 	>=sys-devel/binutils-2.30
 	sys-apps/findutils
 	|| (
+		(
+			sys-devel/clang:10
+			!clang? ( sys-devel/llvm:10 )
+			clang? (
+				=sys-devel/lld-10*
+				sys-devel/llvm:10[gold]
+				pgo? ( =sys-libs/compiler-rt-sanitizers-10*[profile] )
+			)
+		)
 		(
 			sys-devel/clang:9
 			!clang? ( sys-devel/llvm:9 )
@@ -179,7 +189,7 @@ DEPEND="${CDEPEND}
 		)
 	)
 	pulseaudio? ( media-sound/pulseaudio )
-	>=virtual/rust-1.34.0
+	>=virtual/rust-1.39.0
 	wayland? ( >=x11-libs/gtk+-3.11:3[wayland] )
 	amd64? ( >=dev-lang/yasm-1.1 virtual/opengl )
 	x86? ( >=dev-lang/yasm-1.1 virtual/opengl )
@@ -223,14 +233,42 @@ llvm_check_deps() {
 	einfo "Will use LLVM slot ${LLVM_SLOT}!" >&2
 }
 
-pkg_setup() {
-	moz_pkgsetup
-
+pkg_pretend() {
 	if use pgo; then
 		if ! has usersandbox $FEATURES; then
 			die "You must enable usersandbox as X server can not run as root!"
 		fi
+
+		if ! use clang; then
+			# Force user decision so they don't find out firefox was build
+			# without pgo after spending some hours
+			eerror "USE=pgo when using GCC is currently known to be broken."
+			eerror "Either switch to USE=clang or temporarily set USE=-pgo."
+			die "USE=pgo without USE=clang is currently known to be broken."
+		fi
 	fi
+
+	# Ensure we have enough disk space to compile
+	if use pgo || use lto || use debug || use test; then
+		CHECKREQS_DISK_BUILD="8G"
+	else
+		CHECKREQS_DISK_BUILD="4G"
+	fi
+
+	check-reqs_pkg_pretend
+}
+
+pkg_setup() {
+	moz_pkgsetup
+
+	# Ensure we have enough disk space to compile
+	if use pgo || use lto || use debug || use test; then
+		CHECKREQS_DISK_BUILD="8G"
+	else
+		CHECKREQS_DISK_BUILD="4G"
+	fi
+
+	check-reqs_pkg_setup
 
 	# Avoid PGO profiling problems due to enviroment leakage
 	# These should *always* be cleaned up anyway
@@ -238,6 +276,7 @@ pkg_setup() {
 		DISPLAY \
 		ORBIT_SOCKETDIR \
 		SESSION_MANAGER \
+		XDG_CACHE_HOME \
 		XDG_SESSION_COOKIE \
 		XAUTHORITY
 
@@ -254,17 +293,6 @@ pkg_setup() {
 	llvm_pkg_setup
 }
 
-pkg_pretend() {
-	# Ensure we have enough disk space to compile
-	if use pgo || use lto || use debug || use test; then
-		CHECKREQS_DISK_BUILD="8G"
-	else
-		CHECKREQS_DISK_BUILD="4G"
-	fi
-
-	check-reqs_pkg_setup
-}
-
 src_unpack() {
 	default
 
@@ -273,8 +301,7 @@ src_unpack() {
 }
 
 src_prepare() {
-	rm "${WORKDIR}/firefox/2013_avoid_noinline_on_GCC_with_skcms.patch"
-	rm "${WORKDIR}/firefox/2015_fix_cssparser.patch"
+	use !wayland && rm -f "${WORKDIR}/firefox/2019_mozilla-bug1539471.patch"
 	# Default to our patchset
 	local PATCHES=( "${WORKDIR}/firefox" )
 	if use kde; then
@@ -298,6 +325,10 @@ src_prepare() {
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox/)
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
+
+	PATCHES+=( "${FILESDIR}/${PN}-73.0_fix_lto_pgo_builds.patch" )
+	PATCHES+=( "${FILESDIR}/${PN}-73.0_fix_llvm9.patch" )
+	PATCHES+=( "${FILESDIR}/${PN}-74.0-bug1607052-font-selection-regression.patch" )
 
 	default
 
@@ -349,6 +380,9 @@ src_prepare() {
 	# Must run autoconf in js/src
 	cd "${S}"/js/src || die "cd failed"
 	eautoconf old-configure.in
+
+	# Clear checksums that present a problem
+	sed -i 's/\("files":{\)[^}]*/\1/' "${S}"/third_party/rust/target-lexicon-0.9.0/.cargo-checksum.json || die "sed failed"
 }
 
 src_configure() {
@@ -395,6 +429,10 @@ src_configure() {
 	# Must pass release in order to properly select linker
 	mozconfig_annotate 'Enable by Gentoo' "--enable-release"
 
+	# libclang.so is not properly detected work around issue
+# 	mozconfig_annotate '' --with-libclang-path=$(llvm-config --libdir)
+	mozconfig_annotate '' "--with-libclang-path=$(llvm-config --libdir)"
+
 	if use pgo; then
 		if ! has userpriv $FEATURES; then
 			eerror "Building firefox with USE=pgo and FEATURES=-userpriv is not supported!"
@@ -420,9 +458,6 @@ src_configure() {
 			if [[ $(gcc-major-version) -lt 8 ]]; then
 				show_old_compiler_warning=1
 			fi
-
-			# Bug 689358
-			append-cxxflags -flto
 
 			if ! use cpu_flags_x86_avx2; then
 				local _gcc_version_with_ipa_cdtor_fix="8.3"
@@ -480,10 +515,7 @@ src_configure() {
 	use alpha && append-ldflags "-Wl,--no-relax"
 
 	# Add full relro support for hardened
-	if use hardened; then
-		append-ldflags "-Wl,-z,relro,-z,now"
-		mozconfig_use_enable hardened hardening
-	fi
+	use hardened && append-ldflags "-Wl,-z,now"
 
 	# Modifications to better support ARM, bug 553364
 	if use cpu_flags_arm_neon; then
@@ -574,8 +606,6 @@ src_configure() {
 		python/mozbuild/mozbuild/controller/building.py || \
 		die "Failed to disable ccache stats call"
 
-	mozconfig_use_enable dbus
-
 	mozconfig_use_enable wifi necko-wifi
 
 	mozconfig_use_enable geckodriver
@@ -597,7 +627,7 @@ src_configure() {
 	# when they would normally be larger than 2GiB.
 	append-ldflags "-Wl,--compress-debug-sections=zlib"
 
-	if use clang; then
+	if use clang && ! use arm64; then
 		# https://bugzilla.mozilla.org/show_bug.cgi?id=1482204
 		# https://bugzilla.mozilla.org/show_bug.cgi?id=1483822
 		mozconfig_annotate 'elf-hack is broken when using Clang' "--disable-elf-hack"
@@ -645,7 +675,7 @@ src_install() {
 
 	# Add our default prefs for firefox
 	local pkg_default_pref_dir="dist/bin/browser/defaults/preferences"
-	cp "${FILESDIR}/gentoo-default-prefs.js-2" \
+	cp "${FILESDIR}/gentoo-default-prefs.js-3" \
 		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
 		|| die "cp failed"
 
@@ -708,7 +738,7 @@ src_install() {
 	fi
 
 	# Install language packs
-	MOZ_INSTALL_L10N_XPIFILE="1" mozlinguas_src_install
+	MOZEXTENSION_TARGET="distribution/extensions" MOZ_INSTALL_L10N_XPIFILE="1" mozlinguas_src_install
 
 	local size sizes icon_path icon name
 	if use bindist; then
@@ -771,8 +801,6 @@ PROFILE_EOF
 }
 
 pkg_preinst() {
-	gnome2_icon_savelist
-
 	# if the apulse libs are available in MOZILLA_FIVE_HOME then apulse
 	# doesn't need to be forced into the LD_LIBRARY_PATH
 	if use pulseaudio && has_version ">=media-sound/apulse-0.1.9"; then
@@ -791,8 +819,8 @@ pkg_preinst() {
 }
 
 pkg_postinst() {
-	gnome2_icon_cache_update
 	xdg_desktop_database_update
+	xdg_icon_cache_update
 
 	if ! use gmp-autoupdate && ! use eme-free; then
 		elog "USE='-gmp-autoupdate' has disabled the following plugins from updating or"
@@ -808,9 +836,35 @@ pkg_postinst() {
 		elog "media-sound/apulse."
 		elog
 	fi
+
+	local show_doh_information
+
+	if [[ -z "${REPLACING_VERSIONS}" ]]; then
+		# New install; Tell user that DoH is disabled by default
+		show_doh_information=yes
+	else
+		local replacing_version
+		for replacing_version in ${REPLACING_VERSIONS} ; do
+			if ver_test "${replacing_version}" -lt 70; then
+				# Tell user only once about our DoH default
+				show_doh_information=yes
+				break
+			fi
+		done
+	fi
+
+	if [[ -n "${show_doh_information}" ]]; then
+		elog
+		elog "Note regarding Trusted Recursive Resolver aka DNS-over-HTTPS (DoH):"
+		elog "Due to privacy concerns (encrypting DNS might be a good thing, sending all"
+		elog "DNS traffic to Cloudflare by default is not a good idea and applications"
+		elog "should respect OS configured settings), \"network.trr.mode\" was set to 5"
+		elog "(\"Off by choice\") by default."
+		elog "You can enable DNS-over-HTTPS in ${PN^}'s preferences."
+	fi
 }
 
 pkg_postrm() {
-	gnome2_icon_cache_update
 	xdg_desktop_database_update
+	xdg_icon_cache_update
 }
