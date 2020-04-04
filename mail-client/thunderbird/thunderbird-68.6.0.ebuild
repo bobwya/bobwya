@@ -36,7 +36,7 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 MOZ_P="${PN}-${MOZ_PV}"
 
-LLVM_MAX_SLOT=9
+LLVM_MAX_SLOT=10
 
 DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.org/thunderbir
@@ -49,7 +49,7 @@ IUSE="bindist clang cpu_flags_x86_avx2 dbus debug eme-free kde kernel_linux
 	+gmp-autoupdate hardened jack lightning lto cpu_flags_arm_neon pgo
 	pulseaudio selinux startup-notification +system-av1 +system-harfbuzz
 	+system-icu +system-jpeg +system-libevent +system-sqlite
-	+system-libvpx +system-webp test wayland wifi"
+	system-libvpx +system-webp test wayland wifi"
 RESTRICT="!bindist? ( bindist )
 	!test? ( test )"
 
@@ -74,6 +74,7 @@ CDEPEND="
 	>=dev-libs/nspr-4.21
 	dev-libs/atk
 	dev-libs/expat
+	>=dev-libs/libffi-3.0.10:=
 	>=x11-libs/cairo-1.10[X]
 	>=x11-libs/gtk+-2.18:2
 	>=x11-libs/gtk+-3.4.0:3[X]
@@ -91,7 +92,6 @@ CDEPEND="
 	>=x11-libs/pixman-0.19.2
 	>=dev-libs/glib-2.26:2
 	>=sys-libs/zlib-1.2.3
-	>=virtual/libffi-3.0.10:=
 	virtual/ffmpeg
 	x11-libs/libX11
 	x11-libs/libXcomposite
@@ -132,6 +132,15 @@ DEPEND="${CDEPEND}
 	>=sys-devel/binutils-2.30
 	sys-apps/findutils
 	|| (
+		(
+			sys-devel/clang:10
+			!clang? ( sys-devel/llvm:10 )
+			clang? (
+				=sys-devel/lld-10*
+				sys-devel/llvm:10[gold]
+				pgo? ( =sys-libs/compiler-rt-sanitizers-10*[profile] )
+			)
+		)
 		(
 			sys-devel/clang:9
 			!clang? ( sys-devel/llvm:9 )
@@ -266,6 +275,20 @@ src_prepare() {
 	pushd "${S}/comm" &>/dev/null || die "pushd failed"
 	eapply "${FILESDIR}/1000_fix_gentoo_preferences.patch"
 	popd &>/dev/null || die "popd failed"
+
+	if use kde; then
+		# Gecko/toolkit OpenSUSE KDE integration patchset
+
+		PATCHES+=(
+			"${DISTDIR}/${PN}-68.0-mozilla-kde.patch"
+			"${DISTDIR}/${PN}-68.0-mozilla-nongnome-proxies.patch"
+		)
+		# Uncomment the next line to enable KDE support debugging (additional console output)...
+		#PATCHES+=( "${FILESDIR}/${PN}-kde-debug.patch" )
+		# Uncomment the following patch line to force Plasma/Qt file dialog for Thunderbird...
+		#PATCHES+=( "${FILESDIR}/${PN}-force-qt-dialog.patch" )
+		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/mail-client/thunderbird/)
+	fi
 
 	default
 
@@ -655,7 +678,7 @@ src_install() {
 	DESTDIR="${D}" ./mach install || die "cd failed"
 
 	# Install language packs
-	MOZ_INSTALL_L10N_XPIFILE="1" mozlinguas_src_install
+	MOZEXTENSION_TARGET="distribution/extensions" MOZ_INSTALL_L10N_XPIFILE="1" mozlinguas_src_install
 
 	local size sizes icon_path icon
 	if ! use bindist; then
