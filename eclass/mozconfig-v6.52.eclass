@@ -1,4 +1,4 @@
-# Copyright 1999-2019 Gentoo Foundation
+# Copyright 1999-2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 #
 # @ECLASS: mozconfig-v6.52.eclass
@@ -100,6 +100,7 @@ IUSE="${IUSE} dbus debug +jemalloc neon pulseaudio selinux startup-notification 
 RDEPEND=">=app-text/hunspell-1.2:=
 	dev-libs/atk
 	dev-libs/expat
+	>=dev-libs/libffi-3.0.10:=
 	>=x11-libs/cairo-1.10[X]
 	>=x11-libs/gtk+-2.18:2
 	x11-libs/gdk-pixbuf
@@ -117,7 +118,6 @@ RDEPEND=">=app-text/hunspell-1.2:=
 	startup-notification? ( >=x11-libs/startup-notification-0.8 )
 	>=dev-libs/glib-2.26:2
 	>=sys-libs/zlib-1.2.3
-	>=virtual/libffi-3.0.10
 	virtual/ffmpeg
 	x11-libs/libX11
 	x11-libs/libXcomposite
@@ -126,7 +126,7 @@ RDEPEND=">=app-text/hunspell-1.2:=
 	x11-libs/libXfixes
 	x11-libs/libXrender
 	x11-libs/libXt
-	system-cairo? ( >=x11-libs/cairo-1.12[X,xcb] >=x11-libs/pixman-0.19.2 )
+	system-cairo? ( >=x11-libs/cairo-1.12[X,xcb(+)] >=x11-libs/pixman-0.19.2 )
 	system-icu? ( >=dev-libs/icu-58.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
 	system-libevent? ( >=dev-libs/libevent-2.0:0=[threads] )
