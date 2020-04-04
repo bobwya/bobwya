@@ -91,6 +91,7 @@ CDEPEND="
 	>=dev-libs/nspr-4.21
 	dev-libs/atk
 	dev-libs/expat
+	>=dev-libs/libffi-3.0.10:=
 	>=x11-libs/cairo-1.10[X]
 	>=x11-libs/gtk+-2.18:2
 	>=x11-libs/gtk+-3.4.0:3[X]
@@ -108,7 +109,6 @@ CDEPEND="
 	>=x11-libs/pixman-0.19.2
 	>=dev-libs/glib-2.26:2
 	>=sys-libs/zlib-1.2.3
-	>=virtual/libffi-3.0.10:=
 	virtual/ffmpeg
 	x11-libs/libX11
 	x11-libs/libXcomposite
