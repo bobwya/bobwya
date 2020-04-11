@@ -82,7 +82,12 @@ multilib_src_install() {
 }
 
 faudio_test() {
-	XDG_RUNTIME_DIR="/run/user/0" virtx "/usr/$(get_libdir)/faudio/faudio_tests"
+	# FIXME: Tests fail under PA environment, require direct access to  ALSA
+	if command -v  pasuspender; then
+		XDG_RUNTIME_DIR="/run/user/0" pasuspender -- virtx "/usr/$(get_libdir)/faudio/faudio_tests"
+	else
+		XDG_RUNTIME_DIR="/run/user/0" virtx "/usr/$(get_libdir)/faudio/faudio_tests"
+	fi
 }
 
 pkg_postinst() {
