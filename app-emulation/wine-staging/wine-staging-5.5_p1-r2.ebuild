@@ -176,6 +176,8 @@ src_prepare() {
 
 	wine_eapply_bin
 
+	wine_winecfg_about_enhancement
+
 	eautoreconf
 
 	# Modification of the server protocol requires regenerating the server requests

@@ -192,6 +192,8 @@ src_prepare() {
 
 	wine_eapply_bin
 
+	wine_winecfg_about_enhancement
+
 	wine_fix_block_scope_compound_literals
 
 	eautoreconf
