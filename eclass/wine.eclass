@@ -257,7 +257,7 @@ readonly WINE_EBUILD_COMMON_PV
 # @ECLASS-VARIABLE: WINE_ESYNC_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-esync; tarball.
-WINE_ESYNC_P="gentoo-wine-esync-20191220"
+WINE_ESYNC_P="gentoo-wine-esync-20200413"
 readonly WINE_ESYNC_P
 
 # @ECLASS-VARIABLE: WINE_ESYNC_PN
@@ -1582,7 +1582,10 @@ wine_eapply_esync_patchset() {
 		"e2411ebecb13b1005c4d0a528056c9b8a1719049" "d1a7b681ead5fdf10bc2001d9841b7ad9b09423b"
 		"461b5e56f95eb095d97e4af1cb1c5fd64bb2862a" "608d086f1b1bb7168e9322c65224c23f34e75f29"
 		"4538a137e089240f1981f0d6f82fb8d63a65f4f6" "b934f6626ed7cb8a6cc18b261550d363a0068141"
-		"fc17535eb98a4b200d6a418337a7e280568c7cfd"
+		"fc17535eb98a4b200d6a418337a7e280568c7cfd" "f181d5ce82470639459555cd59a076963861a61d"
+		"d637640f9af4ccfb6639361fc548d4bbeaafeb6f" "b664ae8e60e08224cdc3025c28a37cb22356aaa4"
+		"9bfbb4866231f9c2e6e22e23037c54c5702dd634" "6d2d3595c0ea08d915df5fef506fe3679ffa8051"
+		"321d26cbb4404ee63df439759cbc5a546434dde6"
 	)
 
 	case "${WINE_PV}" in
@@ -1640,8 +1643,14 @@ wine_eapply_esync_patchset() {
 		4.21)
 			_rebased_patchset="b934f6626ed7cb8a6cc18b261550d363a0068141"
 			;;
-		5.0-rc[1-6]|5.[0-9])
+		5.0-rc[1-6]|5.[0-4])
 			_rebased_patchset="fc17535eb98a4b200d6a418337a7e280568c7cfd"
+			;;
+		5.5)
+			_rebased_patchset="d637640f9af4ccfb6639361fc548d4bbeaafeb6f"
+			;;
+		5.[6-9]|5.1[0-9])
+			_rebased_patchset="321d26cbb4404ee63df439759cbc5a546434dde6"
 			;;
 		9999)
 			if ((_WINE_IS_STAGING)); then
@@ -1844,7 +1853,6 @@ wine_add_stock_gentoo_patches() {
 	local _patch_directory="${WORKDIR}/${WINE_EBUILD_COMMON_P%/}/patches"
 
 	PATCHES+=(
-		"${_patch_directory}/wine-1.8_winecfg_detailed_version.patch"
 		"${_patch_directory}/wine-1.8-multislot-apploader.patch" # https://bugs.gentoo.org/310611
 	)
 
@@ -2028,6 +2036,35 @@ ${_WINE_AWK_FIX_BLOCK_SCOPE_LITERALS}"
 	| sort -z \
 	| xargs -0 awk "${awk_fix_block_scope_literals}" \
 		|| die "awk failed"
+}
+
+# @FUNCTION: wine_winecfg_about_enhancement
+# @DESCRIPTION:
+# Improve formatting of Wine version, displayed on about tab, of the builtin winecfg utility.
+wine_winecfg_about_enhancement() {
+	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
+
+	sed -i -e '/#include "config.h"/d' \
+		-e '/#include <windows.h>/ i #include "config.h"' \
+		-e '/[ ]-MulDiv([[:digit:]][[:digit:]], GetDeviceCaps(hDC, LOGPIXELSY), 72),$/{s/24,/16,/}' \
+		-e '/^[ ]*SetWindowTextA(hWnd, [_[:upper:]]*);$/{s/PACKAGE_NAME/PACKAGE_STRING/}' \
+		-e '/^[ ]*SetDlgItemTextA(hDlg, IDC_ABT_PANEL_TEXT, PACKAGE_VERSION);$/d' \
+		-e '/IDC_ABT_PANEL_TEXT/d' \
+		-e '/wine_get_version/d' \
+		-e '/SendDlgItemMessageW(hDlg, IDC_ABT_TITLE_TEXT, WM_SETFONT, (WPARAM)titleFont, TRUE);$/ a SetDlgItemTextA(hDlg, IDC_ABT_TITLE_TEXT, PACKAGE_STRING);' \
+		"programs/winecfg/about.c" || die "sed failed"
+
+	sed -i -e '/IDC_ABT_PANEL_TEXT/d' \
+		"programs/winecfg/resource.h" || die "sed failed"
+	sed -i -e '/#include "config.h"/d' \
+		-e '/#include "resource.h"/ i #include "config.h"' \
+		-e '/^[ ]*LTEXT[ ]*/{s/".*",IDC_ABT_TITLE_TEXT,105,30,55,30/"",IDC_ABT_TITLE_TEXT,100,30,200,20/}' \
+		-e '/^[ ]*LTEXT[ ]*"",IDC_ABT_PANEL_TEXT,160,43,140,8$/d' \
+		-e '/IDC_ABT_WEB_LINK,"SysLink", LWS_TRANSPARENT, /{s/105,53,106,8$/100,53,106,8/}' \
+		-e '/^[ ]*IDC_ABT_LICENSE_TEXT,/{s/105,64,145,66$/100,64,145,66/}' \
+		"programs/winecfg/winecfg.rc" || die "sed failed"
+
+	einfo "Called wine_winecfg_about_enhancement"
 }
 
 # @FUNCTION: wine_support_wine_mono_downgrade
