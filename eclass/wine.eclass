@@ -239,7 +239,7 @@ readonly _WINE_IS_STAGING
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-ebuild-common; tarball.
-WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20190428"
+WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20200414"
 readonly WINE_EBUILD_COMMON_P
 
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_PN
@@ -1905,8 +1905,13 @@ wine_add_stock_gentoo_patches() {
 
 	use pcap && case "${WINE_PV}" in
 		1.8*|1.9*|2.0.[1-2]|2.0.[1-2]-rc[1-9]|2.[0-9]|2.1[0-2]|9999)
-			# See: https://bugs.winehq.org/show_bug.cgi?id=40851
 			PATCHES+=( "${_patch_directory}/wine-2.13-fix_build_with_newer_pcap.patch" )
+			# See: https://bugs.gentoo.org/697650
+			PATCHES+=( "${_patch_directory}/wine-4.3-fix_build_with_newer_pcap.patch" )
+			;;
+		2.1[3-9]|2.2[0-2]|3.*|4.[0-2])
+			# See: https://bugs.gentoo.org/697650
+			PATCHES+=( "${_patch_directory}/wine-4.3-fix_build_with_newer_pcap.patch" )
 			;;
 		*)
 			;;
