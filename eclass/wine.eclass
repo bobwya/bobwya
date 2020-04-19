@@ -1610,7 +1610,7 @@ wine_eapply_esync_patchset() {
 		3.19)
 			_rebased_patchset="2f17e0112dc0af3f0b246cf377e2cb8fd7a6cf58"
 			;;
-		3.2[0-1]|4.[0-3]|4.0.1-rc*|4.0.1|4.0.2-rc*|4.0.2|4.0.3-rc*|4.0.3)
+		3.2[0-1]|4.[0-3]|4.0.1-rc*|4.0.1|4.0.2-rc*|4.0.2|4.0.3-rc*|4.0.3|4.0.4-rc*|4.0.4)
 			_rebased_patchset="2600ecd4edfdb71097105c74312f83845305a4f2"
 			;;
 		4.4)
@@ -1687,7 +1687,7 @@ wine_eapply_esync_patchset() {
 	if ((_WINE_IS_STABLE)); then
 		ewarn "using wine-stable"
 		case "${WINE_PV}" in
-			4.0.3-rc*|4.0.3|4.0.4-rc*|4.0.4|4.0.5-rc*|4.0.5)
+			4.0.3-rc*|4.0.3|4.0.4-rc*|4.0.4)
 				_apply_sed_fix=1
 				;;
 			9999)
