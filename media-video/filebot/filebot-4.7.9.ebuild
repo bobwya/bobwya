@@ -1,8 +1,8 @@
-# Copyright 1999-2019 Gentoo Authors
+# Copyright 1999-2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-EAPI=6
+EAPI=7
 
 inherit java-utils-2
 
@@ -14,15 +14,34 @@ SRC_URI="https://downloads.sourceforge.net/project/${PN}/${PN}/${MY_PN}_${PV}/${
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="~amd64 ~x86"
 IUSE=""
 
 DEPEND=""
-RDEPEND="|| ( dev-java/oracle-jdk-bin:1.8[javafx] dev-java/oracle-jre-bin:1.8[javafx] )
-		media-libs/chromaprint
-		media-libs/fontconfig"
+RDEPEND="
+	media-libs/chromaprint
+	media-libs/fontconfig
+	|| (
+		>=virtual/jdk-1.8
+		>=virtual/jre-1.8
+	)"
 
 S="${WORKDIR}"
+
+pkg_pretend() {
+	local java_package
+	java_package="$(
+		eselect --brief --colour=no java-vm show system 2>/dev/null \
+			| sed -e 's@^[[:blank:]]*@dev-java/@' -e 's@[-]\([^-]*\)$@:\1@'
+	)"
+
+	if [[ -z "${java_package}" ]]; then
+		die "unable to determine active system java-vm"
+	fi
+	if ! has_version "${java_package}[javafx]"; then
+		die "active system java-vm '${java_package}' does not support javafx"
+	fi
+}
 
 src_install() {
 	java-pkg_dojar "${MY_PN}.jar"

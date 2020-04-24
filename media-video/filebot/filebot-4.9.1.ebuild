@@ -1,6 +1,7 @@
-# Copyright 1999-2019 Gentoo Authors
+# Copyright 1999-2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
+# shellcheck disable=SC2034
 EAPI=7
 
 inherit java-utils-2
@@ -13,19 +14,33 @@ SRC_URI="https://get.filebot.net/${PN}/${MY_PN}_${PV}/${MY_PN}_${PV}-portable.ta
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~amd64 ~x86"
+KEYWORDS=""
 
 RDEPEND="
-	|| (
-		dev-java/oracle-jdk-bin:1.8[javafx]
-		dev-java/oracle-jre-bin:1.8[javafx]
-	)
 	media-libs/chromaprint[tools]
 	media-libs/fontconfig
 	media-libs/libmediainfo[curl,mms]
-"
+	|| (
+		>=virtual/jdk-11
+		>=virtual/jre-11
+	)"
 
 S="${WORKDIR}"
+
+pkg_pretend() {
+	local java_package
+	java_package="$(
+		eselect --brief --colour=no java-vm show system 2>/dev/null \
+			| sed -e 's@^[[:blank:]]*@dev-java/@' -e 's@[-]\([^-]*\)$@:\1@'
+	)"
+
+	if [[ -z "${java_package}" ]]; then
+		die "unable to determine active system java-vm"
+	fi
+	if ! has_version "${java_package}[javafx]"; then
+		die "active system java-vm ${java_package}, does not have javafx support"
+	fi
+}
 
 src_install() {
 	if use x86; then

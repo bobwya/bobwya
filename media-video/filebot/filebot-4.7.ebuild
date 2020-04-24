@@ -1,8 +1,8 @@
-# Copyright 1999-2019 Gentoo Authors
+# Copyright 1999-2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-EAPI=6
+EAPI=7
 
 inherit java-utils-2
 
@@ -20,7 +20,10 @@ IUSE=""
 DEPEND=""
 RDEPEND="media-libs/chromaprint
 		media-libs/fontconfig
-		virtual/jre:1.8"
+		|| (
+			>=virtual/jdk-1.8
+			>=virtual/jre-1.8
+		)"
 
 S="${WORKDIR}"
 
