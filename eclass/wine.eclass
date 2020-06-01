@@ -1478,10 +1478,12 @@ wine_eapply_staging_patchset() {
 		_staging_exclude_patchsets+=( "wined3d-buffer_create" )
 	fi
 
+	# shellcheck disable=SC2086
 	if has esync ${IUSE} && use esync; then
 		_staging_exclude_patchsets+=( "msvfw32-ICGetDisplayFormat" )
 	fi
 
+	# shellcheck disable=SC2086
 	if has faudio ${IUSE} && use faudio; then
 		# https://bugs.gentoo.org/681218
 		_staging_exclude_patchsets+=( "xaudio2_7-CreateFX-FXEcho" "xaudio2_7-WMA_support" "xaudio2_CommitChanges" "winepulse-PulseAudio_Support" "xaudio2-revert" )
@@ -2177,6 +2179,12 @@ wine_pkg_pretend() {
 		eerror "or >=media-sound/oss-4 (only available through an Overlay)."
 		die "USE=+oss currently unsupported on this system."
 	fi
+
+	if [[ "${WINE_PV}" = "5.7" ]]; then
+		ewarn ""
+		ewarn "Version: ${SLOT} ... See: https://bugs.winehq.org/show_bug.cgi?id=49011"
+		ewarn ""
+	fi
 }
 
 # @FUNCTION: wine_pkg_setup
@@ -2198,6 +2206,13 @@ wine_src_configure() {
 	export LDCONFIG="/bin/true"
 	use custom-cflags || strip-flags
 
+	tc-is-gcc && case "${WINE_PV}" in
+		1.*|2.*|3.*|4.*|5.0-rc[1-6]|5.0|9999)
+			append-cflags -fcommon
+			;;
+		*)
+			;;
+	esac
 	multilib-minimal_src_configure
 }
 
