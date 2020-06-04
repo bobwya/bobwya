@@ -254,26 +254,6 @@ readonly WINE_EBUILD_COMMON_PN
 WINE_EBUILD_COMMON_PV="${WINE_EBUILD_COMMON_P##*-}"
 readonly WINE_EBUILD_COMMON_PV
 
-# @ECLASS-VARIABLE: WINE_ESYNC_P
-# @DESCRIPTION:
-# Full name and version for current: gentoo-wine-esync; tarball.
-WINE_ESYNC_P="eventfd_synchronization_flat-20200601"
-readonly WINE_ESYNC_P
-
-# @ECLASS-VARIABLE: WINE_ESYNC_PN
-# @DESCRIPTION:
-# Name only, for current: gentoo-wine-esync; tarball.
-WINE_ESYNC_PN="${WINE_ESYNC_P%-*}"
-# shellcheck disable=SC2034
-readonly WINE_ESYNC_PN
-
-# @ECLASS-VARIABLE: WINE_ESYNC_PV
-# @DESCRIPTION:
-# Version only, for current: gentoo-wine-esync; tarball.
-WINE_ESYNC_PV="${WINE_ESYNC_P##*-}"
-# shellcheck disable=SC2034
-readonly WINE_ESYNC_PV
-
 # @ECLASS-VARIABLE: WINE_PV
 # @DESCRIPTION:
 # Wine release version. This will be stripped of components (see below).
@@ -488,7 +468,7 @@ WINE_MANDIR="${WINE_DATADIR}/man"
 
 # @ECLASS-VARIABLE: SRC_URI
 # @DESCRIPTION:
-# Set base SRC_URI components (excluding: wine-esync components)
+# Set base SRC_URI components
 SRC_URI="https://github.com/bobwya/${WINE_EBUILD_COMMON_PN}/archive/${WINE_EBUILD_COMMON_PV}.tar.gz -> ${WINE_EBUILD_COMMON_P}.tar.gz"
 if [[ "${WINE_PV}" != "9999" ]]; then
 	if (( !_WINE_IS_STAGING && _WINE_IS_STABLE && WINE_IS_RC_VERSION && !_WINE_IS_STABLE_BASE )); then
@@ -1458,11 +1438,6 @@ wine_eapply_staging_patchset() {
 	fi
 
 	# shellcheck disable=SC2086
-	if has esync ${IUSE} && use esync; then
-		_staging_exclude_patchsets+=( "msvfw32-ICGetDisplayFormat" )
-	fi
-
-	# shellcheck disable=SC2086
 	if has faudio ${IUSE} && use faudio; then
 		# https://bugs.gentoo.org/681218
 		_staging_exclude_patchsets+=( "xaudio2_7-CreateFX-FXEcho" "xaudio2_7-WMA_support" "xaudio2_CommitChanges" "winepulse-PulseAudio_Support" "xaudio2-revert" )
@@ -1526,199 +1501,6 @@ wine_eapply_staging_patchset() {
 	)
 	eend
 
-}
-
-# @FUNCTION: wine_eapply_esync_patchset
-# @USAGE: <esync_patchset_directory>
-# @DESCRIPTION:
-# This function supports the packages: app-emulation/wine-staging app-emulation/wine-vanilla
-# This function applies the wine-esync patchset to the PWD - typically "${S}".
-# <esync_patchset_directory> should be set to the root directory of the unpacked esync
-# tarball.
-# See: https://github.com/zfigura/wine/blob/esync/README.esync
-wine_eapply_esync_patchset() {
-	(($# == 1)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (1)"
-
-	local _apply_sed_fix _esync_patchsets_base_directory="${1%/}" \
-		_i_array _esync_error=0 _esync_patchset_directory _min_rebase_commit _max_rebase_commit \
-		_rebased_patchset _max_rebased_patchset
-	local -a _esync_patchset_commits _pruned_esync_patchset_commits
-	if [[ ! -d "${_esync_patchsets_base_directory}" ]]; then
-		die "${FUNCNAME[0]}(): argument (1): path '${_esync_patchsets_base_directory}' is not a valid directory"
-	fi
-
-	_esync_patchset_commits=(
-		"f8e0bd1b0d189d5950dc39082f439cd1fc9569d5" "12276796c95007fc12eb38a41ca25b4daee7e1b3"
-		"a7aa192a78d02d28f2bbae919a3f5c726e4e9e60" "c61c33ee66ea0e97450ac793ebc4ac41a1ccc793"
-		"433788736bcb68b43a35749c28d6272e4041c857" "57212f64f8e4fef0c63c633940e13d407c0f2069"
-		"24f47812165a5dcb2b22825e47ccccbbd7437b8b" "2f17e0112dc0af3f0b246cf377e2cb8fd7a6cf58"
-		"2600ecd4edfdb71097105c74312f83845305a4f2" "d3660e5901914daab38c95f6b2a7a43dfe6d3eee"
-		"7ba361b47bc95df624eac83c170d6c1a4041d8f8" "817fb9755cbf48162fe1b7d37e77d7e25afa7520"
-		"b2a546c92dabee8ab1c3d5b9fecc84d99caf0e76" "0decadd62a76b968abf75c9943dd0869249ec716"
-		"b3c8d5d36850e484b5cc84ab818a75db567a06a3" "8268c47462544baf5bc7e5071c0a9f2d00c5c2cb"
-		"4c0e81728f6db575d9cbd8feb8a5374f1adec9bb" "19bf03ed4b48b398236c8a998394089c93b50891"
-		"f534fbd3e3c83df49c7c6b8e608a99f2af65adc0" "07c2e8581a2745725cd7ce4282eedb9a8084a1e4"
-		"bf174815ba8529bfbbda8697503d3c2539f82359" "781dd9a145d0ef8e4465f78b8916ea0861b5e161"
-		"29914d583fe098521472332687b8da69fc692690" "5ddcfa019d027d9d690c98151c708eb4e7d5f72b"
-		"e2411ebecb13b1005c4d0a528056c9b8a1719049" "d1a7b681ead5fdf10bc2001d9841b7ad9b09423b"
-		"461b5e56f95eb095d97e4af1cb1c5fd64bb2862a" "608d086f1b1bb7168e9322c65224c23f34e75f29"
-		"4538a137e089240f1981f0d6f82fb8d63a65f4f6" "b934f6626ed7cb8a6cc18b261550d363a0068141"
-		"fc17535eb98a4b200d6a418337a7e280568c7cfd" "f181d5ce82470639459555cd59a076963861a61d"
-		"d637640f9af4ccfb6639361fc548d4bbeaafeb6f" "b664ae8e60e08224cdc3025c28a37cb22356aaa4"
-		"9bfbb4866231f9c2e6e22e23037c54c5702dd634" "6d2d3595c0ea08d915df5fef506fe3679ffa8051"
-		"321d26cbb4404ee63df439759cbc5a546434dde6" "87012607688f730755ee91de14620e6e3b78395c"
-		"7eef40d444b3325f9580ff557afb6bc19c811f5e" "a1c46c3806a054c16fab9fd9d8388e55eb473536"
-		"2424742d0711914f02864bcfb945605825b199a3" "dec38ffb075314629f2f1d3b86c752415181736a"
-		"8a63b688ac49f19c259066fd100407edf3747f95" "1a743c9af39d0224b65ae504ae7e24d9fad56c2b"
-	)
-
-	case "${WINE_PV}" in
-		3.0.[1-5]-rc[1-9]|3.0.[1-5]|3.0-rc[1-6]|3.[0-2])
-			_rebased_patchset="f8e0bd1b0d189d5950dc39082f439cd1fc9569d5"
-			;;
-		3.[3-5])
-			_rebased_patchset="a7aa192a78d02d28f2bbae919a3f5c726e4e9e60"
-			;;
-		3.[6-8])
-			_rebased_patchset="c61c33ee66ea0e97450ac793ebc4ac41a1ccc793"
-			;;
-		3.9|3.1[0-3])
-			_rebased_patchset="433788736bcb68b43a35749c28d6272e4041c857"
-			;;
-		3.1[4-6])
-			_rebased_patchset="57212f64f8e4fef0c63c633940e13d407c0f2069"
-			;;
-		3.1[7-8])
-			_rebased_patchset="24f47812165a5dcb2b22825e47ccccbbd7437b8b"
-			;;
-		3.19)
-			_rebased_patchset="2f17e0112dc0af3f0b246cf377e2cb8fd7a6cf58"
-			;;
-		3.2[0-1]|4.[0-3]|4.0.1-rc*|4.0.1|4.0.2-rc*|4.0.2|4.0.3-rc*|4.0.3|4.0.4-rc*|4.0.4)
-			_rebased_patchset="2600ecd4edfdb71097105c74312f83845305a4f2"
-			;;
-		4.4)
-			_rebased_patchset="817fb9755cbf48162fe1b7d37e77d7e25afa7520"
-			;;
-		4.5)
-			_rebased_patchset="0decadd62a76b968abf75c9943dd0869249ec716"
-			;;
-		4.6)
-			_rebased_patchset="4c0e81728f6db575d9cbd8feb8a5374f1adec9bb"
-			;;
-		4.7)
-			_rebased_patchset="bf174815ba8529bfbbda8697503d3c2539f82359"
-			;;
-		4.8)
-			_rebased_patchset="29914d583fe098521472332687b8da69fc692690"
-			;;
-		4.9|4.10)
-			_rebased_patchset="5ddcfa019d027d9d690c98151c708eb4e7d5f72b"
-			;;
-		4.1[1-3]|4.12.1)
-			_rebased_patchset="e2411ebecb13b1005c4d0a528056c9b8a1719049"
-			;;
-		4.1[4-9])
-			_rebased_patchset="d1a7b681ead5fdf10bc2001d9841b7ad9b09423b"
-			;;
-		4.20)
-			_rebased_patchset="608d086f1b1bb7168e9322c65224c23f34e75f29"
-			;;
-		4.21)
-			_rebased_patchset="b934f6626ed7cb8a6cc18b261550d363a0068141"
-			;;
-		5.0-rc[1-6]|5.[0-4])
-			_rebased_patchset="fc17535eb98a4b200d6a418337a7e280568c7cfd"
-			;;
-		5.5)
-			_rebased_patchset="d637640f9af4ccfb6639361fc548d4bbeaafeb6f"
-			;;
-		5.6)
-			_rebased_patchset="321d26cbb4404ee63df439759cbc5a546434dde6"
-			;;
-		5.[78])
-			_rebased_patchset="87012607688f730755ee91de14620e6e3b78395c"
-			;;
-		5.9)
-			_rebased_patchset="2424742d0711914f02864bcfb945605825b199a3"
-			;;
-		5.1[0-9])
-			_rebased_patchset="8a63b688ac49f19c259066fd100407edf3747f95"
-			;;
-		9999)
-			if ((_WINE_IS_STAGING)); then
-				_min_rebase_commit="f9e1dbb83d850a2f7cb17079e02de139e2f8b920"
-				_max_rebase_commit="8268c47462544baf5bc7e5071c0a9f2d00c5c2cb"
-				_max_rebased_patchset="15"
-			else
-				_min_rebase_commit="f8e0bd1b0d189d5950dc39082f439cd1fc9569d5"
-				_max_rebase_commit="master"
-				_max_rebased_patchset="0"
-			fi
-			_pruned_esync_patchset_commits=( "${_esync_patchset_commits[@]}" )
-			_wine_prune_commited_patches_from_array "${S}" "_pruned_esync_patchset_commits"
-			for _i_array in "${!_esync_patchset_commits[@]}"; do
-				# shellcheck disable=SC2068
-				has "${_esync_patchset_commits[_i_array]}" ${_pruned_esync_patchset_commits[@]} && break
-
-				_rebased_patchset="${_esync_patchset_commits[_i_array]}"
-			done
-			# shellcheck disable=SC2068
-			if [[ -z "${_rebased_patchset}" ]] || ((_max_rebased_patchset)) && ! has "${_esync_patchset_commits[_max_rebased_patchset]}" ${_pruned_esync_patchset_commits[@]}; then
-				ewarn "The esync patchset is only supported for Wine Git commit range: ['${_min_rebase_commit}'-${_max_rebase_commit})"
-				ewarn "The esync patchset cannot be applied on Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
-				_esync_error=1
-			fi
-			;;
-		*)
-			ewarn "The esync patchset is unsupported for package: =${CATEGORY}/${P}"
-			_esync_error=1
-			;;
-	esac
-
-	# Fixups for wine-stable
-	if ((_WINE_IS_STABLE)); then
-		ewarn "using wine-stable"
-		case "${WINE_PV}" in
-			4.0.3-rc*|4.0.3|4.0.4-rc*|4.0.4)
-				_apply_sed_fix=1
-				;;
-			9999)
-				_esync_patchset_commits=( "0a77cef2eef6fcb17cfecaa21ae7aed5cae535b9" )
-				_wine_prune_commited_patches_from_array "${S}" "_esync_patchset_commits"
-				_apply_sed_fix=$((! ${#_esync_patchset_commits[@]}))
-				;;
-			*)
-				_apply_sed_fix=0
-				;;
-		esac
-		if ((_apply_sed_fix)); then
-			einfo "Applying wine-stable wine-esync sed fix to 'wine-esync-dlls-kernel32-tests-sync_c.patch'"
-			sed -i -e 's/test_srwlock_example();$/test_alertable_wait();/g' \
-				-e 's/test_alertable_wait();$/test_apc_deadlock();/g' \
-				-e 's/test_apc_deadlock();$/test_crit_section();/g' \
-				"${_esync_patchsets_base_directory}/${PN}/${_rebased_patchset}/wine-esync-dlls-kernel32-tests-sync_c.patch" \
-				|| die "sed failed"
-		fi
-	fi
-
-	if ((_esync_error)); then
-		ewarn "USE +esync will be omitted for this build."
-		return 1
-	fi
-
-	einfo "Using esync rebase revision: '${_rebased_patchset}'"
-	_esync_patchset_directory="${_esync_patchsets_base_directory}/${PN}/${_rebased_patchset}"
-	ewarn "Applying the wine-esync patchset."
-	ewarn "Note: this third-party patchset is not officially supported!"
-
-	# Pre-exclude SERVER_PROTOCOL_VERSION from the patch hunk context of all esync patches.
-	# This variable updates every Wine release - so is too hard to track.
-	# shellcheck disable=SC1003
-	sed -i -e '/^#define SERVER_PROTOCOL_VERSION /i\' "include/wine/server_protocol.h" \
-		|| die "sed failed"
-
-	eapply "${_esync_patchset_directory}"
 }
 
 # @FUNCTION: wine_add_stock_gentoo_patches
