@@ -257,7 +257,7 @@ readonly WINE_EBUILD_COMMON_PV
 # @ECLASS-VARIABLE: WINE_ESYNC_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-esync; tarball.
-WINE_ESYNC_P="gentoo-wine-esync-20200423"
+WINE_ESYNC_P="eventfd_synchronization_flat-20200601"
 readonly WINE_ESYNC_P
 
 # @ECLASS-VARIABLE: WINE_ESYNC_PN
@@ -273,27 +273,6 @@ readonly WINE_ESYNC_PN
 WINE_ESYNC_PV="${WINE_ESYNC_P##*-}"
 # shellcheck disable=SC2034
 readonly WINE_ESYNC_PV
-
-# wine-pba support
-# @ECLASS-VARIABLE: WINE_PBA_P
-# @DESCRIPTION:
-# Full name and version for current: gentoo-wine-pba; tarball.
-WINE_PBA_P="gentoo-wine-pba-20181119"
-readonly WINE_PBA_P
-
-# @ECLASS-VARIABLE: WINE_PBA_PN
-# @DESCRIPTION:
-# Name only, for current: gentoo-wine-pba; tarball.
-WINE_PBA_PN="${WINE_PBA_P%-*}"
-# shellcheck disable=SC2034
-readonly WINE_PBA_PN
-
-# @ECLASS-VARIABLE: WINE_PBA_PV
-# @DESCRIPTION:
-# Version only, for current: gentoo-wine-pba; tarball.
-WINE_PBA_PV="${WINE_PBA_P##*-}"
-# shellcheck disable=SC2034
-readonly WINE_PBA_PV
 
 # @ECLASS-VARIABLE: WINE_PV
 # @DESCRIPTION:
@@ -509,7 +488,7 @@ WINE_MANDIR="${WINE_DATADIR}/man"
 
 # @ECLASS-VARIABLE: SRC_URI
 # @DESCRIPTION:
-# Set base SRC_URI components (excluding: wine-esync, wine-pba components)
+# Set base SRC_URI components (excluding: wine-esync components)
 SRC_URI="https://github.com/bobwya/${WINE_EBUILD_COMMON_PN}/archive/${WINE_EBUILD_COMMON_PV}.tar.gz -> ${WINE_EBUILD_COMMON_P}.tar.gz"
 if [[ "${WINE_PV}" != "9999" ]]; then
 	if (( !_WINE_IS_STAGING && _WINE_IS_STABLE && WINE_IS_RC_VERSION && !_WINE_IS_STABLE_BASE )); then
@@ -1588,6 +1567,9 @@ wine_eapply_esync_patchset() {
 		"d637640f9af4ccfb6639361fc548d4bbeaafeb6f" "b664ae8e60e08224cdc3025c28a37cb22356aaa4"
 		"9bfbb4866231f9c2e6e22e23037c54c5702dd634" "6d2d3595c0ea08d915df5fef506fe3679ffa8051"
 		"321d26cbb4404ee63df439759cbc5a546434dde6" "87012607688f730755ee91de14620e6e3b78395c"
+		"7eef40d444b3325f9580ff557afb6bc19c811f5e" "a1c46c3806a054c16fab9fd9d8388e55eb473536"
+		"2424742d0711914f02864bcfb945605825b199a3" "dec38ffb075314629f2f1d3b86c752415181736a"
+		"8a63b688ac49f19c259066fd100407edf3747f95" "1a743c9af39d0224b65ae504ae7e24d9fad56c2b"
 	)
 
 	case "${WINE_PV}" in
@@ -1654,8 +1636,14 @@ wine_eapply_esync_patchset() {
 		5.6)
 			_rebased_patchset="321d26cbb4404ee63df439759cbc5a546434dde6"
 			;;
-		5.[7-9]|5.1[0-9])
+		5.[78])
 			_rebased_patchset="87012607688f730755ee91de14620e6e3b78395c"
+			;;
+		5.9)
+			_rebased_patchset="2424742d0711914f02864bcfb945605825b199a3"
+			;;
+		5.1[0-9])
+			_rebased_patchset="8a63b688ac49f19c259066fd100407edf3747f95"
 			;;
 		9999)
 			if ((_WINE_IS_STAGING)); then
@@ -1731,121 +1719,6 @@ wine_eapply_esync_patchset() {
 		|| die "sed failed"
 
 	eapply "${_esync_patchset_directory}"
-}
-
-# @FUNCTION: wine_eapply_pba_patchset()
-# @USAGE: <pba_patchset_directory>
-# @DESCRIPTION:
-# This function supports the packages: app-emulation/wine-staging app-emulation/wine-vanilla
-# This function applies the wine-pba patchset to the PWD - typically "${S}".
-# <pba_patchset_directory> should be set to the root directory of the unpacked gentoo_wine_pba
-# tarball.
-# See: https://github.com/acomminos/wine-pba
-wine_eapply_pba_patchset() {
-	(($# == 1)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (1)"
-
-	local _rebased_patchset_directory="${1%/}" _i_array _pba_error=0 _rebased_patchset _max_rebased_patchset
-	if [[ ! -d "${_rebased_patchset_directory}" ]]; then
-		die "${FUNCNAME[0]}(): argument (1): path '${_rebased_patchset_directory}' is not a valid directory"
-	fi
-	declare -a _rebased_patchset_commits _pruned_rebased_patchset_commits
-
-	((_WINE_IS_STAGING)) && case "${WINE_PV}" in
-		3.[34])
-			_rebased_patchset="9ae8b8c00f2cca205fdf4ce76e221778b7dfbea7"
-			;;
-		3.[5-9]|3.1[0-3])
-			_rebased_patchset="be002fd92b9d72163bf130ab8ade8aa4d9cdbad0"
-			;;
-		3.1[4-6])
-			_rebased_patchset="c698682b3286d72cc7c4c4624b4d14b03dbe6908"
-			;;
-		3.1[78])
-			_rebased_patchset="f11563c65fa50e2f8b7e39cade34bb7a998b26f7"
-			;;
-		9999)
-			_max_rebased_patchset="6"
-			_rebased_patchset_commits=(
-				"9ae8b8c00f2cca205fdf4ce76e221778b7dfbea7" "afef57f872433bcd3032c2ccbc0453bef5b62178"
-				"5946973021285dd6ecb8df224956fea4817f8fed" "be002fd92b9d72163bf130ab8ade8aa4d9cdbad0"
-				"c698682b3286d72cc7c4c4624b4d14b03dbe6908" "f11563c65fa50e2f8b7e39cade34bb7a998b26f7"
-				"82dbf75dc064bb03b5dfc5d8a82b9782a7272ce2" "d279bc24934fd1b68324017ae1b9e70975640a0a"
-				"853351698842c92db62bddedd2f531b7c5e745d1" "3d5a2567977455d04e4896368a71db74e7b9074b"
-			)
-			;;
-		*)
-			_pba_error=1
-			;;
-	esac
-
-	((_WINE_IS_STAGING)) || case "${WINE_PV}" in
-		3.0.[1-4]|3.0.[1-4]-rc[1-9]|3.[01]|3.0-rc[1-6])
-			_rebased_patchset="429e0c913087bdc2c183f74f346a9438278ec960"
-			;;
-		3.2)
-			_rebased_patchset="f08342f5737c2bb3f965059f930e5d9a25ff6268"
-			;;
-		3.[34])
-			_rebased_patchset="6eb562210cb154749b1da5c399a69320d87365e6"
-			;;
-		3.[56])
-			_rebased_patchset="1251fe692165077f9ee38992ac33a999bf26b69d"
-			;;
-		3.[7-9]|3.1[0-3])
-			_rebased_patchset="ea7186348f48a749ab28ecc405fb56601c56e4f8"
-			;;
-		3.1[4-6])
-			_rebased_patchset="cf9536b6bfbefbf5003c7633446a91f6e399c4de"
-			;;
-		3.1[78])
-			_rebased_patchset="580ea44bc65472c0304d74b7e873acfb7f680b85"
-			;;
-		9999)
-			_max_rebased_patchset="9"
-			_rebased_patchset_commits=(
-				"429e0c913087bdc2c183f74f346a9438278ec960" "7772c4fdbf33507b2262da375b465d4c2cbc316d"
-				"f08342f5737c2bb3f965059f930e5d9a25ff6268" "6eb562210cb154749b1da5c399a69320d87365e6"
-				"1251fe692165077f9ee38992ac33a999bf26b69d" "0e9f94ec1c201c56442124eb8754be1e30840299"
-				"ea7186348f48a749ab28ecc405fb56601c56e4f8" "cf9536b6bfbefbf5003c7633446a91f6e399c4de"
-				"580ea44bc65472c0304d74b7e873acfb7f680b85" "944e92ba06ecadeb933d95e30035323483dfe7c7"
-				"12b5c9148588464d621131e80a2b751e7dbce55b" "b579afd30ae48fef03c9333e31c1349d54ed681a"
-				"22b3a4f044036e62104a6994828d18d3536b3d78" "45bf95278d669779e6ca3cde9215556a043a8cf8"
-			)
-			;;
-		*)
-			_pba_error=1
-			;;
-	esac
-
-	if [[ "${WINE_PV}" == "9999" ]]; then
-		_pruned_rebased_patchset_commits=( "${_rebased_patchset_commits[@]}" )
-		_wine_prune_commited_patches_from_array "${S}" "_pruned_rebased_patchset_commits"
-		for _i_array in "${!_rebased_patchset_commits[@]}"; do
-			# shellcheck disable=SC2068
-			has "${_rebased_patchset_commits[_i_array]}" ${_pruned_rebased_patchset_commits[@]} && break
-
-			_rebased_patchset="${_rebased_patchset_directory}/${_rebased_patchset_commits[_i_array]}"
-		done
-		# shellcheck disable=SC2068
-		if [[ -z "${_rebased_patchset}" ]] || ! has "${_rebased_patchset_commits[_max_rebased_patchset]}" ${_pruned_rebased_patchset_commits[@]}; then
-			ewarn "The PBA patchset is only supported for Wine Git commit range: ['${_rebased_patchset_commits[0]}'-'${_rebased_patchset_commits[_max_rebased_patchset]}')"
-			ewarn "The PBA patchset cannot be applied on Wine Git commit: '${WINE_GIT_COMMIT_HASH}'"
-			_pba_error=1
-		fi
-	fi
-
-	unset -v _rebased_patchset_commits _pruned_rebased_patchset_commits
-
-	if ((_pba_error)); then
-		[[ "${WINE_PV}" != "9999" ]] && ewarn "The PBA patchset is unsupported for package: =${CATEGORY}/${P}"
-		ewarn "USE +pba will be omitted for this build."
-		return 1
-	fi
-
-	ewarn "Applying the wine-pba patchset."
-	ewarn "Note: this third-party patchset is not officially supported!"
-
-	eapply "${_rebased_patchset_directory}/${_rebased_patchset}"
 }
 
 # @FUNCTION: wine_add_stock_gentoo_patches
@@ -2178,12 +2051,6 @@ wine_pkg_pretend() {
 		eerror "You cannot build ${CATEGORY}/${PN} with USE=+oss without having support from a FreeBSD kernel"
 		eerror "or >=media-sound/oss-4 (only available through an Overlay)."
 		die "USE=+oss currently unsupported on this system."
-	fi
-
-	if [[ "${WINE_PV}" = "5.7" ]]; then
-		ewarn ""
-		ewarn "Version: ${SLOT} ... See: https://bugs.winehq.org/show_bug.cgi?id=49011"
-		ewarn ""
 	fi
 }
 
