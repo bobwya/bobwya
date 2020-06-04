@@ -1862,6 +1862,11 @@ wine_src_configure() {
 		*)
 			;;
 	esac
+
+	# See: https://bugs.winehq.org/show_bug.cgi?id=49208
+	sed -i -e '/EXTRADLLFLAGS = .*/{s/0x7b400000/0x7b600000/g}' "${S}/dlls/kernel32/Makefile.in" \
+		die "sed failed"
+
 	multilib-minimal_src_configure
 }
 
