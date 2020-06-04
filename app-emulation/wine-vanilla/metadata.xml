@@ -11,8 +11,6 @@ However Wine can optionally use native Windows DLLs if they are available.Wine p
 		<flag name="capi">Enable ISDN support via <pkg>net-libs/libcapi</pkg>.</flag>
 		<flag name="custom-cflags">Bypass strip-flags; use at your own peril.</flag>
 		<flag name="dos">Pull in <pkg>games-emulation/dosbox</pkg> to run DOS applications.</flag>
-		<flag name="esync">Add support for the wine-esync patchset (unofficial).
-		See: https://github.com/zfigura/wine</flag>
 		<flag name="faudio">Enable support using FAudio, in place of the Wine XAudio 2 layer (unofficial).
 		Injects the <pkg>app-emulation/faudio</pkg> package, into the current Wine variant.
 		See: https://github.com/FNA-XNA/FAudio</flag>
@@ -22,8 +20,6 @@ However Wine can optionally use native Windows DLLs if they are available.Wine p
 		<flag name="netapi">Use libnetapi from <pkg>net-fs/samba</pkg> to support Windows networks in netapi32.dll.</flag>
 		<flag name="opencl">Enable OpenCL support.</flag>
 		<flag name="osmesa">Add support for OpenGL in bitmaps using libOSMesa.</flag>
-		<flag name="pba">Add support for the Wine-PBA patchset (unofficial).
-		See: https://github.com/acomminos/wine-pba</flag>
 		<flag name="pcap">Support packet capture software (e.g. wireshark).</flag>
 		<flag name="perl">Install helpers written in perl (winedump/winemaker).</flag>
 		<flag name="prelink">Run prelink on DLLs during build.</flag>
