@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=7
 
-PLOCALES="ar bg ca cs da de el en en_US eo es fa fi fr he hi hr hu it ja ko lt ml nb_NO nl or pa pl pt_BR pt_PT rm ro ru sk sl sr_RS@cyrillic sr_RS@latin sv te th tr uk wa zh_CN zh_TW"
+PLOCALES="ar bg ca cs da de el en en_US eo es fa fi fr he hi hr hu it ja ko lt ml nb_NO nl or pa pl pt_BR pt_PT rm ro ru si sk sl sr_RS@cyrillic sr_RS@latin sv te th tr uk wa zh_CN zh_TW"
 PLOCALE_BACKUP="en"
 
 inherit autotools flag-o-matic l10n multilib multilib-minimal pax-utils toolchain-funcs virtualx wine xdg-utils-r1
@@ -19,18 +19,10 @@ fi
 
 DESCRIPTION="Free implementation of Windows(tm) on Unix, with Wine Staging patchset"
 HOMEPAGE="https://www.winehq.org/"
-SRC_URI="${SRC_URI}
-	esync? (
-		https://github.com/bobwya/${WINE_ESYNC_PN}/archive/${WINE_ESYNC_PV}.tar.gz -> ${WINE_ESYNC_P}.tar.gz
-	)
-	pba? (
-		https://github.com/bobwya/${WINE_PBA_PN}/archive/${WINE_PBA_PV}.tar.gz -> ${WINE_PBA_P}.tar.gz
-	)"
-
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc esync +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pba pcap +perl pipelight +png prelink prefix pulseaudio +realtime +run-exes s3tc samba scanner sdl2 selinux +ssl test themes +threads +truetype udev +udisks v4l vaapi vkd3d vulkan +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc ffmpeg +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pcap +perl pipelight +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test themes +threads +truetype udev +udisks v4l vaapi vkd3d vulkan +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
@@ -56,6 +48,7 @@ COMMON_DEPEND="
 	alsa? ( media-libs/alsa-lib[${MULTILIB_USEDEP}] )
 	capi? ( net-libs/libcapi[${MULTILIB_USEDEP}] )
 	cups? ( net-print/cups:=[${MULTILIB_USEDEP}] )
+	ffmpeg? ( media-video/ffmpeg:=[${MULTILIB_USEDEP}] )
 	fontconfig? ( media-libs/fontconfig:=[${MULTILIB_USEDEP}] )
 	gphoto2? ( media-libs/libgphoto2:=[${MULTILIB_USEDEP}] )
 	gsm? ( media-sound/gsm:=[${MULTILIB_USEDEP}] )
@@ -110,7 +103,7 @@ RDEPEND="${COMMON_DEPEND}
 	>=app-eselect/eselect-wine-1.5.5
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
 	gecko? ( app-emulation/wine-gecko:2.47[abi_x86_32?,abi_x86_64?] )
-	mono? ( app-emulation/wine-mono:4.7.1 )
+	mono? ( app-emulation/wine-mono:4.7.5 )
 	perl? (
 		dev-lang/perl
 		dev-perl/XML-Simple
@@ -118,7 +111,6 @@ RDEPEND="${COMMON_DEPEND}
 	pulseaudio? (
 		realtime? ( sys-auth/rtkit )
 	)
-	s3tc? ( >=media-libs/libtxc_dxtn-1.0.1[${MULTILIB_USEDEP}] )
 	samba? ( >=net-fs/samba-3.0.25[winbind] )
 	selinux? ( sec-policy/selinux-wine )
 	udisks? ( sys-fs/udisks:2 )
@@ -161,12 +153,6 @@ src_prepare() {
 
 	wine_eapply_staging_patchset
 	wine_src_set_staging_versioning
-
-	if use esync && ! wine_staging_patchset_support_test "eventfd_synchronization"; then
-		wine_eapply_esync_patchset "${WORKDIR}/${WINE_ESYNC_P}"
-	fi
-
-	use pba && wine_eapply_pba_patchset "${WORKDIR}/${WINE_PBA_P%/}/${PN}-pba"
 
 	#617864 Generate wine64 man pages for 64-bit bit only installation
 	if use abi_x86_64 && ! use abi_x86_32; then
@@ -227,6 +213,7 @@ multilib_src_configure() {
 		"$(use_with lcms cms)"
 		"$(use_with cups)"
 		"$(use_with ncurses curses)"
+		"$(use_with ffmpeg)"
 		"$(use_with fontconfig)"
 		"$(use_with ssl gnutls)"
 		"$(use_enable gecko mshtml)"
