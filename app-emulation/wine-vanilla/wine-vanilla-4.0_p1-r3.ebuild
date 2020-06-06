@@ -157,9 +157,10 @@ src_prepare() {
 	#551124 Only build wineconsole, if either of X or ncurses is installed
 	use X || use ncurses || wine_src_prepare_disable_tools wineconsole
 
+	# apply / revert patches
 	default
-
 	wine_eapply_bin
+	wine_eapply_revert
 
 	wine_winecfg_about_enhancement
 
