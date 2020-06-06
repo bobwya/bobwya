@@ -239,7 +239,7 @@ readonly _WINE_IS_STAGING
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-ebuild-common; tarball.
-WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20200414"
+WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20200605"
 readonly WINE_EBUILD_COMMON_P
 
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_PN
@@ -454,6 +454,12 @@ WINE_MANDIR="${WINE_DATADIR}/man"
 # Should be set externally.
 [[ -z "${PATCHES_BIN}" ]] && PATCHES_BIN=()
 
+# @ECLASS-VARIABLE: PATCHES_REVERT
+# @DESCRIPTION:
+# PATCHES_REVERT is an array variable for storing patches to revert.
+# Should be set externally.
+[[ -z "${PATCHES_REVERT}" ]] && PATCHES_REVERT=()
+
 # @ECLASS-VARIABLE: WINE_GIT_COMMIT_DATE
 # @DESCRIPTION:
 # Git commit date, of the Wine Git Source tree current HEAD.
@@ -600,6 +606,41 @@ _wine_git_is_commit_in_range() {
 	popd >/dev/null || die "popd failed"
 
 	return $((!_in_commit_range))
+}
+
+# @FUNCTION:  function _wine_git_is_commit_in_tree()
+# @INTERNAL
+# @USAGE:  <_git_directory> <_committed> <_commit>
+# @RETURN:
+# _committed=1 => 0='not in tree' 1='in tree'
+# _committed=0 => 1='not in tree' 0='in tree'
+# @DESCRIPTION:
+# For the specified git repository (_git_directory) check if the current branch
+# HEAD commit contains the specified: _commit.
+# <git_directory> must reference a valid Git repository root directory.
+_wine_git_is_commit_in_tree() {
+	(($# == 3)) || die "${FUNCNAME[0]}(): invalid parameter count: ${#} (3)"
+
+	local	 _git_directory="${1%/}"  _committed="${2}" \
+		_commit="${3}" _return_value=0
+
+	if [[ ! -d "${_git_directory}/.git" ]]; then
+		die "${FUNCNAME[0]}(): argument (1): path '${_git_directory}' is not a valid Git repository directory"
+	elif [[ ! "${_committed}" =~ [01] ]]; then
+		die "${FUNCNAME[0]}(): argument (2):  is not valid (${_committed} != 0 or 1)"
+	elif [[ ! "${_commit}" =~ ${_WINE_SHA1_REGEXP} ]]; then
+		die "${FUNCNAME[0]}(): argument (3): is not a valid git commit (${_commit})"
+	fi
+
+	pushd "${_git_directory}" >/dev/null || die "pushd failed"
+	if git merge-base --is-ancestor "${_commit}" HEAD; then
+		((_committed==1)) && _return_value=1
+	else
+		((_committed==0)) && _return_value=1
+	fi
+	popd >/dev/null || die "popd failed"
+
+	return $((_return_value))
 }
 
 # @FUNCTION: _wine_get_pruned_git_log
@@ -920,8 +961,8 @@ _wine_display_closest_commit_message() {
 	eerror
 }
 
-# @FUNCTION: _wine_prune_commited_patches_from_array
-# @USAGE: <git_directory> <array[0]>* [... <array[N-1]>*]
+# @FUNCTION: _wine_prune_patches_from_array
+# @USAGE: <_git_directory> <_committed> <array[0]>* [... <array[N-1]>*]
 # @RETURN: patch_array[i] via <_patch_array_reference[i]>*)
 #          (* passed-by-reference)
 # @DESCRIPTION:
@@ -937,20 +978,19 @@ _wine_display_closest_commit_message() {
 # on contiguous lines at the head of each patch file)
 #
 # These Git commit hashes are individually tested to see if they have been committed to HEAD, of the Git Source
-# directory tree. If a Git commit hash is in tree then delete the current array entry.
-# <git_directory> must reference a valid Git repository root directory.
-_wine_prune_commited_patches_from_array() {
-	(($# >= 2))  || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (2-)"
+# directory tree. If a Git commit hash is in tree and _committed=1, then delete the current array entry.
+# This operation is reversed when _committed=0. So when a Git commit hash is NOT in the tree,
+# the current array entry is deleted.
+# <_git_directory> must reference a valid Git repository root directory.
+_wine_prune_patches_from_array() {
+	(($# >= 3))  || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (3-)"
 
-	local _commit_hash _git_directory _i_arg=1 _i_array _line _patch_array_reference _patch_file
+	local _commit_hash _committed _git_directory _i_arg=1 _i_array _line _patch_array_reference _patch_file
 
 	_git_directory="${1%/}"
-	if [[ ! -d "${_git_directory}/.git" ]]; then
-		die "${FUNCNAME[0]}(): argument (1): path '${_git_directory}' is not a valid Git repository directory"
-	fi
+	_committed="${2}"
 
-	shift 1
-	pushd "${_git_directory}" >/dev/null || die "pushd failed"
+	shift 2
 	for _patch_array_reference; do
 		if [[ ! "${_patch_array_reference}" =~ ${_WINE_VARIABLE_NAME_REGEXP} ]]; then
 			die "${FUNCNAME[0]}(): argument ($((_i_arg+=1))): invalid reference name: '${_patch_array_reference}'"
@@ -959,7 +999,9 @@ _wine_prune_commited_patches_from_array() {
 		declare -n patch_array="${_patch_array_reference}"
 		for _i_array in "${!patch_array[@]}"; do
 			if [[ "${patch_array[_i_array]}" =~ ${_WINE_SHA1_REGEXP} ]]; then
-				git merge-base --is-ancestor "${patch_array[_i_array]}" HEAD && unset -v 'patch_array[_i_array]'
+				if ! _wine_git_is_commit_in_tree "${_git_directory}" "${_committed}" "${patch_array[_i_array]}"; then
+					unset -v 'patch_array[_i_array]'
+				fi
 				continue
 			fi
 
@@ -971,8 +1013,7 @@ _wine_prune_commited_patches_from_array() {
 				_commit_hash="$( sed -n -e "${_line}"'s/^.*\([[:xdigit:]]\{40\}\).*$/\1/p' "${patch_array[_i_array]}" )"
 				[[ "${_commit_hash}" =~ ${_WINE_SHA1_REGEXP} ]]
 			do
-				git merge-base --is-ancestor "${_commit_hash}" HEAD || continue
-
+				_wine_git_is_commit_in_tree "${_git_directory}" "${_committed}" "${_commit_hash}" && continue
 				_patch_file="$(basename "${patch_array[_i_array]}")"
 				einfo "Excluding patch ${_patch_file} ... parent of (HEAD) Git commit: ${_commit_hash}"
 				unset -v 'patch_array[_i_array]'
@@ -980,7 +1021,6 @@ _wine_prune_commited_patches_from_array() {
 			done
 		done
 	done
-	popd >/dev/null || die "popd failed"
 }
 
 # EXTERNAL HELPER wine.eclass Git support function definitions
@@ -1333,7 +1373,7 @@ wine_src_prepare_git() {
 	if use faudio; then
 		local -a _pruned_faudio_commit=( "3e390b1aafff47df63376a8ca4293c515d74f4ba" )
 
-		_wine_prune_commited_patches_from_array "${S}" "_pruned_faudio_commit"
+		_wine_prune_patches_from_array "${S}" "1" "_pruned_faudio_commit"
 		# shellcheck disable=SC2068
 		if ((${#_pruned_faudio_commit[@]})); then
 			_WINE_USE_DISABLED+=( "faudio" )
@@ -1345,7 +1385,8 @@ wine_src_prepare_git() {
 		fi
 	fi
 
-	_wine_prune_commited_patches_from_array "${S}" "PATCHES" "PATCHES_BIN"
+	_wine_prune_patches_from_array "${S}" "1" "PATCHES" "PATCHES_BIN"
+	_wine_prune_patches_from_array "${S}" "0" "PATCHES_REVERT"
 }
 
 # @FUNCTION: wine_staging_src_prepare_git
@@ -1357,7 +1398,7 @@ wine_src_prepare_git() {
 # app-emulation/wine-staging patchset, for the ffmpeg (external) library.
 wine_staging_src_prepare_git() {
 	local -a _pruned_ffmpeg_commit=( "6a04cf4a69205ddf6827fb2a4b97862fd1947c62" )
-	_wine_prune_commited_patches_from_array "${S}" "_pruned_ffmpeg_commit"
+	_wine_prune_patches_from_array "1" "${S}" "_pruned_ffmpeg_commit"
 	if use ffmpeg; then
 		if ((${#_pruned_ffmpeg_commit[@]})); then
 			use faudio && _WINE_USE_DISABLED+=( "faudio" )
@@ -1391,6 +1432,7 @@ wine_staging_patchset_support_test() {
 # global array variable: PATCHES_BIN
 wine_eapply_bin() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
+	((${#PATCHES_BIN[@]} == 0)) && return
 
 	local _patch_file _patch_path
 	# shellcheck disable=SC2068
@@ -1405,6 +1447,24 @@ wine_eapply_bin() {
 		fi
 		printf " %s
 " "[ ok ]"
+	done
+}
+
+# @FUNCTION: wine_eapply_revert
+# @DESCRIPTION:
+# Use patch eapply to revert patches from the
+# global array variable: PATCHES_REVERT
+wine_eapply_revert() {
+	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
+	((${#PATCHES_REVERT[@]} == 0)) && return
+
+	((${#PATCHES_REVERT[@]} == 1)) && einfo "Reverting ${#PATCHES_REVERT[@]} patch ..."
+	((${#PATCHES_REVERT[@]} >= 2)) && einfo "Reverting ${#PATCHES_REVERT[@]} patches ..."
+
+	local _patch_path
+	# shellcheck disable=SC2068
+	for _patch_path in ${PATCHES_REVERT[@]}; do
+		eapply -R "${_patch_path}"
 	done
 }
 
@@ -1592,6 +1652,14 @@ wine_add_stock_gentoo_patches() {
 			PATCHES+=( "${_patch_directory}/wine-1.8-gstreamer-1.0_"{01,02,03,04,05,06,07,08,09,10,11}".patch" )
 			;;
 		*)
+			;;
+	esac
+
+	case "${WINE_PV}" in
+		1.8*|2.*|3.*|4.*|5.[0-8]|5.0.[1-9])
+			;;
+		*)
+			PATCHES_REVERT+=( "${_patch_directory}/revert/wine-5.9-makedep_install_also_generated_typelib_for_installed_idl.patch" )
 			;;
 	esac
 }
@@ -1852,20 +1920,30 @@ wine_src_configure() {
 	_wine_gcc_specific_pretests || die "_wine_gcc_specific_pretests() failed"
 	_wine_generic_compiler_pretests || die "_wine_generic_compiler_pretests() failed"
 
+	local -r _gcc_10_fcommon_fix_commit="c13d58780f78393571dfdeb5b4952e3dcd7ded90"
 	export LDCONFIG="/bin/true"
 	use custom-cflags || strip-flags
 
-	tc-is-gcc && case "${WINE_PV}" in
-		1.*|2.*|3.*|4.*|5.0-rc[1-6]|5.0|9999)
+	[[ "$(tc-getCC)" == *gcc* ]] && case "${WINE_PV}" in
+		1.*|2.*|3.*|4.*|5.0-rc[1-6]|5.0)
 			append-cflags -fcommon
+			;;
+		9999)
+			_wine_git_is_commit_in_tree "${S}" 1 "${_gcc_10_fcommon_fix_commit}" && append-cflags -fcommon
 			;;
 		*)
 			;;
 	esac
 
 	# See: https://bugs.winehq.org/show_bug.cgi?id=49208
-	sed -i -e '/EXTRADLLFLAGS = .*/{s/0x7b400000/0x7b600000/g}' "${S}/dlls/kernel32/Makefile.in" \
-		die "sed failed"
+	case "${WINE_PV}" in
+		1.9.*|3.*|4.*|5.[0-9]|9999)
+			sed -i -e '/EXTRADLLFLAGS = .*/{s/0x7b400000/0x7b600000/g}' "${S}/dlls/kernel32/Makefile.in" \
+				|| die "sed failed"
+			;;
+		*)
+			;;
+	esac
 
 	multilib-minimal_src_configure
 }
