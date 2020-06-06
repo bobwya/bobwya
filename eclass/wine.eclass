@@ -1398,7 +1398,7 @@ wine_src_prepare_git() {
 # app-emulation/wine-staging patchset, for the ffmpeg (external) library.
 wine_staging_src_prepare_git() {
 	local -a _pruned_ffmpeg_commit=( "6a04cf4a69205ddf6827fb2a4b97862fd1947c62" )
-	_wine_prune_patches_from_array "1" "${S}" "_pruned_ffmpeg_commit"
+	_wine_prune_patches_from_array "${S}" "1" "_pruned_ffmpeg_commit"
 	if use ffmpeg; then
 		if ((${#_pruned_ffmpeg_commit[@]})); then
 			use faudio && _WINE_USE_DISABLED+=( "faudio" )
