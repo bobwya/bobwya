@@ -764,7 +764,7 @@ PROFILE_EOF
 	newins "${FILESDIR}/disable-auto-update.policy.json" policies.json
 
 	# Install icons and .desktop for menu entry
-	for size in "${sizes}" ; do
+	for size in ${sizes}; do
 		insinto "/usr/share/icons/hicolor/${size}x${size}/apps"
 		newins "${icon_path}/default${size}.png" "${icon}.png"
 	done
