@@ -28,12 +28,12 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${PN}-77.0-patches-01_pre7"
+PATCH="${PN}-76.0-patches-02"
 
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-HG_MOZ_REVISION="d5b284f833d5"
+HG_MOZ_REVISION="6b7cd9ae087d"
 HG_MOZ_PV="${MOZ_PV/%.*/.0}"
 HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
 MOZ_SRC_URI="${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz"
@@ -42,7 +42,7 @@ if [[ "${PV}" == *_rc* ]]; then
 	MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/candidates/${MOZ_PV}-candidates/build${PV##*_rc}"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-HG_MOZ_REVISION="d5b284f833d5"
+HG_MOZ_REVISION="6b7cd9ae087d"
 HG_MOZ_PV="${MOZ_PV/%.*/.0}"
 HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
 	MOZ_LANGPACK_PREFIX="linux-i686/xpi/"
@@ -87,7 +87,7 @@ SRC_URI="${SRC_URI}
 	)"
 
 CDEPEND="
-	>=dev-libs/nss-3.52.1
+	>=dev-libs/nss-3.52
 	>=dev-libs/nspr-4.25
 	dev-libs/atk
 	dev-libs/expat
@@ -150,7 +150,7 @@ RDEPEND="${CDEPEND}
 DEPEND="${CDEPEND}
 	app-arch/zip
 	app-arch/unzip
-	>=dev-util/cbindgen-0.14.1
+	>=dev-util/cbindgen-0.13.0
 	>=net-libs/nodejs-10.19.0
 	>=sys-devel/binutils-2.30
 	sys-apps/findutils
@@ -210,6 +210,21 @@ if [[ -z $GMP_PLUGIN_LIST ]]; then
 	GMP_PLUGIN_LIST=( gmp-gmpopenh264 gmp-widevinecdm )
 fi
 
+fix_path() {
+	local value_to_move=${1}
+	local new_path path_value
+	IFS=':' read -r -a path_values <<< "${PATH}"
+	for path_value in "${path_values[@]}" ; do
+		if [[ ${path_value} == *"${value_to_move}"* ]]; then
+			new_path="${path_value}${new_path:+:}${new_path}"
+		else
+			new_path+="${new_path:+:}${path_value}"
+		fi
+	done
+
+	echo "${new_path}"
+}
+
 llvm_check_deps() {
 	if ! has_version --host-root "sys-devel/clang:${LLVM_SLOT}"; then
 		ewarn "sys-devel/clang:${LLVM_SLOT} is missing! Cannot use LLVM slot ${LLVM_SLOT} ..." >&2
@@ -235,6 +250,7 @@ llvm_check_deps() {
 
 pkg_pretend() {
 	if use pgo; then
+		# shellcheck disable=SC2086
 		if ! has usersandbox $FEATURES; then
 			die "You must enable usersandbox as X server can not run as root!"
 		fi
@@ -292,10 +308,18 @@ pkg_setup() {
 
 	llvm_pkg_setup
 
+	# Workaround for #627726
+	# shellcheck disable=SC2086
 	if has ccache ${FEATURES}; then
 		if use clang && use pgo; then
 			die "Using FEATURES=ccache with USE=clang and USE=pgo is currently known to be broken (bug #718632)."
 		fi
+
+		einfo "Fixing PATH for FEATURES=ccache ..."
+		PATH=$(fix_path 'ccache/bin')
+	elif has distcc ${FEATURES} ; then
+		einfo "Fixing PATH for FEATURES=distcc ..."
+		PATH=$(fix_path 'distcc/bin')
 	fi
 }
 
@@ -421,6 +445,7 @@ src_configure() {
 	mozconfig_annotate '' "--with-libclang-path=$(llvm-config --libdir)"
 
 	if use pgo; then
+		# shellcheck disable=SC2086
 		if ! has userpriv $FEATURES; then
 			eerror "Building firefox with USE=pgo and FEATURES=-userpriv is not supported!"
 		fi
@@ -551,7 +576,6 @@ src_configure() {
 	# Set both "--target" and "--host" as mozilla uses python to guess values otherwise
 	mozconfig_annotate '' "--target=""${CHOST}"
 	mozconfig_annotate '' "--host=""${CBUILD:-${CHOST}}"
-	mozconfig_annotate '' "--with-toolchain-prefix=""${CHOST}-"
 	if use system-libevent; then
 		mozconfig_annotate '' "--with-system-libevent=${SYSROOT}${EPREFIX}/usr"
 	fi
@@ -758,7 +782,7 @@ PROFILE_EOF
 	newins "${FILESDIR}/disable-auto-update.policy.json" policies.json
 
 	# Install icons and .desktop for menu entry
-	for size in "${sizes}" ; do
+	for size in ${sizes} ; do
 		insinto "/usr/share/icons/hicolor/${size}x${size}/apps"
 		newins "${icon_path}/default${size}.png" "${icon}.png"
 	done
@@ -778,7 +802,7 @@ PROFILE_EOF
 	fi
 
 	local app_name desktop_filename display_protocol exec_command
-	for display_protocol in "${display_protocols}" ; do
+	for display_protocol in ${display_protocols} ; do
 		app_name="${name} on ${display_protocol}"
 		desktop_filename="${PN}-${display_protocol,,}.desktop"
 
