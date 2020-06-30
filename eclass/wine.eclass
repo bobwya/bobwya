@@ -239,7 +239,7 @@ readonly _WINE_IS_STAGING
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-ebuild-common; tarball.
-WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20200605"
+WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20200629"
 readonly WINE_EBUILD_COMMON_P
 
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_PN
@@ -1592,7 +1592,7 @@ wine_add_stock_gentoo_patches() {
 	esac
 
 	case "${WINE_PV}" in
-		1.8|1.8.[1-3]|1.9.[0-8]|1.9.1[0-2]|9999)
+		1.8|1.8.[1-3]|1.9.[0-9]|1.9.1[0-2]|9999)
 			# https://bugs.gentoo.org/587028
 			PATCHES+=( "${_patch_directory}/wine-1.9.13-gnutls-3.5-compat.patch" )
 			;;
@@ -1663,7 +1663,15 @@ wine_add_stock_gentoo_patches() {
 	esac
 
 	case "${WINE_PV}" in
-		1.8*|2.*|3.*|4.*|5.[0-8]|5.0.[1-9])
+		1.8|1.8.[1-7]|1.9.[0-9]|9999)
+			PATCHES+=( "${_patch_directory}/wine-1.8-disable_gnu_dirent.patch" )
+			;;
+		*)
+			;;
+	esac
+
+	case "${WINE_PV}" in
+		1.8|1.8.*|1.9.*|2.*|3.*|4.*|5.[0-8]|5.0.[1-9])
 			;;
 		*)
 			PATCHES_REVERT+=( "${_patch_directory}/revert/wine-5.9-makedep_install_also_generated_typelib_for_installed_idl.patch" )
