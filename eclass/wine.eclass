@@ -364,7 +364,7 @@ _WINE_STAGING_SUFFIX=""
 	1.8.[1-6])
 		_WINE_STAGING_SUFFIX="-unofficial"
 		;;
-	3.13.1)
+	3.13.1|5.12.1)
 		_WINE_STAGING_REVISION=".${WINE_PV##*.}"
 		WINE_PV="${WINE_PV%${_WINE_STAGING_REVISION}}"
 		;;
