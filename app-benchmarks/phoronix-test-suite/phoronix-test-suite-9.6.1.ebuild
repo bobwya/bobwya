@@ -5,7 +5,7 @@
 
 EAPI=7
 
-inherit bash-completion-r1 xdg-utils-r1
+inherit bash-completion-r1 xdg-utils
 
 DESCRIPTION="Phoronix's comprehensive, cross-platform testing and benchmark suite"
 HOMEPAGE="http://www.phoronix-test-suite.com"
@@ -25,7 +25,7 @@ else
 	MY_PV="${major_version}"
 	MY_P="${PN}-${MY_PV}"
 	KEYWORDS="~amd64 ~x86"
-	if [ ! -z "${minor_version}" ]; then
+	if [ -n "${minor_version}" ]; then
 		MY_PV="${MY_PV}${minor_version/pre/m}"
 		MY_P="${MY_P}${minor_version/pre/m}"
 	fi
@@ -108,7 +108,7 @@ get_optional_dependencies()
 					installable_packages="${installable_packages}${installable_packages:+ }${field_value}"
 				fi
 			done
-		elif [[ "${optional_packages_xmlline}" =~ ${package_close_regexp} && ! -z "${installable_packages}" ]]; then
+		elif [[ "${optional_packages_xmlline}" =~ ${package_close_regexp} && -n "${installable_packages}" ]]; then
 			ewarn "  ${package_generic_name}: ${installable_packages}"
 			installable_packages=""
 		fi
