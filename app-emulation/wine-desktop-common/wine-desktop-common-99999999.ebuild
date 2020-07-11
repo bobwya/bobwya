@@ -5,7 +5,7 @@
 
 EAPI=7
 
-inherit xdg-utils-r1
+inherit xdg-utils
 
 DESCRIPTION="Core desktop menu entries and icons for Wine"
 HOMEPAGE="https://github.com/bobwya/wine-desktop-common"
