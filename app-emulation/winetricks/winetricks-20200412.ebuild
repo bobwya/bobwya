@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=7
 
-inherit bash-completion-r1 xdg-utils-r1
+inherit bash-completion-r1 xdg-utils
 
 if [ "${PV}" = "99999999" ]; then
 	EGIT_REPO_URI="https://github.com/Winetricks/${PN}.git"
