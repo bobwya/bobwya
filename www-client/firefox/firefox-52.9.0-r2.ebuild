@@ -427,7 +427,7 @@ pkg_preinst() {
 			# a quickpkg rolled by hand will grab symlinks as part of the package,
 			# so we need to avoid creating them if they already exist.
 			if ! [ -L ${lib##*/} ]; then
-				ln -s "${lib}" ${lib##*/} || die "echo failed"
+				ln -s "${lib}" ${lib##*/} || die "ln failed"
 			fi
 		done
 		popd &>/dev/null || die "popd failed"

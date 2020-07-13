@@ -555,9 +555,9 @@ src_configure() {
 	# of "--build", and "--target" intstead of "--host".
 	# Note, mozilla also has "--build" but it does not do what you think it does.
 	# Set both "--target" and "--host" as mozilla uses python to guess values otherwise
-	mozconfig_annotate '' "--target=""${CHOST}"
-	mozconfig_annotate '' "--host=""${CBUILD:-${CHOST}}"
-	mozconfig_annotate '' "--with-toolchain-prefix=""${CHOST}-"
+	mozconfig_annotate '' "--target=${CHOST}"
+	mozconfig_annotate '' "--host=${CBUILD:-${CHOST}}"
+	mozconfig_annotate '' "--with-toolchain-prefix=${CHOST}-"
 	if use system-libevent; then
 		mozconfig_annotate '' "--with-system-libevent=${SYSROOT}${EPREFIX}/usr"
 	fi
@@ -639,7 +639,7 @@ src_configure() {
 
 	# workaround for funky/broken upstream configure...
 	SHELL="${SHELL:-${EPREFIX}/bin/bash}" MOZ_NOSPAM=1 \
-	./mach configure || die "echo failed"
+	./mach configure || die "./mach failed"
 }
 
 src_compile() {
@@ -660,7 +660,7 @@ src_compile() {
 		MOZ_NOSPAM=1 \
 		${_virtx} \
 		./mach build --verbose \
-		|| die "echo failed"
+		|| die "./mach failed"
 }
 
 src_install() {
@@ -724,7 +724,7 @@ src_install() {
 
 	cd "${S}" || die "cd failed"
 	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX}/bin/bash}" MOZ_NOSPAM=1 \
-	DESTDIR="${D}" ./mach install || die "echo failed"
+	DESTDIR="${D}" ./mach install || die "./mach failed"
 
 	if use geckodriver; then
 		cp "${BUILD_OBJ_DIR}/dist/bin/geckodriver" "${ED%/}${MOZILLA_FIVE_HOME}" || die "cp failed"
@@ -864,7 +864,7 @@ pkg_preinst() {
 			# a quickpkg rolled by hand will grab symlinks as part of the package,
 			# so we need to avoid creating them if they already exist.
 			if [[ ! -L ${lib##*/} ]]; then
-				ln -s "${lib}" ${lib##*/} || die "sed failed"
+				ln -s "${lib}" ${lib##*/} || die "ln failed"
 			fi
 		done
 		popd &>/dev/null || die "popd failed"
