@@ -31,7 +31,10 @@ IUSE="gtk kde rar test"
 DEPEND="test? (
 		dev-python/bashate
 		dev-util/checkbashisms
-		dev-util/shellcheck
+		|| (
+			dev-util/shellcheck-bin
+			dev-util/shellcheck
+		)
 	)"
 
 RDEPEND="
