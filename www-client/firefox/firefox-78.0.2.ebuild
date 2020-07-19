@@ -11,11 +11,12 @@ PYTHON_COMPAT=( python3_{7,8,9} )
 PYTHON_REQ_USE='ncurses,sqlite,ssl,threads(+)'
 
 # This list can be updated with scripts/get_langs.sh from the mozilla overlay
-MOZ_LANGS=("ach" "af" "an" "ar" "ast" "az" "be" "bg" "bn" "br" "bs" "ca" "cak" "cs" "cy" "da" "de" "dsb" "el" "en" "en-CA"
-"en-GB" "en-US" "eo" "es-AR" "es-CL" "es-ES" "es-MX" "et" "eu" "fa" "ff" "fi" "fr" "fy-NL" "ga-IE" "gd" "gl" "gn" "gu-IN"
-"he" "hi-IN" "hr" "hsb" "hu" "hy-AM" "ia" "id" "is" "it" "ja" "ka" "kab" "kk" "km" "kn" "ko" "lij" "lt" "lv" "mk" "mr" "ms" "my"
-"nb-NO" "nl" "nn-NO" "oc" "pa-IN" "pl" "pt-BR" "pt-PT" "rm" "ro" "ru" "si" "sk" "sl" "son" "sq" "sr" "sv-SE" "ta" "te"
-"th" "tr" "uk" "ur" "uz" "vi" "xh" "zh-CN" "zh-TW" )
+MOZ_LANGS=( "ach" "af" "an" "ar" "ast" "az" "be" "bg" "bn" "br" "bs" "ca" "cak" "cs" "cy" "da" "de" "dsb"
+"el" "en" "en-CA" "en-GB" "en-US" "eo" "es-AR" "es-CL" "es-ES" "es-MX" "et" "eu" "fa" "ff" "fi" "fr"
+"fy-NL" "ga-IE" "gd" "gl" "gn" "gu-IN" "he" "hi-IN" "hr" "hsb" "hu" "hy-AM" "ia" "id" "is" "it" "ja" "ka"
+"kab" "kk" "km" "kn" "ko" "lij" "lt" "lv" "mk" "mr" "ms" "my" "nb-NO" "nl" "nn-NO" "oc" "pa-IN" "pl" "pt-BR"
+"pt-PT" "rm" "ro" "ru" "si" "sk" "sl" "son" "sq" "sr" "sv-SE" "ta" "te" "th" "tr" "uk" "ur" "uz" "vi" "xh"
+"zh-CN" "zh-TW" )
 
 # Convert the ebuild version to the upstream mozilla version, used by mozlinguas
 MOZ_PV="${PV/_alpha/a}" # Handle alpha for SRC_URI
@@ -28,32 +29,27 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${PN}-77.0-patches-01_pre7"
+PATCH="${PN}-78.0-patches-05"
 
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-HG_MOZ_REVISION="d5b284f833d5"
+HG_MOZ_REVISION="909f866430ee"
 HG_MOZ_PV="${MOZ_PV/%.*/.0}"
 HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
-MOZ_SRC_URI="${MOZ_HTTP_URI}/${MOZ_PV}/source/firefox-${MOZ_PV}.source.tar.xz"
+
+MOZ_SRC_URI="${MOZ_HTTP_URI}/${MOZ_PV}/source/${PN}-${MOZ_PV}.source.tar.xz"
 
 if [[ "${PV}" == *_rc* ]]; then
 	MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/candidates/${MOZ_PV}-candidates/build${PV##*_rc}"
-
-# Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-HG_MOZ_REVISION="d5b284f833d5"
-HG_MOZ_PV="${MOZ_PV/%.*/.0}"
-HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
 	MOZ_LANGPACK_PREFIX="linux-i686/xpi/"
 	MOZ_SRC_URI="${MOZ_HTTP_URI}/source/${PN}-${MOZ_PV}.source.tar.xz -> $P.tar.xz"
 fi
 
 LLVM_MAX_SLOT=10
 
-inherit autotools check-reqs eapi7-ver eapi7-ver flag-o-matic gnome2-utils llvm \
-	mozcoreconf-v6 mozlinguas-v2 multiprocessing pax-utils toolchain-funcs virtualx \
-	xdg-utils
+inherit autotools check-reqs eapi7-ver flag-o-matic gnome2-utils llvm mozcoreconf-v6 \
+	mozlinguas-v2 multiprocessing pax-utils toolchain-funcs virtualx xdg-utils
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.com/firefox
@@ -64,10 +60,10 @@ KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist clang cpu_flags_x86_avx2 debug egl eme-free geckodriver kde
-	+gmp-autoupdate hardened hwaccel jack lto cpu_flags_arm_neon pgo
-	pulseaudio +screenshot selinux startup-notification +system-av1
-	+system-harfbuzz +system-icu +system-jpeg +system-libevent +system-libvpx
-	+system-webp test wayland wifi"
+	+gmp-autoupdate hardened hwaccel jack lto cpu_flags_arm_neon
+	+openh264 pgo pulseaudio screencast +screenshot selinux +system-av1
+	+system-harfbuzz +system-icu +system-jpeg +system-libevent
+	+system-libvpx +system-webp test wayland wifi"
 
 REQUIRED_USE="pgo? ( lto )"
 
@@ -87,7 +83,7 @@ SRC_URI="${SRC_URI}
 	)"
 
 CDEPEND="
-	>=dev-libs/nss-3.52.1
+	>=dev-libs/nss-3.53.1
 	>=dev-libs/nspr-4.25
 	dev-libs/atk
 	dev-libs/expat
@@ -105,7 +101,6 @@ CDEPEND="
 	virtual/freedesktop-icon-theme
 	sys-apps/dbus
 	dev-libs/dbus-glib
-	startup-notification? ( >=x11-libs/startup-notification-0.8 )
 	>=x11-libs/pixman-0.19.2
 	>=dev-libs/glib-2.26:2
 	>=sys-libs/zlib-1.2.3
@@ -117,12 +112,16 @@ CDEPEND="
 	x11-libs/libXfixes
 	x11-libs/libXrender
 	x11-libs/libXt
+	screencast? ( media-video/pipewire:0/0.3 )
 	system-av1? (
 		>=media-libs/dav1d-0.3.0:=
 		>=media-libs/libaom-1.0.0:=
 	)
-	system-harfbuzz? ( >=media-libs/harfbuzz-2.6.4:0= >=media-gfx/graphite2-1.3.13 )
-	system-icu? ( >=dev-libs/icu-64.1:= )
+	system-harfbuzz? (
+		>=media-libs/harfbuzz-2.6.4:0=
+		>=media-gfx/graphite2-1.3.13
+	)
+	system-icu? ( >=dev-libs/icu-67.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
 	system-libevent? ( >=dev-libs/libevent-2.0:0=[threads] )
 	system-libvpx? ( >=media-libs/libvpx-1.8.2:0=[postproc] )
@@ -138,6 +137,7 @@ CDEPEND="
 RDEPEND="${CDEPEND}
 	jack? ( virtual/jack )
 	kde? ( kde-misc/kmozillahelper:=  )
+	openh264? ( media-libs/openh264:*[plugin] )
 	pulseaudio? (
 		|| (
 			media-sound/pulseaudio
@@ -154,6 +154,8 @@ DEPEND="${CDEPEND}
 	>=net-libs/nodejs-10.19.0
 	>=sys-devel/binutils-2.30
 	sys-apps/findutils
+	virtual/pkgconfig
+	>=virtual/rust-1.41.0
 	|| (
 		(
 			sys-devel/clang:10
@@ -189,7 +191,6 @@ DEPEND="${CDEPEND}
 			>=media-sound/apulse-0.1.12-r4[sdk]
 		)
 	)
-	>=virtual/rust-1.41.0
 	wayland? ( >=x11-libs/gtk+-3.11:3[wayland] )
 	amd64? ( >=dev-lang/yasm-1.1 virtual/opengl )
 	x86? ( >=dev-lang/yasm-1.1 virtual/opengl )
@@ -199,8 +200,6 @@ DEPEND="${CDEPEND}
 	)"
 
 S="${WORKDIR}/firefox-${PV%_*}"
-
-QA_PRESTRIPPED="usr/lib*/${PN}/firefox"
 
 BUILD_OBJ_DIR="${S}/ff"
 
@@ -239,21 +238,13 @@ pkg_pretend() {
 		if ! has usersandbox $FEATURES; then
 			die "You must enable usersandbox as X server can not run as root!"
 		fi
-
-		if ! use clang; then
-			# Force user decision so they don't find out firefox was build
-			# without pgo after spending some hours
-			eerror "USE=pgo when using GCC is currently known to be broken."
-			eerror "Either switch to USE=clang or temporarily set USE=-pgo."
-			die "USE=pgo without USE=clang is currently known to be broken."
-		fi
 	fi
 
 	# Ensure we have enough disk space to compile
 	if use pgo || use lto || use debug || use test; then
-		CHECKREQS_DISK_BUILD="8G"
+		CHECKREQS_DISK_BUILD="10G"
 	else
-		CHECKREQS_DISK_BUILD="4G"
+		CHECKREQS_DISK_BUILD="5G"
 	fi
 
 	check-reqs_pkg_pretend
@@ -264,9 +255,9 @@ pkg_setup() {
 
 	# Ensure we have enough disk space to compile
 	if use pgo || use lto || use debug || use test; then
-		CHECKREQS_DISK_BUILD="8G"
+		CHECKREQS_DISK_BUILD="10G"
 	else
-		CHECKREQS_DISK_BUILD="4G"
+		CHECKREQS_DISK_BUILD="5G"
 	fi
 
 	check-reqs_pkg_setup
@@ -292,13 +283,6 @@ pkg_setup() {
 	addpredict /proc/self/oom_score_adj
 
 	llvm_pkg_setup
-
-	# shellcheck disable=SC2086
-	if has ccache ${FEATURES}; then
-		if use clang && use pgo; then
-			die "Using FEATURES=ccache with USE=clang and USE=pgo is currently known to be broken (bug #718632)."
-		fi
-	fi
 }
 
 src_unpack() {
@@ -309,12 +293,47 @@ src_unpack() {
 }
 
 src_prepare() {
+	# Default to our patchset
+	local PATCHES=( "${WORKDIR}/firefox" )
+	if use kde; then
+		sed -e 's:@BINPATH@/defaults/pref/kde.js:@RESPATH@/browser/@PREF_DIR@/kde.js:' \
+			"${DISTDIR}/${PN}-${HG_MOZ_PV}-firefox-kde.patch" > \
+			"${T}/${PN}-${HG_MOZ_PV}-firefox-kde.patch" || die "sed failed"
+		# Toolkit OpenSUSE KDE integration patchset
+		PATCHES+=(
+			"${DISTDIR}/${PN}-${HG_MOZ_PV}-mozilla-kde.patch"
+			"${DISTDIR}/${PN}-${HG_MOZ_PV}-mozilla-nongnome-proxies.patch"
+		)
+		# Firefox OpenSUSE KDE integration patchset
+		PATCHES+=(
+			"${DISTDIR}/${PN}-${HG_MOZ_PV}-firefox-branded-icons.patch"
+			"${DISTDIR}/${PN}-${HG_MOZ_PV}-firefox-kde.patch"
+		)
+		# Uncomment the next line to enable KDE support debugging (additional console output)...
+		#PATCHES+=( "${FILESDIR}/${PN}-kde-debug.patch" )
+		# Uncomment the following patch line to force Plasma/Qt file dialog for Firefox...
+		#PATCHES+=( "${FILESDIR}/${PN}-force-qt-dialog.patch" )
+		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox/)
+		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
+	fi
 
 	# Make LTO respect MAKEOPTS
 	sed -i \
 		-e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
 		"${S}"/build/moz.configure/lto-pgo.configure \
 		|| die "sed failed to set num_cores"
+
+	# Make ICU respect MAKEOPTS
+	sed -i \
+		-e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
+		"${S}"/intl/icu_sources_data.py \
+		|| die "sed failed to set num_cores"
+
+	# sed-in toolchain prefix
+	sed -i \
+		-e "s/objdump/${CHOST}-objdump/" \
+		"${S}"/python/mozbuild/mozbuild/configure/check_debug_ranges.py \
+		|| die "sed failed to set toolchain prefix"
 
 	default
 
@@ -412,8 +431,7 @@ src_configure() {
 	mozconfig_init
 	# common config components
 	mozconfig_annotate 'system_libs' \
-		"--with-system-zlib" \
-		"--with-system-bz2"
+		"--with-system-zlib"
 
 	# Must pass release in order to properly select linker
 	mozconfig_annotate 'Enable by Gentoo' "--enable-release"
@@ -536,8 +554,8 @@ src_configure() {
 		mozconfig_annotate 'enabled by Gentoo' "--enable-debug-symbols"
 	fi
 	# These are enabled by default in all mozilla applications
-	mozconfig_annotate '' "--with-system-nspr" "--with-nspr-prefix=${SYSROOT}${EPREFIX}/usr"
-	mozconfig_annotate '' "--with-system-nss" "--with-nss-prefix=${SYSROOT}${EPREFIX}/usr"
+	mozconfig_annotate '' "--with-system-nspr"
+	mozconfig_annotate '' "--with-system-nss"
 	mozconfig_annotate '' "--x-includes=${SYSROOT}${EPREFIX}/usr/include" \
 		"--x-libraries=${SYSROOT}${EPREFIX}/usr/$(get_libdir)"
 	mozconfig_annotate '' "--prefix=${EPREFIX}/usr"
@@ -545,7 +563,6 @@ src_configure() {
 	mozconfig_annotate '' "--disable-crashreporter"
 	mozconfig_annotate 'Gentoo default' "--with-system-png"
 	mozconfig_annotate '' "--enable-system-ffi"
-	mozconfig_annotate '' "--disable-gconf"
 	mozconfig_annotate '' "--with-intl-api"
 	mozconfig_annotate '' "--enable-system-pixman"
 	# Instead of the standard "--build=" and "--host=", mozilla uses "--host" instead
@@ -575,7 +592,6 @@ src_configure() {
 		mozconfig_annotate '' "--enable-default-toolkit=cairo-gtk3"
 	fi
 
-	mozconfig_use_enable startup-notification
 	mozconfig_use_with system-av1
 	mozconfig_use_with system-harfbuzz
 	mozconfig_use_with system-harfbuzz system-graphite2
@@ -603,6 +619,8 @@ src_configure() {
 	# enable JACK, bug 600002
 	mozconfig_use_enable jack
 
+	mozconfig_use_enable screencast pipewire
+
 	# Enable/Disable eme support
 	use eme-free && mozconfig_annotate '+eme-free' "--disable-eme"
 
@@ -617,10 +635,22 @@ src_configure() {
 	# when they would normally be larger than 2GiB.
 	append-ldflags "-Wl,--compress-debug-sections=zlib"
 
-	if use clang && ! use arm64; then
+	if use clang; then
 		# https://bugzilla.mozilla.org/show_bug.cgi?id=1482204
 		# https://bugzilla.mozilla.org/show_bug.cgi?id=1483822
-		mozconfig_annotate 'elf-hack is broken when using Clang' "--disable-elf-hack"
+		# toolkit/moz.configure Elfhack section: target.cpu in ('arm', 'x86', 'x86_64')
+		local disable_elf_hack=
+		if use amd64; then
+			disable_elf_hack=yes
+		elif use x86 ; then
+			disable_elf_hack=yes
+		elif use arm ; then
+			disable_elf_hack=yes
+		fi
+
+		if [[ -n ${disable_elf_hack} ]]; then
+			mozconfig_annotate 'elf-hack is broken when using Clang' "--disable-elf-hack"
+		fi
 	fi
 
 	echo "mk_add_options MOZ_OBJDIR=${BUILD_OBJ_DIR}" >> "${S}/.mozconfig"
@@ -645,7 +675,6 @@ src_compile() {
 		gnome2_environment_reset
 
 		addpredict /root
-		addpredict /etc/gconf
 	fi
 
 	GDK_BACKEND=x11 \
@@ -704,17 +733,19 @@ src_install() {
 		"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
 		|| die "echo failed"
 
+	if ! use gmp-autoupdate; then
 	if use kde; then
 		# Add our kde prefs for firefox
 		cp "${FILESDIR}/kde.js" "${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/kde.js" \
 			|| die "cp failed"
 	fi
 
-	use gmp-autoupdate || use eme-free || for plugin in "${GMP_PLUGIN_LIST[@]}" ; do
-		echo "pref(\"media.${plugin}.autoupdate\", false);" >> \
-			"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
-			|| die "echo failed"
-	done
+		for plugin in "${GMP_PLUGIN_LIST[@]}" ; do
+			echo "pref(\"media.${plugin}.autoupdate\", false);" >> \
+				"${BUILD_OBJ_DIR}/${pkg_default_pref_dir}/all-gentoo.js" \
+				|| die "echo failed"
+		done
+	fi
 
 	cd "${S}" || die "cd failed"
 	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX}/bin/bash}" MOZ_NOSPAM=1 \
@@ -768,12 +799,6 @@ PROFILE_EOF
 	# Install a 48x48 icon into /usr/share/pixmaps for legacy DEs
 	newicon "${icon_path}/default48.png" "${icon}.png"
 
-	# Add StartupNotify=true bug 237317
-	local startup_notify="false"
-	if use startup-notification; then
-		startup_notify="true"
-	fi
-
 	local display_protocols="auto X11" use_wayland="false"
 	if use wayland; then
 		display_protocols+=" Wayland"
@@ -807,12 +832,11 @@ PROFILE_EOF
 				;;
 		esac
 
-		newmenu "${FILESDIR}/icon/${PN}-r1.desktop" "${desktop_filename}"
+		newmenu "${FILESDIR}/icon/${PN}-r2.desktop" "${desktop_filename}"
 		sed -i \
 			-e "s:@NAME@:${app_name}:" \
 			-e "s:@EXEC@:${exec_command}:" \
 			-e "s:@ICON@:${icon}:" \
-			-e "s:@STARTUP_NOTIFY@:${startup_notify}:" \
 			"${ED%/}/usr/share/applications/${desktop_filename}" || die "sed failed"
 	done
 
@@ -867,11 +891,13 @@ pkg_postinst() {
 	xdg_desktop_database_update
 	xdg_icon_cache_update
 
-	if ! use gmp-autoupdate && ! use eme-free; then
+	if ! use gmp-autoupdate; then
 		elog "USE='-gmp-autoupdate' has disabled the following plugins from updating or"
 		elog "installing into new profiles:"
 		local plugin
-		for plugin in "${GMP_PLUGIN_LIST[@]}"; do elog "\t ${plugin}" ; done
+		for plugin in "${GMP_PLUGIN_LIST[@]}" ; do
+			elog "\t ${plugin}"
+		done
 		elog
 	fi
 
