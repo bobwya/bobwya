@@ -2,24 +2,31 @@
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-EAPI=6
+EAPI="6"
 VIRTUALX_REQUIRED="pgo"
 WANT_AUTOCONF="2.1"
 MOZ_ESR=""
 MOZ_LIGHTNING_VER="6.2.5"
 MOZ_LIGHTNING_GDATA_VER="4.4.1"
 
-PYTHON_COMPAT=( python3_{6,7,8} )
+PYTHON_COMPAT=( python3_{6,7,8,9} )
 PYTHON_REQ_USE='ncurses,sqlite,ssl,threads(+)'
 
 # This list can be updated using scripts/get_langs.sh from the mozilla overlay
-MOZ_LANGS=("ar" "ast" "be" "bg" "br" "ca" "cs" "cy" "da" "de" "el" "en" "en-GB" "en-US" "es-AR"
-"es-ES" "et" "eu" "fi" "fr" "fy-NL" "ga-IE" "gd" "gl" "he" "hr" "hsb" "hu" "hy-AM" "id" "is" "it"
-"ja" "ko" "lt" "nb-NO" "nl" "nn-NO" "pl" "pt-BR" "pt-PT" "rm" "ro" "ru" "si" "sk" "sl" "sq" "sr"
-"sv-SE" "tr" "uk" "vi" "zh-CN" "zh-TW" )
+MOZ_LANGS=( "ar" "ast" "be" "bg" "br" "ca" "cak" "cs" "cy" "da" "de" "dsb" "el" "en" "en-GB" "en-US"
+"es-AR" "es-ES" "et" "eu" "fi" "fr" "fy-NL" "ga-IE" "gd" "gl" "he" "hr" "hsb" "hu" "hy-AM" "id" "is" "it"
+"ja" "ka" "kab" "kk" "ko" "lt" "ms" "nb-NO" "nl" "nn-NO" "pl" "pt-BR" "pt-PT" "rm" "ro" "ru" "si" "sk" "sl"
+"sq" "sr" "sv-SE" "tr" "uk" "uz" "vi" "zh-CN" "zh-TW" )
 
 # Convert the ebuild version to the upstream mozilla version, used by mozlinguas
-MOZ_PV="${PV/_beta/b}"
+MOZ_PV="${PV/_alpha/a}" # Handle alpha for SRC_URI
+MOZ_PV="${MOZ_PV/_beta/b}" # Handle beta for SRC_URI
+MOZ_PV="${MOZ_PV%%_rc*}" # Handle rc for SRC_URI
+
+if [[ ${MOZ_ESR} == 1 ]]; then
+	# ESR releases have slightly different version numbers
+	MOZ_PV="${MOZ_PV}esr"
+fi
 
 # Patches
 PATCHFF="firefox-68.0-patches-14"
@@ -29,27 +36,40 @@ MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
 HG_REVISION="3f648b714230"
 HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
+MOZ_SRC_URI="${MOZ_HTTP_URI}/${MOZ_PV}/source/${PN}-${MOZ_PV}.source.tar.xz"
 
-# ESR releases have slightly version numbers
-if [[ ${MOZ_ESR} == 1 ]]; then
-	MOZ_PV="${MOZ_PV}esr"
+if [[ "${PV}" == *_rc* ]]; then
+	MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/candidates/${MOZ_PV}-candidates/build${PV##*_rc}"
+
+# Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
+HG_REVISION="3f648b714230"
+HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
+	MOZ_LANGPACK_PREFIX="linux-i686/xpi/"
+	MOZ_SRC_URI="${MOZ_HTTP_URI}/source/${PN}-${MOZ_PV}.source.tar.xz -> $P.tar.xz"
 fi
-MOZ_P="${PN}-${MOZ_PV}"
 
 LLVM_MAX_SLOT=10
+
+inherit autotools check-reqs eapi7-ver flag-o-matic gnome2-utils llvm mozcoreconf-v6 \
+	mozlinguas-v2 multiprocessing pax-utils toolchain-funcs virtualx xdg-utils
 
 DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.org/thunderbir
 	https://www.rosenauer.org/hg/mozilla"
 
 KEYWORDS="~amd64 ~x86 ~x86-linux"
+
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist clang cpu_flags_x86_avx2 dbus debug eme-free kde kernel_linux
-	+gmp-autoupdate hardened jack lightning lto cpu_flags_arm_neon pgo
-	pulseaudio selinux startup-notification +system-av1 +system-harfbuzz
-	+system-icu +system-jpeg +system-libevent +system-sqlite
-	system-libvpx +system-webp test wayland wifi"
+	+gmp-autoupdate hardened jack lightning lto cpu_flags_arm_neon
+	pgo pulseaudio selinux startup-notification +system-av1
+	+system-harfbuzz +system-icu +system-jpeg +system-libevent
+	+system-sqlite system-libvpx +system-webp test wayland wifi"
+
+REQUIRED_USE="pgo? ( lto )
+	wifi? ( dbus )"
+
 RESTRICT="!bindist? ( bindist )
 	!test? ( test )"
 
@@ -57,7 +77,7 @@ RESTRICT="!bindist? ( bindist )
 PATCH_URIS=( https://dev.gentoo.org/~{anarchy,axs,polynomial-c,whissi}/mozilla/patchsets/${PATCHFF}.tar.xz )
 # shellcheck disable=SC2124
 SRC_URI="${SRC_URI}
-	${MOZ_HTTP_URI}/${MOZ_PV}/source/${MOZ_P}.source.tar.xz
+	${MOZ_SRC_URI}
 	https://dev.gentoo.org/~axs/distfiles/lightning-${MOZ_LIGHTNING_VER}.tar.xz
 	kde? (
 		${HG_MOZILLA_URI}/raw-file/${HG_REVISION}/mozilla-kde.patch -> ${PN}-68.0-mozilla-kde.patch
@@ -66,11 +86,8 @@ SRC_URI="${SRC_URI}
 	lightning? ( https://dev.gentoo.org/~axs/distfiles/gdata-provider-${MOZ_LIGHTNING_GDATA_VER}.tar.xz )
 	${PATCH_URIS[@]}"
 
-inherit autotools check-reqs eapi7-ver flag-o-matic gnome2-utils llvm mozcoreconf-v6 \
-	mozlinguas-v2 multiprocessing pax-utils toolchain-funcs virtualx xdg-utils
-
 CDEPEND="
-	>=dev-libs/nss-3.44.1
+	>=dev-libs/nss-3.44.4
 	>=dev-libs/nspr-4.21
 	dev-libs/atk
 	dev-libs/expat
@@ -170,9 +187,6 @@ DEPEND="${CDEPEND}
 		x86? ( >=dev-lang/nasm-2.13 )
 	)"
 
-REQUIRED_USE="wifi? ( dbus )
-	pgo? ( lto )"
-
 S="${WORKDIR}/${MOZ_P%b[0-9]*}"
 
 BUILD_OBJ_DIR="${S}/tbird"
@@ -206,14 +220,34 @@ llvm_check_deps() {
 	einfo "Will use LLVM slot ${LLVM_SLOT}!" >&2
 }
 
-pkg_setup() {
-	moz_pkgsetup
-
+pkg_pretend() {
 	if use pgo; then
 		if ! has usersandbox $FEATURES; then
 			die "You must enable usersandbox as X server can not run as root!"
 		fi
 	fi
+
+	# Ensure we have enough disk space to compile
+	if use pgo || use lto || use debug || use test; then
+		CHECKREQS_DISK_BUILD="8G"
+	else
+		CHECKREQS_DISK_BUILD="4500M"
+	fi
+
+	check-reqs_pkg_pretend
+}
+
+pkg_setup() {
+	moz_pkgsetup
+
+	# Ensure we have enough disk space to compile
+	if use pgo || use lto || use debug || use test; then
+		CHECKREQS_DISK_BUILD="8G"
+	else
+		CHECKREQS_DISK_BUILD="4500M"
+	fi
+
+	check-reqs_pkg_setup
 
 	# Avoid PGO profiling problems due to enviroment leakage
 	# These should *always* be cleaned up anyway
@@ -221,6 +255,7 @@ pkg_setup() {
 		DISPLAY \
 		ORBIT_SOCKETDIR \
 		SESSION_MANAGER \
+		XDG_CACHE_HOME \
 		XDG_SESSION_COOKIE \
 		XAUTHORITY
 
@@ -235,17 +270,6 @@ pkg_setup() {
 	addpredict /proc/self/oom_score_adj
 
 	llvm_pkg_setup
-}
-
-pkg_pretend() {
-	# Ensure we have enough disk space to compile
-	if use pgo || use lto || use debug || use test; then
-		CHECKREQS_DISK_BUILD="8G"
-	else
-		CHECKREQS_DISK_BUILD="4G"
-	fi
-
-	check-reqs_pkg_setup
 }
 
 src_unpack() {
@@ -283,11 +307,11 @@ src_prepare() {
 
 	default
 
-	local n_jobs=$(makeopts_jobs)
-	if [[ "${n_jobs}" == 1 ]]; then
-		einfo "Building with MAKEOPTS=-j1 is known to fail (bug #687028); Forcing MAKEOPTS=-j2 ..."
-		export MAKEOPTS=-j2
-	fi
+	# Make LTO respect MAKEOPTS
+	sed -i \
+		-e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
+		"${S}/build/moz.configure/toolchain.configure" \
+		|| die "sed failed to set num_cores"
 
 	# Enable gnomebreakpad
 	if use debug; then
@@ -584,7 +608,7 @@ src_configure() {
 	# when they would normally be larger than 2GiB.
 	append-ldflags "-Wl,--compress-debug-sections=zlib"
 
-	if use clang; then
+	if use clang && ! use arm64; then
 		# https://bugzilla.mozilla.org/show_bug.cgi?id=1482204
 		# https://bugzilla.mozilla.org/show_bug.cgi?id=1483822
 		mozconfig_annotate 'elf-hack is broken when using Clang' --disable-elf-hack
@@ -600,7 +624,7 @@ src_configure() {
 
 	# workaround for funky/broken upstream configure...
 	SHELL="${SHELL:-${EPREFIX}/bin/bash}" MOZ_NOSPAM=1 \
-	./mach configure || die "echo failed"
+	./mach configure || die "./mach failed"
 }
 
 src_compile() {
@@ -621,7 +645,7 @@ src_compile() {
 		MOZ_NOSPAM=1 \
 		${_virtx} \
 		./mach build --verbose \
-		|| die "echo failed"
+		|| die "./mach failed"
 }
 
 src_install() {
@@ -667,7 +691,7 @@ src_install() {
 
 	cd "${S}"
 	MOZ_MAKE_FLAGS="${MAKEOPTS}" SHELL="${SHELL:-${EPREFIX}/bin/bash}" MOZ_NOSPAM=1 \
-	DESTDIR="${D}" ./mach install || die "cd failed"
+	DESTDIR="${D}" ./mach install || die "./mach failed"
 
 	# Install language packs
 	MOZEXTENSION_TARGET="distribution/extensions" MOZ_INSTALL_L10N_XPIFILE="1" mozlinguas_src_install
@@ -719,7 +743,7 @@ src_install() {
 	mozlinguas_xpistage_langpacks "${BUILD_OBJ_DIR}/dist/bin/distribution/extensions/${emid}" \
 		"${WORKDIR}/lightning-${MOZ_LIGHTNING_VER}" lightning calendar
 
-	mkdir -p "${T}/${emid}" || die "echo failed"
+	mkdir -p "${T}/${emid}" || die
 	cp -RLp -t "${T}/${emid}" "${BUILD_OBJ_DIR}/dist/bin/distribution/extensions/${emid}"/* || die "cp failed"
 	insinto "${MOZILLA_FIVE_HOME}/distribution/extensions"
 	doins -r "${T}/${emid}"
@@ -727,13 +751,13 @@ src_install() {
 	if use lightning; then
 		# move lightning out of distribution/extensions and into extensions for app-global install
 		mkdir -p "${ED}/${MOZILLA_FIVE_HOME}/extensions"
-		mv "${ED}/${MOZILLA_FIVE_HOME}"/{distribution,}/extensions/${emid} || die "doins failed"
+		mv "${ED}/${MOZILLA_FIVE_HOME}"/{distribution,}/extensions/${emid} || die
 
 		# stage extra locales for gdata-provider and install app-global
 		mozlinguas_xpistage_langpacks "${BUILD_OBJ_DIR}/dist/xpi-stage/gdata-provider" \
 			"${WORKDIR}/gdata-provider-${MOZ_LIGHTNING_GDATA_VER}"
 		emid='{a62ef8ec-5fdc-40c2-873c-223b8a6925cc}'
-		mkdir -p "${T}/${emid}" || die "doins failed"
+		mkdir -p "${T}/${emid}" || die
 		cp -RLp -t "${T}/${emid}" "${BUILD_OBJ_DIR}/dist/xpi-stage/gdata-provider"/* || die "cp failed"
 
 		# manifest.json does not allow the addon to load, put install.rdf in place
@@ -754,6 +778,8 @@ src_install() {
 }
 
 pkg_preinst() {
+	gnome2_icon_savelist
+
 	# if the apulse libs are available in MOZILLA_FIVE_HOME then apulse
 	# doesn't need to be forced into the LD_LIBRARY_PATH
 	if use pulseaudio && has_version ">=media-sound/apulse-0.1.9"; then
@@ -764,7 +790,7 @@ pkg_preinst() {
 			# a quickpkg rolled by hand will grab symlinks as part of the package,
 			# so we need to avoid creating them if they already exist.
 			if [[ ! -L ${lib##*/} ]]; then
-				ln -s "${lib}" ${lib##*/} || die "doins failed"
+				ln -s "${lib}" ${lib##*/} || die "ln failed"
 			fi
 		done
 		popd &>/dev/null || die "popd failed"
@@ -772,8 +798,8 @@ pkg_preinst() {
 }
 
 pkg_postinst() {
+	gnome2_icon_cache_update
 	xdg_desktop_database_update
-	xdg_icon_cache_update
 
 	if ! use gmp-autoupdate && ! use eme-free; then
 		elog "USE='-gmp-autoupdate' has disabled the following plugins from updating or"
@@ -792,6 +818,6 @@ pkg_postinst() {
 }
 
 pkg_postrm() {
+	gnome2_icon_cache_update
 	xdg_desktop_database_update
-	xdg_icon_cache_update
 }
