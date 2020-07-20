@@ -250,7 +250,7 @@ multilib_src_configure() {
 		"$(use_with unwind)"
 		"$(use_with udisks dbus)"
 		"$(use_with v4l v4l2)"
-		"$(use_with vaapi va)"
+		"$(usex vaapi '' --without-va)"
 		"$(use_with vkd3d)"
 		"$(use_with vulkan)"
 		"$(use_with X x)"

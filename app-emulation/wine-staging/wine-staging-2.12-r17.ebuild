@@ -238,7 +238,7 @@ multilib_src_configure() {
 		"$(use_with udev)"
 		"$(use_with udisks dbus)"
 		"$(use_with v4l)"
-		"$(use_with vaapi va)"
+		"$(usex vaapi '' --without-va)"
 		"$(use_with X x)"
 		"$(use_with X xfixes)"
 		--with-xattr
