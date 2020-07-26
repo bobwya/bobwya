@@ -162,6 +162,7 @@ DEPEND="${CDEPEND}
 	sys-apps/findutils
 	virtual/pkgconfig
 	>=virtual/rust-1.34.0
+	<virtual/rust-1.45.0
 	|| (
 		(
 			sys-devel/clang:10
@@ -234,44 +235,70 @@ llvm_check_deps() {
 }
 
 pkg_pretend() {
-	if use pgo; then
-		# shellcheck disable=SC2086
-		if ! has usersandbox $FEATURES; then
-			die "You must enable usersandbox as X server can not run as root!"
+	if [[ ${MERGE_TYPE} != binary ]]; then
+		local rustc_version=( $(eselect --brief rust show 2>/dev/null) )
+		rustc_version=${rustc_version[0]/rust-bin-/}
+		rustc_version=${rustc_version/rust-/}
+		if [[ -n "${rustc_version}" ]]; then
+			if ver_test "${rustc_version}" -ge "1.45.0"; then
+				die "Rust >=1.45.0 is not supported. Please use 'eselect rust' to switch to <rust-1.45.0!"
+			fi
 		fi
-	fi
 
-	# Ensure we have enough disk space to compile
-	if use pgo || use lto || use debug || use test; then
-		CHECKREQS_DISK_BUILD="8G"
-	else
-		CHECKREQS_DISK_BUILD="4G"
-	fi
+		if use pgo; then
+		# shellcheck disable=SC2086
+			if ! has usersandbox $FEATURES; then
+				die "You must enable usersandbox as X server can not run as root!"
+			fi
+		fi
 
-	check-reqs_pkg_pretend
+		# Ensure we have enough disk space to compile
+		if use pgo || use lto || use debug || use test; then
+			CHECKREQS_DISK_BUILD="8G"
+		else
+			CHECKREQS_DISK_BUILD="4G"
+		fi
+
+		check-reqs_pkg_pretend
+	fi
 }
 
 pkg_setup() {
 	moz_pkgsetup
 
-	# Ensure we have enough disk space to compile
-	if use pgo || use lto || use debug || use test; then
-		CHECKREQS_DISK_BUILD="8G"
-	else
-		CHECKREQS_DISK_BUILD="4G"
+	if [[ ${MERGE_TYPE} != binary ]]; then
+		local rustc_version=( $(eselect --brief rust show 2>/dev/null) )
+		rustc_version=${rustc_version[0]/rust-bin-/}
+		rustc_version=${rustc_version/rust-/}
+		[[ -z "${rustc_version}" ]] && die "Failed to determine rustc version!"
+
+		if ver_test "${rustc_version}" -ge "1.45.0"; then
+			die "Rust >=1.45.0 is not supported. Please use 'eselect rust' to switch to <rust-1.45.0!"
+		fi
+
+		# Ensure we have enough disk space to compile
+		if use pgo || use lto || use debug || use test; then
+			CHECKREQS_DISK_BUILD="8G"
+		else
+			CHECKREQS_DISK_BUILD="4G"
+		fi
+
+		check-reqs_pkg_setup
+
+		# Avoid PGO profiling problems due to enviroment leakage
+		# These should *always* be cleaned up anyway
+		unset DBUS_SESSION_BUS_ADDRESS \
+			DISPLAY \
+			ORBIT_SOCKETDIR \
+			SESSION_MANAGER \
+			XDG_CACHE_HOME \
+			XDG_SESSION_COOKIE \
+			XAUTHORITY
+
+		addpredict /proc/self/oom_score_adj
+
+		llvm_pkg_setup
 	fi
-
-	check-reqs_pkg_setup
-
-	# Avoid PGO profiling problems due to enviroment leakage
-	# These should *always* be cleaned up anyway
-	unset DBUS_SESSION_BUS_ADDRESS \
-		DISPLAY \
-		ORBIT_SOCKETDIR \
-		SESSION_MANAGER \
-		XDG_CACHE_HOME \
-		XDG_SESSION_COOKIE \
-		XAUTHORITY
 
 	if ! use bindist; then
 		einfo
@@ -280,10 +307,6 @@ pkg_setup() {
 		elog "a legal problem with Mozilla Foundation."
 		elog "You can disable it by emerging ${PN} _with_ the bindist USE-flag."
 	fi
-
-	addpredict /proc/self/oom_score_adj
-
-	llvm_pkg_setup
 }
 
 src_unpack() {
@@ -325,6 +348,12 @@ src_prepare() {
 		-e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
 		"${S}"/build/moz.configure/toolchain.configure \
 		|| die "sed failed to set num_cores"
+
+	# sed-in toolchain prefix
+	sed -i \
+		-e "s/objdump/${CHOST}-objdump/" \
+		"${S}"/python/mozbuild/mozbuild/configure/check_debug_ranges.py \
+		|| die "sed failed to set toolchain prefix"
 
 	default
 
