@@ -7,7 +7,7 @@ EAPI=7
 PLOCALES="ar ast bg ca cs da de el en en_US eo es fa fi fr he hi hr hu it ja ko lt ml nb_NO nl or pa pl pt_BR pt_PT rm ro ru si sk sl sr_RS@cyrillic sr_RS@latin sv ta te th tr uk wa zh_CN zh_TW"
 PLOCALE_BACKUP="en"
 
-inherit autotools flag-o-matic l10n multilib multilib-minimal pax-utils toolchain-funcs virtualx wine xdg-utils
+inherit autotools l10n multilib multilib-minimal pax-utils toolchain-funcs virtualx wine xdg-utils
 
 if [[ "${WINE_PV}" == "9999" ]]; then
 	EGIT_REPO_URI="https://source.winehq.org/git/wine.git"
@@ -21,7 +21,7 @@ HOMEPAGE="https://www.winehq.org/"
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc faudio +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pcap +perl +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test +threads +truetype udev +udisks +unwind v4l vkd3d vulkan +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc faudio +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mingw mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pcap +perl +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test +threads +truetype udev +udisks +unwind v4l vkd3d vulkan +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
@@ -215,6 +215,7 @@ multilib_src_configure() {
 		"$(use_with kerberos gssapi)"
 		"$(use_with kerberos krb5)"
 		"$(use_with ldap)"
+		"$(use_with mingw)"
 		"$(use_enable mono mscoree)"
 		"$(use_with mp3 mpg123)"
 		"$(use_with netapi)"

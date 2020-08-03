@@ -16,6 +16,8 @@ However Wine can optionally use native Windows DLLs if they are available.Wine p
 		See: https://github.com/FNA-XNA/FAudio</flag>
 		<flag name="gecko">Add support for the Gecko engine when using iexplore</flag>
 		<flag name="gstreamer">Use <pkg>media-libs/gstreamer</pkg> to provide DirectShow functionality.</flag>
+		<flag name="mingw">Use the MinGW cross-compiler to compile, a supported subset of, Wine DLL's (as PE libraries).
+			Uses (if specified): CROSSCFLAGS , CROSSLDFLAGS ; env variables for cross-compilation.</flag>
 		<flag name="mono">Add support for .NET using Wine's Mono add-on.</flag>
 		<flag name="netapi">Use libnetapi from <pkg>net-fs/samba</pkg> to support Windows networks in netapi32.dll.</flag>
 		<flag name="opencl">Enable OpenCL support.</flag>

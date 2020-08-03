@@ -7,7 +7,7 @@ EAPI=7
 PLOCALES="ar bg ca cs da de el en en_US eo es fa fi fr he hi hr hu it ja ko lt ml nb_NO nl or pa pl pt_BR pt_PT rm ro ru sk sl sr_RS@cyrillic sr_RS@latin sv te th tr uk wa zh_CN zh_TW"
 PLOCALE_BACKUP="en"
 
-inherit autotools flag-o-matic l10n multilib multilib-minimal pax-utils toolchain-funcs virtualx wine xdg-utils
+inherit autotools l10n multilib multilib-minimal pax-utils toolchain-funcs virtualx wine xdg-utils
 
 if [[ "${WINE_PV}" == "9999" ]]; then
 	EGIT_REPO_URI="https://source.winehq.org/git/wine.git"
