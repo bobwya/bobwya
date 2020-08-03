@@ -23,6 +23,8 @@ For this Wine variant - the external Wine Staging patchset is always applied whe
 		<flag name="gcrypt">Add support for the Diffie-Hellman key exchanges using <pkg>dev-libs/libgcrypt</pkg>.</flag>
 		<flag name="gecko">Add support for the Gecko engine when using iexplore</flag>
 		<flag name="gstreamer">Use <pkg>media-libs/gstreamer</pkg> to provide DirectShow functionality.</flag>
+		<flag name="mingw">Use the MinGW cross-compiler to compile, a supported subset of, Wine DLL's (as PE libraries).
+			Uses (if specified): CROSSCFLAGS , CROSSLDFLAGS ; env variables for cross-compilation.</flag>
 		<flag name="mono">Add support for .NET using Wine's Mono add-on.</flag>
 		<flag name="netapi">Use libnetapi from <pkg>net-fs/samba</pkg> to support Windows networks in netapi32.dll.</flag>
 		<flag name="opencl">Enable OpenCL support.</flag>
