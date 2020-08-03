@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+  <upstream>
+    <remote-id type="github">doitsujin/dxvk</remote-id>
+    <bugs-to>https://github.com/doitsujin/dxvk/issues</bugs-to>
+  </upstream>
+  <use>
+    <flag name="d3d9">Build D3D9 to Vulkan translation layer component of package</flag>
+    <flag name="d3d10">Build D3D10 to Vulkan translation layer component of package</flag>
+    <flag name="d3d11">Build D3D11 to Vulkan translation layer component of package</flag>
+    <flag name="dxgi">Build DirectX Graphics Infrastructure (DXGI) component of package</flag>
+  </use>
+</pkgmetadata>

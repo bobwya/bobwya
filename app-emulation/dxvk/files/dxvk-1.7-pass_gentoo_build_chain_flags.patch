@@ -1,0 +1,49 @@
+From 3d8f568f678ee6efbfdf27161dee7c786031fb28 Mon Sep 17 00:00:00 2001
+From: tastytea <tastytea@tastytea.de>
+Date: Mon, 18 May 2020 15:41:59 +0200
+Subject: [PATCH] Add compiler flags.
+
+---
+ build-win32.txt | 8 ++++----
+ build-win64.txt | 6 ++++--
+ 2 files changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/build-win32.txt b/build-win32.txt
+index 97ec8a35..e2e2e3f9 100644
+--- a/build-win32.txt
++++ b/build-win32.txt
+@@ -5,10 +5,10 @@ ar = 'i686-w64-mingw32-ar'
+ strip = 'i686-w64-mingw32-strip'
+ 
+ [properties]
+-c_args=['-msse', '-msse2']
+-cpp_args=['-msse', '-msse2']
+-c_link_args = ['-static', '-static-libgcc']
+-cpp_link_args = ['-static', '-static-libgcc', '-static-libstdc++']
++c_args=@CFLAGS@ + ['-msse', '-msse2']
++cpp_args=@CXXFLAGS@ + ['-msse', '-msse2']
++c_link_args = @LDFLAGS@ + ['-static', '-static-libgcc']
++cpp_link_args = @LDFLAGS@ + ['-static', '-static-libgcc', '-static-libstdc++']
+ needs_exe_wrapper = true
+ 
+ [host_machine]
+diff --git a/build-win64.txt b/build-win64.txt
+index 2a7fbee3..8b41ca26 100644
+--- a/build-win64.txt
++++ b/build-win64.txt
+@@ -5,8 +5,10 @@ ar = 'x86_64-w64-mingw32-ar'
+ strip = 'x86_64-w64-mingw32-strip'
+ 
+ [properties]
+-c_link_args = ['-static', '-static-libgcc']
+-cpp_link_args = ['-static', '-static-libgcc', '-static-libstdc++']
++c_args = @CFLAGS@
++cpp_args = @CXXFLAGS@
++c_link_args = @LDFLAGS@ + ['-static', '-static-libgcc']
++cpp_link_args = @LDFLAGS@ + ['-static', '-static-libgcc', '-static-libstdc++']
+ needs_exe_wrapper = true
+ 
+ [host_machine]
+-- 
+2.26.2
+
