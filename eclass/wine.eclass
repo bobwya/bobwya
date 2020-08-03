@@ -1651,7 +1651,7 @@ wine_add_stock_gentoo_patches() {
 	esac
 
 	case "${WINE_PV}" in
-		1.8|1.8.*|1.9.*|2.*|3.*|4.*|5.[0-8]|5.0.[1-9])
+		1.8|1.8.*|1.9.*|2.*|3.*|4.*|5.[0-8]|5.0.[1-9]|5.0.[1-9]-rc[1-9])
 			;;
 		*)
 			PATCHES_REVERT+=( "${_patch_directory}/revert/wine-5.9-makedep_install_also_generated_typelib_for_installed_idl.patch" )
