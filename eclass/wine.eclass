@@ -10,34 +10,14 @@
 # @BLURB: common wine ebuild functions
 # @DESCRIPTION:
 # Eclass to provide functionality common to the ::bobwya Overlay:
-#   app-emulation/wine-staging  app-emulation/wine-vanilla
-# Wine packages. This eclass is not compatible with the ::gentoo
-# or ::wine Overlay Wine packages.
-# The functionality, this eclass provides, includes:
-#
-#  * providing git helper functionality
-#  * fully setting up the SRC_URI
-#  * applying third party patchsets
-#  * setting up stock Gentoo patches
-#  * helper functions for manipulating source code / build files
-#  * helper functions for clean up; when specific USE flags are specified
-#  * overriding specific 'house keeping' ebuild phases
-#    ...
-#
-# Implementing this eclass was motivated by the shear amount of
-# redundant duplication, when maintaining a large set of versions
-# for legacy Wine packages.
-# Implementing a common eclass for the in-tree Gentoo ::gentoo
-# and ::wine Overlay has been discussed.
-# In fact setting up the ::wine Overlay was originally forced on the
-# Gentoo Wine Developers. The the Gentoo ::gentoo app-emulation/wine-*
-# packages were putting a large strain on
-# the Gentoo infrastructure.
-# Moving to a common Wine eclass has shown to provide impressive
-# space savings: >50% reduction ; for in-tree Wine package sizes.
-
+#   * app-emulation/wine-staging
+#   * app-emulation/wine-vanilla
+# Wine packages.
+# This eclass is not compatible with the ::gentoo, or ::wine Overlay, Wine packages.
 if [[ -z "${_WINE_ECLASS}" ]]; then
 _WINE_ECLASS=1
+
+inherit flag-o-matic l10n mingw64 multilib virtualx xdg-utils
 
 case ${EAPI} in
 	6)  inherit eapi7-ver ;;
@@ -1721,6 +1701,12 @@ wine_fix_gentoo_O3_compilation_support() {
 	sed -i '/^ dnl Check for some compiler flags/a \
 		 WINE_TRY_CFLAGS([-fno-tree-loop-distribute-patterns])' \
 		configure.ac || die "sed failed"
+	if use mingw; then
+		# shellcheck disable=SC1004
+		sed -i '/^  dnl clang needs to be told to fail on unknown options/i \
+			  WINE_TRY_CROSSCFLAGS([-fno-tree-loop-distribute-patterns])' \
+			configure.ac || die "sed failed"
+	fi
 }
 
 # @FUNCTION: wine_fix_gentoo_winegcc_support
@@ -1917,6 +1903,8 @@ wine_pkg_pretend() {
 		eerror "or >=media-sound/oss-4 (only available through an Overlay)."
 		die "USE=+oss currently unsupported on this system."
 	fi
+
+	use mingw && mingw64_check_requirements "5.0.0" "7.0.0"
 }
 
 # @FUNCTION: wine_pkg_setup
@@ -1925,11 +1913,16 @@ wine_pkg_pretend() {
 wine_pkg_setup() {
 	_wine_env_vcs_variable_prechecks || die "_wine_env_vcs_variable_prechecks() failed"
 	_wine_build_environment_prechecks || die "_wine_build_environment_prechecks() failed"
+	use mingw && mingw64_check_requirements "5.0.0" "7.0.0"
 }
 
 # @FUNCTION: wine_src_configure
 # @DESCRIPTION:
-# This ebuild phase function runs some active compilation tests.
+# This ebuild phase function runs some active compilation tests and handle '-fno-common' default.
+# Handle cross-compiler/linker flags for mingw enabled builds. Where a supported subset of the
+# Wine DLL libraries are built as PE(+) binaries vs. the standard Wine/Linux ELF binaries.
+# 'CROSSCFLAGS' : cross-compiler cflags (fallback to 'CFLAGS'  - if 'CROSSCFLAGS'  is unspecified)
+# 'CROSSLDFLAGS': cross-compiler cflags (fallback to 'LDFLAGS' - if 'CROSSLDFLAGS' is unspecified)
 # This function then calls the multilib-minimal_src_configure phase.
 wine_src_configure() {
 	_wine_gcc_specific_pretests || die "_wine_gcc_specific_pretests() failed"
@@ -1937,6 +1930,33 @@ wine_src_configure() {
 
 	local -r _gcc_10_fcommon_fix_commit="c13d58780f78393571dfdeb5b4952e3dcd7ded90"
 	export LDCONFIG="/bin/true"
+	if use mingw; then
+		# FIXME: hack to allow flag-o-matic to filter Wine's CROSS{C,LD}FLAGS
+		local cross_flag flag
+		local -A saved_flags
+		for flag in $(all-flag-vars); do
+			saved_flags[${flag}]="${!flag}"
+			cross_flag="CROSS${flag}"
+			declare -n flag_ref="${flag}"
+			[[ -n "${!cross_flag}" ]] && flag_ref="${!cross_flag}"
+		done
+
+		filter-ldflags -Wl,--hash-style*
+		filter-ldflags -Wl,--as-needed
+		use custom-cflags || strip-flags
+
+		einfo "mingw64 cross-build flags, used for PE(+) dlls:"
+		for flag in $(all-flag-vars); do
+			cross_flag="CROSS${flag}"
+			declare -n cross_flag_ref="${cross_flag}" flag_ref="${flag}"
+			# shellcheck disable=SC2034
+			cross_flag_ref="${!flag}"
+			[[ "${flag}" =~ ^(C|LD)FLAGS$ ]] && einfo "${cross_flag}='${!cross_flag}'"
+			# shellcheck disable=SC2034
+			flag_ref="${saved_flags[${flag}]}"
+		done
+	fi
+
 	use custom-cflags || strip-flags
 
 	[[ "$(tc-getCC)" == *gcc* ]] && case "${WINE_PV}" in
