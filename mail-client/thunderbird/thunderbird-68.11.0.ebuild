@@ -29,21 +29,21 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patches
-PATCHFF="firefox-68.0-patches-14"
+PATCHFF="firefox-68.0-patches-15"
 
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-HG_REVISION="3f648b714230"
-HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
+GIT_MOZ_COMMIT="a5f45ae3a29cbacb3cbfe36f70d76c4a7c88d167"
+GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 MOZ_SRC_URI="${MOZ_HTTP_URI}/${MOZ_PV}/source/${PN}-${MOZ_PV}.source.tar.xz"
 
 if [[ "${PV}" == *_rc* ]]; then
 	MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/candidates/${MOZ_PV}-candidates/build${PV##*_rc}"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-HG_REVISION="3f648b714230"
-HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
+GIT_MOZ_COMMIT="a5f45ae3a29cbacb3cbfe36f70d76c4a7c88d167"
+GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 	MOZ_LANGPACK_PREFIX="linux-i686/xpi/"
 	MOZ_SRC_URI="${MOZ_HTTP_URI}/source/${PN}-${MOZ_PV}.source.tar.xz -> $P.tar.xz"
 fi
@@ -80,8 +80,8 @@ SRC_URI="${SRC_URI}
 	${MOZ_SRC_URI}
 	https://dev.gentoo.org/~axs/distfiles/lightning-${MOZ_LIGHTNING_VER}.tar.xz
 	kde? (
-		${HG_MOZILLA_URI}/raw-file/${HG_REVISION}/mozilla-kde.patch -> ${PN}-68.0-mozilla-kde.patch
-		${HG_MOZILLA_URI}/raw-file/${HG_REVISION}/mozilla-nongnome-proxies.patch -> ${PN}-68.0-mozilla-nongnome-proxies.patch
+		${GIT_MOZ_URI}/${GIT_MOZ_COMMIT}/mozilla-kde.patch -> ${PN}-mozilla-kde-${GIT_MOZ_COMMIT}.patch
+		${GIT_MOZ_URI}/${GIT_MOZ_COMMIT}/mozilla-nongnome-proxies.patch -> ${PN}-mozilla-nongnome-proxies-${GIT_MOZ_COMMIT}.patch
 	)
 	lightning? ( https://dev.gentoo.org/~axs/distfiles/gdata-provider-${MOZ_LIGHTNING_GDATA_VER}.tar.xz )
 	${PATCH_URIS[@]}"
@@ -148,6 +148,8 @@ DEPEND="${CDEPEND}
 	>=net-libs/nodejs-8.11.0
 	>=sys-devel/binutils-2.30
 	sys-apps/findutils
+	virtual/pkgconfig
+	>=virtual/rust-1.34.0
 	|| (
 		(
 			sys-devel/clang:10
@@ -178,7 +180,6 @@ DEPEND="${CDEPEND}
 		)
 	)
 	pulseaudio? ( media-sound/pulseaudio )
-	>=virtual/rust-1.34.0
 	wayland? ( >=x11-libs/gtk+-3.11:3[wayland] )
 	amd64? ( >=dev-lang/yasm-1.1 virtual/opengl )
 	x86? ( >=dev-lang/yasm-1.1 virtual/opengl )
@@ -221,43 +222,51 @@ llvm_check_deps() {
 }
 
 pkg_pretend() {
-	if use pgo; then
-		if ! has usersandbox $FEATURES; then
-			die "You must enable usersandbox as X server can not run as root!"
+	if [[ ${MERGE_TYPE} != binary ]]; then
+		if use pgo; then
+			if ! has usersandbox $FEATURES; then
+				die "You must enable usersandbox as X server can not run as root!"
+			fi
 		fi
-	fi
 
-	# Ensure we have enough disk space to compile
-	if use pgo || use lto || use debug || use test; then
-		CHECKREQS_DISK_BUILD="8G"
-	else
-		CHECKREQS_DISK_BUILD="4500M"
-	fi
+		# Ensure we have enough disk space to compile
+		if use pgo || use lto || use debug || use test; then
+			CHECKREQS_DISK_BUILD="8G"
+		else
+			CHECKREQS_DISK_BUILD="4500M"
+		fi
 
-	check-reqs_pkg_pretend
+		check-reqs_pkg_pretend
+	fi
 }
 
 pkg_setup() {
 	moz_pkgsetup
 
-	# Ensure we have enough disk space to compile
-	if use pgo || use lto || use debug || use test; then
-		CHECKREQS_DISK_BUILD="8G"
-	else
-		CHECKREQS_DISK_BUILD="4500M"
+	if [[ ${MERGE_TYPE} != binary ]]; then
+		# Ensure we have enough disk space to compile
+		if use pgo || use lto || use debug || use test; then
+			CHECKREQS_DISK_BUILD="8G"
+		else
+			CHECKREQS_DISK_BUILD="4500M"
+		fi
+
+		check-reqs_pkg_setup
+
+		# Avoid PGO profiling problems due to enviroment leakage
+		# These should *always* be cleaned up anyway
+		unset DBUS_SESSION_BUS_ADDRESS \
+			DISPLAY \
+			ORBIT_SOCKETDIR \
+			SESSION_MANAGER \
+			XDG_CACHE_HOME \
+			XDG_SESSION_COOKIE \
+			XAUTHORITY
+
+		addpredict /proc/self/oom_score_adj
+
+		llvm_pkg_setup
 	fi
-
-	check-reqs_pkg_setup
-
-	# Avoid PGO profiling problems due to enviroment leakage
-	# These should *always* be cleaned up anyway
-	unset DBUS_SESSION_BUS_ADDRESS \
-		DISPLAY \
-		ORBIT_SOCKETDIR \
-		SESSION_MANAGER \
-		XDG_CACHE_HOME \
-		XDG_SESSION_COOKIE \
-		XAUTHORITY
 
 	if ! use bindist; then
 		einfo
@@ -266,10 +275,6 @@ pkg_setup() {
 		elog "a legal problem with Mozilla Foundation."
 		elog "You can disable it by emerging ${PN} _with_ the bindist USE-flag."
 	fi
-
-	addpredict /proc/self/oom_score_adj
-
-	llvm_pkg_setup
 }
 
 src_unpack() {
@@ -281,8 +286,7 @@ src_unpack() {
 
 src_prepare() {
 	# Apply firefox patchset then apply thunderbird patches
-	rm "${WORKDIR}/firefox/2013_avoid_noinline_on_GCC_with_skcms.patch" || die "rm failed"
-	rm "${WORKDIR}/firefox/2015_fix_cssparser.patch" || die "rm failed"
+	rm "${WORKDIR}/firefox/2016_set_CARGO_PROFILE_RELEASE_LTO.patch" || die "rm failed"
 	local -a PATCHES
 	PATCHES=(
 		"${WORKDIR}/firefox"
@@ -295,8 +299,8 @@ src_prepare() {
 		# Gecko/toolkit OpenSUSE KDE integration patchset
 
 		PATCHES+=(
-			"${DISTDIR}/${PN}-68.0-mozilla-kde.patch"
-			"${DISTDIR}/${PN}-68.0-mozilla-nongnome-proxies.patch"
+			"${DISTDIR}/${PN}-mozilla-kde-${GIT_MOZ_COMMIT}.patch"
+			"${DISTDIR}/${PN}-mozilla-nongnome-proxies-${GIT_MOZ_COMMIT}.patch"
 		)
 		# Uncomment the next line to enable KDE support debugging (additional console output)...
 		#PATCHES+=( "${FILESDIR}/${PN}-kde-debug.patch" )
@@ -312,6 +316,12 @@ src_prepare() {
 		-e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
 		"${S}/build/moz.configure/toolchain.configure" \
 		|| die "sed failed to set num_cores"
+
+	# sed-in toolchain prefix
+	sed -i \
+		-e "s/objdump/${CHOST}-objdump/" \
+		"${S}/python/mozbuild/mozbuild/configure/check_debug_ranges.py" \
+		|| die "sed failed to set toolchain prefix"
 
 	# Enable gnomebreakpad
 	if use debug; then
