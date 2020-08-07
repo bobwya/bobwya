@@ -5,9 +5,9 @@
 EAPI=6
 VIRTUALX_REQUIRED="pgo"
 WANT_AUTOCONF="2.1"
-MOZ_ESR=""
+MOZ_ESR="1"
 
-PYTHON_COMPAT=( python3_{7,8,9} )
+PYTHON_COMPAT=( python3_{6,7,8,9} )
 PYTHON_REQ_USE='ncurses,sqlite,ssl,threads(+)'
 
 # This list can be updated with scripts/get_langs.sh from the mozilla overlay
@@ -29,14 +29,13 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${PN}-78.0-patches-05"
+PATCH="${PN}-68.0-patches-15"
 
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-HG_MOZ_REVISION="4ac678bd2a26"
-HG_MOZ_PV="${MOZ_PV/%.*/.0}"
-HG_MOZILLA_URI="https://www.rosenauer.org/hg/mozilla"
+GIT_MOZ_REVISION="a5f45ae3a29cbacb3cbfe36f70d76c4a7c88d167"
+GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 MOZ_SRC_URI="${MOZ_HTTP_URI}/${MOZ_PV}/source/${PN}-${MOZ_PV}.source.tar.xz"
 
@@ -59,32 +58,33 @@ KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist clang cpu_flags_x86_avx2 debug egl eme-free geckodriver kde
+IUSE="bindist clang cpu_flags_x86_avx2 dbus debug egl eme-free geckodriver kde
 	+gmp-autoupdate hardened hwaccel jack lto cpu_flags_arm_neon
-	+openh264 pgo pulseaudio screencast +screenshot selinux +system-av1
+	+openh264 pgo pulseaudio +screenshot selinux startup-notification +system-av1
 	+system-harfbuzz +system-icu +system-jpeg +system-libevent
-	+system-libvpx +system-webp test wayland wifi"
+	+system-sqlite +system-libvpx +system-webp test wayland wifi"
 
-REQUIRED_USE="pgo? ( lto )"
+REQUIRED_USE="pgo? ( lto )
+	wifi? ( dbus )"
 
 RESTRICT="!bindist? ( bindist )
 	!test? ( test )"
 
-PATCH_URIS=( "https://dev.gentoo.org"/~{whissi,polynomial-c,axs}/"mozilla/patchsets/${PATCH}.tar.xz" )
+PATCH_URIS=( "https://dev.gentoo.org"/~{anarchy,axs,polynomial-c,whissi}/"mozilla/patchsets/${PATCH}.tar.xz" )
 # shellcheck disable=SC2124
 SRC_URI="${SRC_URI}
 	${MOZ_SRC_URI}
 	${PATCH_URIS[@]}
 	kde? (
-		${HG_MOZILLA_URI}/raw-file/${HG_MOZ_REVISION}/mozilla-kde.patch -> ${PN}-${HG_MOZ_PV}-mozilla-kde.patch
-		${HG_MOZILLA_URI}/raw-file/${HG_MOZ_REVISION}/mozilla-nongnome-proxies.patch -> ${PN}-${HG_MOZ_PV}-mozilla-nongnome-proxies.patch
-		${HG_MOZILLA_URI}/raw-file/${HG_MOZ_REVISION}/firefox-branded-icons.patch -> ${PN}-${HG_MOZ_PV}-firefox-branded-icons.patch
-		${HG_MOZILLA_URI}/raw-file/${HG_MOZ_REVISION}/firefox-kde.patch -> ${PN}-${HG_MOZ_PV}-firefox-kde.patch
+		${GIT_MOZ_URI}/${GIT_MOZ_REVISION}/mozilla-kde.patch -> ${PN}-mozilla-kde-${GIT_MOZ_REVISION}.patch
+		${GIT_MOZ_URI}/${GIT_MOZ_REVISION}/mozilla-nongnome-proxies.patch -> ${PN}-mozilla-nongnome-proxies-${GIT_MOZ_REVISION}.patch
+		${GIT_MOZ_URI}/${GIT_MOZ_REVISION}/firefox/firefox-branded-icons.patch -> ${PN}-firefox-branded-icons-${GIT_MOZ_REVISION}.patch
+		${GIT_MOZ_URI}/${GIT_MOZ_REVISION}/firefox/firefox-kde.patch -> ${PN}-firefox-kde-${GIT_MOZ_REVISION}.patch
 	)"
 
 CDEPEND="
-	>=dev-libs/nss-3.53.1
-	>=dev-libs/nspr-4.25
+	>=dev-libs/nss-3.44.4
+	>=dev-libs/nspr-4.21
 	dev-libs/atk
 	dev-libs/expat
 	>=dev-libs/libffi-3.0.10:=
@@ -99,8 +99,11 @@ CDEPEND="
 	>=media-libs/freetype-2.4.10
 	kernel_linux? ( !pulseaudio? ( media-libs/alsa-lib ) )
 	virtual/freedesktop-icon-theme
-	sys-apps/dbus
-	dev-libs/dbus-glib
+	dbus? (
+		>=sys-apps/dbus-0.60
+		>=dev-libs/dbus-glib-0.72
+	)
+	startup-notification? ( >=x11-libs/startup-notification-0.8 )
 	>=x11-libs/pixman-0.19.2
 	>=dev-libs/glib-2.26:2
 	>=sys-libs/zlib-1.2.3
@@ -112,22 +115,24 @@ CDEPEND="
 	x11-libs/libXfixes
 	x11-libs/libXrender
 	x11-libs/libXt
-	screencast? ( media-video/pipewire:0/0.3 )
 	system-av1? (
 		>=media-libs/dav1d-0.3.0:=
 		>=media-libs/libaom-1.0.0:=
 	)
 	system-harfbuzz? (
-		>=media-libs/harfbuzz-2.6.4:0=
+		>=media-libs/harfbuzz-2.4.0:0=
 		>=media-gfx/graphite2-1.3.13
 	)
-	system-icu? ( >=dev-libs/icu-67.1:= )
+	system-icu? ( >=dev-libs/icu-63.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
 	system-libevent? ( >=dev-libs/libevent-2.0:0=[threads] )
-	system-libvpx? ( >=media-libs/libvpx-1.8.2:0=[postproc] )
-	system-webp? ( >=media-libs/libwebp-1.1.0:0= )
+	system-libvpx? ( =media-libs/libvpx-1.7*:0=[postproc] )
+	system-sqlite? ( >=dev-db/sqlite-3.28.0:3[secure-delete,debug=] )
+	system-webp? ( >=media-libs/libwebp-1.0.2:0= )
 	wifi? (
 		kernel_linux? (
+			>=sys-apps/dbus-0.60
+			>=dev-libs/dbus-glib-0.72
 			net-misc/networkmanager
 		)
 	)
@@ -141,7 +146,7 @@ RDEPEND="${CDEPEND}
 	pulseaudio? (
 		|| (
 			media-sound/pulseaudio
-			>=media-sound/apulse-0.1.12-r4
+			>=media-sound/apulse-0.1.9
 		)
 	)
 	selinux? ( sec-policy/selinux-mozilla )
@@ -150,12 +155,12 @@ RDEPEND="${CDEPEND}
 DEPEND="${CDEPEND}
 	app-arch/zip
 	app-arch/unzip
-	>=dev-util/cbindgen-0.14.1
-	>=net-libs/nodejs-10.19.0
+	>=dev-util/cbindgen-0.8.7
+	>=net-libs/nodejs-8.11.0
 	>=sys-devel/binutils-2.30
 	sys-apps/findutils
 	virtual/pkgconfig
-	>=virtual/rust-1.41.0
+	>=virtual/rust-1.34.0
 	|| (
 		(
 			sys-devel/clang:10
@@ -185,12 +190,7 @@ DEPEND="${CDEPEND}
 			)
 		)
 	)
-	pulseaudio? (
-		|| (
-			media-sound/pulseaudio
-			>=media-sound/apulse-0.1.12-r4[sdk]
-		)
-	)
+	pulseaudio? ( media-sound/pulseaudio )
 	wayland? ( >=x11-libs/gtk+-3.11:3[wayland] )
 	amd64? ( >=dev-lang/yasm-1.1 virtual/opengl )
 	x86? ( >=dev-lang/yasm-1.1 virtual/opengl )
@@ -243,9 +243,9 @@ pkg_pretend() {
 
 		# Ensure we have enough disk space to compile
 		if use pgo || use lto || use debug || use test; then
-			CHECKREQS_DISK_BUILD="10G"
+			CHECKREQS_DISK_BUILD="8G"
 		else
-			CHECKREQS_DISK_BUILD="5G"
+			CHECKREQS_DISK_BUILD="4G"
 		fi
 
 		check-reqs_pkg_pretend
@@ -258,9 +258,9 @@ pkg_setup() {
 	if [[ ${MERGE_TYPE} != binary ]]; then
 		# Ensure we have enough disk space to compile
 		if use pgo || use lto || use debug || use test; then
-			CHECKREQS_DISK_BUILD="10G"
+			CHECKREQS_DISK_BUILD="8G"
 		else
-			CHECKREQS_DISK_BUILD="5G"
+			CHECKREQS_DISK_BUILD="4G"
 		fi
 
 		check-reqs_pkg_setup
@@ -301,17 +301,17 @@ src_prepare() {
 	local PATCHES=( "${WORKDIR}/firefox" )
 	if use kde; then
 		sed -e 's:@BINPATH@/defaults/pref/kde.js:@RESPATH@/browser/@PREF_DIR@/kde.js:' \
-			"${DISTDIR}/${PN}-${HG_MOZ_PV}-firefox-kde.patch" > \
-			"${T}/${PN}-${HG_MOZ_PV}-firefox-kde.patch" || die "sed failed"
+			"${DISTDIR}/${PN}-firefox-kde-${GIT_MOZ_REVISION}.patch" > \
+			"${T}/${PN}-firefox-kde-${GIT_MOZ_REVISION}.patch" || die "sed failed"
 		# Toolkit OpenSUSE KDE integration patchset
 		PATCHES+=(
-			"${DISTDIR}/${PN}-${HG_MOZ_PV}-mozilla-kde.patch"
-			"${DISTDIR}/${PN}-${HG_MOZ_PV}-mozilla-nongnome-proxies.patch"
+			"${DISTDIR}/${PN}-mozilla-kde-${GIT_MOZ_REVISION}.patch"
+			"${DISTDIR}/${PN}-mozilla-nongnome-proxies-${GIT_MOZ_REVISION}.patch"
 		)
 		# Firefox OpenSUSE KDE integration patchset
 		PATCHES+=(
-			"${DISTDIR}/${PN}-${HG_MOZ_PV}-firefox-branded-icons.patch"
-			"${DISTDIR}/${PN}-${HG_MOZ_PV}-firefox-kde.patch"
+			"${DISTDIR}/${PN}-firefox-branded-icons-${GIT_MOZ_REVISION}.patch"
+			"${DISTDIR}/${PN}-firefox-kde-${GIT_MOZ_REVISION}.patch"
 		)
 		# Uncomment the next line to enable KDE support debugging (additional console output)...
 		#PATCHES+=( "${FILESDIR}/${PN}-kde-debug.patch" )
@@ -324,13 +324,7 @@ src_prepare() {
 	# Make LTO respect MAKEOPTS
 	sed -i \
 		-e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
-		"${S}"/build/moz.configure/lto-pgo.configure \
-		|| die "sed failed to set num_cores"
-
-	# Make ICU respect MAKEOPTS
-	sed -i \
-		-e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
-		"${S}"/intl/icu_sources_data.py \
+		"${S}"/build/moz.configure/toolchain.configure \
 		|| die "sed failed to set num_cores"
 
 	# sed-in toolchain prefix
@@ -384,13 +378,6 @@ src_prepare() {
 	sed -i -e "s@check_prog('RUSTFMT', add_rustup_path('rustfmt')@check_prog('RUSTFMT', add_rustup_path('rustfmt_do_not_use')@" \
 		"${S}"/build/moz.configure/rust.configure || die "sed failed"
 
-	if has_version ">=virtual/rust-1.45.0"; then
-		einfo "Unbreak build with >=rust-1.45.0, bmo#1640982 ..."
-		sed -i \
-			-e 's/\(^cargo_rustc_flags +=.* \)-Clto\( \|$\)/\1/' \
-			"${S}/config/makefiles/rust.mk" || die "sed failed"
-	fi
-
 	# Autotools configure is now called old-configure.in
 	# This works because there is still a configure.in that happens to be for the
 	# shell wrapper configure script
@@ -399,9 +386,6 @@ src_prepare() {
 	# Must run autoconf in js/src
 	cd "${S}"/js/src || die "cd failed"
 	eautoconf old-configure.in
-
-	# Clear checksums that present a problem
-	sed -i 's/\("files":{\)[^}]*/\1/' "${S}"/third_party/rust/target-lexicon-0.9.0/.cargo-checksum.json || die "sed failed"
 }
 
 src_configure() {
@@ -442,14 +426,11 @@ src_configure() {
 	mozconfig_init
 	# common config components
 	mozconfig_annotate 'system_libs' \
-		"--with-system-zlib"
+		"--with-system-zlib" \
+		"--with-system-bz2"
 
 	# Must pass release in order to properly select linker
 	mozconfig_annotate 'Enable by Gentoo' "--enable-release"
-
-	# libclang.so is not properly detected work around issue
-# 	mozconfig_annotate '' --with-libclang-path=$(llvm-config --libdir)
-	mozconfig_annotate '' "--with-libclang-path=$(llvm-config --libdir)"
 
 	if use pgo; then
 		# shellcheck disable=SC2086
@@ -477,6 +458,9 @@ src_configure() {
 			if [[ $(gcc-major-version) -lt 8 ]]; then
 				show_old_compiler_warning=1
 			fi
+
+			# Bug 689358
+			append-cxxflags -flto
 
 			if ! use cpu_flags_x86_avx2; then
 				local _gcc_version_with_ipa_cdtor_fix="8.3"
@@ -534,7 +518,10 @@ src_configure() {
 	use alpha && append-ldflags "-Wl,--no-relax"
 
 	# Add full relro support for hardened
-	use hardened && append-ldflags "-Wl,-z,now"
+	if use hardened; then
+		append-ldflags "-Wl,-z,relro,-z,now"
+		mozconfig_use_enable hardened hardening
+	fi
 
 	# Modifications to better support ARM, bug 553364
 	if use cpu_flags_arm_neon; then
@@ -565,8 +552,8 @@ src_configure() {
 		mozconfig_annotate 'enabled by Gentoo' "--enable-debug-symbols"
 	fi
 	# These are enabled by default in all mozilla applications
-	mozconfig_annotate '' "--with-system-nspr"
-	mozconfig_annotate '' "--with-system-nss"
+	mozconfig_annotate '' "--with-system-nspr" "--with-nspr-prefix=${SYSROOT}${EPREFIX}/usr"
+	mozconfig_annotate '' "--with-system-nss" "--with-nss-prefix=${SYSROOT}${EPREFIX}/usr"
 	mozconfig_annotate '' "--x-includes=${SYSROOT}${EPREFIX}/usr/include" \
 		"--x-libraries=${SYSROOT}${EPREFIX}/usr/$(get_libdir)"
 	mozconfig_annotate '' "--prefix=${EPREFIX}/usr"
@@ -574,6 +561,7 @@ src_configure() {
 	mozconfig_annotate '' "--disable-crashreporter"
 	mozconfig_annotate 'Gentoo default' "--with-system-png"
 	mozconfig_annotate '' "--enable-system-ffi"
+	mozconfig_annotate '' "--disable-gconf"
 	mozconfig_annotate '' "--with-intl-api"
 	mozconfig_annotate '' "--enable-system-pixman"
 	# Instead of the standard "--build=" and "--host=", mozilla uses "--host" instead
@@ -603,6 +591,8 @@ src_configure() {
 		mozconfig_annotate '' "--enable-default-toolkit=cairo-gtk3"
 	fi
 
+	mozconfig_use_enable startup-notification
+	mozconfig_use_enable system-sqlite
 	mozconfig_use_with system-av1
 	mozconfig_use_with system-harfbuzz
 	mozconfig_use_with system-harfbuzz system-graphite2
@@ -623,14 +613,14 @@ src_configure() {
 		python/mozbuild/mozbuild/controller/building.py || \
 		die "Failed to disable ccache stats call"
 
+	mozconfig_use_enable dbus
+
 	mozconfig_use_enable wifi necko-wifi
 
 	mozconfig_use_enable geckodriver
 
 	# enable JACK, bug 600002
 	mozconfig_use_enable jack
-
-	mozconfig_use_enable screencast pipewire
 
 	# Enable/Disable eme support
 	use eme-free && mozconfig_annotate '+eme-free' "--disable-eme"
@@ -686,6 +676,7 @@ src_compile() {
 		gnome2_environment_reset
 
 		addpredict /root
+		addpredict /etc/gconf
 	fi
 
 	GDK_BACKEND=x11 \
@@ -810,6 +801,12 @@ PROFILE_EOF
 	# Install a 48x48 icon into /usr/share/pixmaps for legacy DEs
 	newicon "${icon_path}/default48.png" "${icon}.png"
 
+	# Add StartupNotify=true bug 237317
+	local startup_notify="false"
+	if use startup-notification; then
+		startup_notify="true"
+	fi
+
 	local display_protocols="auto X11" use_wayland="false"
 	if use wayland; then
 		display_protocols+=" Wayland"
@@ -843,11 +840,12 @@ PROFILE_EOF
 				;;
 		esac
 
-		newmenu "${FILESDIR}/icon/${PN}-r2.desktop" "${desktop_filename}"
+		newmenu "${FILESDIR}/icon/${PN}-r1.desktop" "${desktop_filename}"
 		sed -i \
 			-e "s:@NAME@:${app_name}:" \
 			-e "s:@EXEC@:${exec_command}:" \
 			-e "s:@ICON@:${icon}:" \
+			-e "s:@STARTUP_NOTIFY@:${startup_notify}:" \
 			"${ED%/}/usr/share/applications/${desktop_filename}" || die "sed failed"
 	done
 
@@ -881,9 +879,11 @@ PROFILE_EOF
 }
 
 pkg_preinst() {
+	gnome2_icon_savelist
+
 	# if the apulse libs are available in MOZILLA_FIVE_HOME then apulse
 	# doesn't need to be forced into the LD_LIBRARY_PATH
-	if use pulseaudio && has_version ">=media-sound/apulse-0.1.12-r4"; then
+	if use pulseaudio && has_version ">=media-sound/apulse-0.1.9"; then
 		einfo "APULSE found - Generating library symlinks for sound support"
 		local lib
 		pushd "${ED}${MOZILLA_FIVE_HOME}" &>/dev/null || die "pushd failed"
@@ -899,8 +899,8 @@ pkg_preinst() {
 }
 
 pkg_postinst() {
+	gnome2_icon_cache_update
 	xdg_desktop_database_update
-	xdg_icon_cache_update
 
 	if ! use gmp-autoupdate; then
 		elog "USE='-gmp-autoupdate' has disabled the following plugins from updating or"
@@ -912,7 +912,7 @@ pkg_postinst() {
 		elog
 	fi
 
-	if use pulseaudio && has_version ">=media-sound/apulse-0.1.12-r4"; then
+	if use pulseaudio && has_version ">=media-sound/apulse-0.1.9"; then
 		elog "Apulse was detected at merge time on this system and so it will always be"
 		elog "used for sound.  If you wish to use pulseaudio instead please unmerge"
 		elog "media-sound/apulse."
@@ -928,12 +928,12 @@ pkg_postinst() {
 	else
 		local replacing_version
 		for replacing_version in ${REPLACING_VERSIONS} ; do
-			if ver_test "${replacing_version}" -lt 70; then
+			if ver_test "${replacing_version}" -lt 68.6.0-r3; then
 				# Tell user only once about our DoH default
 				show_doh_information=yes
 			fi
 
-			if ver_test "${replacing_version}" -lt 74.0-r2; then
+			if ver_test "${replacing_version}" -lt 68.6.0-r3; then
 				# Tell user only once about our Normandy default
 				show_normandy_information=yes
 			fi
@@ -969,6 +969,6 @@ pkg_postinst() {
 }
 
 pkg_postrm() {
+	gnome2_icon_cache_update
 	xdg_desktop_database_update
-	xdg_icon_cache_update
 }
