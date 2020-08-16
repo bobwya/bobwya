@@ -19,9 +19,6 @@ fi
 
 DESCRIPTION="Free implementation of Windows(tm) on Unix, with Wine Staging patchset"
 HOMEPAGE="https://www.winehq.org/"
-SRC_URI="${SRC_URI}
-	https://github.com/wine-staging/wine-staging/commit/150ce22fa21ffa040816e725ead34ed1de516bd8.patch -> ${PN}-5.15_150ce22fa21ffa040816e725ead34ed1de516bd8_mfplat_streaming_support_fix.patch"
-
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
