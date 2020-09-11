@@ -29,12 +29,12 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${PN}-79.0-patches-04"
+PATCH="${PN}-80.0-patches-03"
 
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="15e73dbe1b5290bb8c4a36a4e808199c07de3d83"
+GIT_MOZ_REVISION="0d8818883a2a1d201d7eb40ca0094be91432d2a1"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 MOZ_SRC_URI="${MOZ_HTTP_URI}/${MOZ_PV}/source/${PN}-${MOZ_PV}.source.tar.xz"
@@ -58,7 +58,7 @@ KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="bindist clang cpu_flags_x86_avx2 debug egl eme-free geckodriver kde
+IUSE="bindist clang cpu_flags_x86_avx2 dbus debug egl eme-free geckodriver kde
 	+gmp-autoupdate hardened hwaccel jack lto cpu_flags_arm_neon
 	+openh264 pgo pulseaudio screencast +screenshot selinux +system-av1
 	+system-harfbuzz +system-icu +system-jpeg +system-libevent
@@ -83,8 +83,8 @@ SRC_URI="${SRC_URI}
 	)"
 
 CDEPEND="
-	>=dev-libs/nss-3.54
-	>=dev-libs/nspr-4.25
+	>=dev-libs/nss-3.55
+	>=dev-libs/nspr-4.26
 	dev-libs/atk
 	dev-libs/expat
 	>=dev-libs/libffi-3.0.10:=
@@ -99,8 +99,6 @@ CDEPEND="
 	>=media-libs/freetype-2.4.10
 	kernel_linux? ( !pulseaudio? ( media-libs/alsa-lib ) )
 	virtual/freedesktop-icon-theme
-	sys-apps/dbus
-	dev-libs/dbus-glib
 	>=x11-libs/pixman-0.19.2
 	>=dev-libs/glib-2.26:2
 	>=sys-libs/zlib-1.2.3
@@ -112,6 +110,10 @@ CDEPEND="
 	x11-libs/libXfixes
 	x11-libs/libXrender
 	x11-libs/libXt
+	dbus? (
+		sys-apps/dbus
+		dev-libs/dbus-glib
+	)
 	screencast? ( media-video/pipewire:0/0.3 )
 	system-av1? (
 		>=media-libs/dav1d-0.3.0:=
@@ -128,6 +130,8 @@ CDEPEND="
 	system-webp? ( >=media-libs/libwebp-1.1.0:0= )
 	wifi? (
 		kernel_linux? (
+			sys-apps/dbus
+			dev-libs/dbus-glib
 			net-misc/networkmanager
 		)
 	)
@@ -234,7 +238,7 @@ pkg_pretend() {
 
 		# Ensure we have enough disk space to compile
 		if use pgo || use lto || use debug || use test; then
-			CHECKREQS_DISK_BUILD="10G"
+			CHECKREQS_DISK_BUILD="11G"
 		else
 			CHECKREQS_DISK_BUILD="5G"
 		fi
@@ -249,7 +253,7 @@ pkg_setup() {
 	if [[ ${MERGE_TYPE} != binary ]]; then
 		# Ensure we have enough disk space to compile
 		if use pgo || use lto || use debug || use test; then
-			CHECKREQS_DISK_BUILD="10G"
+			CHECKREQS_DISK_BUILD="11G"
 		else
 			CHECKREQS_DISK_BUILD="5G"
 		fi
@@ -288,6 +292,7 @@ src_unpack() {
 }
 
 src_prepare() {
+	use pgo && rm "${WORKDIR}"/firefox/0032-LTO-Only-enable-LTO-for-Rust-when-complete-build-use.patch
 	# Default to our patchset
 	local PATCHES=( "${WORKDIR}/firefox" )
 	if use kde; then
@@ -374,13 +379,6 @@ src_prepare() {
 	# However, when available, an unsupported version can cause problems, bug #669548
 	sed -i -e "s@check_prog('RUSTFMT', add_rustup_path('rustfmt')@check_prog('RUSTFMT', add_rustup_path('rustfmt_do_not_use')@" \
 		"${S}"/build/moz.configure/rust.configure || die "sed failed"
-
-	if has_version ">=virtual/rust-1.45.0"; then
-		einfo "Unbreak build with >=rust-1.45.0, bmo#1640982 ..."
-		sed -i \
-			-e 's/\(^cargo_rustc_flags +=.* \)-Clto\( \|$\)/\1/' \
-			"${S}/config/makefiles/rust.mk" || die "sed failed"
-	fi
 
 	# Autotools configure is now called old-configure.in
 	# This works because there is still a configure.in that happens to be for the
@@ -613,6 +611,8 @@ src_configure() {
 	sed -i -e 's/ccache_stats = None/return None/' \
 		python/mozbuild/mozbuild/controller/building.py || \
 		die "Failed to disable ccache stats call"
+
+	mozconfig_use_enable dbus
 
 	mozconfig_use_enable wifi necko-wifi
 
