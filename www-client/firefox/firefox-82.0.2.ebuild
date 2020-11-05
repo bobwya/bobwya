@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-81-patches-02.tar.xz"
+FIREFOX_PATCHSET="firefox-82-patches-02.tar.xz"
 
 LLVM_MAX_SLOT=11
 
@@ -17,10 +17,16 @@ VIRTUALX_REQUIRED="pgo"
 
 MOZ_ESR=
 
-# Convert the ebuild version to the upstream mozilla version, used by mozlinguas
-MOZ_PV="${PV/_alpha/a}"    # Handle alpha for SRC_URI
-MOZ_PV="${MOZ_PV/_beta/b}" # Handle beta for SRC_URI
-MOZ_PV="${MOZ_PV%%_rc*}"   # Handle rc for SRC_URI
+MOZ_PV=${PV}
+MOZ_PV_SUFFIX=
+if [[ ${PV} =~ (_(alpha|beta|rc).*)$ ]]; then
+	MOZ_PV_SUFFIX=${BASH_REMATCH[1]}
+
+	# Convert the ebuild version to the upstream Mozilla version
+	MOZ_PV="${MOZ_PV/_alpha/a}" # Handle alpha for SRC_URI
+	MOZ_PV="${MOZ_PV/_beta/b}"  # Handle beta for SRC_URI
+	MOZ_PV="${MOZ_PV%%_rc*}"    # Handle rc for SRC_URI
+fi
 
 if [[ -n ${MOZ_ESR} ]]; then
 	# ESR releases have slightly different version numbers
@@ -29,6 +35,8 @@ fi
 
 MOZ_PN="${PN%-bin}"
 MOZ_P="${MOZ_PN}-${MOZ_PV}"
+MOZ_PV_DISTFILES="${MOZ_PV}${MOZ_PV_SUFFIX}"
+MOZ_P_DISTFILES="${MOZ_PN}-${MOZ_PV_DISTFILES}"
 
 inherit autotools check-reqs desktop flag-o-matic gnome2-utils llvm multiprocessing \
 	pax-utils python-any-r1 toolchain-funcs virtualx xdg
@@ -42,11 +50,11 @@ fi
 PATCH_URIS=( "https://dev.gentoo.org/"~{axs,polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="e64141ffa905efdf657306eda2627c868b399852"
+GIT_MOZ_REVISION="31f1980af98af0e783f369a7eecb82dce3a792d8"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 # shellcheck disable=SC2124
-SRC_URI="${MOZ_SRC_BASE_URI}/source/${MOZ_P}.source.tar.xz
+SRC_URI="${MOZ_SRC_BASE_URI}/source/${MOZ_P}.source.tar.xz -> ${MOZ_P_DISTFILES}.source.tar.xz
 	${PATCH_URIS[@]}
 	kde? (
 		${GIT_MOZ_URI}/${GIT_MOZ_REVISION}/mozilla-kde.patch -> ${PN}-mozilla-kde-${GIT_MOZ_REVISION}.patch
@@ -114,8 +122,8 @@ BDEPEND="${PYTHON_DEPS}
 	)"
 
 CDEPEND="
-	>=dev-libs/nss-3.56
-	>=dev-libs/nspr-4.28
+	>=dev-libs/nss-3.57
+	>=dev-libs/nspr-4.29
 	dev-libs/atk
 	dev-libs/expat
 	>=dev-libs/libffi-3.0.10:=
@@ -255,7 +263,7 @@ mozilla_set_globals() {
 		fi
 
 		SRC_URI+=" l10n_${xflag/[_@]/-}? ("
-		SRC_URI+=" ${MOZ_SRC_BASE_URI}/linux-x86_64/xpi/${lang}.xpi -> ${MOZ_P}-${lang}.xpi"
+		SRC_URI+=" ${MOZ_SRC_BASE_URI}/linux-x86_64/xpi/${lang}.xpi -> ${MOZ_P_DISTFILES}-${lang}.xpi"
 		SRC_URI+=" )"
 		IUSE+=" l10n_${xflag/[_@]/-}"
 	done
@@ -384,7 +392,7 @@ pkg_pretend() {
 		if use pgo || use lto || use debug; then
 			CHECKREQS_DISK_BUILD="13G"
 		else
-			CHECKREQS_DISK_BUILD="5G"
+			CHECKREQS_DISK_BUILD="5600M"
 		fi
 
 		check-reqs_pkg_pretend
@@ -404,7 +412,7 @@ pkg_setup() {
 		if use pgo || use lto || use debug; then
 			CHECKREQS_DISK_BUILD="13G"
 		else
-			CHECKREQS_DISK_BUILD="5G"
+			CHECKREQS_DISK_BUILD="5600M"
 		fi
 
 		check-reqs_pkg_setup
@@ -557,14 +565,20 @@ src_configure() {
 		# Force clang
 		einfo "Enforcing the use of clang due to USE=clang ..."
 		have_switched_compiler=yes
+		AR=llvm-ar
 		CC=${CHOST}-clang
 		CXX=${CHOST}-clang++
+		NM=llvm-nm
+		RANLIB=llvm-ranlib
 	elif ! use clang && ! tc-is-gcc ; then
 		# Force gcc
 		have_switched_compiler=yes
 		einfo "Enforcing the use of gcc due to USE=-clang ..."
+		AR=gcc-ar
 		CC=${CHOST}-gcc
 		CXX=${CHOST}-g++
+		NM=gcc-nm
+		RANLIB=gcc-ranlib
 	fi
 
 	if [[ -n "${have_switched_compiler}" ]]; then
@@ -595,72 +609,9 @@ src_configure() {
 	# Initialize MOZCONFIG
 	mozconfig_add_options_ac '' "--enable-application=browser"
 
-	if use lto; then
-		if use clang; then
-			# Upstream only supports lld when using clang
-			mozconfig_add_options_ac "forcing ld=lld due to USE=clang and USE=lto" "--enable-linker=lld"
-
-			mozconfig_add_options_ac '+lto' "--enable-lto=cross"
-		else
-			# Linking only works when using ld.gold when LTO is enabled
-			mozconfig_add_options_ac "forcing ld=gold due to USE=lto" "--enable-linker=gold"
-
-			# ThinLTO is currently broken, see bmo#1644409
-			mozconfig_add_options_ac '+lto' "--enable-lto=full"
-		fi
-
-		if use pgo; then
-			mozconfig_add_options_ac '+pgo' MOZ_PGO=1
-		fi
-	else
-		# Avoid auto-magic on linker
-		if use clang; then
-			# This is upstream's default
-			mozconfig_add_options_ac "forcing ld=lld due to USE=clang" "--enable-linker=lld"
-		elif tc-ld-is-gold ; then
-			mozconfig_add_options_ac "linker is set to gold" "--enable-linker=gold"
-		else
-			mozconfig_add_options_ac "linker is set to bfd" "--enable-linker=bfd"
-		fi
-	fi
-
-	# LTO flag was handled via configure
-	filter-flags '-flto*'
-
-	mozconfig_use_enable debug
-	if use debug; then
-		mozconfig_add_options_ac '+debug' "--disable-optimize"
-	else
-		if is-flag '-g*'; then
-			if use clang; then
-				mozconfig_add_options_ac 'from CFLAGS' "--enable-debug-symbols=$(get-flag '-g*')"
-			else
-				mozconfig_add_options_ac 'from CFLAGS' "--enable-debug-symbols"
-			fi
-		else
-			mozconfig_add_options_ac 'Gentoo default' "--disable-debug-symbols"
-		fi
-
-		if is-flag '-O0'; then
-			mozconfig_add_options_ac "from CFLAGS" "--enable-optimize=-O0"
-		elif is-flag '-O4' ; then
-			mozconfig_add_options_ac "from CFLAGS" "--enable-optimize=-O4"
-		elif is-flag '-O3' ; then
-			mozconfig_add_options_ac "from CFLAGS" "--enable-optimize=-O3"
-		elif is-flag '-O1' ; then
-			mozconfig_add_options_ac "from CFLAGS" "--enable-optimize=-O1"
-		elif is-flag '-Os' ; then
-			mozconfig_add_options_ac "from CFLAGS" "--enable-optimize=-Os"
-		else
-			mozconfig_add_options_ac "Gentoo default" "--enable-optimize=-O2"
-		fi
-	fi
-
-	# Debug flag was handled via configure
-	filter-flags '-g*'
-
-	# Optimization flag was handled via configure
-	filter-flags '-O*'
+	# Set Gentoo defaults
+	MOZILLA_OFFICIAL=1
+	export MOZILLA_OFFICIAL
 
 	mozconfig_add_options_ac 'Gentoo default' \
 		"--allow-addon-sideload" \
@@ -753,6 +704,79 @@ src_configure() {
 		mozconfig_add_options_ac '' "--enable-default-toolkit=cairo-gtk3"
 	fi
 
+	if use lto; then
+		if use clang; then
+			# Upstream only supports lld when using clang
+			mozconfig_add_options_ac "forcing ld=lld due to USE=clang and USE=lto" "--enable-linker=lld"
+
+			mozconfig_add_options_ac '+lto' "--enable-lto=cross"
+		else
+			# Linking only works when using ld.gold when LTO is enabled
+			mozconfig_add_options_ac "forcing ld=gold due to USE=lto" "--enable-linker=gold"
+
+			# ThinLTO is currently broken, see bmo#1644409
+			mozconfig_add_options_ac '+lto' "--enable-lto=full"
+		fi
+
+		if use pgo; then
+			mozconfig_add_options_ac '+pgo' MOZ_PGO=1
+
+			if use clang; then
+				# Used in build/pgo/profileserver.py
+				LLVM_PROFDATA="llvm-profdata"
+	export LLVM_PROFDATA
+			fi
+		fi
+	else
+		# Avoid auto-magic on linker
+		if use clang; then
+			# This is upstream's default
+			mozconfig_add_options_ac "forcing ld=lld due to USE=clang" "--enable-linker=lld"
+		elif tc-ld-is-gold ; then
+			mozconfig_add_options_ac "linker is set to gold" "--enable-linker=gold"
+		else
+			mozconfig_add_options_ac "linker is set to bfd" "--enable-linker=bfd"
+		fi
+	fi
+
+	# LTO flag was handled via configure
+	filter-flags '-flto*'
+
+	mozconfig_use_enable debug
+	if use debug; then
+		mozconfig_add_options_ac '+debug' "--disable-optimize"
+	else
+		if is-flag '-g*'; then
+			if use clang; then
+				mozconfig_add_options_ac 'from CFLAGS' "--enable-debug-symbols=$(get-flag '-g*')"
+			else
+				mozconfig_add_options_ac 'from CFLAGS' "--enable-debug-symbols"
+			fi
+		else
+			mozconfig_add_options_ac 'Gentoo default' "--disable-debug-symbols"
+		fi
+
+		if is-flag '-O0'; then
+			mozconfig_add_options_ac "from CFLAGS" "--enable-optimize=-O0"
+		elif is-flag '-O4' ; then
+			mozconfig_add_options_ac "from CFLAGS" "--enable-optimize=-O4"
+		elif is-flag '-O3' ; then
+			mozconfig_add_options_ac "from CFLAGS" "--enable-optimize=-O3"
+		elif is-flag '-O1' ; then
+			mozconfig_add_options_ac "from CFLAGS" "--enable-optimize=-O1"
+		elif is-flag '-Os' ; then
+			mozconfig_add_options_ac "from CFLAGS" "--enable-optimize=-Os"
+		else
+			mozconfig_add_options_ac "Gentoo default" "--enable-optimize=-O2"
+		fi
+	fi
+
+	# Debug flag was handled via configure
+	filter-flags '-g*'
+
+	# Optimization flag was handled via configure
+	filter-flags '-O*'
+
 	# Modifications to better support ARM, bug #553364
 	if use cpu_flags_arm_neon; then
 		mozconfig_add_options_ac '+cpu_flags_arm_neon' "--with-fpu=neon"
@@ -796,12 +820,12 @@ src_configure() {
 
 	# Additional ARCH support
 	case "${ARCH}" in
-		arm | ppc64)
+		arm)
 			# Reduce the memory requirements for linking
 			if use clang; then
 				# Nothing to do
 				:;
-			elif tc-ld-is-gold ; then
+			elif tc-ld-is-gold || use lto ; then
 				append-ldflags -Wl,"--no-keep-memory"
 			else
 				append-ldflags -Wl,"--no-keep-memory" -Wl,"--reduce-memory-overheads"
@@ -923,7 +947,7 @@ src_install() {
 
 	# Force hwaccel prefs if USE=hwaccel is enabled
 	if use hwaccel; then
-		cat "${FILESDIR}/gentoo-hwaccel-prefs.js-1" \
+		cat "${FILESDIR}/gentoo-hwaccel-prefs.js" \
 		>>"${GENTOO_PREFS}" \
 		|| die "failed to add prefs to force hardware-accelerated rendering to all-gentoo.js"
 	fi
