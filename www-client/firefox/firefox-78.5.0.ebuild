@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-82-patches-03.tar.xz"
+FIREFOX_PATCHSET="firefox-78esr-patches-07.tar.xz"
 
 LLVM_MAX_SLOT=11
 
@@ -15,7 +15,7 @@ WANT_AUTOCONF="2.1"
 
 VIRTUALX_REQUIRED="pgo"
 
-MOZ_ESR=
+MOZ_ESR=yes
 
 MOZ_PV=${PV}
 MOZ_PV_SUFFIX=
@@ -50,7 +50,7 @@ fi
 PATCH_URIS=( "https://dev.gentoo.org/"~{axs,polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="31f1980af98af0e783f369a7eecb82dce3a792d8"
+GIT_MOZ_REVISION="b397e0503efe89c6e2ba8dc0b01c03ca3b15749e"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 # shellcheck disable=SC2124
@@ -69,14 +69,15 @@ HOMEPAGE="https://www.mozilla.com/firefox
 
 KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
 
-SLOT="0/$(ver_cut 1)"
+SLOT="0/esr$(ver_cut 1)"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="clang cpu_flags_arm_neon dbus debug egl eme-free geckodriver +gmp-autoupdate kde
 	hardened hwaccel jack lto +openh264 pgo pulseaudio screencast selinux
 	+system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent
 	+system-libvpx +system-webp wayland wifi"
 
-REQUIRED_USE="screencast? ( wayland )"
+REQUIRED_USE="debug? ( !system-av1 )
+	screencast? ( wayland )"
 
 BDEPEND="${PYTHON_DEPS}
 	app-arch/unzip
@@ -84,7 +85,7 @@ BDEPEND="${PYTHON_DEPS}
 	>=dev-util/cbindgen-0.14.3
 	>=net-libs/nodejs-10.19.0
 	virtual/pkgconfig
-	>=virtual/rust-1.43.0
+	>=virtual/rust-1.41.0
 	|| (
 		(
 			sys-devel/clang:11
@@ -122,8 +123,8 @@ BDEPEND="${PYTHON_DEPS}
 	)"
 
 CDEPEND="
-	>=dev-libs/nss-3.57
-	>=dev-libs/nspr-4.29
+	>=dev-libs/nss-3.53.1
+	>=dev-libs/nspr-4.25
 	dev-libs/atk
 	dev-libs/expat
 	>=dev-libs/libffi-3.0.10:=
@@ -390,9 +391,9 @@ pkg_pretend() {
 
 		# Ensure we have enough disk space to compile
 		if use pgo || use lto || use debug; then
-			CHECKREQS_DISK_BUILD="13G"
+			CHECKREQS_DISK_BUILD="13500M"
 		else
-			CHECKREQS_DISK_BUILD="5600M"
+			CHECKREQS_DISK_BUILD="6400M"
 		fi
 
 		check-reqs_pkg_pretend
@@ -410,9 +411,9 @@ pkg_setup() {
 
 		# Ensure we have enough disk space to compile
 		if use pgo || use lto || use debug; then
-			CHECKREQS_DISK_BUILD="13G"
+			CHECKREQS_DISK_BUILD="13500M"
 		else
-			CHECKREQS_DISK_BUILD="5600M"
+			CHECKREQS_DISK_BUILD="6400M"
 		fi
 
 		check-reqs_pkg_setup
@@ -915,7 +916,7 @@ src_install() {
 	# xpcshell is getting called during install
 	pax-mark m \
 		"${BUILD_DIR}/dist/bin/xpcshell" \
-		"${BUILD_DIR}/dist/bin/firefox" \
+		"${BUILD_DIR}/dist/bin/${PN}" \
 		"${BUILD_DIR}/dist/bin/plugin-container"
 
 	DESTDIR="${D}" ./mach install || die "./mach failed"
