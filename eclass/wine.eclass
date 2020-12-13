@@ -323,11 +323,12 @@ WINE_STAGING_PN=""
 # @ECLASS-VARIABLE: WINE_STAGING_PV
 # @DESCRIPTION:
 # Separate versioning for Wine Staging, to allow for re-release version updates.
-if (( WINE_IS_RC_VERSION )); then
-	WINE_STAGING_PV="${WINE_PV/-rc/rc}"
-else
-	WINE_STAGING_PV="${WINE_PV}"
-fi
+case "${WINE_PV}" in
+	6.0-rc1)
+		WINE_STAGING_PV="${WINE_PV/-rc/rc}";;
+	*)
+		WINE_STAGING_PV="${WINE_PV}";;
+esac
 
 # @ECLASS-VARIABLE: _WINE_STAGING_SUFFIX
 # @INTERNAL
