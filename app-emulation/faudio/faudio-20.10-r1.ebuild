@@ -26,13 +26,16 @@ HOMEPAGE="https://fna-xna.github.io/"
 LICENSE="ZLIB"
 SLOT="0"
 
-IUSE="+abi_x86_32 +abi_x86_64 debug dumpvoices ffmpeg xnasong test utils"
+IUSE="+abi_x86_32 +abi_x86_64 debug dumpvoices gstreamer xnasong test utils"
 RESTRICT="!test? ( test )"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )"
 
 COMMON_DEPEND="
 	>=media-libs/libsdl2-2.0.9[sound,${MULTILIB_USEDEP}]
-	ffmpeg? ( media-video/ffmpeg:=[${MULTILIB_USEDEP}] )
+	gstreamer? (
+		media-libs/gstreamer:1.0[${MULTILIB_USEDEP}]
+		media-libs/gst-plugins-base:1.0[${MULTILIB_USEDEP}]
+	)
 "
 RDEPEND="${COMMON_DEPEND}
 "
@@ -52,12 +55,9 @@ multilib_src_configure() {
 		"-DBUILD_TESTS=$(usex test ON OFF)"
 		"-DBUILD_UTILS=$(usex utils ON OFF)"
 		"-DDUMP_VOICES=$(usex dumpvoices ON OFF)"
-		"-DFFMPEG=$(usex ffmpeg ON OFF)"
+		"-DGSTREAMER=$(usex gstreamer ON OFF)"
 		"-DXNASONG=$(usex xnasong ON OFF)"
 	)
-	if use ffmpeg; then
-		mycmakeargs+=( "-DFFmpeg_LIBRARY_DIRS=${EPREFIX}/usr/$(get_libdir)"  )
-	fi
 	cmake-utils_src_configure
 }
 
