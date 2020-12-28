@@ -1,9 +1,9 @@
 # Copyright 1999-2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
+EAPI=7
 
-inherit cmake-utils
+inherit cmake
 
 if [[ "${PV}" == 9999 ]]; then
 	inherit git-r3
@@ -37,6 +37,7 @@ RDEPEND="${DEPEND}"
 src_prepare() {
 	CMAKE_USE_DIR="${S}/neo"
 	default
+	cmake_src_prepare
 }
 
 src_configure() {
@@ -47,16 +48,16 @@ src_configure() {
 		"-DBASE=$(usex !dedicated)"
 		"-DD3XP=$(usex !dedicated)"
 	)
-	cmake-utils_src_configure
+	cmake_src_configure
 }
 
 src_compile() {
-	cmake-utils_src_compile
+	cmake_src_compile
 }
 
 src_install() {
 	dodir "/usr/share/${PN}"
-	cmake-utils_src_install
+	cmake_src_install
 }
 
 pkg_postinst() {
