@@ -3,7 +3,7 @@
 
 EAPI=7
 
-inherit cmake-utils
+inherit cmake
 
 DESCRIPTION="Tool and library to extract CAB files from InstallShield installers"
 HOMEPAGE="https://github.com/twogood/unshield"
@@ -32,7 +32,7 @@ DEPEND="${RDEPEND}"
 src_prepare() {
 	local PATCHES=( "${FILESDIR}/${PN}-1.3-fix_cmake_include_paths.patch" )
 	eapply_user
-	cmake-utils_src_prepare
+	cmake_src_prepare
 }
 
 src_configure() {
@@ -40,5 +40,5 @@ src_configure() {
 		--with-ssl
 		$(use_with static-libs static)
 	)
-	cmake-utils_src_configure
+	cmake_src_configure
 }
