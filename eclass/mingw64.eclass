@@ -47,7 +47,6 @@ _mingw64_get_gcc_thread_model() {
 # @USAGE:  <mingw64_min_version> <mingw64_gcc_min_version>
 # @DESCRIPTION:
 mingw64_check_requirements() {
-
 	local -a cross_environments
 	local mingw64_min_version="${1}" \
 		mingw64_gcc_min_version="${2}" \
@@ -55,6 +54,8 @@ mingw64_check_requirements() {
 
 	use abi_x86_32 && cross_environments+=("cross-i686-w64-mingw32")
 	use abi_x86_64 && cross_environments+=("cross-x86_64-w64-mingw32")
+
+	[[ "${MERGE_TYPE}" = "binary" ]] && return 0
 
 	# shellcheck disable=SC2068
 	for cross_environment in ${cross_environments[@]}; do
