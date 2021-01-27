@@ -19,17 +19,14 @@ fi
 
 DESCRIPTION="Free implementation of Windows(tm) on Unix, with Wine Staging patchset"
 HOMEPAGE="https://www.winehq.org/"
-SRC_URI="${SRC_URI}
-	https://github.com/wine-staging/wine-staging/commit/c48811407e3c9cb2d6a448d6664f89bacd9cc36f.patch -> ${PN}-4.7_c48811407e3c9cb2d6a448d6664f89bacd9cc36f_eventfd_synchronization_fix.patch
-	https://github.com/wine-staging/wine-staging/commit/044cb930662d61f401a5d1bdd7b8e75d59cea5ea.patch -> ${PN}-5.10_044cb930662d61f401a5d1bdd7b8e75d59cea5ea_ntdll_forcebottomupalloc_fix.patch"
-
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc faudio ffmpeg +fontconfig +gcrypt +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mingw mp3 netapi nls odbc openal opencl +opengl osmesa oss pcap +perl pipelight +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test themes +threads +truetype udev +udisks +unwind +usb v4l vaapi vkd3d vulkan +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc faudio ffmpeg +fontconfig +gcrypt +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mingw mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pcap +perl pipelight +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test themes +threads +truetype udev +udisks +unwind +usb v4l vaapi vkd3d vulkan +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
+	faudio? ( !ffmpeg )
 	osmesa? ( opengl )
 	test? ( abi_x86_32 )
 	vkd3d? ( vulkan )" #286560 osmesa-opengl  #551124 X-truetype
@@ -67,12 +64,14 @@ COMMON_DEPEND="
 	lcms? ( media-libs/lcms:2=[${MULTILIB_USEDEP}] )
 	ldap? ( net-nds/openldap:=[${MULTILIB_USEDEP}] )
 	mp3? ( >=media-sound/mpg123-1.5.0[${MULTILIB_USEDEP}] )
+	ncurses? ( >=sys-libs/ncurses-5.2:0=[${MULTILIB_USEDEP}] )
 	netapi? ( net-fs/samba[netapi(+),${MULTILIB_USEDEP}] )
 	nls? ( sys-devel/gettext[${MULTILIB_USEDEP}] )
 	odbc? ( dev-db/unixODBC:=[${MULTILIB_USEDEP}] )
 	openal? ( media-libs/openal:=[${MULTILIB_USEDEP}] )
 	opencl? ( virtual/opencl[${MULTILIB_USEDEP}] )
 	opengl? (
+		virtual/glu[${MULTILIB_USEDEP}]
 		virtual/opengl[${MULTILIB_USEDEP}]
 	)
 	osmesa? ( >=media-libs/mesa-13[osmesa,${MULTILIB_USEDEP}] )
@@ -108,8 +107,8 @@ RDEPEND="${COMMON_DEPEND}
 	!app-emulation/wine:0
 	>=app-eselect/eselect-wine-1.5.5
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
-	gecko? ( app-emulation/wine-gecko:2.47.2[abi_x86_32?,abi_x86_64?] )
-	mono? ( app-emulation/wine-mono:5.1.1 )
+	gecko? ( app-emulation/wine-gecko:2.47.1[abi_x86_32?,abi_x86_64?] )
+	mono? ( app-emulation/wine-mono:5.1.0 )
 	perl? (
 		dev-lang/perl
 		dev-perl/XML-Simple
@@ -136,18 +135,11 @@ DEPEND="${COMMON_DEPEND}
 	xinerama? ( x11-base/xorg-proto )"
 
 S="${WORKDIR}/${WINE_P}"
-[[ "${WINE_PV}" == "9999" ]] && EGIT_CHECKOUT_DIR="${S}"
-
 src_unpack() {
 	# Fully Mirror git tree, Wine, so we can access commits in all branches
 	[[ "${WINE_PV}" == "9999" ]] && EGIT_MIN_CLONE_TYPE="mirror"
 
 	default
-
-	if [[ "${WINE_PV}" == "9999" ]]; then
-		wine_staging_git_src_unpack
-		wine_get_git_commit_info "${S}" WINE_GIT_COMMIT_HASH WINE_GIT_COMMIT_DATE
-	fi
 
 	l10n_find_plocales_changes "${S}/po" "" ".po"
 }
@@ -158,8 +150,6 @@ src_prepare() {
 	local -a PATCHES PATCHES_BIN
 
 	wine_add_stock_gentoo_patches
-
-	[[ "${WINE_PV}" == "9999" ]] && wine_staging_src_prepare_git
 
 	wine_fix_gentoo_cc_multilib_support
 	wine_fix_gentoo_O3_compilation_support
@@ -180,8 +170,8 @@ src_prepare() {
 	# Don't build winedump,winemaker if not using perl
 	use perl || wine_src_disable_specfied_tools winedump winemaker
 
-	#551124 Only build wineconsole, if X is installed
-	use X || wine_src_prepare_disable_tools wineconsole
+	#551124 Only build wineconsole, if either of X or ncurses is installed
+	use X || use ncurses || wine_src_prepare_disable_tools wineconsole
 
 	# apply / revert patches
 	default
@@ -189,8 +179,6 @@ src_prepare() {
 	wine_eapply_revert
 
 	wine_winecfg_about_enhancement
-
-	wine_fix_block_scope_compound_literals
 
 	eautoreconf
 
@@ -228,6 +216,7 @@ multilib_src_configure() {
 		"$(use_with capi)"
 		"$(use_with lcms cms)"
 		"$(use_with cups)"
+		"$(use_with ncurses curses)"
 		"$(use_with fontconfig)"
 		"$(use_with ssl gnutls)"
 		"$(use_enable gecko mshtml)"
@@ -277,9 +266,9 @@ multilib_src_configure() {
 	)
 
 	if use ffmpeg; then
-		wine_use_disabled ffmpeg || myconf+=( "$(use_with ffmpeg)" )
+		myconf+=( "$(use_with ffmpeg)" )
 	else
-		wine_use_disabled faudio || myconf+=( "$(use_with faudio)" )
+		myconf+=( "$(use_with faudio)" )
 	fi
 
 	local PKG_CONFIG AR RANLIB
