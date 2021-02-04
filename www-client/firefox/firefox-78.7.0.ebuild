@@ -77,7 +77,8 @@ IUSE="+clang cpu_flags_arm_neon dbus debug egl eme-free geckodriver +gmp-autoupd
 	+system-libvpx +system-webp wayland wifi"
 
 REQUIRED_USE="debug? ( !system-av1 )
-	screencast? ( wayland )"
+	screencast? ( wayland )
+	wifi? ( dbus )"
 
 BDEPEND="${PYTHON_DEPS}
 	app-arch/unzip
@@ -426,8 +427,12 @@ pkg_setup() {
 			[[ -n ${version_lld} ]] && version_lld=$(ver_cut 1 "${version_lld}")
 			[[ -z ${version_lld} ]] && die "Failed to read ld.lld version!"
 
-			version_llvm_rust=$(rustc -Vv 2>/dev/null | grep -F -- 'LLVM version:' | awk '{ print $3 }')
-			[[ -n ${version_llvm_rust} ]] && version_llvm_rust=$(ver_cut 1 "${version_llvm_rust}")
+			version_llvm_rust="$(ldd "$(which rustc)" 2>/dev/null \
+				| awk '{ if ($1 ~ "LLVM") {
+					match($3, "/[[:digit:]]+/")
+					if (RSTART) printf("%s\n", substr($3,RSTART+1,RLENGTH-2))
+				} }'
+			)"
 			[[ -z ${version_llvm_rust} ]] && die "Failed to read used LLVM version from rustc!"
 
 			if ver_test "${version_lld}" -ne "${version_llvm_rust}"; then
@@ -819,7 +824,7 @@ src_configure() {
 			mozconfig_add_options_ac 'elf-hack is broken when using Clang' "--disable-elf-hack"
 		fi
 	elif tc-is-gcc ; then
-		if ver_test $(gcc-fullversion) -ge 10; then
+		if ver_test "$(gcc-fullversion)" -ge 10; then
 			einfo "Forcing -fno-tree-loop-vectorize to workaround GCC bug, see bug 758446 ..."
 			append-cxxflags -fno-tree-loop-vectorize
 		fi

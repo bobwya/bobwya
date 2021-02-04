@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-84-patches-02.tar.xz"
+FIREFOX_PATCHSET="firefox-85-patches-02.tar.xz"
 
 LLVM_MAX_SLOT=11
 
@@ -50,7 +50,7 @@ fi
 PATCH_URIS=( "https://dev.gentoo.org/"~{axs,polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="c6bad4ac579cda0aa7d6ceedee15dcf3228b71ca"
+GIT_MOZ_REVISION="e2fb2715dfd135ba166c40627fb4c1707dbb4fc9"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 # shellcheck disable=SC2124
@@ -85,7 +85,7 @@ BDEPEND="${PYTHON_DEPS}
 	>=dev-util/cbindgen-0.15.0
 	>=net-libs/nodejs-10.22.1
 	virtual/pkgconfig
-	>=virtual/rust-1.44.0
+	>=virtual/rust-1.47.0
 	|| (
 		(
 			sys-devel/clang:11
@@ -112,9 +112,6 @@ BDEPEND="${PYTHON_DEPS}
 			)
 		)
 	)
-	lto? (
-		!clang? ( sys-devel/binutils[gold] )
-	)
 	amd64? ( >=dev-lang/yasm-1.1 )
 	x86? ( >=dev-lang/yasm-1.1 )
 	!system-av1? (
@@ -123,7 +120,7 @@ BDEPEND="${PYTHON_DEPS}
 	)"
 
 CDEPEND="
-	>=dev-libs/nss-3.59.1
+	>=dev-libs/nss-3.60
 	>=dev-libs/nspr-4.29
 	dev-libs/atk
 	dev-libs/expat
@@ -426,8 +423,12 @@ pkg_setup() {
 			[[ -n ${version_lld} ]] && version_lld=$(ver_cut 1 "${version_lld}")
 			[[ -z ${version_lld} ]] && die "Failed to read ld.lld version!"
 
-			version_llvm_rust=$(rustc -Vv 2>/dev/null | grep -F -- 'LLVM version:' | awk '{ print $3 }')
-			[[ -n ${version_llvm_rust} ]] && version_llvm_rust=$(ver_cut 1 "${version_llvm_rust}")
+			version_llvm_rust="$(ldd "$(which rustc)" 2>/dev/null \
+				| awk '{ if ($1 ~ "LLVM") {
+					match($3, "/[[:digit:]]+/")
+					if (RSTART) printf("%s\n", substr($3,RSTART+1,RLENGTH-2))
+				} }'
+			)"
 			[[ -z ${version_llvm_rust} ]] && die "Failed to read used LLVM version from rustc!"
 
 			if ver_test "${version_lld}" -ne "${version_llvm_rust}"; then
@@ -711,9 +712,6 @@ src_configure() {
 
 			mozconfig_add_options_ac '+lto' "--enable-lto=cross"
 		else
-			# Linking only works when using ld.gold when LTO is enabled
-			mozconfig_add_options_ac "forcing ld=gold due to USE=lto" "--enable-linker=gold"
-
 			# ThinLTO is currently broken, see bmo#1644409
 			mozconfig_add_options_ac '+lto' "--enable-lto=full"
 		fi
@@ -732,8 +730,6 @@ src_configure() {
 		if use clang; then
 			# This is upstream's default
 			mozconfig_add_options_ac "forcing ld=lld due to USE=clang" "--enable-linker=lld"
-		elif tc-ld-is-gold ; then
-			mozconfig_add_options_ac "linker is set to gold" "--enable-linker=gold"
 		else
 			mozconfig_add_options_ac "linker is set to bfd" "--enable-linker=bfd"
 		fi
@@ -817,7 +813,7 @@ src_configure() {
 			mozconfig_add_options_ac 'elf-hack is broken when using Clang' "--disable-elf-hack"
 		fi
 	elif tc-is-gcc ; then
-		if ver_test $(gcc-fullversion) -ge 10; then
+		if ver_test "$(gcc-fullversion)" -ge 10; then
 			einfo "Forcing -fno-tree-loop-vectorize to workaround GCC bug, see bug 758446 ..."
 			append-cxxflags -fno-tree-loop-vectorize
 		fi
