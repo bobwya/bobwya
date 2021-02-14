@@ -4,6 +4,7 @@
 <use>
 	<flag name="clang">Use Clang compiler instead of GCC</flag>
 	<flag name="eme-free">Disable EME (DRM plugin) cabability at build time</flag>
+	<flag name="hwaccel">Force-enable hardware-accelerated rendering (Mozilla bug 594876)</flag>
 	<flag name="kde">Use OpenSUSE patchset to build in support for native
 		Plasma Desktop file dialog via <pkg>kde-misc/kmozillahelper</pkg>.</flag>
 	<flag name="lto">Enable Link Time Optimization (LTO). Requires Gold linker when using GCC
