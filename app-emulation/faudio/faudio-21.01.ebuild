@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=7
 
-CMAKE_MAKEFILE_GENERATOR="emake"
+CMAKE_MAKEFILE_GENERATOR="ninja"
 
 inherit cmake-multilib virtualx
 
@@ -26,13 +26,16 @@ HOMEPAGE="https://fna-xna.github.io/"
 LICENSE="ZLIB"
 SLOT="0"
 
-IUSE="+abi_x86_32 +abi_x86_64 debug dumpvoices ffmpeg xnasong test utils"
+IUSE="+abi_x86_32 +abi_x86_64 debug dumpvoices gstreamer xnasong test utils"
 RESTRICT="!test? ( test )"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )"
 
 COMMON_DEPEND="
 	>=media-libs/libsdl2-2.0.9[sound,${MULTILIB_USEDEP}]
-	ffmpeg? ( media-video/ffmpeg:=[${MULTILIB_USEDEP}] )
+	gstreamer? (
+		media-libs/gstreamer:1.0[${MULTILIB_USEDEP}]
+		media-libs/gst-plugins-base:1.0[${MULTILIB_USEDEP}]
+	)
 "
 RDEPEND="${COMMON_DEPEND}
 "
@@ -52,12 +55,9 @@ multilib_src_configure() {
 		"-DBUILD_TESTS=$(usex test ON OFF)"
 		"-DBUILD_UTILS=$(usex utils ON OFF)"
 		"-DDUMP_VOICES=$(usex dumpvoices ON OFF)"
-		"-DFFMPEG=$(usex ffmpeg ON OFF)"
+		"-DGSTREAMER=$(usex gstreamer ON OFF)"
 		"-DXNASONG=$(usex xnasong ON OFF)"
 	)
-	if use ffmpeg; then
-		mycmakeargs+=( "-DFFmpeg_LIBRARY_DIRS=${EPREFIX}/usr/$(get_libdir)"  )
-	fi
 	cmake-utils_src_configure
 }
 
@@ -65,9 +65,24 @@ src_configure() {
 	cmake-multilib_src_configure
 }
 
-multilib_src_compile() {
-	cmake-utils_src_make
-	emake -C "${BUILD_DIR}" all
+multilib_src_test() {
+	# FIXME: tests require hacky workarounds!
+	[[ "${EUID}" == 0 ]] || die "tests must be run with root privileges"
+
+	local faudio_tests pulseaudio test_ok=0 user_owner
+
+	faudio_tests="faudio_tests"
+	pulseaudio="$(which pulseaudio)"
+	user_owner="$(stat -c '%u' "${HOME}")"
+
+	[[ -O "${HOME}" ]] || chown -R "${EUID}" "${HOME}"
+	mkdir -p "${HOME}/.config/pulse"
+	[[ -n "${pulseaudio}" ]] && "${pulseaudio}" --start
+	"./${faudio_tests}" && tests_ok=1
+	[[ -n "${pulseaudio}" ]] && "${pulseaudio}" --kill
+	chown -R "${user_owner}" "${HOME}"
+
+	((tests_ok)) || die "${PN} tests failed"
 }
 
 multilib_src_install() {
@@ -79,21 +94,4 @@ multilib_src_install() {
 		|| die "sed failed"
 	insinto "/usr/$(get_libdir)/pkgconfig"
 	doins "${T}/faudio.pc"
-}
-
-faudio_test() {
-	# FIXME: Tests fail under PA environment, require direct access to  ALSA
-	if command -v  pasuspender; then
-		XDG_RUNTIME_DIR="/run/user/0" pasuspender -- virtx "/usr/$(get_libdir)/faudio/faudio_tests"
-	else
-		XDG_RUNTIME_DIR="/run/user/0" virtx "/usr/$(get_libdir)/faudio/faudio_tests"
-	fi
-}
-
-pkg_postinst() {
-	use test || return
-
-	# FIXME: FAudio tests are broken and also don't appear to work
-	# in the Portage sandbox.
-	multilib_foreach_abi faudio_test
 }

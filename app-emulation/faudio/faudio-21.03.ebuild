@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=7
 
-CMAKE_MAKEFILE_GENERATOR="emake"
+CMAKE_MAKEFILE_GENERATOR="ninja"
 
 inherit cmake-multilib virtualx
 
@@ -65,9 +65,24 @@ src_configure() {
 	cmake-multilib_src_configure
 }
 
-multilib_src_compile() {
-	cmake-utils_src_make
-	emake -C "${BUILD_DIR}" all
+multilib_src_test() {
+	# FIXME: tests require hacky workarounds!
+	[[ "${EUID}" == 0 ]] || die "tests must be run with root privileges"
+
+	local faudio_tests pulseaudio test_ok=0 user_owner
+
+	faudio_tests="faudio_tests"
+	pulseaudio="$(which pulseaudio)"
+	user_owner="$(stat -c '%u' "${HOME}")"
+
+	[[ -O "${HOME}" ]] || chown -R "${EUID}" "${HOME}"
+	mkdir -p "${HOME}/.config/pulse"
+	[[ -n "${pulseaudio}" ]] && "${pulseaudio}" --start
+	"./${faudio_tests}" && tests_ok=1
+	[[ -n "${pulseaudio}" ]] && "${pulseaudio}" --kill
+	chown -R "${user_owner}" "${HOME}"
+
+	((tests_ok)) || die "${PN} tests failed"
 }
 
 multilib_src_install() {
@@ -79,21 +94,4 @@ multilib_src_install() {
 		|| die "sed failed"
 	insinto "/usr/$(get_libdir)/pkgconfig"
 	doins "${T}/faudio.pc"
-}
-
-faudio_test() {
-	# FIXME: Tests fail under PA environment, require direct access to  ALSA
-	if command -v  pasuspender; then
-		XDG_RUNTIME_DIR="/run/user/0" pasuspender -- virtx "/usr/$(get_libdir)/faudio/faudio_tests"
-	else
-		XDG_RUNTIME_DIR="/run/user/0" virtx "/usr/$(get_libdir)/faudio/faudio_tests"
-	fi
-}
-
-pkg_postinst() {
-	use test || return
-
-	# FIXME: FAudio tests are broken and also don't appear to work
-	# in the Portage sandbox.
-	multilib_foreach_abi faudio_test
 }
