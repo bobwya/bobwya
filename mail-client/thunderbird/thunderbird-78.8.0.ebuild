@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-78esr-patches-08.tar.xz"
+FIREFOX_PATCHSET="firefox-78esr-patches-10.tar.xz"
 
 LLVM_MAX_SLOT=11
 
@@ -76,8 +76,7 @@ IUSE="+clang cpu_flags_arm_neon dbus debug eme-free kde kernel_linux
 	+system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent
 	+system-libvpx +system-webp wayland wifi"
 
-REQUIRED_USE="x86? ( lto? ( clang ) )
-	wifi? ( dbus )"
+REQUIRED_USE="wifi? ( dbus )"
 
 BDEPEND="${PYTHON_DEPS}
 	app-arch/unzip
@@ -423,6 +422,7 @@ pkg_setup() {
 			[[ -n "${version_lld}" ]] && version_lld="$(ver_cut 1 "${version_lld}")"
 			[[ -z "${version_lld}" ]] && die "Failed to read  -r ld.lld version!"
 
+			# we can assume that rust 1.{49,50}.0 always uses llvm 11
 			local version_llvm_rust
 			version_llvm_rust="$(ldd "$(which rustc)" 2>/dev/null \
 				| awk '{ if ($1 ~ "LLVM") {
