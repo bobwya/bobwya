@@ -35,11 +35,11 @@ RESTRICT="test"
 RDEPEND="
 	|| (
 		video_cards_nvidia? ( >=x11-drivers/nvidia-drivers-440.31 )
-		>=media-libs/mesa-20.2
+		>=media-libs/mesa-19.2
 	)
 	|| (
-		>=app-emulation/wine-vanilla-5.14:*[${MULTILIB_USEDEP},vulkan]
-		>=app-emulation/wine-staging-5.14:*[${MULTILIB_USEDEP},vulkan]
+		>=app-emulation/wine-vanilla-4.5:*[${MULTILIB_USEDEP},vulkan]
+		>=app-emulation/wine-staging-4.5:*[${MULTILIB_USEDEP},vulkan]
 	)"
 
 DEPEND="${RDEPEND}
@@ -59,7 +59,7 @@ pkg_setup() {
 
 src_prepare() {
 	PATCHES=()
-	use async && PATCHES+=( "${FILESDIR}/${PN}-1.8-async.patch" )
+	use async && PATCHES+=( "${FILESDIR}/${PN}-1.7-async.patch" )
 
 	filter-flags "-Wl,--hash-style*"
 	[[ "$(is-flag "-march=*")" == "true" ]] && append-flags "-mno-avx"
