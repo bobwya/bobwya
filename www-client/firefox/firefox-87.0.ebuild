@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-86-patches-01.tar.xz"
+FIREFOX_PATCHSET="firefox-87-patches-04.tar.xz"
 
 LLVM_MAX_SLOT=11
 
@@ -50,7 +50,7 @@ fi
 PATCH_URIS=( "https://dev.gentoo.org/"~{axs,polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="9bce832e465710908acae4ecbb243007ad0aaf56"
+GIT_MOZ_REVISION="3fdf082cf93d94e4289e552cbd9988601044576a"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 # shellcheck disable=SC2124
@@ -83,7 +83,7 @@ BDEPEND="${PYTHON_DEPS}
 	app-arch/unzip
 	app-arch/zip
 	>=dev-util/cbindgen-0.16.0
-	>=net-libs/nodejs-10.22.1
+	>=net-libs/nodejs-10.23.1
 	virtual/pkgconfig
 	>=virtual/rust-1.47.0
 	|| (
@@ -103,14 +103,6 @@ BDEPEND="${PYTHON_DEPS}
 				pgo? ( =sys-libs/compiler-rt-sanitizers-10*[profile] )
 			)
 		)
-		(
-			sys-devel/clang:9
-			sys-devel/llvm:9
-			clang? (
-				=sys-devel/lld-9*
-				pgo? ( =sys-libs/compiler-rt-sanitizers-9*[profile] )
-			)
-		)
 	)
 	amd64? ( >=dev-lang/yasm-1.1 )
 	x86? ( >=dev-lang/yasm-1.1 )
@@ -120,7 +112,7 @@ BDEPEND="${PYTHON_DEPS}
 	)"
 
 CDEPEND="
-	>=dev-libs/nss-3.61
+	>=dev-libs/nss-3.62
 	>=dev-libs/nspr-4.29
 	dev-libs/atk
 	dev-libs/expat
@@ -153,11 +145,11 @@ CDEPEND="
 	)
 	screencast? ( media-video/pipewire:0/0.3 )
 	system-av1? (
-		>=media-libs/dav1d-0.3.0:=
+		>=media-libs/dav1d-0.8.1:=
 		>=media-libs/libaom-1.0.0:=
 	)
 	system-harfbuzz? (
-		>=media-libs/harfbuzz-2.6.8:0=
+		>=media-libs/harfbuzz-2.7.4:0=
 		>=media-gfx/graphite2-1.3.13
 	)
 	system-icu? ( >=dev-libs/icu-67.1:= )
@@ -236,7 +228,7 @@ MOZ_LANGS=(
 	"fa" "ff" "fi" "fr" "fy-NL" "ga-IE" "gd" "gl" "gn" "gu-IN" "he" "hi-IN" "hr" "hsb" "hu" "hy-AM"
 	"ia" "id" "is" "it" "ja" "ka" "kab" "kk" "km" "kn" "ko" "lij" "lt" "lv" "mk" "mr" "ms" "my"
 	"nb-NO" "ne-NP" "nl" "nn-NO" "oc" "pa-IN" "pl" "pt-BR" "pt-PT" "rm" "ro" "ru"
-	"si" "sk" "sl" "son" "sq" "sr" "sv-SE" "ta" "te" "th" "tl" "tr" "trs" "uk" "ur" "uz" "vi"
+	"si" "sk" "sl" "son" "sq" "sr" "sv-SE" "szl" "ta" "te" "th" "tl" "tr" "trs" "uk" "ur" "uz" "vi"
 	"xh" "zh-CN" "zh-TW"
 )
 
