@@ -1,4 +1,4 @@
-# Copyright 1999-2020 Gentoo Authors
+# Copyright 1999-2021 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: wine.eclass
@@ -1706,7 +1706,8 @@ wine_fix_gentoo_O3_compilation_support() {
 	sed -i '/^ dnl Check for some compiler flags/a \
 		 WINE_TRY_CFLAGS([-fno-tree-loop-distribute-patterns])' \
 		configure.ac || die "sed failed"
-	if use mingw; then
+	# shellcheck disable=SC2086
+	if has mingw ${IUSE} && use mingw; then
 		# shellcheck disable=SC1004
 		sed -i '/^  dnl clang needs to be told to fail on unknown options/i \
 			  WINE_TRY_CROSSCFLAGS([-fno-tree-loop-distribute-patterns])' \
@@ -1909,7 +1910,8 @@ wine_pkg_pretend() {
 		die "USE=+oss currently unsupported on this system."
 	fi
 
-	use mingw && mingw64_check_requirements "5.0.0" "7.0.0"
+	# shellcheck disable=SC2086
+	has mingw ${IUSE} && use mingw && mingw64_check_requirements "5.0.0" "7.0.0"
 }
 
 # @FUNCTION: wine_pkg_setup
@@ -1918,7 +1920,8 @@ wine_pkg_pretend() {
 wine_pkg_setup() {
 	_wine_env_vcs_variable_prechecks || die "_wine_env_vcs_variable_prechecks() failed"
 	_wine_build_environment_prechecks || die "_wine_build_environment_prechecks() failed"
-	use mingw && mingw64_check_requirements "5.0.0" "7.0.0"
+	# shellcheck disable=SC2086
+	has mingw ${IUSE} && use mingw && mingw64_check_requirements "5.0.0" "7.0.0"
 }
 
 # @FUNCTION: wine_src_configure
@@ -1935,7 +1938,8 @@ wine_src_configure() {
 
 	local -r _gcc_10_fcommon_fix_commit="c13d58780f78393571dfdeb5b4952e3dcd7ded90"
 	export LDCONFIG="/bin/true"
-	if use mingw; then
+	# shellcheck disable=SC2086
+	if has mingw ${IUSE} && use mingw; then
 		# FIXME: hack to allow flag-o-matic to filter Wine's CROSS{C,LD}FLAGS
 		local cross_flag flag
 		local -A saved_flags
