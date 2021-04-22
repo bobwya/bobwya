@@ -6,7 +6,7 @@ EAPI="7"
 
 FIREFOX_PATCHSET="firefox-78esr-patches-10.tar.xz"
 
-LLVM_MAX_SLOT=11
+LLVM_MAX_SLOT=12
 
 PYTHON_COMPAT=( python3_{7..9} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
@@ -39,7 +39,7 @@ MOZ_PV_DISTFILES="${MOZ_PV}${MOZ_PV_SUFFIX}"
 MOZ_P_DISTFILES="${MOZ_PN}-${MOZ_PV_DISTFILES}"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_COMMIT="85cdb9aebe246a17d364e1fa4c6d171138033eeb"
+GIT_MOZ_COMMIT="07dc98f5d806baa51bae85cb22dad7591b0fd4b8"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 inherit autotools check-reqs desktop flag-o-matic gnome2-utils llvm multiprocessing \
@@ -87,6 +87,14 @@ BDEPEND="${PYTHON_DEPS}
 	>=virtual/rust-1.41.0
 	|| (
 		(
+			sys-devel/clang:12
+			sys-devel/llvm:12
+			clang? (
+				=sys-devel/lld-12*
+				pgo? ( =sys-libs/compiler-rt-sanitizers-12*[profile] )
+			)
+		)
+		(
 			sys-devel/clang:11
 			sys-devel/llvm:11
 			clang? (
@@ -100,14 +108,6 @@ BDEPEND="${PYTHON_DEPS}
 			clang? (
 				=sys-devel/lld-10*
 				pgo? ( =sys-libs/compiler-rt-sanitizers-10*[profile] )
-			)
-		)
-		(
-			sys-devel/clang:9
-			sys-devel/llvm:9
-			clang? (
-				=sys-devel/lld-9*
-				pgo? ( =sys-libs/compiler-rt-sanitizers-9*[profile] )
 			)
 		)
 	)
@@ -240,7 +240,7 @@ mozilla_set_globals() {
 	)
 
 	local lang xflag
-	# shellcheck disable=SC2608
+	# shellcheck disable=SC2068
 	for lang in "${MOZ_LANGS[@]}" ; do
 		# en and en_US are handled internally
 		if [[ "${lang}" == en ]] || [[ "${lang}" == en-US ]]; then
@@ -248,7 +248,7 @@ mozilla_set_globals() {
 		fi
 
 		# strip region subtag if $lang is in the list
-		# shellcheck disable=SC2608
+		# shellcheck disable=SC2068
 		if has "${lang}" "${MOZ_TOO_REGIONALIZED_FOR_L10N[@]}"; then
 			xflag="${lang%%-*}"
 		else
@@ -272,6 +272,7 @@ moz_clear_vendor_checksums() {
 
 	einfo "Clearing cargo checksums for ${1} ..."
 
+	# shellcheck disable=SC2154
 	sed -i \
 		-e 's/\("files":{\)[^}]*/\1/' \
 		"${S}/third_party/rust/${1}/.cargo-checksum.json" \
@@ -527,23 +528,27 @@ src_prepare() {
 	eapply_user
 
 	# Make LTO respect MAKEOPTS
+	# shellcheck disable=SC2154
 	sed -i \
 		-e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
 		"${S}/build/moz.configure/lto-pgo.configure" \
 		|| die "sed failed to set num_cores"
 
 	# Make ICU respect MAKEOPTS
+	# shellcheck disable=SC2154
 	sed -i \
 		-e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
 		"${S}/intl/icu_sources_data.py" \
 		|| die "sed failed to set num_cores"
 
 	# sed-in toolchain prefix
+	# shellcheck disable=SC2154
 	sed -i \
 		-e "s/objdump/${CHOST}-objdump/" \
 		"${S}/python/mozbuild/mozbuild/configure/check_debug_ranges.py" \
 		|| die "sed failed to set toolchain prefix"
 
+	# shellcheck disable=SC2154
 	sed -i \
 		-e 's/ccache_stats = None/return None/' \
 		"${S}/python/mozbuild/mozbuild/controller/building.py" \
@@ -835,6 +840,7 @@ src_configure() {
 		mozconfig_add_options_ac 'CHOST=armv*h*' --with-float-abi=hard
 
 		if ! use system-libvpx; then
+			# shellcheck disable=SC2154
 			sed -i \
 				-e "s|softfp|hard|" \
 				"${S}/media/libvpx/moz.build" \
@@ -923,7 +929,7 @@ src_configure() {
 	# Apply EXTRA_ECONF entries to $MOZCONFIG
 	if [[ -n "${EXTRA_ECONF}" ]]; then
 		IFS=\! read  -r -a ac <<<"${EXTRA_ECONF// --/\!}"
-		# shellcheck disable=SC2608
+		# shellcheck disable=SC2068
 		for opt in "${ac[@]}"; do
 			mozconfig_add_options_ac "EXTRA_ECONF" --"${opt#--}"
 		done
@@ -1019,7 +1025,7 @@ src_install() {
 	langpacks=( "$(find "${WORKDIR}/language_packs" -type f -name '*.xpi')" )
 	# shellcheck disable=SC2128
 	if [[ -n "${langpacks}" ]]; then
-		# shellcheck disable=SC2608
+		# shellcheck disable=SC2068
 		moz_install_xpi "${MOZILLA_FIVE_HOME}/distribution/extensions" "${langpacks[@]}"
 	fi
 
@@ -1090,6 +1096,7 @@ src_install() {
 		cp "${desktop_file}" "${WORKDIR}/${PN}.desktop-template" || die "cp failed"
 
 		# shellcheck disable=SC2154
+		# shellcheck disable=SC2154
 		sed -i \
 			-e "s:@NAME@:${app_name}:" \
 			-e "s:@EXEC@:${exec_command}:" \
@@ -1115,6 +1122,7 @@ src_install() {
 	; do
 		[[ ! -f "${wrapper}" ]] && continue
 
+		# shellcheck disable=SC2154
 		# shellcheck disable=SC2154
 		sed -i \
 			-e "s:@PREFIX@:${EPREFIX}/usr:" \
