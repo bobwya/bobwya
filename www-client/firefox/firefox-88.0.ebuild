@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-87-patches-04.tar.xz"
+FIREFOX_PATCHSET="firefox-88-patches-01.tar.xz"
 
 LLVM_MAX_SLOT=11
 
@@ -50,7 +50,7 @@ fi
 PATCH_URIS=( "https://dev.gentoo.org/"~{axs,polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="3fdf082cf93d94e4289e552cbd9988601044576a"
+GIT_MOZ_REVISION="aedbca44a8a2958947bed31f28e3083ac0496f4a"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 # shellcheck disable=SC2124
@@ -71,7 +71,7 @@ KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
 
 SLOT="0/$(ver_cut 1)"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="+clang cpu_flags_arm_neon dbus debug egl eme-free geckodriver +gmp-autoupdate kde
+IUSE="+clang cpu_flags_arm_neon dbus debug eme-free geckodriver +gmp-autoupdate kde
 	hardened hwaccel jack lto +openh264 pgo pulseaudio screencast selinux
 	+system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent
 	+system-libvpx +system-webp wayland wifi"
@@ -112,7 +112,7 @@ BDEPEND="${PYTHON_DEPS}
 	)"
 
 CDEPEND="
-	>=dev-libs/nss-3.62
+	>=dev-libs/nss-3.63
 	>=dev-libs/nspr-4.29
 	dev-libs/atk
 	dev-libs/expat
@@ -693,7 +693,7 @@ src_configure() {
 	fi
 
 	if [[ -s "${S}/api-google.key" ]]; then
-		local key_origin 
+		local key_origin
 		key_origin="Gentoo default"
 		if [[ "$(md5sum <"${S}/api-google.key" | awk '{ print $1 }')" != 709560c02f94b41f9ad2c49207be6c54 ]]; then
 			key_origin="User value"
@@ -706,7 +706,7 @@ src_configure() {
 	fi
 
 	if [[ -s "${S}/api-location.key" ]]; then
-		local key_origin 
+		local key_origin
 		key_origin="Gentoo default"
 		if [[ "$(md5sum <"${S}/api-location.key" | awk '{ print $1 }')" != ffb7895e35dedf832eb1c5d420ac7420 ]]; then
 			key_origin="User value"
@@ -719,7 +719,7 @@ src_configure() {
 	fi
 
 	if [[ -s "${S}/api-mozilla.key" ]]; then
-		local key_origin 
+		local key_origin
 		key_origin="Gentoo default"
 		if [[ "$(md5sum <"${S}/api-mozilla.key" | awk '{ print $1 }')" != 3927726e9442a8e8fa0e46ccc39caa27 ]]; then
 			key_origin="User value"
@@ -1044,7 +1044,7 @@ src_install() {
 	fi
 
 	# Install language packs
-	local langpacks       
+	local langpacks
 	langpacks=( "$(find "${WORKDIR}/language_packs" -type f -name '*.xpi')" )
 	# shellcheck disable=SC2128
 	if [[ -n "${langpacks}" ]]; then
@@ -1090,11 +1090,11 @@ src_install() {
 	wrapper_x11="${PN}-x11.sh"
 	local desktop_file
 	desktop_file="${FILESDIR}/icon/${PN}-r2.desktop"
-	local display_protocols 
+	local display_protocols
 	display_protocols="auto X11"
 	local icon
 	icon="${PN}"
-	local name 
+	local name
 	name="Mozilla ${MOZ_PN^}"
 	local use_wayland
 	use_wayland="false"

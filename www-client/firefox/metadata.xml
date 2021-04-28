@@ -3,7 +3,6 @@
 <pkgmetadata>
 <use>
 	<flag name="clang">Use Clang compiler instead of GCC</flag>
-	<flag name="egl">Enable EGL as the GL provider (unsupported).</flag>
 	<flag name="eme-free">Disable EME (DRM plugin) cabability at build time</flag>
 	<flag name="geckodriver">Enable WebDriver support</flag>
 	<flag name="gmp-autoupdate">Allow Gecko Media Plugins (binary blobs) to be automatically
