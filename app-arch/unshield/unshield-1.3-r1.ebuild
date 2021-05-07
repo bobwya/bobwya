@@ -21,15 +21,15 @@ fi
 LICENSE="MIT"
 SLOT="0"
 
-IUSE="libressl static-libs"
+IUSE="static-libs"
 
 RDEPEND="
-	!libressl? ( dev-libs/openssl:= )
-	libressl? ( dev-libs/libressl:0= )
+	dev-libs/openssl:=
 	sys-libs/zlib"
 DEPEND="${RDEPEND}"
 
 src_prepare() {
+	local PATCHES=( "${FILESDIR}/${PN}-1.3-fix_cmake_include_paths.patch" )
 	eapply_user
 	cmake_src_prepare
 }

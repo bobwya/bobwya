@@ -12,11 +12,10 @@ SRC_URI="https://github.com/twogood/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~hppa ~ppc ~x86"
-IUSE="libressl static-libs"
+IUSE="static-libs"
 
 RDEPEND="
-	!libressl? ( dev-libs/openssl:= )
-	libressl? ( dev-libs/libressl:0= )
+	dev-libs/openssl:=
 	sys-libs/zlib"
 DEPEND="${RDEPEND}"
 

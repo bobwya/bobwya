@@ -21,11 +21,10 @@ fi
 LICENSE="MIT"
 SLOT="0"
 
-IUSE="libressl static-libs"
+IUSE="static-libs"
 
 RDEPEND="
-	!libressl? ( dev-libs/openssl:= )
-	libressl? ( dev-libs/libressl:0= )
+	dev-libs/openssl:=
 	sys-libs/zlib"
 DEPEND="${RDEPEND}"
 
