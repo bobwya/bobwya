@@ -29,15 +29,13 @@ RDEPEND="
 DEPEND="${RDEPEND}"
 
 src_prepare() {
-	local PATCHES=( "${FILESDIR}/${PN}-1.3-fix_cmake_include_paths.patch" )
 	eapply_user
 	cmake_src_prepare
 }
 
 src_configure() {
 	local mycmakeargs=(
-		--with-ssl
-		$(use_with static-libs static)
+		-DBUILD_STATIC=$(usex static-libs)
 	)
 	cmake_src_configure
 }

@@ -35,8 +35,7 @@ src_prepare() {
 
 src_configure() {
 	local mycmakeargs=(
-		--with-ssl
-		$(use_with static-libs static)
+		-DBUILD_STATIC=$(usex static-libs)
 	)
 	cmake_src_configure
 }
