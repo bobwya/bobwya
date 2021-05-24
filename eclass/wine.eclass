@@ -219,7 +219,7 @@ readonly _WINE_IS_STAGING
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-ebuild-common; tarball.
-WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20200629"
+WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20210523"
 readonly WINE_EBUILD_COMMON_P
 
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_PN
@@ -1111,6 +1111,7 @@ wine_staging_git_src_unpack() {
 # @DESCRIPTION:
 # This function tests for invalid EGIT_GIT env variable overrides, for the packages:
 #  app-emulation/wine-staging:9999 app-emulation/wine-vanilla:9999
+# shellcheck disable=SC2120
 _wine_env_vcs_variable_prechecks() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
@@ -1141,6 +1142,7 @@ _wine_env_vcs_variable_prechecks() {
 # @DESCRIPTION:
 # This function tests for invalid gcc or clang versions, for the packages:
 #  app-emulation/wine-staging app-emulation/wine-vanilla
+# shellcheck disable=SC2120
 _wine_build_environment_prechecks() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
@@ -1183,6 +1185,7 @@ _wine_build_environment_prechecks() {
 # @DESCRIPTION:
 # This function tests for an invalid gcc version, for the packages:
 #  app-emulation/wine-staging app-emulation/wine-vanilla
+# shellcheck disable=SC2120
 _wine_gcc_specific_pretests() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
@@ -1234,6 +1237,7 @@ _wine_gcc_specific_pretests() {
 # @DESCRIPTION:
 # This function tests generic compiler support for critical functionality, for the packages:
 #  app-emulation/wine-staging app-emulation/wine-vanilla
+# shellcheck disable=SC2120
 _wine_generic_compiler_pretests() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
@@ -1297,6 +1301,7 @@ _wine_src_disable_man_file() {
 # @DESCRIPTION:
 # This functions deregisters the current: app-emulation/wine-staging, app-emulation/wine-vanilla
 # variant, with the eselect-wine module.
+# shellcheck disable=SC2120
 _wine_deregister_current_variant() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
@@ -1313,6 +1318,7 @@ _wine_deregister_current_variant() {
 # @DESCRIPTION:
 # This functions registers a new: app-emulation/wine-staging, app-emulation/wine-vanilla
 # variant, with the eselect-wine module.
+# shellcheck disable=SC2120
 _wine_register_new_variant() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
@@ -1647,6 +1653,15 @@ wine_add_stock_gentoo_patches() {
 			;;
 	esac
 
+	# shellcheck disable=SC2086
+	has mingw ${IUSE} && use mingw && mingw64_gcc_version_geq "11" && case "${WINE_PV}" in
+		4.[6-9]|4.1[0-9]|4.12.1|4.2[0-1]|5.*|6.0|6.0_rc[1-9]|6.0.[1-9]|6.0.[1-9]_rc[1-9]|6.[1-8]|9999)
+			PATCHES+=( "${_patch_directory}/wine-4.6-msvcrt_add_sincos_to_importlib.patch" )
+			;;
+		*)
+			;;
+	esac
+
 	case "${WINE_PV}" in
 		1.8|1.8.[1-7]|1.9.[0-9]|9999)
 			PATCHES+=( "${_patch_directory}/wine-1.8-disable_gnu_dirent.patch" )
@@ -1918,7 +1933,9 @@ wine_pkg_pretend() {
 # @DESCRIPTION:
 # This ebuild phase function performs various compiler version and env variable checks.
 wine_pkg_setup() {
+	# shellcheck disable=SC2119
 	_wine_env_vcs_variable_prechecks || die "_wine_env_vcs_variable_prechecks() failed"
+	# shellcheck disable=SC2119
 	_wine_build_environment_prechecks || die "_wine_build_environment_prechecks() failed"
 	# shellcheck disable=SC2086
 	has mingw ${IUSE} && use mingw && mingw64_check_requirements "5.0.0" "7.0.0"
@@ -1933,7 +1950,9 @@ wine_pkg_setup() {
 # 'CROSSLDFLAGS': cross-compiler cflags (fallback to 'LDFLAGS' - if 'CROSSLDFLAGS' is unspecified)
 # This function then calls the multilib-minimal_src_configure phase.
 wine_src_configure() {
+	# shellcheck disable=SC2119
 	_wine_gcc_specific_pretests || die "_wine_gcc_specific_pretests() failed"
+	# shellcheck disable=SC2119
 	_wine_generic_compiler_pretests || die "_wine_generic_compiler_pretests() failed"
 
 	local -r _gcc_10_fcommon_fix_commit="c13d58780f78393571dfdeb5b4952e3dcd7ded90"
@@ -2014,6 +2033,7 @@ wine_multilib_src_test() {
 # This function also updates the XDG Mime database.
 # This function prints various USE flag and Wine version specific warning messages.
 wine_pkg_postinst() {
+	# shellcheck disable=SC2119
 	_wine_register_new_variant
 
 	xdg_mimeinfo_database_update
@@ -2054,6 +2074,7 @@ wine_pkg_postinst() {
 # @DESCRIPTION:
 # This ebuild phase function deregisters the currently Wine variant.
 wine_pkg_prerm() {
+	# shellcheck disable=SC2119
 	_wine_deregister_current_variant
 }
 
