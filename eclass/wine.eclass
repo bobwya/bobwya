@@ -1655,7 +1655,7 @@ wine_add_stock_gentoo_patches() {
 
 	# shellcheck disable=SC2086
 	has mingw ${IUSE} && use mingw && mingw64_gcc_version_geq "11" && case "${WINE_PV}" in
-		4.[6-9]|4.1[0-9]|4.12.1|4.2[0-1]|5.*|6.0|6.0_rc[1-9]|6.0.[1-9]|6.0.[1-9]_rc[1-9]|6.[1-8]|9999)
+		4.[6-9]|4.1[0-9]|4.12.1|4.2[0-1]|5.*|6.0|6.0-rc[1-9]|6.0.[1-9]|6.0.[1-9]-rc[1-9]|6.[1-8]|9999)
 			PATCHES+=( "${_patch_directory}/wine-4.6-msvcrt_add_sincos_to_importlib.patch" )
 			;;
 		*)
