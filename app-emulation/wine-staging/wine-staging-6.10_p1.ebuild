@@ -19,17 +19,14 @@ fi
 
 DESCRIPTION="Free implementation of Windows(tm) on Unix, with Wine Staging patchset"
 HOMEPAGE="https://www.winehq.org/"
-SRC_URI="${SRC_URI}
-	https://github.com/wine-staging/wine-staging/commit/c48811407e3c9cb2d6a448d6664f89bacd9cc36f.patch -> ${PN}-4.7_c48811407e3c9cb2d6a448d6664f89bacd9cc36f_eventfd_synchronization_fix.patch
-	https://github.com/wine-staging/wine-staging/commit/044cb930662d61f401a5d1bdd7b8e75d59cea5ea.patch -> ${PN}-5.10_044cb930662d61f401a5d1bdd7b8e75d59cea5ea_ntdll_forcebottomupalloc_fix.patch"
-
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc faudio ffmpeg +fontconfig +gcrypt +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mingw mp3 netapi nls odbc openal opencl +opengl osmesa oss pcap +perl pipelight +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test themes +threads +truetype udev +udisks +unwind +usb v4l vaapi vkd3d vulkan +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc faudio ffmpeg +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mingw mp3 netapi nls odbc openal opencl +opengl osmesa oss pcap +perl pipelight +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test themes +threads +truetype udev +udisks +unwind +usb v4l vaapi vkd3d vulkan +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
+	faudio? ( !ffmpeg )
 	osmesa? ( opengl )
 	test? ( abi_x86_32 )
 	vkd3d? ( vulkan )" #286560 osmesa-opengl  #551124 X-truetype
@@ -55,7 +52,6 @@ COMMON_DEPEND="
 	faudio? ( app-emulation/faudio[${MULTILIB_USEDEP}] )
 	ffmpeg? ( media-video/ffmpeg:=[${MULTILIB_USEDEP}] )
 	fontconfig? ( media-libs/fontconfig:=[${MULTILIB_USEDEP}] )
-	gcrypt? ( dev-libs/libgcrypt:=[${MULTILIB_USEDEP}] )
 	gphoto2? ( media-libs/libgphoto2:=[${MULTILIB_USEDEP}] )
 	gsm? ( media-sound/gsm:=[${MULTILIB_USEDEP}] )
 	gstreamer? (
@@ -136,18 +132,11 @@ DEPEND="${COMMON_DEPEND}
 	xinerama? ( x11-base/xorg-proto )"
 
 S="${WORKDIR}/${WINE_P}"
-[[ "${WINE_PV}" == "9999" ]] && EGIT_CHECKOUT_DIR="${S}"
-
 src_unpack() {
 	# Fully Mirror git tree, Wine, so we can access commits in all branches
 	[[ "${WINE_PV}" == "9999" ]] && EGIT_MIN_CLONE_TYPE="mirror"
 
 	default
-
-	if [[ "${WINE_PV}" == "9999" ]]; then
-		wine_staging_git_src_unpack
-		wine_get_git_commit_info "${S}" WINE_GIT_COMMIT_HASH WINE_GIT_COMMIT_DATE
-	fi
 
 	l10n_find_plocales_changes "${S}/po" "" ".po"
 }
@@ -158,8 +147,6 @@ src_prepare() {
 	local -a PATCHES PATCHES_BIN
 
 	wine_add_stock_gentoo_patches
-
-	[[ "${WINE_PV}" == "9999" ]] && wine_staging_src_prepare_git
 
 	wine_fix_gentoo_cc_multilib_support
 	wine_fix_gentoo_O3_compilation_support
@@ -189,8 +176,6 @@ src_prepare() {
 	wine_eapply_revert
 
 	wine_winecfg_about_enhancement
-
-	wine_fix_block_scope_compound_literals
 
 	eautoreconf
 
@@ -231,7 +216,6 @@ multilib_src_configure() {
 		"$(use_with fontconfig)"
 		"$(use_with ssl gnutls)"
 		"$(use_enable gecko mshtml)"
-		"$(use_with gcrypt)"
 		"$(use_with gphoto2 gphoto)"
 		"$(use_with gsm)"
 		"$(use_with gstreamer)"
@@ -277,9 +261,9 @@ multilib_src_configure() {
 	)
 
 	if use ffmpeg; then
-		wine_use_disabled ffmpeg || myconf+=( "$(use_with ffmpeg)" )
+		myconf+=( "$(use_with ffmpeg)" )
 	else
-		wine_use_disabled faudio || myconf+=( "$(use_with faudio)" )
+		myconf+=( "$(use_with faudio)" )
 	fi
 
 	local PKG_CONFIG AR RANLIB
