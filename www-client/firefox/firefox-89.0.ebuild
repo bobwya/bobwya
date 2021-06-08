@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-78esr-patches-12.tar.xz"
+FIREFOX_PATCHSET="firefox-89-patches-02.tar.xz"
 
 LLVM_MAX_SLOT=12
 
@@ -15,7 +15,7 @@ WANT_AUTOCONF="2.1"
 
 VIRTUALX_REQUIRED="pgo"
 
-MOZ_ESR=yes
+MOZ_ESR=
 
 MOZ_PV=${PV}
 MOZ_PV_SUFFIX=
@@ -50,7 +50,7 @@ fi
 PATCH_URIS=( "https://dev.gentoo.org/"~{axs,polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="07dc98f5d806baa51bae85cb22dad7591b0fd4b8"
+GIT_MOZ_REVISION="bf580bacd132687dc0135959fbc9eeb8d8ba3ea9"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 # shellcheck disable=SC2124
@@ -69,24 +69,23 @@ HOMEPAGE="https://www.mozilla.com/firefox
 
 KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
 
-SLOT="0/esr$(ver_cut 1)"
+SLOT="0/$(ver_cut 1)"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="+clang cpu_flags_arm_neon dbus debug eme-free geckodriver +gmp-autoupdate kde
-	hardened hwaccel jack lto +openh264 pgo pulseaudio screencast selinux
+	hardened hwaccel jack lto +openh264 pgo pulseaudio screencast sndio selinux
 	+system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent
 	+system-libvpx +system-webp wayland wifi"
 
 REQUIRED_USE="debug? ( !system-av1 )
-	screencast? ( wayland )
-	wifi? ( dbus )"
+	screencast? ( wayland )"
 
 BDEPEND="${PYTHON_DEPS}
 	app-arch/unzip
 	app-arch/zip
-	>=dev-util/cbindgen-0.14.3
-	>=net-libs/nodejs-10.21.0
+	>=dev-util/cbindgen-0.19.0
+	>=net-libs/nodejs-10.23.1
 	virtual/pkgconfig
-	>=virtual/rust-1.41.0
+	>=virtual/rust-1.47.0
 	|| (
 		(
 			sys-devel/clang:12
@@ -113,19 +112,12 @@ BDEPEND="${PYTHON_DEPS}
 			)
 		)
 	)
-	lto? (
-		!clang? ( sys-devel/binutils[gold] )
-	)
-	amd64? ( >=dev-lang/yasm-1.1 )
-	x86? ( >=dev-lang/yasm-1.1 )
-	!system-av1? (
-		amd64? ( >=dev-lang/nasm-2.13 )
-		x86? ( >=dev-lang/nasm-2.13 )
-	)"
+	amd64? ( >=dev-lang/nasm-2.13 )
+	x86? ( >=dev-lang/nasm-2.13 )"
 
 CDEPEND="
-	>=dev-libs/nss-3.53.1
-	>=dev-libs/nspr-4.25
+	>=dev-libs/nss-3.64
+	>=dev-libs/nspr-4.29
 	dev-libs/atk
 	dev-libs/expat
 	>=dev-libs/libffi-3.0.10:=
@@ -157,11 +149,11 @@ CDEPEND="
 	)
 	screencast? ( media-video/pipewire:0/0.3 )
 	system-av1? (
-		>=media-libs/dav1d-0.3.0:=
+		>=media-libs/dav1d-0.8.1:=
 		>=media-libs/libaom-1.0.0:=
 	)
 	system-harfbuzz? (
-		>=media-libs/harfbuzz-2.6.8:0=
+		>=media-libs/harfbuzz-2.7.4:0=
 		>=media-gfx/graphite2-1.3.13
 	)
 	system-icu? ( >=dev-libs/icu-67.1:= )
@@ -177,7 +169,8 @@ CDEPEND="
 		)
 	)
 	jack? ( virtual/jack )
-	selinux? ( sec-policy/selinux-mozilla )"
+	selinux? ( sec-policy/selinux-mozilla )
+	sndio? ( media-sound/sndio )"
 
 RDEPEND="${CDEPEND}
 	jack? ( virtual/jack )
@@ -240,7 +233,7 @@ MOZ_LANGS=(
 	"fa" "ff" "fi" "fr" "fy-NL" "ga-IE" "gd" "gl" "gn" "gu-IN" "he" "hi-IN" "hr" "hsb" "hu" "hy-AM"
 	"ia" "id" "is" "it" "ja" "ka" "kab" "kk" "km" "kn" "ko" "lij" "lt" "lv" "mk" "mr" "ms" "my"
 	"nb-NO" "ne-NP" "nl" "nn-NO" "oc" "pa-IN" "pl" "pt-BR" "pt-PT" "rm" "ro" "ru"
-	"si" "sk" "sl" "son" "sq" "sr" "sv-SE" "ta" "te" "th" "tl" "tr" "trs" "uk" "ur" "uz" "vi"
+	"si" "sk" "sl" "son" "sq" "sr" "sv-SE" "szl" "ta" "te" "th" "tl" "tr" "trs" "uk" "ur" "uz" "vi"
 	"xh" "zh-CN" "zh-TW"
 )
 
@@ -459,6 +452,13 @@ pkg_setup() {
 				eerror " - Build ${CATEGORY}/${PN} without USE=lto"
 				die "LLVM version used by Rust (${version_llvm_rust}) does not match with ld.lld version (${version_lld})!"
 			fi
+		fi
+
+		if ! use clang && [[ "$(gcc-major-version)" -eq 11 ]] \
+			&& ! has_version -b ">sys-devel/gcc-11.1.0:11" ; then
+			# bug 792705
+			eerror "Using GCC 11 to compile firefox is currently known to be broken (see bug #792705)."
+			die "Set USE=clang or select <gcc-11 to build ${CATEGORY}/${P}."
 		fi
 
 		python-any-r1_pkg_setup
@@ -771,7 +771,7 @@ src_configure() {
 		mozconfig_add_options_ac '-pulseaudio' --enable-alsa
 	fi
 
-	mozconfig_use_enable screencast pipewire
+	mozconfig_use_enable sndio
 
 	mozconfig_use_enable wifi necko-wifi
 
@@ -788,9 +788,6 @@ src_configure() {
 
 			mozconfig_add_options_ac '+lto' --enable-lto=cross
 		else
-			# Linking only works when using ld.gold when LTO is enabled
-			mozconfig_add_options_ac "forcing ld=gold due to USE=lto" --enable-linker=gold
-
 			# ThinLTO is currently broken, see bmo#1644409
 			mozconfig_add_options_ac '+lto' --enable-lto=full
 		fi
@@ -809,8 +806,6 @@ src_configure() {
 		if use clang; then
 			# This is upstream's default
 			mozconfig_add_options_ac "forcing ld=lld due to USE=clang" --enable-linker=lld
-		elif tc-ld-is-gold ; then
-			mozconfig_add_options_ac "linker is set to gold" --enable-linker=gold
 		else
 			mozconfig_add_options_ac "linker is set to bfd" --enable-linker=bfd
 		fi
@@ -940,8 +935,9 @@ src_configure() {
 	MOZ_NOSPAM=1
 	export MOZ_NOSPAM
 
-	# Build system requires xargs but is unable to find it
-	mozconfig_add_options_mk 'Gentoo default' "XARGS=${EPREFIX}/usr/bin/xargs"
+	# Portage sets XARGS environment variable to "xargs -r" by default which
+	# breaks build system's check_prog() function which doesn't support arguments
+	mozconfig_add_options_ac 'Gentoo default' "XARGS=${EPREFIX}/usr/bin/xargs"
 
 	# Set build dir
 	mozconfig_add_options_mk 'Gentoo default' "MOZ_OBJDIR=${BUILD_DIR}"
@@ -996,7 +992,7 @@ src_compile() {
 	local -x GDK_BACKEND
 	GDK_BACKEND=x11
 
-	"${virtx_cmd}" ./mach build --verbose \
+	${virtx_cmd} ./mach build --verbose \
 		|| die "./mach failed"
 }
 
