@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-89-patches-02.tar.xz"
+FIREFOX_PATCHSET="firefox-89-patches-03.tar.xz"
 
 LLVM_MAX_SLOT=12
 
