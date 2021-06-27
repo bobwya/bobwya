@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-78esr-patches-10.tar.xz"
+FIREFOX_PATCHSET="firefox-78esr-patches-14.tar.xz"
 
 LLVM_MAX_SLOT=12
 
@@ -39,7 +39,7 @@ MOZ_PV_DISTFILES="${MOZ_PV}${MOZ_PV_SUFFIX}"
 MOZ_P_DISTFILES="${MOZ_PN}-${MOZ_PV_DISTFILES}"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_COMMIT="07dc98f5d806baa51bae85cb22dad7591b0fd4b8"
+GIT_MOZ_COMMIT="529f76b6f2a3146f50411b8986f409a337b56a44"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 inherit autotools check-reqs desktop flag-o-matic gnome2-utils llvm multiprocessing \
