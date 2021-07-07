@@ -1474,6 +1474,9 @@ wine_eapply_staging_patchset() {
 		) \
 		_ntdll_forcebottomupalloc_fix_range=(
 			"8648971fa855c92e9bd73a7d5163a4d2c1d0f9a3" "044cb930662d61f401a5d1bdd7b8e75d59cea5ea"
+		) \
+		_ws2_32_connect_already_connected_patchset_fix_range=(
+			"ce643e9d2ad99daf8898707d4e4c12ba9ffa3525" "163f74fe61851ff57264437073805dd5e7afe2bd"
 		)
 
 	ewarn "Applying the Wine Staging patchset. Any bug reports to Wine Bugzilla"
@@ -1530,12 +1533,17 @@ wine_eapply_staging_patchset() {
 		5.10)
 			eapply "${DISTDIR}/${PN}-5.10_044cb930662d61f401a5d1bdd7b8e75d59cea5ea_ntdll_forcebottomupalloc_fix.patch"
 			;;
+		6.12)
+			eapply "${DISTDIR}/${PN}-6.12_163f74fe61851ff57264437073805dd5e7afe2bd_ws2_32_connect_already_connected_patchset_fix.patch"
+			;;
 		9999)
 			# shellcheck disable=SC2068
 			if _wine_git_is_commit_in_range "${_WINE_STAGING_DIR}" ${_eventfd_synchronization_dir_change_fix_range[@]}; then
 				eapply "${DISTDIR}/${PN}-4.7_c48811407e3c9cb2d6a448d6664f89bacd9cc36f_eventfd_synchronization_fix.patch"
 			elif _wine_git_is_commit_in_range "${_WINE_STAGING_DIR}" ${_ntdll_forcebottomupalloc_fix_range[@]}; then
 				eapply "${DISTDIR}/${PN}-5.10_044cb930662d61f401a5d1bdd7b8e75d59cea5ea_ntdll_forcebottomupalloc_fix.patch"
+			elif _wine_git_is_commit_in_range "${_WINE_STAGING_DIR}" ${_ws2_32_connect_already_connected_patchset_fix_range[@]}; then
+				eapply "${DISTDIR}/${PN}-6.12_163f74fe61851ff57264437073805dd5e7afe2bd_ws2_32_connect_already_connected_patchset_fix.patch"
 			fi
 			;;
 		*)
