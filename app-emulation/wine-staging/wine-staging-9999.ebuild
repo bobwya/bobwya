@@ -21,7 +21,8 @@ DESCRIPTION="Free implementation of Windows(tm) on Unix, with Wine Staging patch
 HOMEPAGE="https://www.winehq.org/"
 SRC_URI="${SRC_URI}
 	https://github.com/wine-staging/wine-staging/commit/c48811407e3c9cb2d6a448d6664f89bacd9cc36f.patch -> ${PN}-4.7_c48811407e3c9cb2d6a448d6664f89bacd9cc36f_eventfd_synchronization_fix.patch
-	https://github.com/wine-staging/wine-staging/commit/044cb930662d61f401a5d1bdd7b8e75d59cea5ea.patch -> ${PN}-5.10_044cb930662d61f401a5d1bdd7b8e75d59cea5ea_ntdll_forcebottomupalloc_fix.patch"
+	https://github.com/wine-staging/wine-staging/commit/044cb930662d61f401a5d1bdd7b8e75d59cea5ea.patch -> ${PN}-5.10_044cb930662d61f401a5d1bdd7b8e75d59cea5ea_ntdll_forcebottomupalloc_fix.patch
+	https://github.com/wine-staging/wine-staging/commit/163f74fe61851ff57264437073805dd5e7afe2bd.patch -> ${PN}-6.12_163f74fe61851ff57264437073805dd5e7afe2bd_ws2_32_connect_already_connected_patchset_fix.patch"
 
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
