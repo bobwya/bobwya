@@ -219,7 +219,7 @@ readonly _WINE_IS_STAGING
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-ebuild-common; tarball.
-WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20210523"
+WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20210725"
 readonly WINE_EBUILD_COMMON_P
 
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_PN
@@ -1683,6 +1683,14 @@ wine_add_stock_gentoo_patches() {
 			;;
 		*)
 			PATCHES_REVERT+=( "${_patch_directory}/revert/wine-5.9-makedep_install_also_generated_typelib_for_installed_idl.patch" )
+			;;
+	esac
+	case "${WINE_PV}" in
+		1.8|1.8.*|1.9.*|2.*|3.*|4.*|5.*|6.[0-9]|6.1[0-1]|6.0.[1-9]|6.0.[1-9]-rc[1-9])
+			;;
+		*)
+			# See: https://bugs.gentoo.org/800809
+			PATCHES_REVERT+=( "${_patch_directory}/revert/wine-6.12-winegcc_add_equality_sign_delimiter.patch" )
 			;;
 	esac
 }
