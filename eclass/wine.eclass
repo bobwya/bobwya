@@ -17,7 +17,7 @@
 if [[ -z "${_WINE_ECLASS}" ]]; then
 _WINE_ECLASS=1
 
-inherit flag-o-matic l10n mingw64 multilib virtualx xdg-utils
+inherit flag-o-matic mingw64 multilib plocale virtualx xdg-utils
 
 case ${EAPI} in
 	6)  inherit eapi7-ver ;;
@@ -1686,11 +1686,20 @@ wine_add_stock_gentoo_patches() {
 			;;
 	esac
 	case "${WINE_PV}" in
-		1.8|1.8.*|1.9.*|2.*|3.*|4.*|5.*|6.[0-9]|6.1[0-1]|6.0.[1-9]|6.0.[1-9]-rc[1-9])
+		9999)
+			local -a _revert_add_equality_sign_delimiter_commit=( "de4c91e0a1ac65017190bead4c053ae65db8f80e" )
+			_wine_prune_patches_from_array "${S}" "1" "_revert_add_equality_sign_delimiter_commit"
+			# shellcheck disable=SC2068
+			if ((${#_revert_add_equality_sign_delimiter_commit[@]})); then
+				# See: https://bugs.gentoo.org/800809
+				PATCHES_REVERT+=( "${_patch_directory}/revert/wine-6.12-winegcc_add_equality_sign_delimiter.patch" )
+			fi
 			;;
-		*)
+		6.1[2-3])
 			# See: https://bugs.gentoo.org/800809
 			PATCHES_REVERT+=( "${_patch_directory}/revert/wine-6.12-winegcc_add_equality_sign_delimiter.patch" )
+			;;
+		*)
 			;;
 	esac
 }
@@ -1894,10 +1903,9 @@ wine_src_disable_unused_locale_man_files() {
 	(($# == 0))  || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
 	local _makefile_in
-	find "${S}" -type f -name "Makefile.in" -exec egrep -q "^MANPAGES" "{}" \; -printf '%p\0' 2>/dev/null \
-	| while IFS= read -r -d '' _makefile_in; do
-		l10n_for_each_disabled_locale_do _wine_src_disable_man_file "${_makefile_in}" ""
-	done
+	while IFS= read -r -d '' _makefile_in; do
+		plocale_for_each_disabled_locale _wine_src_disable_man_file "${_makefile_in}" ""
+	done < <(find "${S}" -type f -name "Makefile.in" -exec egrep -q "^MANPAGES" "{}" \; -printf '%p\0' 2>/dev/null)
 }
 
 # @FUNCTION: wine_symlink_64bit_manpages
