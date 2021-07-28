@@ -7,7 +7,7 @@ EAPI=7
 PLOCALES="ar bg ca cs da de el en en_US eo es fa fi fr he hi hr hu it ja ko lt ml nb_NO nl or pa pl pt_BR pt_PT rm ro ru si sk sl sr_RS@cyrillic sr_RS@latin sv ta te th tr uk wa zh_CN zh_TW"
 PLOCALE_BACKUP="en"
 
-inherit autotools l10n multilib multilib-minimal pax-utils toolchain-funcs virtualx wine xdg-utils
+inherit autotools multilib multilib-minimal pax-utils plocale toolchain-funcs virtualx wine xdg-utils
 
 if [[ "${WINE_PV}" == "9999" ]]; then
 	EGIT_REPO_URI="https://source.winehq.org/git/wine.git"
@@ -138,7 +138,7 @@ src_unpack() {
 
 	default
 
-	l10n_find_plocales_changes "${S}/po" "" ".po"
+	plocale_find_changes "${S}/po" "" ".po"
 }
 
 src_prepare() {
@@ -196,7 +196,7 @@ src_prepare() {
 	#472990 use hi-res default icon, https://bugs.winehq.org/show_bug.cgi?id=24652
 	cp "${EROOT%/}/usr/share/wine/icons/oic_winlogo.ico" dlls/user32/resources/ || die "cp failed"
 
-	l10n_get_locales > "${S}/po/LINGUAS" || die "l10n_get_locales failed" # Make Wine respect LINGUAS
+	plocale_get_locales > "${S}/po/LINGUAS" || die "plocale_get_locales failed" # Make Wine respect LINGUAS
 }
 
 multilib_src_configure() {
@@ -290,7 +290,7 @@ multilib_src_configure() {
 
 multilib_src_install_all() {
 	DOCS=( "ANNOUNCE" "AUTHORS" "README" )
-	l10n_for_each_locale_do wine_add_locale_docs
+	plocale_for_each_locale wine_add_locale_docs
 
 	einstalldocs
 	unset -v DOCS
