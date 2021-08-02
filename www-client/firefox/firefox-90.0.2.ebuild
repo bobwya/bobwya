@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-89-patches-03.tar.xz"
+FIREFOX_PATCHSET="firefox-90-patches-01.tar.xz"
 
 LLVM_MAX_SLOT=12
 
@@ -38,7 +38,7 @@ MOZ_P="${MOZ_PN}-${MOZ_PV}"
 MOZ_PV_DISTFILES="${MOZ_PV}${MOZ_PV_SUFFIX}"
 MOZ_P_DISTFILES="${MOZ_PN}-${MOZ_PV_DISTFILES}"
 
-inherit autotools check-reqs desktop flag-o-matic gnome2-utils llvm multiprocessing \
+inherit autotools check-reqs desktop flag-o-matic gnome2-utils linux-info llvm multiprocessing \
 	pax-utils python-any-r1 toolchain-funcs virtualx xdg
 
 MOZ_SRC_BASE_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases/${MOZ_PV}"
@@ -50,7 +50,7 @@ fi
 PATCH_URIS=( "https://dev.gentoo.org/"~{axs,polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="bf580bacd132687dc0135959fbc9eeb8d8ba3ea9"
+GIT_MOZ_REVISION="27150c4a1220da580ab907c5246b436be6353538"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 # shellcheck disable=SC2124
@@ -116,13 +116,12 @@ BDEPEND="${PYTHON_DEPS}
 	x86? ( >=dev-lang/nasm-2.13 )"
 
 CDEPEND="
-	>=dev-libs/nss-3.64
+	>=dev-libs/nss-3.66
 	>=dev-libs/nspr-4.29
 	dev-libs/atk
 	dev-libs/expat
 	>=dev-libs/libffi-3.0.10:=
 	>=x11-libs/cairo-1.10[X]
-	>=x11-libs/gtk+-2.18:2
 	>=x11-libs/gtk+-3.4.0:3[X]
 	x11-libs/gdk-pixbuf
 	>=x11-libs/pango-1.22.0
@@ -206,19 +205,19 @@ fi
 
 llvm_check_deps() {
 	if ! has_version -b "sys-devel/clang:${LLVM_SLOT}"; then
-		ewarn "sys-devel/clang:${LLVM_SLOT} is missing! Cannot use LLVM slot ${LLVM_SLOT} ..." >&2
+		einfo "sys-devel/clang:${LLVM_SLOT} is missing! Cannot use LLVM slot ${LLVM_SLOT} ..." >&2
 		return 1
 	fi
 
 	if use clang; then
 		if ! has_version -b "=sys-devel/lld-${LLVM_SLOT}*"; then
-			ewarn "=sys-devel/lld-${LLVM_SLOT}* is missing! Cannot use LLVM slot ${LLVM_SLOT} ..." >&2
+			einfo "=sys-devel/lld-${LLVM_SLOT}* is missing! Cannot use LLVM slot ${LLVM_SLOT} ..." >&2
 			return 1
 		fi
 
 		if use pgo; then
 			if ! has_version -b "=sys-libs/compiler-rt-sanitizers-${LLVM_SLOT}*"; then
-				ewarn "=sys-libs/compiler-rt-sanitizers-${LLVM_SLOT}* is missing! Cannot use LLVM slot ${LLVM_SLOT} ..." >&2
+				einfo "=sys-libs/compiler-rt-sanitizers-${LLVM_SLOT}* is missing! Cannot use LLVM slot ${LLVM_SLOT} ..." >&2
 				return 1
 			fi
 		fi
@@ -505,6 +504,10 @@ pkg_setup() {
 		export LC_ALL
 		LC_ALL=C
 	fi
+
+	CONFIG_CHECK="~SECCOMP"
+	WARNING_SECCOMP="CONFIG_SECCOMP not set! This system will be unable to play DRM-protected content."
+	linux-info_pkg_setup
 }
 
 src_unpack() {
