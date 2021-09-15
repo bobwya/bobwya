@@ -1824,18 +1824,24 @@ ${_WINE_AWK_FIX_BLOCK_SCOPE_LITERALS}"
 wine_winecfg_about_enhancement() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
-	sed -i -e '/#include "config.h"/d' \
-		-e '/#include <windows.h>/ i #include "config.h"' \
+	local package_name
+
+	if ((_WINE_IS_STAGING)); then
+		package_name="Wine Staging "
+	else
+		package_name="Wine "
+	fi
+
+	sed -i -e '/[*]owner, [*]org;$/ a \\nstatic CHAR package_string[256];\n' \
+		-e '/SetDlgItemTextA(hDlg, IDC_ABT_PANEL_TEXT, wine_get_version());$/a     lstrcpyA(package_string, "'"${package_name}"'");    if (wine_get_version) lstrcatA(package_string, wine_get_version());\n    SetDlgItemTextA(hDlg, IDC_ABT_TITLE_TEXT, package_string);' \
+		-e '/SetDlgItemTextA(hDlg, IDC_ABT_PANEL_TEXT, PACKAGE_VERSION);$/a     lstrcpyA(package_string, PACKAGE_STRING);\n    SetDlgItemTextA(hDlg, IDC_ABT_TITLE_TEXT, package_string);' \
 		-e '/[ ]-MulDiv([[:digit:]][[:digit:]], GetDeviceCaps(hDC, LOGPIXELSY), 72),$/{s/24,/16,/}' \
-		-e '/^[ ]*SetWindowTextA(hWnd, [_[:upper:]]*);$/{s/PACKAGE_NAME/PACKAGE_STRING/}' \
-		-e '/^[ ]*SetDlgItemTextA(hDlg, IDC_ABT_PANEL_TEXT, PACKAGE_VERSION);$/d' \
 		-e '/IDC_ABT_PANEL_TEXT/d' \
-		-e '/wine_get_version/d' \
-		-e '/SendDlgItemMessageW(hDlg, IDC_ABT_TITLE_TEXT, WM_SETFONT, (WPARAM)titleFont, TRUE);$/ a SetDlgItemTextA(hDlg, IDC_ABT_TITLE_TEXT, PACKAGE_STRING);' \
 		"programs/winecfg/about.c" || die "sed failed"
 
 	sed -i -e '/IDC_ABT_PANEL_TEXT/d' \
 		"programs/winecfg/resource.h" || die "sed failed"
+
 	sed -i -e '/#include "config.h"/d' \
 		-e '/#include "resource.h"/ i #include "config.h"' \
 		-e '/^[ ]*LTEXT[ ]*/{s/".*",IDC_ABT_TITLE_TEXT,105,30,55,30/"",IDC_ABT_TITLE_TEXT,100,30,200,20/}' \
@@ -1844,7 +1850,7 @@ wine_winecfg_about_enhancement() {
 		-e '/^[ ]*IDC_ABT_LICENSE_TEXT,/{s/105,64,145,66$/100,64,145,66/}' \
 		"programs/winecfg/winecfg.rc" || die "sed failed"
 
-	einfo "Called wine_winecfg_about_enhancement"
+	einfo "Called ${FUNCNAME[0]}"
 }
 
 # @FUNCTION: wine_support_wine_mono_downgrade
