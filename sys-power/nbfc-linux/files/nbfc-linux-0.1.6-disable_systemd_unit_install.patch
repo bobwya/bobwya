@@ -1,0 +1,9 @@
+--- a/Makefile	2021-09-20 19:39:44.828288968 +0100
++++ b/Makefile	2021-09-23 19:08:57.485458291 +0100
+@@ -14,6 +14,2 @@
+ 	
+-	# /etc/systemd/system
+-	mkdir -p $(confdir)/systemd/system
+-	cp etc/systemd/system/nbfc_service.service $(confdir)/systemd/system/nbfc_service.service
+-	
+ 	# /usr/share/nbfc/configs

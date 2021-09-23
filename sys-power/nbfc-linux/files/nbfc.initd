@@ -1,0 +1,18 @@
+#!/sbin/openrc-run
+# Copyright 1999-2021 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+command="/usr/bin/nbfc"
+pidfile="/var/run/nbfc.pid"
+description="NoteBook FanControl"
+
+depend() {
+	need localmount
+	after modules-load
+}
+
+start_pre() {
+	ebegin "Wait for /sys/class/hwmon/hwmon* files"
+	${command} wait-for-hwmon 2>&1
+	eend $?
+}
