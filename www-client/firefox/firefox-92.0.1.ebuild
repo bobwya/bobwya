@@ -4,18 +4,18 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-78esr-patches-16.tar.xz"
+FIREFOX_PATCHSET="firefox-92-patches-02.tar.xz"
 
 LLVM_MAX_SLOT=12
 
-PYTHON_COMPAT=( python3_{7..9} )
+PYTHON_COMPAT=( python3_{7..10} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
 
 WANT_AUTOCONF="2.1"
 
 VIRTUALX_REQUIRED="pgo"
 
-MOZ_ESR=yes
+MOZ_ESR=
 
 MOZ_PV=${PV}
 MOZ_PV_SUFFIX=
@@ -50,7 +50,7 @@ fi
 PATCH_URIS=( "https://dev.gentoo.org/"~{axs,polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="529f76b6f2a3146f50411b8986f409a337b56a44"
+GIT_MOZ_REVISION="a0c9416afc032611d6171e58cf711d3cb86c705f"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 # shellcheck disable=SC2124
@@ -69,24 +69,23 @@ HOMEPAGE="https://www.mozilla.com/firefox
 
 KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
 
-SLOT="0/esr$(ver_cut 1)"
+SLOT="0/$(ver_cut 1)"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="+clang cpu_flags_arm_neon dbus debug eme-free geckodriver +gmp-autoupdate kde
-	hardened hwaccel jack lto +openh264 pgo pulseaudio screencast selinux
+	hardened hwaccel jack lto +openh264 pgo pulseaudio screencast sndio selinux
 	+system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent
 	+system-libvpx +system-webp wayland wifi"
 
 REQUIRED_USE="debug? ( !system-av1 )
-	screencast? ( wayland )
-	wifi? ( dbus )"
+	screencast? ( wayland )"
 
 BDEPEND="${PYTHON_DEPS}
 	app-arch/unzip
 	app-arch/zip
-	>=dev-util/cbindgen-0.14.3
-	>=net-libs/nodejs-10.21.0
+	>=dev-util/cbindgen-0.19.0
+	>=net-libs/nodejs-10.23.1
 	virtual/pkgconfig
-	>=virtual/rust-1.41.0
+	>=virtual/rust-1.51.0
 	|| (
 		(
 			sys-devel/clang:12
@@ -113,24 +112,16 @@ BDEPEND="${PYTHON_DEPS}
 			)
 		)
 	)
-	lto? (
-		!clang? ( sys-devel/binutils[gold] )
-	)
-	amd64? ( >=dev-lang/yasm-1.1 )
-	x86? ( >=dev-lang/yasm-1.1 )
-	!system-av1? (
-		amd64? ( >=dev-lang/nasm-2.13 )
-		x86? ( >=dev-lang/nasm-2.13 )
-	)"
+	amd64? ( >=dev-lang/nasm-2.13 )
+	x86? ( >=dev-lang/nasm-2.13 )"
 
 CDEPEND="
-	>=dev-libs/nss-3.53.1
-	>=dev-libs/nspr-4.25
+	>=dev-libs/nss-3.69
+	>=dev-libs/nspr-4.32
 	dev-libs/atk
 	dev-libs/expat
 	>=dev-libs/libffi-3.0.10:=
 	>=x11-libs/cairo-1.10[X]
-	>=x11-libs/gtk+-2.18:2
 	>=x11-libs/gtk+-3.4.0:3[X]
 	x11-libs/gdk-pixbuf
 	>=x11-libs/pango-1.22.0
@@ -150,21 +141,20 @@ CDEPEND="
 	x11-libs/libXext
 	x11-libs/libXfixes
 	x11-libs/libXrender
-	x11-libs/libXt
 	dbus? (
 		sys-apps/dbus
 		dev-libs/dbus-glib
 	)
 	screencast? ( media-video/pipewire:0/0.3 )
 	system-av1? (
-		>=media-libs/dav1d-0.3.0:=
+		>=media-libs/dav1d-0.8.1:=
 		>=media-libs/libaom-1.0.0:=
 	)
 	system-harfbuzz? (
-		>=media-libs/harfbuzz-2.6.8:0=
+		>=media-libs/harfbuzz-2.8.1:0=
 		>=media-gfx/graphite2-1.3.13
 	)
-	system-icu? ( >=dev-libs/icu-67.1:= )
+	system-icu? ( >=dev-libs/icu-69.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
 	system-libevent? ( >=dev-libs/libevent-2.0:0=[threads] )
 	system-libvpx? ( >=media-libs/libvpx-1.8.2:0=[postproc] )
@@ -177,7 +167,8 @@ CDEPEND="
 		)
 	)
 	jack? ( virtual/jack )
-	selinux? ( sec-policy/selinux-mozilla )"
+	selinux? ( sec-policy/selinux-mozilla )
+	sndio? ( media-sound/sndio )"
 
 RDEPEND="${CDEPEND}
 	jack? ( virtual/jack )
@@ -239,8 +230,8 @@ MOZ_LANGS=(
 	"da" "de" "dsb" "el" "en-CA" "en-GB" "en-US" "eo" "es-AR" "es-CL" "es-ES" "es-MX" "et" "eu"
 	"fa" "ff" "fi" "fr" "fy-NL" "ga-IE" "gd" "gl" "gn" "gu-IN" "he" "hi-IN" "hr" "hsb" "hu" "hy-AM"
 	"ia" "id" "is" "it" "ja" "ka" "kab" "kk" "km" "kn" "ko" "lij" "lt" "lv" "mk" "mr" "ms" "my"
-	"nb-NO" "ne-NP" "nl" "nn-NO" "oc" "pa-IN" "pl" "pt-BR" "pt-PT" "rm" "ro" "ru"
-	"si" "sk" "sl" "son" "sq" "sr" "sv-SE" "ta" "te" "th" "tl" "tr" "trs" "uk" "ur" "uz" "vi"
+	"nb-NO" "ne-NP" "nl" "nn-NO" "oc" "pa-IN" "pl" "pt-BR" "pt-PT" "rm" "ro" "ru" "sco"
+	"si" "sk" "sl" "son" "sq" "sr" "sv-SE" "szl" "ta" "te" "th" "tl" "tr" "trs" "uk" "ur" "uz" "vi"
 	"xh" "zh-CN" "zh-TW"
 )
 
@@ -459,6 +450,13 @@ pkg_setup() {
 				eerror " - Build ${CATEGORY}/${PN} without USE=lto"
 				die "LLVM version used by Rust (${version_llvm_rust}) does not match with ld.lld version (${version_lld})!"
 			fi
+		fi
+
+		if ! use clang && [[ "$(gcc-major-version)" -eq 11 ]] \
+			&& ! has_version -b ">sys-devel/gcc-11.1.0:11" ; then
+			# bug 792705
+			eerror "Using GCC 11 to compile firefox is currently known to be broken (see bug #792705)."
+			die "Set USE=clang or select <gcc-11 to build ${CATEGORY}/${P}."
 		fi
 
 		python-any-r1_pkg_setup
@@ -775,7 +773,7 @@ src_configure() {
 		mozconfig_add_options_ac '-pulseaudio' --enable-alsa
 	fi
 
-	mozconfig_use_enable screencast pipewire
+	mozconfig_use_enable sndio
 
 	mozconfig_use_enable wifi necko-wifi
 
@@ -792,9 +790,6 @@ src_configure() {
 
 			mozconfig_add_options_ac '+lto' --enable-lto=cross
 		else
-			# Linking only works when using ld.gold when LTO is enabled
-			mozconfig_add_options_ac "forcing ld=gold due to USE=lto" --enable-linker=gold
-
 			# ThinLTO is currently broken, see bmo#1644409
 			mozconfig_add_options_ac '+lto' --enable-lto=full
 		fi
@@ -813,8 +808,6 @@ src_configure() {
 		if use clang; then
 			# This is upstream's default
 			mozconfig_add_options_ac "forcing ld=lld due to USE=clang" --enable-linker=lld
-		elif tc-ld-is-gold ; then
-			mozconfig_add_options_ac "linker is set to gold" --enable-linker=gold
 		else
 			mozconfig_add_options_ac "linker is set to bfd" --enable-linker=bfd
 		fi
@@ -944,8 +937,9 @@ src_configure() {
 	MOZ_NOSPAM=1
 	export MOZ_NOSPAM
 
-	# Build system requires xargs but is unable to find it
-	mozconfig_add_options_mk 'Gentoo default' "XARGS=${EPREFIX}/usr/bin/xargs"
+	# Portage sets XARGS environment variable to "xargs -r" by default which
+	# breaks build system's check_prog() function which doesn't support arguments
+	mozconfig_add_options_ac 'Gentoo default' "XARGS=${EPREFIX}/usr/bin/xargs"
 
 	# Set build dir
 	mozconfig_add_options_mk 'Gentoo default' "MOZ_OBJDIR=${BUILD_DIR}"
@@ -1105,91 +1099,51 @@ src_install() {
 		newicon -s "${size}" "${icon}" "${PN}.png"
 	done
 
-	# Install menus
-	local wrapper_wayland
-	wrapper_wayland="${PN}-wayland.sh"
-	local wrapper_x11
-	wrapper_x11="${PN}-x11.sh"
+	# Install menu
+	local app_name
+	app_name="Mozilla ${MOZ_PN^}"
 	local desktop_file
-	desktop_file="${FILESDIR}/icon/${PN}-r2.desktop"
-	local display_protocols
-	display_protocols="auto X11"
+	desktop_file="${FILESDIR}/icon/${PN}-r3.desktop"
+	local desktop_filename
+	desktop_filename="${PN}.desktop"
+	local exec_command
+	exec_command="${PN}"
 	local icon
 	icon="${PN}"
-	local name
-	name="Mozilla ${MOZ_PN^}"
 	local use_wayland
 	use_wayland="false"
 
 	if use wayland; then
-		display_protocols+=" Wayland"
 		use_wayland="true"
 	fi
 
-	local app_name desktop_filename display_protocol exec_command
-	for display_protocol in ${display_protocols} ; do
-		app_name="${name} on ${display_protocol}"
-		desktop_filename="${PN}-${display_protocol,,}.desktop"
+	cp "${desktop_file}" "${WORKDIR}/${PN}.desktop-template" || die "cp failed"
 
-		case "${display_protocol}" in
-			Wayland)
-				exec_command="${PN}-wayland --name ${PN}-wayland"
-				newbin "${FILESDIR}/${wrapper_wayland}" "${PN}-wayland"
-				;;
-			X11)
-				if ! use wayland; then
-					# Exit loop here because there's no choice so
-					# we don't need wrapper/.desktop file for X11.
-					continue
-				fi
+	# shellcheck disable=SC2154
+	sed -i \
+		-e "s:@NAME@:${app_name}:" \
+		-e "s:@EXEC@:${exec_command}:" \
+		-e "s:@ICON@:${icon}:" \
+		"${WORKDIR}/${PN}.desktop-template" \
+		|| die "sed failed"
 
-				exec_command="${PN}-x11 --name ${PN}-x11"
-				newbin "${FILESDIR}/${wrapper_x11}" "${PN}-x11"
-				;;
-			*)
-				app_name="${name}"
-				desktop_filename="${PN}.desktop"
-				exec_command="${PN}"
-				;;
-		esac
+	newmenu "${WORKDIR}/${PN}.desktop-template" "${desktop_filename}"
 
-		cp "${desktop_file}" "${WORKDIR}/${PN}.desktop-template" || die "cp failed"
+	rm "${WORKDIR}/${PN}.desktop-template" || die "rm failed"
 
-		# shellcheck disable=SC2154
-		sed -i \
-			-e "s:@NAME@:${app_name}:" \
-			-e "s:@EXEC@:${exec_command}:" \
-			-e "s:@ICON@:${icon}:" \
-			"${WORKDIR}/${PN}.desktop-template" \
-			|| die "sed failed"
-
-		newmenu "${WORKDIR}/${PN}.desktop-template" "${desktop_filename}"
-
-		rm "${WORKDIR}/${PN}.desktop-template" || die "rm failed"
-	done
-
-	# Install generic wrapper script
+	# Install wrapper script
 	[[ -f "${ED}/usr/bin/${PN}" ]] && rm "${ED}/usr/bin/${PN}"
-	newbin "${FILESDIR}/${PN}.sh" "${PN}"
+	newbin "${FILESDIR}/${PN}-r1.sh" "${PN}"
 
 	# Update wrapper
-	local wrapper
-	for wrapper in \
+	# shellcheck disable=SC2154
+	sed -i \
+		-e "s:@PREFIX@:${EPREFIX}/usr:" \
+		-e "s:@MOZ_FIVE_HOME@:${MOZILLA_FIVE_HOME}:" \
+		-e "s:@APULSELIB_DIR@:${apulselib}:" \
+		-e "s:@DEFAULT_WAYLAND@:${use_wayland}:" \
 		"${ED}/usr/bin/${PN}" \
-		"${ED}/usr/bin/${PN}-x11" \
-		"${ED}/usr/bin/${PN}-wayland" \
-	; do
-		[[ ! -f "${wrapper}" ]] && continue
-
-		# shellcheck disable=SC2154
-		sed -i \
-			-e "s:@PREFIX@:${EPREFIX}/usr:" \
-			-e "s:@MOZ_FIVE_HOME@:${MOZILLA_FIVE_HOME}:" \
-			-e "s:@APULSELIB_DIR@:${apulselib}:" \
-			-e "s:@DEFAULT_WAYLAND@:${use_wayland}:" \
-			"${wrapper}" \
-			|| die "sed failed"
-	done
+		|| die "sed failed"
 }
 
 pkg_preinst() {
@@ -1233,23 +1187,20 @@ pkg_postinst() {
 		elog
 	fi
 
-	local show_doh_information show_normandy_information
+	local show_doh_information show_normandy_information show_shortcut_information
 
 	if [[ -z "${REPLACING_VERSIONS}" ]]; then
 		# New install; Tell user that DoH is disabled by default
 		show_doh_information=yes
 		show_normandy_information=yes
+		show_shortcut_information=no
 	else
 		local replacing_version
 		for replacing_version in ${REPLACING_VERSIONS} ; do
-			if ver_test "${replacing_version}" -lt 70; then
-				# Tell user only once about our DoH default
-				show_doh_information=yes
-			fi
-
-			if ver_test "${replacing_version}" -lt 74.0-r2; then
-				# Tell user only once about our Normandy default
-				show_normandy_information=yes
+			if ver_test "${replacing_version}" -lt 91.0; then
+				# Tell user that we no longer install a shortcut
+				# per supported display protocol
+				show_shortcut_information=yes
 			fi
 		done
 	fi
@@ -1279,5 +1230,14 @@ pkg_postinst() {
 		elog " app.normandy.enabled=true"
 		elog
 		elog "in about:config."
+	fi
+
+	if [[ -n "${show_shortcut_information}" ]]; then
+		elog
+		elog "Since firefox-91.0 we no longer install multiple shortcuts for"
+		elog "each supported display protocol. Instead we will only install"
+		elog "one generic Mozilla Firefox shortcut."
+		elog "If you still want to be able to select between running Mozilla Firefox"
+		elog "on X11 or Wayland, you have to re-create these shortcuts on your own."
 	fi
 }
