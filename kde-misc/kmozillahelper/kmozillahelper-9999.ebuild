@@ -51,7 +51,7 @@ RDEPEND="${COMMON_DEPEND}"
 src_prepare() {
 	# Don't allow running as root: may break sandboxing during Portage-based
 	# install of Mozilla applications (Firefox)
-	# See https://github.com/bobwya/bobwya/issues/7#issuecomment-202117441
+	# See https://github.com/bobwya/bobwya/issues/7#issuecomment-202017441
 	local PATCHES=(
 		"${FILESDIR}/${PN}-5.0.5-dont_run_as_root.patch"
 	)
@@ -67,7 +67,4 @@ src_configure() {
 
 pkg_postinst() {
 	ecm_pkg_postinst
-
-	ewarn "To suppress the taskbar icon for ${PN} file dialog window - install Kwin rule"
-	ewarn "${FILESDIR}/kwinrulesrc to \"\${HOME}/.config/\""
 }
