@@ -51,7 +51,7 @@ RDEPEND="${COMMON_DEPEND}"
 src_prepare() {
 	# Don't allow running as root: may break sandboxing during Portage-based
 	# install of Mozilla applications (Firefox)
-	# See https://github.com/bobwya/bobwya/issues/7#issuecomment-202017441
+	# See https://github.com/bobwya/bobwya/issues/7#issuecomment-202117441
 	local PATCHES=(
 		"${FILESDIR}/${PN}-5.0.5-dont_run_as_root.patch"
 	)
