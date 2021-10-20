@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-91-patches-03.tar.xz"
+FIREFOX_PATCHSET="firefox-93-patches-01.tar.xz"
 
 LLVM_MAX_SLOT=12
 
@@ -50,7 +50,7 @@ fi
 PATCH_URIS=( "https://dev.gentoo.org/"~{axs,polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="8bdd012e04c6e6c3f01d937faf16f3474685b9cb"
+GIT_MOZ_REVISION="177f9dd6622faced5669d691be8f054d15e69acb"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 # shellcheck disable=SC2124
@@ -116,7 +116,7 @@ BDEPEND="${PYTHON_DEPS}
 	x86? ( >=dev-lang/nasm-2.13 )"
 
 CDEPEND="
-	>=dev-libs/nss-3.68
+	>=dev-libs/nss-3.70
 	>=dev-libs/nspr-4.32
 	dev-libs/atk
 	dev-libs/expat
@@ -141,7 +141,6 @@ CDEPEND="
 	x11-libs/libXext
 	x11-libs/libXfixes
 	x11-libs/libXrender
-	x11-libs/libXt
 	dbus? (
 		sys-apps/dbus
 		dev-libs/dbus-glib
@@ -185,6 +184,8 @@ RDEPEND="${CDEPEND}
 	kde? ( kde-misc/kmozillahelper:=  )"
 
 DEPEND="${CDEPEND}
+	x11-libs/libICE
+	x11-libs/libSM
 	pulseaudio? (
 		|| (
 			media-sound/pulseaudio
@@ -1104,7 +1105,7 @@ src_install() {
 	local app_name
 	app_name="Mozilla ${MOZ_PN^}"
 	local desktop_file
-	desktop_file="${FILESDIR}/icon/${PN}-r2.desktop"
+	desktop_file="${FILESDIR}/icon/${PN}-r3.desktop"
 	local desktop_filename
 	desktop_filename="${PN}.desktop"
 	local exec_command

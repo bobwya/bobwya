@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-78esr-patches-17.tar.xz"
+FIREFOX_PATCHSET="firefox-78esr-patches-18.tar.xz"
 
 LLVM_MAX_SLOT=12
 
