@@ -27,7 +27,7 @@ SRC_URI="${SRC_URI}
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc faudio ffmpeg +fontconfig +gcrypt +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mingw mp3 netapi nls odbc openal opencl +opengl osmesa oss pcap +perl pipelight +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test themes +threads +truetype udev +udisks +unwind +usb v4l vaapi vkd3d vulkan +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc faudio ffmpeg +fontconfig +gcrypt +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mingw mp3 netapi nls odbc openal opencl +opengl osmesa oss pcap +perl pipelight +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test themes +threads +tiff +truetype udev +udisks +unwind +usb v4l vaapi vkd3d vulkan +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
@@ -88,6 +88,7 @@ COMMON_DEPEND="
 		x11-libs/cairo[${MULTILIB_USEDEP}]
 		x11-libs/gtk+:3[${MULTILIB_USEDEP}]
 	)
+	tiff? ( media-libs/tiff[${MULTILIB_USEDEP}] )
 	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
 	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
@@ -236,8 +237,9 @@ multilib_src_configure() {
 		"$(use_with gphoto2 gphoto)"
 		"$(use_with gsm)"
 		"$(use_with gstreamer)"
-		--without-hal
+		"--without-hal"
 		"$(use_with jpeg)"
+		"--without-jxrlib"
 		"$(use_with kerberos gssapi)"
 		"$(use_with kerberos krb5)"
 		"$(use_with ldap)"
@@ -259,6 +261,7 @@ multilib_src_configure() {
 		"$(use_with scanner sane)"
 		"$(use_with sdl2 sdl)"
 		"$(use_enable test tests)"
+		"$(use_with tiff)"
 		"$(use_with truetype freetype)"
 		"$(use_with udev)"
 		"$(use_with unwind)"
@@ -270,7 +273,9 @@ multilib_src_configure() {
 		"$(use_with vulkan)"
 		"$(use_with X x)"
 		"$(use_with X xfixes)"
-		--with-xattr
+		"$(use_with X xshape)"
+		"$(use_with X xshm)"
+		"--with-xattr"
 		"$(use_with xcomposite)"
 		"$(use_with xinerama)"
 		"$(use_with xml)"
@@ -290,9 +295,9 @@ multilib_src_configure() {
 
 	if use amd64; then
 		if [[ "${ABI}" == "amd64" ]]; then
-			myconf+=( --enable-win64 )
+			myconf+=( "--enable-win64" )
 		else
-			myconf+=( --disable-win64 )
+			myconf+=( "--disable-win64" )
 		fi
 
 		# Note: using --with-wine64 results in problems with multilib.eclass

@@ -19,15 +19,10 @@ fi
 
 DESCRIPTION="Free implementation of Windows(tm) on Unix, with Wine Staging patchset"
 HOMEPAGE="https://www.winehq.org/"
-SRC_URI="${SRC_URI}
-	https://github.com/wine-staging/wine-staging/commit/c48811407e3c9cb2d6a448d6664f89bacd9cc36f.patch -> ${PN}-4.7_c48811407e3c9cb2d6a448d6664f89bacd9cc36f_eventfd_synchronization_fix.patch
-	https://github.com/wine-staging/wine-staging/commit/044cb930662d61f401a5d1bdd7b8e75d59cea5ea.patch -> ${PN}-5.10_044cb930662d61f401a5d1bdd7b8e75d59cea5ea_ntdll_forcebottomupalloc_fix.patch
-	https://github.com/wine-staging/wine-staging/commit/163f74fe61851ff57264437073805dd5e7afe2bd.patch -> ${PN}-6.12_163f74fe61851ff57264437073805dd5e7afe2bd_ws2_32_connect_already_connected_patchset_fix.patch"
-
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc faudio ffmpeg +fontconfig +gcrypt +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mingw mp3 netapi nls odbc openal opencl +opengl osmesa oss pcap +perl pipelight +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test themes +threads +tiff +truetype udev +udisks +unwind +usb v4l vaapi vkd3d vulkan +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc ffmpeg +fontconfig +gcrypt +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mingw mp3 netapi nls odbc openal opencl +opengl osmesa oss pcap +perl pipelight +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test themes +threads +truetype udev +udisks +unwind +usb v4l vaapi vkd3d vulkan +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
@@ -53,7 +48,6 @@ COMMON_DEPEND="
 	alsa? ( media-libs/alsa-lib[${MULTILIB_USEDEP}] )
 	capi? ( net-libs/libcapi[${MULTILIB_USEDEP}] )
 	cups? ( net-print/cups:=[${MULTILIB_USEDEP}] )
-	faudio? ( app-emulation/faudio[${MULTILIB_USEDEP}] )
 	ffmpeg? ( media-video/ffmpeg:=[${MULTILIB_USEDEP}] )
 	fontconfig? ( media-libs/fontconfig:=[${MULTILIB_USEDEP}] )
 	gcrypt? ( dev-libs/libgcrypt:=[${MULTILIB_USEDEP}] )
@@ -88,7 +82,6 @@ COMMON_DEPEND="
 		x11-libs/cairo[${MULTILIB_USEDEP}]
 		x11-libs/gtk+:3[${MULTILIB_USEDEP}]
 	)
-	tiff? ( media-libs/tiff[${MULTILIB_USEDEP}] )
 	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
 	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
@@ -138,18 +131,11 @@ DEPEND="${COMMON_DEPEND}
 	xinerama? ( x11-base/xorg-proto )"
 
 S="${WORKDIR}/${WINE_P}"
-[[ "${WINE_PV}" == "9999" ]] && EGIT_CHECKOUT_DIR="${S}"
-
 src_unpack() {
 	# Fully Mirror git tree, Wine, so we can access commits in all branches
 	[[ "${WINE_PV}" == "9999" ]] && EGIT_MIN_CLONE_TYPE="mirror"
 
 	default
-
-	if [[ "${WINE_PV}" == "9999" ]]; then
-		wine_staging_git_src_unpack
-		wine_get_git_commit_info "${S}" WINE_GIT_COMMIT_HASH WINE_GIT_COMMIT_DATE
-	fi
 
 	plocale_find_changes "${S}/po" "" ".po"
 }
@@ -160,8 +146,6 @@ src_prepare() {
 	local -a PATCHES PATCHES_BIN
 
 	wine_add_stock_gentoo_patches
-
-	[[ "${WINE_PV}" == "9999" ]] && wine_staging_src_prepare_git
 
 	wine_fix_gentoo_cc_multilib_support
 	wine_fix_gentoo_O3_compilation_support
@@ -191,8 +175,6 @@ src_prepare() {
 	wine_eapply_revert
 
 	wine_winecfg_about_enhancement
-
-	wine_fix_block_scope_compound_literals
 
 	eautoreconf
 
@@ -230,6 +212,7 @@ multilib_src_configure() {
 		"$(use_with capi)"
 		"$(use_with lcms cms)"
 		"$(use_with cups)"
+		"$(use_with ffmpeg)"
 		"$(use_with fontconfig)"
 		"$(use_with ssl gnutls)"
 		"$(use_enable gecko mshtml)"
@@ -239,7 +222,6 @@ multilib_src_configure() {
 		"$(use_with gstreamer)"
 		"--without-hal"
 		"$(use_with jpeg)"
-		"--without-jxrlib"
 		"$(use_with kerberos gssapi)"
 		"$(use_with kerberos krb5)"
 		"$(use_with ldap)"
@@ -261,7 +243,6 @@ multilib_src_configure() {
 		"$(use_with scanner sane)"
 		"$(use_with sdl2 sdl)"
 		"$(use_enable test tests)"
-		"$(use_with tiff)"
 		"$(use_with truetype freetype)"
 		"$(use_with udev)"
 		"$(use_with unwind)"
@@ -281,12 +262,6 @@ multilib_src_configure() {
 		"$(use_with xml)"
 		"$(use_with xml xslt)"
 	)
-
-	if use ffmpeg; then
-		wine_use_disabled ffmpeg || myconf+=( "$(use_with ffmpeg)" )
-	else
-		wine_use_disabled faudio || myconf+=( "$(use_with faudio)" )
-	fi
 
 	local PKG_CONFIG AR RANLIB
 	#472038 Avoid crossdev's i686-pc-linux-gnu-pkg-config if building wine32 on amd64

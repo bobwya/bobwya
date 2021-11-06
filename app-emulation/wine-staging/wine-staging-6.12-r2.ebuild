@@ -20,8 +20,6 @@ fi
 DESCRIPTION="Free implementation of Windows(tm) on Unix, with Wine Staging patchset"
 HOMEPAGE="https://www.winehq.org/"
 SRC_URI="${SRC_URI}
-	https://github.com/wine-staging/wine-staging/commit/c48811407e3c9cb2d6a448d6664f89bacd9cc36f.patch -> ${PN}-4.7_c48811407e3c9cb2d6a448d6664f89bacd9cc36f_eventfd_synchronization_fix.patch
-	https://github.com/wine-staging/wine-staging/commit/044cb930662d61f401a5d1bdd7b8e75d59cea5ea.patch -> ${PN}-5.10_044cb930662d61f401a5d1bdd7b8e75d59cea5ea_ntdll_forcebottomupalloc_fix.patch
 	https://github.com/wine-staging/wine-staging/commit/163f74fe61851ff57264437073805dd5e7afe2bd.patch -> ${PN}-6.12_163f74fe61851ff57264437073805dd5e7afe2bd_ws2_32_connect_already_connected_patchset_fix.patch"
 
 LICENSE="LGPL-2.1"
@@ -31,6 +29,7 @@ IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc faud
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
+	faudio? ( !ffmpeg )
 	osmesa? ( opengl )
 	test? ( abi_x86_32 )
 	vkd3d? ( vulkan )" #286560 osmesa-opengl  #551124 X-truetype
@@ -111,7 +110,7 @@ RDEPEND="${COMMON_DEPEND}
 	>=app-eselect/eselect-wine-1.5.5
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
 	gecko? ( app-emulation/wine-gecko:2.47.2[abi_x86_32?,abi_x86_64?] )
-	mono? ( app-emulation/wine-mono:6.4.0 )
+	mono? ( app-emulation/wine-mono:6.2.0 )
 	perl? (
 		dev-lang/perl
 		dev-perl/XML-Simple
@@ -138,18 +137,11 @@ DEPEND="${COMMON_DEPEND}
 	xinerama? ( x11-base/xorg-proto )"
 
 S="${WORKDIR}/${WINE_P}"
-[[ "${WINE_PV}" == "9999" ]] && EGIT_CHECKOUT_DIR="${S}"
-
 src_unpack() {
 	# Fully Mirror git tree, Wine, so we can access commits in all branches
 	[[ "${WINE_PV}" == "9999" ]] && EGIT_MIN_CLONE_TYPE="mirror"
 
 	default
-
-	if [[ "${WINE_PV}" == "9999" ]]; then
-		wine_staging_git_src_unpack
-		wine_get_git_commit_info "${S}" WINE_GIT_COMMIT_HASH WINE_GIT_COMMIT_DATE
-	fi
 
 	plocale_find_changes "${S}/po" "" ".po"
 }
@@ -160,8 +152,6 @@ src_prepare() {
 	local -a PATCHES PATCHES_BIN
 
 	wine_add_stock_gentoo_patches
-
-	[[ "${WINE_PV}" == "9999" ]] && wine_staging_src_prepare_git
 
 	wine_fix_gentoo_cc_multilib_support
 	wine_fix_gentoo_O3_compilation_support
@@ -191,8 +181,6 @@ src_prepare() {
 	wine_eapply_revert
 
 	wine_winecfg_about_enhancement
-
-	wine_fix_block_scope_compound_literals
 
 	eautoreconf
 
@@ -283,9 +271,9 @@ multilib_src_configure() {
 	)
 
 	if use ffmpeg; then
-		wine_use_disabled ffmpeg || myconf+=( "$(use_with ffmpeg)" )
+		myconf+=( "$(use_with ffmpeg)" )
 	else
-		wine_use_disabled faudio || myconf+=( "$(use_with faudio)" )
+		myconf+=( "$(use_with faudio)" )
 	fi
 
 	local PKG_CONFIG AR RANLIB
