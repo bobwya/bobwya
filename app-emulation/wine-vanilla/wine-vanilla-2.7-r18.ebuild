@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=7
 
-PLOCALES="ar ast bg ca cs da de el en en_US eo es fa fi fr he hi hr hu it ja ko lt ml nb_NO nl or pa pl pt_BR pt_PT rm ro ru si sk sl sr_RS@cyrillic sr_RS@latin sv ta te th tr uk wa zh_CN zh_TW"
+PLOCALES="ar bg ca cs da de el en en_US eo es fa fi fr he hi hr hu it ja ko lt ml nb_NO nl or pa pl pt_BR pt_PT rm ro ru sk sl sr_RS@cyrillic sr_RS@latin sv te th tr uk wa zh_CN zh_TW"
 PLOCALE_BACKUP="en"
 
 inherit autotools multilib multilib-minimal pax-utils plocale toolchain-funcs virtualx wine xdg-utils
@@ -21,13 +21,12 @@ HOMEPAGE="https://www.winehq.org/"
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc faudio +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mingw mp3 netapi nls odbc openal opencl +opengl osmesa oss pcap +perl +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test +threads +tiff +truetype udev +udisks +unwind +usb v4l vkd3d vulkan +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pcap +perl +png prelink prefix pulseaudio +realtime +run-exes samba scanner selinux +ssl test +threads +tiff +truetype udev +udisks v4l +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
 	osmesa? ( opengl )
-	test? ( abi_x86_32 )
-	vkd3d? ( vulkan )" #286560 osmesa-opengl  #551124 X-truetype
+	test? ( abi_x86_32 )" #286560 osmesa-opengl  #551124 X-truetype
 
 # FIXME: the test suite is unsuitable for us; many tests require net access
 # or fail due to Xvfb's opengl limitations.
@@ -38,7 +37,6 @@ COMMON_DEPEND="
 	X? (
 		x11-libs/libXcursor[${MULTILIB_USEDEP}]
 		x11-libs/libXext[${MULTILIB_USEDEP}]
-		x11-libs/libXfixes[${MULTILIB_USEDEP}]
 		x11-libs/libXrandr[${MULTILIB_USEDEP}]
 		x11-libs/libXi[${MULTILIB_USEDEP}]
 		x11-libs/libXxf86vm[${MULTILIB_USEDEP}]
@@ -46,7 +44,6 @@ COMMON_DEPEND="
 	alsa? ( media-libs/alsa-lib[${MULTILIB_USEDEP}] )
 	capi? ( net-libs/libcapi[${MULTILIB_USEDEP}] )
 	cups? ( net-print/cups:=[${MULTILIB_USEDEP}] )
-	faudio? ( app-emulation/faudio[${MULTILIB_USEDEP}] )
 	fontconfig? ( media-libs/fontconfig:=[${MULTILIB_USEDEP}] )
 	gphoto2? ( media-libs/libgphoto2:=[${MULTILIB_USEDEP}] )
 	gsm? ( media-sound/gsm:=[${MULTILIB_USEDEP}] )
@@ -55,16 +52,17 @@ COMMON_DEPEND="
 		media-plugins/gst-plugins-meta:1.0[${MULTILIB_USEDEP}]
 	)
 	jpeg? ( virtual/jpeg:0=[${MULTILIB_USEDEP}] )
-	kerberos? ( virtual/krb5:0=[${MULTILIB_USEDEP}] )
 	lcms? ( media-libs/lcms:2=[${MULTILIB_USEDEP}] )
 	ldap? ( net-nds/openldap:=[${MULTILIB_USEDEP}] )
 	mp3? ( >=media-sound/mpg123-1.5.0[${MULTILIB_USEDEP}] )
+	ncurses? ( >=sys-libs/ncurses-5.2:0=[${MULTILIB_USEDEP}] )
 	netapi? ( net-fs/samba[netapi(+),${MULTILIB_USEDEP}] )
 	nls? ( sys-devel/gettext[${MULTILIB_USEDEP}] )
 	odbc? ( dev-db/unixODBC:=[${MULTILIB_USEDEP}] )
 	openal? ( media-libs/openal:=[${MULTILIB_USEDEP}] )
 	opencl? ( virtual/opencl[${MULTILIB_USEDEP}] )
 	opengl? (
+		virtual/glu[${MULTILIB_USEDEP}]
 		virtual/opengl[${MULTILIB_USEDEP}]
 	)
 	osmesa? ( >=media-libs/mesa-13[osmesa,${MULTILIB_USEDEP}] )
@@ -72,17 +70,12 @@ COMMON_DEPEND="
 	png? ( media-libs/libpng:0=[${MULTILIB_USEDEP}] )
 	pulseaudio? ( media-sound/pulseaudio[${MULTILIB_USEDEP}] )
 	scanner? ( media-gfx/sane-backends:=[${MULTILIB_USEDEP}] )
-	sdl2? ( media-libs/libsdl2[haptic,joystick,${MULTILIB_USEDEP}] )
 	ssl? ( net-libs/gnutls:=[${MULTILIB_USEDEP}] )
 	tiff? ( media-libs/tiff[${MULTILIB_USEDEP}] )
 	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
 	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
-	unwind? ( sys-libs/libunwind[${MULTILIB_USEDEP}] )
-	usb? ( virtual/libusb:=[udev,${MULTILIB_USEDEP}] )
-	vkd3d? ( >=app-emulation/vkd3d-1.2[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
-	vulkan? ( media-libs/vulkan-loader[X,${MULTILIB_USEDEP}] )
 	xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
 	xinerama? ( x11-libs/libXinerama[${MULTILIB_USEDEP}] )
 	xml? (
@@ -95,8 +88,8 @@ RDEPEND="${COMMON_DEPEND}
 	!app-emulation/wine:0
 	>=app-eselect/eselect-wine-1.5.5
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
-	gecko? ( app-emulation/wine-gecko:2.47.2[abi_x86_32?,abi_x86_64?] )
-	mono? ( app-emulation/wine-mono:6.4.0 )
+	gecko? ( app-emulation/wine-gecko:2.47[abi_x86_32?,abi_x86_64?] )
+	mono? ( app-emulation/wine-mono:4.7.0 )
 	perl? (
 		dev-lang/perl
 		dev-perl/XML-Simple
@@ -123,18 +116,11 @@ DEPEND="${COMMON_DEPEND}
 	xinerama? ( x11-base/xorg-proto )"
 
 S="${WORKDIR}/${WINE_P}"
-[[ "${WINE_PV}" == "9999" ]] && EGIT_CHECKOUT_DIR="${S}"
-
 src_unpack() {
 	# Fully Mirror git tree, Wine, so we can access commits in all branches
 	[[ "${WINE_PV}" == "9999" ]] && EGIT_MIN_CLONE_TYPE="mirror"
 
 	default
-
-	if [[ "${WINE_PV}" == "9999" ]]; then
-		git-r3_src_unpack
-		wine_get_git_commit_info "${S}" WINE_GIT_COMMIT_HASH WINE_GIT_COMMIT_DATE
-	fi
 
 	plocale_find_changes "${S}/po" "" ".po"
 }
@@ -146,8 +132,6 @@ src_prepare() {
 	local -a PATCHES PATCHES_BIN
 
 	wine_add_stock_gentoo_patches
-
-	[[ "${WINE_PV}" == "9999" ]] && wine_src_prepare_git
 
 	wine_fix_gentoo_cc_multilib_support
 	wine_fix_gentoo_O3_compilation_support
@@ -165,8 +149,8 @@ src_prepare() {
 	# Don't build winedump,winemaker if not using perl
 	use perl || wine_src_disable_specfied_tools winedump winemaker
 
-	#551124 Only build wineconsole, if X is installed
-	use X || wine_src_prepare_disable_tools wineconsole
+	#551124 Only build wineconsole, if either of X or ncurses is installed
+	use X || use ncurses || wine_src_prepare_disable_tools wineconsole
 
 	# apply / revert patches
 	default
@@ -213,6 +197,7 @@ multilib_src_configure() {
 		"$(use_with capi)"
 		"$(use_with lcms cms)"
 		"$(use_with cups)"
+		"$(use_with ncurses curses)"
 		"$(use_with fontconfig)"
 		"$(use_with ssl gnutls)"
 		"$(use_enable gecko mshtml)"
@@ -221,11 +206,7 @@ multilib_src_configure() {
 		"$(use_with gstreamer)"
 		"--without-hal"
 		"$(use_with jpeg)"
-		"--without-jxrlib"
-		"$(use_with kerberos gssapi)"
-		"$(use_with kerberos krb5)"
 		"$(use_with ldap)"
-		"$(use_with mingw)"
 		"$(use_enable mono mscoree)"
 		"$(use_with mp3 mpg123)"
 		"$(use_with netapi)"
@@ -240,19 +221,13 @@ multilib_src_configure() {
 		"$(use_with pulseaudio pulse)"
 		"$(use_with threads pthread)"
 		"$(use_with scanner sane)"
-		"$(use_with sdl2 sdl)"
 		"$(use_enable test tests)"
 		"$(use_with tiff)"
 		"$(use_with truetype freetype)"
 		"$(use_with udev)"
-		"$(use_with unwind)"
 		"$(use_with udisks dbus)"
-		"$(use_with usb)"
-		"$(use_with v4l v4l2)"
-		"$(use_with vkd3d)"
-		"$(use_with vulkan)"
+		"$(use_with v4l)"
 		"$(use_with X x)"
-		"$(use_with X xfixes)"
 		"$(use_with X xshape)"
 		"$(use_with X xshm)"
 		"$(use_with xcomposite)"
@@ -260,8 +235,6 @@ multilib_src_configure() {
 		"$(use_with xml)"
 		"$(use_with xml xslt)"
 	)
-
-	wine_use_disabled faudio || myconf+=( "$(use_with faudio)" )
 
 	local PKG_CONFIG AR RANLIB
 	#472038 Avoid crossdev's i686-pc-linux-gnu-pkg-config if building wine32 on amd64

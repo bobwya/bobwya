@@ -21,7 +21,7 @@ HOMEPAGE="https://www.winehq.org/"
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc faudio +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mingw mp3 netapi nls odbc openal opencl +opengl osmesa oss pcap +perl +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test +threads +tiff +truetype udev +udisks +unwind +usb v4l vkd3d vulkan +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa oss pcap +perl +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test +threads +tiff +truetype udev +udisks v4l vkd3d vulkan +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
@@ -46,7 +46,6 @@ COMMON_DEPEND="
 	alsa? ( media-libs/alsa-lib[${MULTILIB_USEDEP}] )
 	capi? ( net-libs/libcapi[${MULTILIB_USEDEP}] )
 	cups? ( net-print/cups:=[${MULTILIB_USEDEP}] )
-	faudio? ( app-emulation/faudio[${MULTILIB_USEDEP}] )
 	fontconfig? ( media-libs/fontconfig:=[${MULTILIB_USEDEP}] )
 	gphoto2? ( media-libs/libgphoto2:=[${MULTILIB_USEDEP}] )
 	gsm? ( media-sound/gsm:=[${MULTILIB_USEDEP}] )
@@ -59,12 +58,14 @@ COMMON_DEPEND="
 	lcms? ( media-libs/lcms:2=[${MULTILIB_USEDEP}] )
 	ldap? ( net-nds/openldap:=[${MULTILIB_USEDEP}] )
 	mp3? ( >=media-sound/mpg123-1.5.0[${MULTILIB_USEDEP}] )
+	ncurses? ( >=sys-libs/ncurses-5.2:0=[${MULTILIB_USEDEP}] )
 	netapi? ( net-fs/samba[netapi(+),${MULTILIB_USEDEP}] )
 	nls? ( sys-devel/gettext[${MULTILIB_USEDEP}] )
 	odbc? ( dev-db/unixODBC:=[${MULTILIB_USEDEP}] )
 	openal? ( media-libs/openal:=[${MULTILIB_USEDEP}] )
 	opencl? ( virtual/opencl[${MULTILIB_USEDEP}] )
 	opengl? (
+		virtual/glu[${MULTILIB_USEDEP}]
 		virtual/opengl[${MULTILIB_USEDEP}]
 	)
 	osmesa? ( >=media-libs/mesa-13[osmesa,${MULTILIB_USEDEP}] )
@@ -78,9 +79,7 @@ COMMON_DEPEND="
 	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
 	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
-	unwind? ( sys-libs/libunwind[${MULTILIB_USEDEP}] )
-	usb? ( virtual/libusb:=[udev,${MULTILIB_USEDEP}] )
-	vkd3d? ( >=app-emulation/vkd3d-1.2[${MULTILIB_USEDEP}] )
+	vkd3d? ( app-emulation/vkd3d[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
 	vulkan? ( media-libs/vulkan-loader[X,${MULTILIB_USEDEP}] )
 	xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
@@ -95,8 +94,8 @@ RDEPEND="${COMMON_DEPEND}
 	!app-emulation/wine:0
 	>=app-eselect/eselect-wine-1.5.5
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
-	gecko? ( app-emulation/wine-gecko:2.47.2[abi_x86_32?,abi_x86_64?] )
-	mono? ( app-emulation/wine-mono:6.4.0 )
+	gecko? ( app-emulation/wine-gecko:2.47[abi_x86_32?,abi_x86_64?] )
+	mono? ( app-emulation/wine-mono:4.7.5 )
 	perl? (
 		dev-lang/perl
 		dev-perl/XML-Simple
@@ -123,18 +122,11 @@ DEPEND="${COMMON_DEPEND}
 	xinerama? ( x11-base/xorg-proto )"
 
 S="${WORKDIR}/${WINE_P}"
-[[ "${WINE_PV}" == "9999" ]] && EGIT_CHECKOUT_DIR="${S}"
-
 src_unpack() {
 	# Fully Mirror git tree, Wine, so we can access commits in all branches
 	[[ "${WINE_PV}" == "9999" ]] && EGIT_MIN_CLONE_TYPE="mirror"
 
 	default
-
-	if [[ "${WINE_PV}" == "9999" ]]; then
-		git-r3_src_unpack
-		wine_get_git_commit_info "${S}" WINE_GIT_COMMIT_HASH WINE_GIT_COMMIT_DATE
-	fi
 
 	plocale_find_changes "${S}/po" "" ".po"
 }
@@ -146,8 +138,6 @@ src_prepare() {
 	local -a PATCHES PATCHES_BIN
 
 	wine_add_stock_gentoo_patches
-
-	[[ "${WINE_PV}" == "9999" ]] && wine_src_prepare_git
 
 	wine_fix_gentoo_cc_multilib_support
 	wine_fix_gentoo_O3_compilation_support
@@ -165,8 +155,8 @@ src_prepare() {
 	# Don't build winedump,winemaker if not using perl
 	use perl || wine_src_disable_specfied_tools winedump winemaker
 
-	#551124 Only build wineconsole, if X is installed
-	use X || wine_src_prepare_disable_tools wineconsole
+	#551124 Only build wineconsole, if either of X or ncurses is installed
+	use X || use ncurses || wine_src_prepare_disable_tools wineconsole
 
 	# apply / revert patches
 	default
@@ -213,6 +203,7 @@ multilib_src_configure() {
 		"$(use_with capi)"
 		"$(use_with lcms cms)"
 		"$(use_with cups)"
+		"$(use_with ncurses curses)"
 		"$(use_with fontconfig)"
 		"$(use_with ssl gnutls)"
 		"$(use_enable gecko mshtml)"
@@ -221,11 +212,9 @@ multilib_src_configure() {
 		"$(use_with gstreamer)"
 		"--without-hal"
 		"$(use_with jpeg)"
-		"--without-jxrlib"
 		"$(use_with kerberos gssapi)"
 		"$(use_with kerberos krb5)"
 		"$(use_with ldap)"
-		"$(use_with mingw)"
 		"$(use_enable mono mscoree)"
 		"$(use_with mp3 mpg123)"
 		"$(use_with netapi)"
@@ -245,10 +234,8 @@ multilib_src_configure() {
 		"$(use_with tiff)"
 		"$(use_with truetype freetype)"
 		"$(use_with udev)"
-		"$(use_with unwind)"
 		"$(use_with udisks dbus)"
-		"$(use_with usb)"
-		"$(use_with v4l v4l2)"
+		"$(use_with v4l)"
 		"$(use_with vkd3d)"
 		"$(use_with vulkan)"
 		"$(use_with X x)"
@@ -260,8 +247,6 @@ multilib_src_configure() {
 		"$(use_with xml)"
 		"$(use_with xml xslt)"
 	)
-
-	wine_use_disabled faudio || myconf+=( "$(use_with faudio)" )
 
 	local PKG_CONFIG AR RANLIB
 	#472038 Avoid crossdev's i686-pc-linux-gnu-pkg-config if building wine32 on amd64
