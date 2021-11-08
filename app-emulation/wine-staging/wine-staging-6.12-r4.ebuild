@@ -19,6 +19,9 @@ fi
 
 DESCRIPTION="Free implementation of Windows(tm) on Unix, with Wine Staging patchset"
 HOMEPAGE="https://www.winehq.org/"
+SRC_URI="${SRC_URI}
+	https://github.com/wine-staging/wine-staging/commit/163f74fe61851ff57264437073805dd5e7afe2bd.patch -> ${PN}-6.12_163f74fe61851ff57264437073805dd5e7afe2bd_ws2_32_connect_already_connected_patchset_fix.patch"
+
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
@@ -68,7 +71,6 @@ COMMON_DEPEND="
 	openal? ( media-libs/openal:=[${MULTILIB_USEDEP}] )
 	opencl? ( virtual/opencl[${MULTILIB_USEDEP}] )
 	opengl? (
-		virtual/glu[${MULTILIB_USEDEP}]
 		virtual/opengl[${MULTILIB_USEDEP}]
 	)
 	osmesa? ( >=media-libs/mesa-13[osmesa,${MULTILIB_USEDEP}] )
@@ -84,7 +86,7 @@ COMMON_DEPEND="
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
 	unwind? ( sys-libs/libunwind[${MULTILIB_USEDEP}] )
 	usb? ( virtual/libusb:=[udev,${MULTILIB_USEDEP}] )
-	vkd3d? ( >=app-emulation/vkd3d-1.1[${MULTILIB_USEDEP}] )
+	vkd3d? ( >=app-emulation/vkd3d-1.2[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
 	vaapi? ( x11-libs/libva:=[drm,X?,${MULTILIB_USEDEP}] )
 	vulkan? ( media-libs/vulkan-loader[X,${MULTILIB_USEDEP}] )
@@ -100,8 +102,8 @@ RDEPEND="${COMMON_DEPEND}
 	!app-emulation/wine:0
 	>=app-eselect/eselect-wine-1.5.5
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
-	gecko? ( app-emulation/wine-gecko:2.47.1[abi_x86_32?,abi_x86_64?] )
-	mono? ( app-emulation/wine-mono:5.1.1 )
+	gecko? ( app-emulation/wine-gecko:2.47.2[abi_x86_32?,abi_x86_64?] )
+	mono? ( app-emulation/wine-mono:6.2.0 )
 	perl? (
 		dev-lang/perl
 		dev-perl/XML-Simple
@@ -219,6 +221,7 @@ multilib_src_configure() {
 		"$(use_with gstreamer)"
 		"--without-hal"
 		"$(use_with jpeg)"
+		"--without-jxrlib"
 		"$(use_with kerberos gssapi)"
 		"$(use_with kerberos krb5)"
 		"$(use_with ldap)"
