@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-93-patches-02.tar.xz"
+FIREFOX_PATCHSET="firefox-94-patches-02.tar.xz"
 
 LLVM_MAX_SLOT=13
 
@@ -50,7 +50,7 @@ fi
 PATCH_URIS=( "https://dev.gentoo.org/"~{axs,polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="177f9dd6622faced5669d691be8f054d15e69acb"
+GIT_MOZ_REVISION="f41e1b2623e162339286610070c059afe5106c25"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 # shellcheck disable=SC2124
@@ -71,13 +71,22 @@ KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
 
 SLOT="0/$(ver_cut 1)"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="+clang cpu_flags_arm_neon dbus debug eme-free geckodriver +gmp-autoupdate kde
-	hardened hwaccel jack lto +openh264 pgo pulseaudio screencast sndio selinux
-	+system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent
-	+system-libvpx +system-webp wayland wifi"
+
+IUSE="+clang cpu_flags_arm_neon dbus debug eme-free hardened hwaccel kde"
+IUSE+=" jack lto +openh264 pgo pulseaudio sndio selinux"
+IUSE+=" +system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent +system-libvpx +system-webp"
+IUSE+=" wayland wifi"
+
+# Firefox-only IUSE
+IUSE+=" geckodriver"
+IUSE+=" +gmp-autoupdate"
+IUSE+=" screencast"
 
 REQUIRED_USE="debug? ( !system-av1 )
-	screencast? ( wayland )"
+	wifi? ( dbus )"
+
+# Firefox-only REQUIRED_USE flags
+REQUIRED_USE+=" screencast? ( wayland )"
 
 BDEPEND="${PYTHON_DEPS}
 	app-arch/unzip
@@ -124,7 +133,7 @@ BDEPEND="${PYTHON_DEPS}
 	x86? ( >=dev-lang/nasm-2.13 )"
 
 CDEPEND="
-	>=dev-libs/nss-3.70
+	>=dev-libs/nss-3.71
 	>=dev-libs/nspr-4.32
 	dev-libs/atk
 	dev-libs/expat
@@ -144,10 +153,12 @@ CDEPEND="
 	>=sys-libs/zlib-1.2.3
 	media-video/ffmpeg
 	x11-libs/libX11
+	x11-libs/libxcb
 	x11-libs/libXcomposite
 	x11-libs/libXdamage
 	x11-libs/libXext
 	x11-libs/libXfixes
+	x11-libs/libXrandr
 	x11-libs/libXrender
 	dbus? (
 		sys-apps/dbus
@@ -236,14 +247,49 @@ llvm_check_deps() {
 }
 
 MOZ_LANGS=(
-	"ach" "af" "an" "ar" "ast" "az" "be" "bg" "bn" "br" "bs" "ca-valencia" "ca" "cak" "cs" "cy"
-	"da" "de" "dsb" "el" "en-CA" "en-GB" "en-US" "eo" "es-AR" "es-CL" "es-ES" "es-MX" "et" "eu"
-	"fa" "ff" "fi" "fr" "fy-NL" "ga-IE" "gd" "gl" "gn" "gu-IN" "he" "hi-IN" "hr" "hsb" "hu" "hy-AM"
-	"ia" "id" "is" "it" "ja" "ka" "kab" "kk" "km" "kn" "ko" "lij" "lt" "lv" "mk" "mr" "ms" "my"
-	"nb-NO" "ne-NP" "nl" "nn-NO" "oc" "pa-IN" "pl" "pt-BR" "pt-PT" "rm" "ro" "ru" "sco"
-	"si" "sk" "sl" "son" "sq" "sr" "sv-SE" "szl" "ta" "te" "th" "tl" "tr" "trs" "uk" "ur" "uz" "vi"
-	"xh" "zh-CN" "zh-TW"
+	"af" "ar" "ast" "be" "bg" "br" "ca" "cak" "cs" "cy" "da" "de" "dsb"
+	"el" "en-CA" "en-GB" "en-US" "es-AR" "es-ES" "et" "eu"
+	"fi" "fr" "fy-NL" "ga-IE" "gd" "gl" "he" "hr" "hsb" "hu"
+	"id" "is" "it" "ja" "ka" "kab" "kk" "ko" "lt" "lv" "ms" "nb-NO" "nl" "nn-NO"
+	"pa-IN" "pl" "pt-BR" "pt-PT" "rm" "ro" "ru"
+	"sk" "sl" "sq" "sr" "sv-SE" "th" "tr" "uk" "uz" "vi" "zh-CN" "zh-TW"
 )
+
+# Firefox-only LANGS
+MOZ_LANGS+=( ach )
+MOZ_LANGS+=( an )
+MOZ_LANGS+=( az )
+MOZ_LANGS+=( bn )
+MOZ_LANGS+=( bs )
+MOZ_LANGS+=( ca-valencia )
+MOZ_LANGS+=( eo )
+MOZ_LANGS+=( es-CL )
+MOZ_LANGS+=( es-MX )
+MOZ_LANGS+=( fa )
+MOZ_LANGS+=( ff )
+MOZ_LANGS+=( gn )
+MOZ_LANGS+=( gu-IN )
+MOZ_LANGS+=( hi-IN )
+MOZ_LANGS+=( hy-AM )
+MOZ_LANGS+=( ia )
+MOZ_LANGS+=( km )
+MOZ_LANGS+=( kn )
+MOZ_LANGS+=( lij )
+MOZ_LANGS+=( mk )
+MOZ_LANGS+=( mr )
+MOZ_LANGS+=( my )
+MOZ_LANGS+=( ne-NP )
+MOZ_LANGS+=( oc )
+MOZ_LANGS+=( sco )
+MOZ_LANGS+=( si )
+MOZ_LANGS+=( son )
+MOZ_LANGS+=( szl )
+MOZ_LANGS+=( ta )
+MOZ_LANGS+=( te )
+MOZ_LANGS+=( tl )
+MOZ_LANGS+=( trs )
+MOZ_LANGS+=( ur )
+MOZ_LANGS+=( xh )
 
 mozilla_set_globals() {
 	# https://bugs.gentoo.org/587334
@@ -484,6 +530,34 @@ pkg_setup() {
 
 		# Build system is using /proc/self/oom_score_adj, bug #604394
 		addpredict /proc/self/oom_score_adj
+
+		if use pgo; then
+			# Allow access to GPU during PGO run
+			local ati_cards mesa_cards nvidia_cards render_cards
+			shopt -s nullglob
+
+			ati_cards="$(echo -n /dev/ati/card* | sed 's/ /:/g')"
+			if [[ -n "${ati_cards}" ]]; then
+				addpredict "${ati_cards}"
+			fi
+
+			mesa_cards="$(echo -n /dev/dri/card* | sed 's/ /:/g')"
+			if [[ -n "${mesa_cards}" ]]; then
+				addpredict "${mesa_cards}"
+			fi
+
+			nvidia_cards="$(echo -n /dev/nvidia* | sed 's/ /:/g')"
+			if [[ -n "${nvidia_cards}" ]]; then
+				addpredict "${nvidia_cards}"
+			fi
+
+			render_cards="$(echo -n /dev/dri/renderD128* | sed 's/ /:/g')"
+			if [[ -n "${render_cards}" ]]; then
+				addpredict "${render_cards}"
+			fi
+
+			shopt -u nullglob
+		fi
 
 		if ! mountpoint -q /dev/shm; then
 			# If /dev/shm is not available, configure is known to fail with
@@ -1039,10 +1113,10 @@ src_install() {
 	local PREFS_DIR
 	PREFS_DIR="${MOZILLA_FIVE_HOME}/browser/defaults/preferences"
 	insinto "${PREFS_DIR}"
-	newins "${FILESDIR}/gentoo-default-prefs.js" all-gentoo.js
+	newins "${FILESDIR}/gentoo-default-prefs.js" gentoo-prefs.js
 
 	local GENTOO_PREFS
-	GENTOO_PREFS="${ED}${PREFS_DIR}/all-gentoo.js"
+	GENTOO_PREFS="${ED}${PREFS_DIR}/gentoo-prefs.js"
 
 	# Set dictionary path to use system hunspell
 	cat >>"${GENTOO_PREFS}" <<-EOF || die "failed to set spellchecker.dictionary_path pref"
@@ -1201,7 +1275,9 @@ pkg_postinst() {
 		elog
 	fi
 
-	local show_doh_information show_normandy_information show_shortcut_information
+	local show_doh_information
+	local show_normandy_information
+	local show_shortcut_information
 
 	if [[ -z "${REPLACING_VERSIONS}" ]]; then
 		# New install; Tell user that DoH is disabled by default
@@ -1248,10 +1324,10 @@ pkg_postinst() {
 
 	if [[ -n "${show_shortcut_information}" ]]; then
 		elog
-		elog "Since firefox-91.0 we no longer install multiple shortcuts for"
+		elog "Since ${PN}-91.0 we no longer install multiple shortcuts for"
 		elog "each supported display protocol. Instead we will only install"
-		elog "one generic Mozilla Firefox shortcut."
-		elog "If you still want to be able to select between running Mozilla Firefox"
+		elog "one generic Mozilla ${PN^} shortcut."
+		elog "If you still want to be able to select between running Mozilla ${PN^}"
 		elog "on X11 or Wayland, you have to re-create these shortcuts on your own."
 	fi
 }

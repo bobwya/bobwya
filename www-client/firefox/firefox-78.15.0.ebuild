@@ -4,11 +4,11 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-78esr-patches-18.tar.xz"
+FIREFOX_PATCHSET="firefox-78esr-patches-19.tar.xz"
 
-LLVM_MAX_SLOT=12
+LLVM_MAX_SLOT=13
 
-PYTHON_COMPAT=( python3_{7..9} )
+PYTHON_COMPAT=( python3_{7..10} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
 
 WANT_AUTOCONF="2.1"
@@ -88,6 +88,14 @@ BDEPEND="${PYTHON_DEPS}
 	virtual/pkgconfig
 	>=virtual/rust-1.41.0
 	|| (
+		(
+			sys-devel/clang:13
+			sys-devel/llvm:13
+			clang? (
+				=sys-devel/lld-13*
+				pgo? ( =sys-libs/compiler-rt-sanitizers-13*[profile] )
+			)
+		)
 		(
 			sys-devel/clang:12
 			sys-devel/llvm:12
@@ -655,6 +663,10 @@ src_configure() {
 	# python/mach/mach/mixin/process.py fails to detect SHELL
 	SHELL="${EPREFIX}/bin/bash"
 	export SHELL
+
+	# Set state path
+	MOZBUILD_STATE_PATH="${BUILD_DIR}"
+	export MOZBUILD_STATE_PATH
 
 	# Set MOZCONFIG
 	MOZCONFIG="${S}/.mozconfig"
