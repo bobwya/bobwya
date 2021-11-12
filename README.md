@@ -1,7 +1,7 @@
 bobwya
 ======
 
-![example workflow](https://github.com/bobwya/bobwya/actions/workflows/repoman.yml/badge.svg) [![License](http://img.shields.io/:license-gpl-green.svg)](https://tldrlegal.com/license/gnu-general-public-license-v2)
+[![repoman action](https://github.com/bobwya/bobwya/actions/workflows/repoman.yml/badge.svg)](https://github.com/bobwya/bobwya/actions/workflows/repoman.yml) [![License](http://img.shields.io/:license-gpl-green.svg)](https://tldrlegal.com/license/gnu-general-public-license-v2)
 
 Gentoo Overlay containing various packages I have been unable to find @ Gentoo Portage Overlays website or elsewhere.
 Testing and updating of these ebuild package build scripts is irregular. So YMMV - you have been warned!
