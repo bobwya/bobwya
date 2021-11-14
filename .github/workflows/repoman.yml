@@ -10,7 +10,7 @@ on:
       - 'README.md'
       - 'LICENSE'
   schedule:
-    - cron: "0 6 * * 1"
+    - cron: "0 6 * * *"
 
 jobs:
   repoman:
