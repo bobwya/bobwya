@@ -65,6 +65,6 @@ multilib_src_install() {
 
 	dobin "vkd3d-compiler"
 	if use demos; then
-		_install_demos "${BUILD_DIR}/demos/.libs/" 
+		_install_demos "${BUILD_DIR}/demos/.libs/"
 	fi
 }
