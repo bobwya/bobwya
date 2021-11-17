@@ -46,7 +46,7 @@ src_prepare() {
 }
 
 src_configure() {
-	eqmake5 . PREFIX="${ED}/usr"
+	eqmake5 . PREFIX="${EPREFIX}/usr"
 	default
 }
 
