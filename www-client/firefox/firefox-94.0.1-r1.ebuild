@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-91esr-patches-01.tar.xz"
+FIREFOX_PATCHSET="firefox-94-patches-02.tar.xz"
 
 LLVM_MAX_SLOT=13
 
@@ -15,7 +15,7 @@ WANT_AUTOCONF="2.1"
 
 VIRTUALX_REQUIRED="pgo"
 
-MOZ_ESR=yes
+MOZ_ESR=
 
 MOZ_PV=${PV}
 MOZ_PV_SUFFIX=
@@ -50,7 +50,7 @@ fi
 PATCH_URIS=( "https://dev.gentoo.org/"~{axs,polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="8bdd012e04c6e6c3f01d937faf16f3474685b9cb"
+GIT_MOZ_REVISION="f41e1b2623e162339286610070c059afe5106c25"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 # shellcheck disable=SC2124
@@ -69,7 +69,7 @@ HOMEPAGE="https://www.mozilla.com/firefox
 
 KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
 
-SLOT="0/esr$(ver_cut 1)"
+SLOT="0/$(ver_cut 1)"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 
 IUSE="+clang cpu_flags_arm_neon dbus debug eme-free hardened hwaccel kde"
@@ -120,20 +120,12 @@ BDEPEND="${PYTHON_DEPS}
 				pgo? ( =sys-libs/compiler-rt-sanitizers-11*[profile] )
 			)
 		)
-		(
-			sys-devel/clang:10
-			sys-devel/llvm:10
-			clang? (
-				=sys-devel/lld-10*
-				pgo? ( =sys-libs/compiler-rt-sanitizers-10*[profile] )
-			)
-		)
 	)
 	amd64? ( >=dev-lang/nasm-2.13 )
 	x86? ( >=dev-lang/nasm-2.13 )"
 
 CDEPEND="
-	>=dev-libs/nss-3.68
+	>=dev-libs/nss-3.71
 	>=dev-libs/nspr-4.32
 	dev-libs/atk
 	dev-libs/expat
@@ -158,8 +150,8 @@ CDEPEND="
 	x11-libs/libXdamage
 	x11-libs/libXext
 	x11-libs/libXfixes
+	x11-libs/libXrandr
 	x11-libs/libXrender
-	x11-libs/libXt
 	dbus? (
 		sys-apps/dbus
 		dev-libs/dbus-glib
@@ -191,7 +183,7 @@ CDEPEND="
 
 RDEPEND="${CDEPEND}
 	jack? ( virtual/jack )
-	kde? ( kde-misc/kmozillahelper:=  )
+	kde? ( kde-misc/kmozillahelper )
 	openh264? ( media-libs/openh264:*[plugin] )
 	pulseaudio? (
 		|| (
@@ -199,8 +191,7 @@ RDEPEND="${CDEPEND}
 			>=media-sound/apulse-0.1.12-r4
 		)
 	)
-	selinux? ( sec-policy/selinux-mozilla )
-	kde? ( kde-misc/kmozillahelper:=  )"
+	selinux? ( sec-policy/selinux-mozilla )"
 
 DEPEND="${CDEPEND}
 	x11-libs/libICE
