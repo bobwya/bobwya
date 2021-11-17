@@ -1,0 +1,46 @@
+From 8085be981fbb31da872aa488445d2d076c90c8d4 Mon Sep 17 00:00:00 2001
+From: Fabian Vogt <fabian@ritter-vogt.de>
+Date: Sat, 15 May 2021 15:06:20 +0200
+Subject: [PATCH] Port away from deprecated
+ KWindowSystem::setMainWindow(QWidget*, WId)
+
+By just inlining the code...
+---
+ main.cpp | 17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/main.cpp b/main.cpp
+index 8814013..5472364 100644
+--- a/main.cpp
++++ b/main.cpp
+@@ -321,7 +321,12 @@ bool Helper::handleAppsDialog()
+     dialog.hideNoCloseOnExit();
+     dialog.hideRunInTerminal(); // TODO
+     if(wid != 0)
+-        KWindowSystem::setMainWindow(&dialog, wid);
++    {
++        dialog.setAttribute(Qt::WA_NativeWindow, true);
++        QWindow *subWindow = dialog.windowHandle();
++        if(subWindow)
++            KWindowSystem::setMainWindow(subWindow, wid);
++    }
+     if(dialog.exec())
+     {
+         KService::Ptr service = dialog.service();
+@@ -687,9 +692,13 @@ bool Helper::eventFilter(QObject *obj, QEvent *ev)
+     if(ev->type() == QEvent::Show && obj->inherits("QDialog"))
+     {
+         QWidget *widget = static_cast<QWidget*>(obj);
+-        widget->winId();
+-        if(wid)
+-            KWindowSystem::setMainWindow(widget, wid);
++        if(wid != 0)
++        {
++            widget->setAttribute(Qt::WA_NativeWindow, true);
++            QWindow *subWindow = widget->windowHandle();
++            if(subWindow)
++                KWindowSystem::setMainWindow(subWindow, wid);
++        }
+     }
+ 
+     return false;
