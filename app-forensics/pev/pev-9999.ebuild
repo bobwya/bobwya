@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-EAPI=7
+EAPI=8
 
 inherit git-r3
 
@@ -56,7 +56,7 @@ src_prepare() {
 }
 
 src_compile() {
-	emake DESTDIR="${D}" prefix="${EPREFIX}/usr" libdir="${EPREFIX}/usr/$(get_libdir)"
+	emake prefix="${EPREFIX}/usr" libdir="${EPREFIX}/usr/$(get_libdir)"
 }
 
 src_install() {
