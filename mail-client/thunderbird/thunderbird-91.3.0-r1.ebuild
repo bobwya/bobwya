@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-78esr-patches-19.tar.xz"
+FIREFOX_PATCHSET="firefox-91esr-patches-01.tar.xz"
 
 LLVM_MAX_SLOT=13
 
@@ -39,7 +39,7 @@ MOZ_PV_DISTFILES="${MOZ_PV}${MOZ_PV_SUFFIX}"
 MOZ_P_DISTFILES="${MOZ_PN}-${MOZ_PV_DISTFILES}"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_COMMIT="529f76b6f2a3146f50411b8986f409a337b56a44"
+GIT_MOZ_COMMIT="8bdd012e04c6e6c3f01d937faf16f3474685b9cb"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 inherit autotools check-reqs desktop flag-o-matic gnome2-utils llvm multiprocessing \
@@ -52,7 +52,7 @@ if [[ ${PV} == *_rc* ]]; then
 fi
 
 PATCH_URIS=(
-	https://dev.gentoo.org/~{axs,polynomial-c,whissi}/mozilla/patchsets/"${FIREFOX_PATCHSET}"
+	https://dev.gentoo.org/~{polynomial-c,whissi}/mozilla/patchsets/"${FIREFOX_PATCHSET}"
 )
 
 # shellcheck disable=SC2124
@@ -64,27 +64,29 @@ SRC_URI="${MOZ_SRC_BASE_URI}/source/${MOZ_P}.source.tar.xz -> ${MOZ_P_DISTFILES}
 	)"
 
 DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration"
-HOMEPAGE="https://www.mozilla.org/thunderbird
+HOMEPAGE="https://www.thunderbird.net/
 	https://www.rosenauer.org/hg/mozilla"
 
 KEYWORDS="~amd64 ~x86"
 
 SLOT="0/$(ver_cut 1)"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
-IUSE="+clang cpu_flags_arm_neon dbus debug eme-free kde kernel_linux
-	hardened hwaccel jack lto +openh264 pgo pulseaudio selinux
-	+system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent
-	+system-libvpx +system-webp wayland wifi"
 
-REQUIRED_USE="wifi? ( dbus )"
+IUSE="+clang cpu_flags_arm_neon dbus debug eme-free hardened hwaccel kde kernel_linux"
+IUSE+=" jack lto +openh264 pgo pulseaudio sndio selinux"
+IUSE+=" +system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent +system-libvpx +system-webp"
+IUSE+=" wayland wifi"
+
+REQUIRED_USE="debug? ( !system-av1 )
+	wifi? ( dbus )"
 
 BDEPEND="${PYTHON_DEPS}
 	app-arch/unzip
 	app-arch/zip
-	>=dev-util/cbindgen-0.14.3
-	>=net-libs/nodejs-10.21.0
+	>=dev-util/cbindgen-0.19.0
+	>=net-libs/nodejs-10.23.1
 	virtual/pkgconfig
-	>=virtual/rust-1.41.0
+	>=virtual/rust-1.51.0
 	|| (
 		(
 			sys-devel/clang:13
@@ -110,33 +112,17 @@ BDEPEND="${PYTHON_DEPS}
 				pgo? ( =sys-libs/compiler-rt-sanitizers-11*[profile] )
 			)
 		)
-		(
-			sys-devel/clang:10
-			sys-devel/llvm:10
-			clang? (
-				=sys-devel/lld-10*
-				pgo? ( =sys-libs/compiler-rt-sanitizers-10*[profile] )
-			)
-		)
 	)
-	lto? (
-		!clang? ( sys-devel/binutils[gold] )
-	)
-	amd64? ( >=dev-lang/yasm-1.1 )
-	x86? ( >=dev-lang/yasm-1.1 )
-	!system-av1? (
-		amd64? ( >=dev-lang/nasm-2.13 )
-		x86? ( >=dev-lang/nasm-2.13 )
-	)"
+	amd64? ( >=dev-lang/nasm-2.13 )
+	x86? ( >=dev-lang/nasm-2.13 )"
 
 CDEPEND="
-	>=dev-libs/nss-3.53.1
-	>=dev-libs/nspr-4.25
+	>=dev-libs/nss-3.68
+	>=dev-libs/nspr-4.32
 	dev-libs/atk
 	dev-libs/expat
 	>=dev-libs/libffi-3.0.10:=
 	>=x11-libs/cairo-1.10[X]
-	>=x11-libs/gtk+-2.18:2
 	>=x11-libs/gtk+-3.4.0:3[X]
 	x11-libs/gdk-pixbuf
 	>=x11-libs/pango-1.22.0
@@ -151,6 +137,7 @@ CDEPEND="
 	>=sys-libs/zlib-1.2.3
 	media-video/ffmpeg
 	x11-libs/libX11
+	x11-libs/libxcb
 	x11-libs/libXcomposite
 	x11-libs/libXdamage
 	x11-libs/libXext
@@ -162,14 +149,14 @@ CDEPEND="
 		dev-libs/dbus-glib
 	)
 	system-av1? (
-		>=media-libs/dav1d-0.3.0:=
+		>=media-libs/dav1d-0.8.1:=
 		>=media-libs/libaom-1.0.0:=
 	)
 	system-harfbuzz? (
-		>=media-libs/harfbuzz-2.6.8:0=
+		>=media-libs/harfbuzz-2.8.1:0=
 		>=media-gfx/graphite2-1.3.13
 	)
-	system-icu? ( >=dev-libs/icu-67.1:= )
+	system-icu? ( >=dev-libs/icu-69.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
 	system-libevent? ( >=dev-libs/libevent-2.0:0=[threads] )
 	system-libvpx? ( >=media-libs/libvpx-1.8.2:0=[postproc] )
@@ -182,10 +169,11 @@ CDEPEND="
 		)
 	)
 	jack? ( virtual/jack )
-	selinux? ( sec-policy/selinux-mozilla )"
+	selinux? ( sec-policy/selinux-mozilla )
+	sndio? ( media-sound/sndio )"
 
 RDEPEND="${CDEPEND}
-	kde? ( kde-misc/kmozillahelper:= )
+	kde? ( kde-misc/kmozillahelper )
 	jack? ( virtual/jack )
 	openh264? ( media-libs/openh264:*[plugin] )
 	pulseaudio? (
@@ -198,6 +186,8 @@ RDEPEND="${CDEPEND}
 	!<x11-plugins/enigmail-2.2"
 
 DEPEND="${CDEPEND}
+	x11-libs/libICE
+	x11-libs/libSM
 	pulseaudio? (
 		|| (
 			media-sound/pulseaudio
@@ -234,10 +224,12 @@ llvm_check_deps() {
 }
 
 MOZ_LANGS=(
-	"af" "ar" "ast" "be" "bg" "br" "ca" "cak" "cs" "cy"	"da" "de" "dsb" "el" "en-CA" "en-GB" "en-US"
-	"es-AR" "es-ES" "et" "eu" "fa" "fi" "fr" "fy-NL" "ga-IE" "gd" "gl" "he" "hr" "hsb" "hu" "hy-AM"
-	"id" "is" "it" "ja" "ka" "kab" "kk" "ko" "lt" "ms" "nb-NO" "nl" "nn-NO" "pa-IN" "pl" "pt-BR"
-	"pt-PT" "rm" "ro" "ru" "si" "sk" "sl" "sq" "sr" "sv-SE" "th" "tr" "uz" "vi" "zh-CN" "zh-TW"
+	"af" "ar" "ast" "be" "bg" "br" "ca" "cak" "cs" "cy" "da" "de" "dsb"
+	"el" "en-CA" "en-GB" "en-US" "es-AR" "es-ES" "et" "eu"
+	"fi" "fr" "fy-NL" "ga-IE" "gd" "gl" "he" "hr" "hsb" "hu"
+	"id" "is" "it" "ja" "ka" "kab" "kk" "ko" "lt" "lv" "ms" "nb-NO" "nl" "nn-NO"
+	"pa-IN" "pl" "pt-BR" "pt-PT" "rm" "ro" "ru"
+	"sk" "sl" "sq" "sr" "sv-SE" "th" "tr" "uk" "uz" "vi" "zh-CN" "zh-TW"
 )
 
 mozilla_set_globals() {
@@ -451,6 +443,13 @@ pkg_setup() {
 			fi
 		fi
 
+		if ! use clang && [[ "$(gcc-major-version)" -eq 11 ]] \
+			&& ! has_version -b ">sys-devel/gcc-11.1.0:11" ; then
+			# bug 792705
+			eerror "Using GCC 11 to compile firefox is currently known to be broken (see bug #792705)."
+			die "Set USE=clang or select <gcc-11 to build ${CATEGORY}/${P}."
+		fi
+
 		python-any-r1_pkg_setup
 
 		# Avoid PGO profiling problems due to enviroment leakage
@@ -466,6 +465,34 @@ pkg_setup() {
 
 		# Build system is using /proc/self/oom_score_adj, bug #604394
 		addpredict /proc/self/oom_score_adj
+
+		if use pgo; then
+			# Allow access to GPU during PGO run
+			local ati_cards mesa_cards nvidia_cards render_cards
+			shopt -s nullglob
+
+			ati_cards="$(echo -n /dev/ati/card* | sed 's/ /:/g')"
+			if [[ -n "${ati_cards}" ]]; then
+				addpredict "${ati_cards}"
+			fi
+
+			mesa_cards="$(echo -n /dev/dri/card* | sed 's/ /:/g')"
+			if [[ -n "${mesa_cards}" ]]; then
+				addpredict "${mesa_cards}"
+			fi
+
+			nvidia_cards="$(echo -n /dev/nvidia* | sed 's/ /:/g')"
+			if [[ -n "${nvidia_cards}" ]]; then
+				addpredict "${nvidia_cards}"
+			fi
+
+			render_cards="$(echo -n /dev/dri/renderD128* | sed 's/ /:/g')"
+			if [[ -n "${render_cards}" ]]; then
+				addpredict "${render_cards}"
+			fi
+
+			shopt -u nullglob
+		fi
 
 		if ! mountpoint -q /dev/shm; then
 			# If /dev/shm is not available, configure is known to fail with
@@ -647,7 +674,6 @@ src_configure() {
 
 	# Initialize MOZCONFIG
 	mozconfig_add_options_ac '' --enable-application=comm/mail
-	mozconfig_add_options_ac '' --enable-calendar
 
 	# Set Gentoo defaults
 	export MOZILLA_OFFICIAL
@@ -660,6 +686,7 @@ src_configure() {
 		--disable-install-strip \
 		--disable-strip \
 		--disable-updater \
+		--enable-js-shell \
 		--enable-official-branding \
 		--enable-release \
 		--enable-system-ffi \
@@ -755,6 +782,8 @@ src_configure() {
 		mozconfig_add_options_ac '-pulseaudio' --enable-alsa
 	fi
 
+	mozconfig_use_enable sndio
+
 	mozconfig_use_enable wifi necko-wifi
 
 	if use wayland; then
@@ -770,9 +799,6 @@ src_configure() {
 
 			mozconfig_add_options_ac '+lto' --enable-lto=cross
 		else
-			# Linking only works when using ld.gold when LTO is enabled
-			mozconfig_add_options_ac "forcing ld=gold due to USE=lto" --enable-linker=gold
-
 			# ThinLTO is currently broken, see bmo#1644409
 			mozconfig_add_options_ac '+lto' --enable-lto=full
 		fi
@@ -791,8 +817,6 @@ src_configure() {
 		if use clang; then
 			# This is upstream's default
 			mozconfig_add_options_ac "forcing ld=lld due to USE=clang" --enable-linker=lld
-		elif tc-ld-is-gold ; then
-			mozconfig_add_options_ac "linker is set to gold" --enable-linker=gold
 		else
 			mozconfig_add_options_ac "linker is set to bfd" --enable-linker=bfd
 		fi
@@ -922,8 +946,9 @@ src_configure() {
 	export MOZ_NOSPAM
 	MOZ_NOSPAM=1
 
-	# Build system requires xargs but is unable to find it
-	mozconfig_add_options_mk 'Gentoo default' "XARGS=${EPREFIX}/usr/bin/xargs"
+	# Portage sets XARGS environment variable to "xargs -r" by default which
+	# breaks build system's check_prog() function which doesn't support arguments
+	mozconfig_add_options_ac 'Gentoo default' "XARGS=${EPREFIX}/usr/bin/xargs"
 
 	# Set build dir
 	mozconfig_add_options_mk 'Gentoo default' "MOZ_OBJDIR=${BUILD_DIR}"
@@ -1062,88 +1087,50 @@ src_install() {
 		newicon -s "${size}" "${icon}" "${PN}.png"
 	done
 
-	# Install menus
-	local desktop_file display_protocols icon name use_wayland wrapper_wayland wrapper_x11
-	wrapper_wayland="${PN}-wayland.sh"
-	wrapper_x11="${PN}-x11.sh"
+	# Install menu
+	local app_name
+	app_name="Mozilla ${MOZ_PN^}"
 	desktop_file="${FILESDIR}/icon/${PN}-r2.desktop"
-	display_protocols="auto X11"
+	local desktop_filename
+	desktop_filename="${PN}.desktop"
+	local exec_command
+	exec_command="${PN}"
 	icon="${PN}"
-	name="Mozilla ${MOZ_PN^}"
 	use_wayland="false"
 
 	if use wayland; then
-		display_protocols+=" Wayland"
 		use_wayland="true"
 	fi
 
-	local app_name desktop_filename display_protocol exec_command
-	# shellcheck disable=SC2128
-	for display_protocol in ${display_protocols}; do
-		app_name="${name} on ${display_protocol}"
-		desktop_filename="${PN}-${display_protocol,,}.desktop"
+	cp "${desktop_file}" "${WORKDIR}/${PN}.desktop-template" || die "cp failed"
 
-		case "${display_protocol}" in
-			Wayland)
-				exec_command="${PN}-wayland --name ${PN}-wayland"
-				newbin "${FILESDIR}/${wrapper_wayland}" "${PN}-wayland"
-				;;
-			X11)
-				if ! use wayland; then
-					# Exit loop here because there's no choice so
-					# we don't need wrapper/.desktop file for X11.
-					continue
-				fi
-
-				exec_command="${PN}-x11 --name ${PN}-x11"
-				newbin "${FILESDIR}/${wrapper_x11}" "${PN}-x11"
-				;;
-			*)
-				app_name="${name}"
-				desktop_filename="${PN}.desktop"
-				exec_command="${PN}"
-				;;
-		esac
-
-		cp "${desktop_file}" "${WORKDIR}/${PN}.desktop-template" || die "cp failed"
-
+	# shellcheck disable=SC2154
 		# shellcheck disable=SC2154
-		# shellcheck disable=SC2154
-		sed -i \
-			-e "s:@NAME@:${app_name}:" \
-			-e "s:@EXEC@:${exec_command}:" \
-			-e "s:@ICON@:${icon}:" \
-			"${WORKDIR}/${PN}.desktop-template" \
-			|| die "sed failed"
+	sed -i \
+		-e "s:@NAME@:${app_name}:" \
+		-e "s:@EXEC@:${exec_command}:" \
+		-e "s:@ICON@:${icon}:" \
+		"${WORKDIR}/${PN}.desktop-template" \
+		|| die "sed failed"
 
-		newmenu "${WORKDIR}/${PN}.desktop-template" "${desktop_filename}"
+	newmenu "${WORKDIR}/${PN}.desktop-template" "${desktop_filename}"
 
-		rm "${WORKDIR}/${PN}.desktop-template" || die "rm failed"
-	done
+	rm "${WORKDIR}/${PN}.desktop-template" || die "rm failed"
 
-	# Install generic wrapper script
+	# Install wrapper script
 	[[ -f "${ED}/usr/bin/${PN}" ]] && rm "${ED}/usr/bin/${PN}"
-	newbin "${FILESDIR}/${PN}.sh" "${PN}"
+	newbin "${FILESDIR}/${PN}-r1.sh" "${PN}"
 
 	# Update wrapper
-	local wrapper
-	for wrapper in \
+	# shellcheck disable=SC2154
+		# shellcheck disable=SC2154
+	sed -i \
+		-e "s:@PREFIX@:${EPREFIX}/usr:" \
+		-e "s:@MOZ_FIVE_HOME@:${MOZILLA_FIVE_HOME}:" \
+		-e "s:@APULSELIB_DIR@:${apulselib}:" \
+		-e "s:@DEFAULT_WAYLAND@:${use_wayland}:" \
 		"${ED}/usr/bin/${PN}" \
-		"${ED}/usr/bin/${PN}-x11" \
-		"${ED}/usr/bin/${PN}-wayland" \
-	; do
-		[[ ! -f "${wrapper}" ]] && continue
-
-		# shellcheck disable=SC2154
-		# shellcheck disable=SC2154
-		sed -i \
-			-e "s:@PREFIX@:${EPREFIX}/usr:" \
-			-e "s:@MOZ_FIVE_HOME@:${MOZILLA_FIVE_HOME}:" \
-			-e "s:@APULSELIB_DIR@:${apulselib}:" \
-			-e "s:@DEFAULT_WAYLAND@:${use_wayland}:" \
-			"${wrapper}" \
-			|| die "sed failed"
-	done
+		|| die "sed failed"
 }
 
 pkg_preinst() {
@@ -1177,10 +1164,21 @@ pkg_postinst() {
 	fi
 
 	local show_doh_information
+	local show_shortcut_information
 
 	if [[ -z "${REPLACING_VERSIONS}" ]]; then
 		# New install; Tell user that DoH is disabled by default
 		show_doh_information=yes
+		show_shortcut_information=no
+	else
+		local replacing_version
+		for replacing_version in "${REPLACING_VERSIONS}" ; do
+			if ver_test "${replacing_version}" -lt 91.0; then
+				# Tell user that we no longer install a shortcut
+				# per supported display protocol
+				show_shortcut_information=yes
+			fi
+		done
 	fi
 
 	if [[ -n "${show_doh_information}" ]]; then
@@ -1191,5 +1189,14 @@ pkg_postinst() {
 		elog "should respect OS configured settings), \"network.trr.mode\" was set to 5"
 		elog "(\"Off by choice\") by default."
 		elog "You can enable DNS-over-HTTPS in ${PN^}'s preferences."
+	fi
+
+	if [[ -n "${show_shortcut_information}" ]]; then
+		elog
+		elog "Since ${PN}-91.0 we no longer install multiple shortcuts for"
+		elog "each supported display protocol. Instead we will only install"
+		elog "one generic Mozilla ${PN^} shortcut."
+		elog "If you still want to be able to select between running Mozilla ${PN^}"
+		elog "on X11 or Wayland, you have to re-create these shortcuts on your own."
 	fi
 }

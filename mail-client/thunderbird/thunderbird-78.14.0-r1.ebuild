@@ -4,11 +4,11 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-78esr-patches-16.tar.xz"
+FIREFOX_PATCHSET="firefox-78esr-patches-19.tar.xz"
 
-LLVM_MAX_SLOT=12
+LLVM_MAX_SLOT=13
 
-PYTHON_COMPAT=( python3_{7..9} )
+PYTHON_COMPAT=( python3_{7..10} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
 
 WANT_AUTOCONF="2.1"
@@ -87,6 +87,14 @@ BDEPEND="${PYTHON_DEPS}
 	>=virtual/rust-1.41.0
 	|| (
 		(
+			sys-devel/clang:13
+			sys-devel/llvm:13
+			clang? (
+				=sys-devel/lld-13*
+				pgo? ( =sys-libs/compiler-rt-sanitizers-13*[profile] )
+			)
+		)
+		(
 			sys-devel/clang:12
 			sys-devel/llvm:12
 			clang? (
@@ -100,14 +108,6 @@ BDEPEND="${PYTHON_DEPS}
 			clang? (
 				=sys-devel/lld-11*
 				pgo? ( =sys-libs/compiler-rt-sanitizers-11*[profile] )
-			)
-		)
-		(
-			sys-devel/clang:10
-			sys-devel/llvm:10
-			clang? (
-				=sys-devel/lld-10*
-				pgo? ( =sys-libs/compiler-rt-sanitizers-10*[profile] )
 			)
 		)
 	)
@@ -177,7 +177,7 @@ CDEPEND="
 	selinux? ( sec-policy/selinux-mozilla )"
 
 RDEPEND="${CDEPEND}
-	kde? ( kde-misc/kmozillahelper:= )
+	kde? ( kde-misc/kmozillahelper )
 	jack? ( virtual/jack )
 	openh264? ( media-libs/openh264:*[plugin] )
 	pulseaudio? (
@@ -628,6 +628,10 @@ src_configure() {
 	# python/mach/mach/mixin/process.py fails to detect SHELL
 	export SHELL
 	SHELL="${EPREFIX}/bin/bash"
+
+	# Set state path
+	export MOZBUILD_STATE_PATH
+	MOZBUILD_STATE_PATH="${BUILD_DIR}"
 
 	# Set MOZCONFIG
 	export MOZCONFIG
