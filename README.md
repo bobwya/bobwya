@@ -43,33 +43,6 @@ See: [Wiki: Wine Packages](https://github.com/bobwya/bobwya/wiki/Wine-Packages) 
 
 Note: the **::bobwya Overlay** Wine packages _do_ _not_ support the **Gallium 9** / **D3D9** patchset. This is purely down to testing systems only using the Nvidia Proprietary graphics driver.
 
-### Custom GL lib switcher implementation package set
------------------------------------------------------
-
-These packages are masked and are NOT extensively tested (but I use them personally!) Loosely based off the Arch-Linux GL lib switcher. Has some rudimentary support for **PRIMUS** setups. The **x11-drivers/nvidia-drivers** package is customised to support the **GLXOSD** fork in the **::bobwya** Overlay. 
-
-	app-eselect/eselect-opengl : Gentoo OpenGL implementation switcher (heavily customised)
-	media-libs/mesa : OpenGL-like graphic library for Linux (patched version - to work with custom eselect-opengl switcher)
-	x11-base/xorg-server : X.Org X servers (patched version - to work with custom eselect-opengl switcher)
-	x11-drivers/nvidia-drivers : NVIDIA Accelerated Graphics Driver (patched version - to work with custom eselect-opengl switcher)
-
-***
-
-### Infinality Fonts package set
---------------------------------
-
-Package Set to provide updated Infinality Fonts (subpixel font rendering enhancements for freetype2 and associated packages). These four packages are designed to be used __in__ __conjunction__ with each other. The __media-libs/fontconfig-infinality__ package is in the main __Gentoo__ Portage tree.
-
-	media-libs/fontconfig-infinality : Provides configuration to be used in conjunction with the freetype-infinality subpixel hinting.
-	media-libs/fontconfig : A library for configuring and customizing font access - with updated infinality support.
-	media-libs/fontconfig-ultimate : A set of font rendering and replacement rules for fontconfig-infinality.
-	media-libs/freetype : A high-quality font engine - with updated infinality support.
-
-See [Gentoo Wiki: Fontconfig (Infinality)](https://wiki.gentoo.org/wiki/Fontconfig#Infinality "Gentoo Wiki: Fontconfig (Infinality)").
-
-See [Arch Wiki: Infinality](https://wiki.archlinux.org/index.php/Infinality "Arch Wiki: Infinality").
-
-See [Arch AUR freetype2-infinality-ultimate package](https://aur.archlinux.org/packages/freetype2-infinality-ultimate/).
 
 ##
 Credit to the Arch AUR **firefox-kde-opensuse** PKGBUILD script used as the main basis for the Gentoo **www-client/firefox** package (with optional OpenSUSE KDE patchset support).
