@@ -239,10 +239,9 @@ multilib_src_configure() {
 		"$(use_with xinerama)"
 	)
 
-	local PKG_CONFIG AR RANLIB
+	local PKG_CONFIG
 	#472038 Avoid crossdev's i686-pc-linux-gnu-pkg-config if building wine32 on amd64
-	#483342 set AR and RANLIB to make QA scripts happy
-	tc-export PKG_CONFIG AR RANLIB
+	tc-export PKG_CONFIG
 
 	if use amd64; then
 		if [[ "${ABI}" == "amd64" ]]; then
