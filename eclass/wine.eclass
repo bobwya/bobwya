@@ -279,7 +279,7 @@ _WINE_IS_STABLE=$(( ((_WINE_MAJOR_VERSION == 1) && (_WINE_MINOR_VERSION % 2 == 0
 (( _WINE_VERSION_COMPONENT_COUNT > 2 )) && \
 if [[ "$( ver_cut $((_WINE_VERSION_COMPONENT_COUNT-1)) )" = "p" ]]; then
 	_WINE_VERSION_SLOT="$( ver_cut $((_WINE_VERSION_COMPONENT_COUNT-1))- )"
-	WINE_PV="${WINE_PV%_${_WINE_VERSION_SLOT}}"
+	WINE_PV="${WINE_PV%"_${_WINE_VERSION_SLOT}"}"
 	: $(( _WINE_VERSION_COMPONENT_COUNT -= 2 ))
 fi
 
@@ -351,7 +351,7 @@ _WINE_STAGING_SUFFIX=""
 		;;
 	3.13.1|5.12.1|5.15.2)
 		_WINE_STAGING_REVISION=".${WINE_PV##*.}"
-		WINE_PV="${WINE_PV%${_WINE_STAGING_REVISION}}"
+		WINE_PV="${WINE_PV%"${_WINE_STAGING_REVISION}"}"
 		;;
 	*)
 		;;
@@ -1687,12 +1687,21 @@ wine_add_stock_gentoo_patches() {
 	esac
 
 	case "${WINE_PV}" in
-		1.8|1.8.*|1.9.*|2.*|3.*|4.*|5.[0-8]|5.0.[1-9]|5.0.[1-9]-rc[1-9])
+		9999)
+			local -a _revert_install_generated_typelib_for_installed_idl_commit=( "ef8b871e12a5c03fb678d4286a88e708c00326d8" )
+			_wine_prune_patches_from_array "${S}" "1" "_revert_install_generated_typelib_for_installed_idl_commit"
+			# shellcheck disable=SC2068
+			if ((${#_revert_install_generated_typelib_for_installed_idl_commit[@]})); then
+				PATCHES_REVERT+=( "${_patch_directory}/revert/wine-5.9-makedep_install_also_generated_typelib_for_installed_idl.patch" )
+			fi
 			;;
-		*)
+		5.9|5.1[0-9]|5.2[0-2]|6.0|6.0-rc[1-9]|6.0.1|6.0.1-rc[1-9]|6.[1-9]|6.1[0-9]|6.2[0-1])
 			PATCHES_REVERT+=( "${_patch_directory}/revert/wine-5.9-makedep_install_also_generated_typelib_for_installed_idl.patch" )
 			;;
+		*)
+			;;
 	esac
+
 	case "${WINE_PV}" in
 		9999)
 			local -a _revert_add_equality_sign_delimiter_commit=( "de4c91e0a1ac65017190bead4c053ae65db8f80e" )
@@ -1770,33 +1779,33 @@ wine_fix_gentoo_O3_compilation_support() {
 wine_fix_gentoo_winegcc_support() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
-	local -a source_files=( "tools/winebuild/main.c" "tools/winegcc/winegcc.c" )
-	local source_file
+	local -a source_files=( "tools/winebuild/main.c" "tools/winegcc/winegcc.c" "tools/tools.h" )
+	local -a pointer_size_vars=( "force_pointer_size" "opts.force_pointer_size" )
+	local i
 
-	# shellcheck disable=SC2068
-	for source_file in ${source_files[@]}; do
+	for (( i=0; i<3; i++ )); do
+		if ! test -f "${source_files[i]}" || ! grep -q '#ifdef __i386__' "${source_files[i]}"; then
+			continue
+		fi
+
+		# shellcheck disable=SC1004
 		sed -i \
-		-e '/^#ifdef __i386__$/ i #undef FORCE_POINTER_SIZE' \
-		-e '/^#elif defined(__x86_64__)$/ i #define FORCE_POINTER_SIZE' \
-		-e '/^#elif defined(__powerpc__)$/ i #define FORCE_POINTER_SIZE' \
-		"${source_file}" || die "sed failed"
+			-e '/^#ifdef __i386__$/ i #undef FORCE_POINTER_SIZE' \
+			-e '/^#elif defined(__x86_64__)$/ i #define FORCE_POINTER_SIZE' \
+			-e '/^\(    target.\|static const enum target_cpu build_\|enum target_cpu target_\)cpu = CPU_x86_64;$/a\
+#define FORCE_POINTER_SIZE' \
+			"${source_files[i]}" || die "sed failed"
 	done
 
-	# shellcheck disable=SC1004
-	sed -i -e '/^    signal[(] SIGINT, exit_on_signal [)];$/a\
+	for (( i=0; i<2; i++ )); do
+		sed -i \
+			-e '/^    signal[(] SIGINT, exit_on_signal [)];$/a\
 \
 #ifdef FORCE_POINTER_SIZE\
-    force_pointer_size = sizeof(size_t);\
+    '"${pointer_size_vars[i]}"' = sizeof(size_t);\
 #endif' \
-		"${source_files[0]}" || die "sed failed"
-
-	# shellcheck disable=SC1004
-	sed -i -e '/^    signal[(] SIGINT, exit_on_signal [)];$/a\
-\
-#ifdef FORCE_POINTER_SIZE\
-    opts.force_pointer_size = sizeof(size_t);\
-#endif' \
-		"${source_files[1]}" || die "sed failed"
+			"${source_files[i]}" || die "sed failed"
+	done
 }
 
 # @FUNCTION: wine_fix_block_scope_compound_literals
@@ -1946,7 +1955,7 @@ wine_make_variant_wrappers() {
 	local _binary_file _binary_file_base _binary_file_extension
 	while IFS= read -r -d '' _binary_file; do
 		_binary_file_base="${_binary_file%%.*}"
-		_binary_file_extension="${_binary_file#${_binary_file_base}}"
+		_binary_file_extension="${_binary_file#"${_binary_file_base}"}"
 		make_wrapper "${_binary_file_base}-${WINE_VARIANT}${_binary_file_extension}" "${WINE_PREFIX}/bin/${_binary_file}"
 	done < <(find "${D%/}/${WINE_PREFIX}/bin" -mindepth 1 -maxdepth 1 \( -type f -o -type l \) -printf '%f\0' 2>/dev/null)
 }
