@@ -3,15 +3,24 @@
 
 EAPI=7
 
-inherit autotools
+inherit cmake
 
 DESCRIPTION="Tool and library to extract CAB files from InstallShield installers"
 HOMEPAGE="https://github.com/twogood/unshield"
-SRC_URI="https://github.com/twogood/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
+
+if [[ "${PV}" == "9999" ]]; then
+	EGIT_REPO_URI="https://github.com/twogood/${PN}.git"
+	inherit git-r3
+	SRC_URI=""
+	#KEYWORDS=""
+else
+	SRC_URI="https://github.com/twogood/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
+	KEYWORDS="~amd64 ~hppa ~ppc ~x86"
+fi
 
 LICENSE="MIT"
 SLOT="0"
-KEYWORDS="~amd64 ~hppa ~ppc ~x86"
+
 IUSE="static-libs"
 
 RDEPEND="
@@ -20,16 +29,13 @@ RDEPEND="
 DEPEND="${RDEPEND}"
 
 src_prepare() {
-	local PATCHES=( "${FILESDIR}/${PN}-1.0-bootstrap.patch" )
-	default
-	"${S}/bootstrap" || die "bootstrap script failed"
-	eautoreconf
+	eapply_user
+	cmake_src_prepare
 }
 
 src_configure() {
-	econf $(use_enable static-libs static)
-}
-
-pkg_preinst() {
-	find "${D}" -name '*.la' -exec rm -f {} +
+	local mycmakeargs=(
+		-DBUILD_STATIC=$(usex static-libs)
+	)
+	cmake_src_configure
 }
