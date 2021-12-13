@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+<maintainer type="person">
+	<email>bob.mt.wya@gmail.com</email>
+	<name>Robert Walker</name>
+</maintainer>
+<use>
+</use>
+<upstream>
+	<remote-id type="github">get-iplayer/get_iplayer</remote-id>
+</upstream>
+</pkgmetadata>
