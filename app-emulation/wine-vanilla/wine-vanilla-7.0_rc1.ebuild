@@ -21,7 +21,7 @@ HOMEPAGE="https://www.winehq.org/"
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc faudio +fontconfig +gecko gphoto2 gsm gstreamer +jpeg kerberos kernel_FreeBSD +lcms ldap +mono mingw mp3 netapi nls odbc openal opencl +opengl osmesa oss pcap +perl +png prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test +threads +tiff +truetype udev +udisks +unwind +usb v4l vkd3d vulkan +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gstreamer kerberos kernel_FreeBSD ldap +mono mingw netapi nls odbc openal opencl +opengl osmesa oss pcap +perl prelink prefix pulseaudio +realtime +run-exes samba scanner sdl2 selinux +ssl test +threads +truetype udev +udisks +usb v4l vkd3d vulkan +X +xcomposite xinerama"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
@@ -46,58 +46,41 @@ COMMON_DEPEND="
 	alsa? ( media-libs/alsa-lib[${MULTILIB_USEDEP}] )
 	capi? ( net-libs/libcapi[${MULTILIB_USEDEP}] )
 	cups? ( net-print/cups:=[${MULTILIB_USEDEP}] )
-	faudio? ( app-emulation/faudio[${MULTILIB_USEDEP}] )
 	fontconfig? ( media-libs/fontconfig:=[${MULTILIB_USEDEP}] )
 	gphoto2? ( media-libs/libgphoto2:=[${MULTILIB_USEDEP}] )
-	gsm? ( media-sound/gsm:=[${MULTILIB_USEDEP}] )
-	gstreamer? (
-		media-libs/gstreamer:1.0[${MULTILIB_USEDEP}]
-		media-plugins/gst-plugins-meta:1.0[${MULTILIB_USEDEP}]
-	)
-	jpeg? ( virtual/jpeg:0=[${MULTILIB_USEDEP}] )
 	kerberos? ( virtual/krb5:0=[${MULTILIB_USEDEP}] )
-	lcms? ( media-libs/lcms:2=[${MULTILIB_USEDEP}] )
 	ldap? ( net-nds/openldap:=[${MULTILIB_USEDEP}] )
-	mp3? ( >=media-sound/mpg123-1.5.0[${MULTILIB_USEDEP}] )
 	netapi? ( net-fs/samba[netapi(+),${MULTILIB_USEDEP}] )
 	nls? ( sys-devel/gettext[${MULTILIB_USEDEP}] )
 	odbc? ( dev-db/unixODBC:=[${MULTILIB_USEDEP}] )
 	openal? ( media-libs/openal:=[${MULTILIB_USEDEP}] )
 	opencl? ( virtual/opencl[${MULTILIB_USEDEP}] )
 	opengl? (
-		virtual/glu[${MULTILIB_USEDEP}]
 		virtual/opengl[${MULTILIB_USEDEP}]
 	)
 	osmesa? ( >=media-libs/mesa-13[osmesa,${MULTILIB_USEDEP}] )
 	pcap? ( net-libs/libpcap[${MULTILIB_USEDEP}] )
-	png? ( media-libs/libpng:0=[${MULTILIB_USEDEP}] )
 	pulseaudio? ( media-sound/pulseaudio[${MULTILIB_USEDEP}] )
 	scanner? ( media-gfx/sane-backends:=[${MULTILIB_USEDEP}] )
 	sdl2? ( media-libs/libsdl2[haptic,joystick,${MULTILIB_USEDEP}] )
 	ssl? ( net-libs/gnutls:=[${MULTILIB_USEDEP}] )
-	tiff? ( media-libs/tiff[${MULTILIB_USEDEP}] )
 	truetype? ( >=media-libs/freetype-2.0.5[${MULTILIB_USEDEP}] )
 	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
 	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
-	unwind? ( sys-libs/libunwind[${MULTILIB_USEDEP}] )
 	usb? ( virtual/libusb:=[udev,${MULTILIB_USEDEP}] )
-	vkd3d? ( >=app-emulation/vkd3d-1.1[${MULTILIB_USEDEP}] )
+	vkd3d? ( >=app-emulation/vkd3d-1.2[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
 	vulkan? ( media-libs/vulkan-loader[X,${MULTILIB_USEDEP}] )
 	xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
 	xinerama? ( x11-libs/libXinerama[${MULTILIB_USEDEP}] )
-	xml? (
-		dev-libs/libxml2[${MULTILIB_USEDEP}]
-		dev-libs/libxslt[${MULTILIB_USEDEP}]
-	)
 "
 
 RDEPEND="${COMMON_DEPEND}
 	!app-emulation/wine:0
 	>=app-eselect/eselect-wine-1.5.5
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
-	gecko? ( app-emulation/wine-gecko:2.47.1[abi_x86_32?,abi_x86_64?] )
-	mono? ( app-emulation/wine-mono:5.1.0 )
+	gecko? ( app-emulation/wine-gecko:2.47.2[abi_x86_32?,abi_x86_64?] )
+	mono? ( app-emulation/wine-mono:7.0.0 )
 	perl? (
 		dev-lang/perl
 		dev-perl/XML-Simple
@@ -201,23 +184,16 @@ multilib_src_configure() {
 		"--sysconfdir=/etc/wine"
 		"$(use_with alsa)"
 		"$(use_with capi)"
-		"$(use_with lcms cms)"
 		"$(use_with cups)"
-		"$(use_with faudio)"
 		"$(use_with fontconfig)"
 		"$(use_with ssl gnutls)"
 		"$(use_enable gecko mshtml)"
 		"$(use_with gphoto2 gphoto)"
-		"$(use_with gsm)"
-		"$(use_with gstreamer)"
-		"--without-hal"
-		"$(use_with jpeg)"
 		"$(use_with kerberos gssapi)"
 		"$(use_with kerberos krb5)"
 		"$(use_with ldap)"
 		"$(use_with mingw)"
 		"$(use_enable mono mscoree)"
-		"$(use_with mp3 mpg123)"
 		"$(use_with netapi)"
 		"$(use_with nls gettext)"
 		"$(use_with openal)"
@@ -226,16 +202,13 @@ multilib_src_configure() {
 		"$(use_with osmesa)"
 		"$(use_with oss)"
 		"$(use_with pcap)"
-		"$(use_with png)"
 		"$(use_with pulseaudio pulse)"
 		"$(use_with threads pthread)"
 		"$(use_with scanner sane)"
 		"$(use_with sdl2 sdl)"
 		"$(use_enable test tests)"
-		"$(use_with tiff)"
 		"$(use_with truetype freetype)"
 		"$(use_with udev)"
-		"$(use_with unwind)"
 		"$(use_with udisks dbus)"
 		"$(use_with usb)"
 		"$(use_with v4l v4l2)"
@@ -247,8 +220,6 @@ multilib_src_configure() {
 		"$(use_with X xshm)"
 		"$(use_with xcomposite)"
 		"$(use_with xinerama)"
-		"$(use_with xml)"
-		"$(use_with xml xslt)"
 	)
 
 	local PKG_CONFIG
