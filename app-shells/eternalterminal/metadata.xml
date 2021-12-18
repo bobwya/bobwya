@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+	<maintainer type="person">
+		<email>bob.mt.wya@gmail.com</email>
+		<name>Robert Walker</name>
+	</maintainer>
+	<use>
+		<flag name="utempter">Enable support for <pkg>sys-libs/libutempter</pkg></flag>
+	</use>
+</pkgmetadata>
