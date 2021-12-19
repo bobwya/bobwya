@@ -40,7 +40,7 @@ RDEPEND="${DEPEND}"
 
 PATCHES=(
 	"${FILESDIR}/${PN}-6.1.9-fix_cmake_optional_packages.patch"
-	"${FILESDIR}/${PN}-6.1.9-fix_const_typing.patch"
+	"${FILESDIR}/${P}-fix_const_typing.patch"
 )
 
 src_configure() {
