@@ -1,4 +1,4 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: wine.eclass
@@ -1966,12 +1966,6 @@ wine_make_variant_wrappers() {
 # @DESCRIPTION:
 # This ebuild phase function tests oss sound system support.
 wine_pkg_pretend() {
-	if use oss && ! use kernel_FreeBSD && ! has_version '>=media-sound/oss-4'; then
-		eerror "You cannot build ${CATEGORY}/${PN} with USE=+oss without having support from a FreeBSD kernel"
-		eerror "or >=media-sound/oss-4 (only available through an Overlay)."
-		die "USE=+oss currently unsupported on this system."
-	fi
-
 	# shellcheck disable=SC2086
 	has mingw ${IUSE} && use mingw && mingw64_check_requirements "5.0.0" "7.0.0"
 }
