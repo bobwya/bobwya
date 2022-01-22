@@ -219,7 +219,7 @@ readonly _WINE_IS_STAGING
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-ebuild-common; tarball.
-WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20210915"
+WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20220122"
 readonly WINE_EBUILD_COMMON_P
 
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_PN
@@ -1681,6 +1681,22 @@ wine_add_stock_gentoo_patches() {
 	case "${WINE_PV}" in
 		1.8|1.8.[1-7]|1.9.[0-9]|9999)
 			PATCHES+=( "${_patch_directory}/wine-1.8-disable_gnu_dirent.patch" )
+			;;
+		*)
+			;;
+	esac
+
+	case "${WINE_PV}" in
+		9999)
+			local -a _dnsapi_drop_imported_domain_name_parsing_code=( "0d26dd2afbc3255a6871f636257f7be3d962aba8" )
+			_wine_prune_patches_from_array "${S}" "1" "_dnsapi_drop_imported_domain_name_parsing_code"
+			# shellcheck disable=SC2068
+			if ((${_dnsapi_drop_imported_domain_name_parsing_code[@]})); then
+				PATCHES+=( "${_patch_directory}/wine-6.16-configure_glibc_2.34_compatiblity.patch" )
+			fi
+			;;
+		6.[6-9]|6.1[0-5])
+			PATCHES+=( "${_patch_directory}/wine-6.16-configure_glibc_2.34_compatiblity.patch" )
 			;;
 		*)
 			;;
