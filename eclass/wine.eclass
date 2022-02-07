@@ -1711,7 +1711,7 @@ wine_add_stock_gentoo_patches() {
 				PATCHES_REVERT+=( "${_patch_directory}/revert/wine-5.9-makedep_install_also_generated_typelib_for_installed_idl.patch" )
 			fi
 			;;
-		5.9|5.1[0-9]|5.2[0-2]|6.0|6.0-rc[1-9]|6.0.[1-2]|6.0.[1-2]-rc[1-9]|6.[1-9]|6.1[0-9]|6.2[0-1])
+		5.9|5.1[0-9]|5.2[0-2]|6.0|6.0-rc[1-9]|6.0.[1-3]|6.0.[1-3]-rc[1-9]|6.[1-9]|6.1[0-9]|6.2[0-1])
 			PATCHES_REVERT+=( "${_patch_directory}/revert/wine-5.9-makedep_install_also_generated_typelib_for_installed_idl.patch" )
 			;;
 		*)
