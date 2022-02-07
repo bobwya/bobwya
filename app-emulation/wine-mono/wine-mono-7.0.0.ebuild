@@ -1,8 +1,8 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-EAPI=7
+EAPI=8
 
 DESCRIPTION="Wine Mono is a replacement for the .NET runtime and class libraries in Wine"
 HOMEPAGE="https://www.winehq.org/"
