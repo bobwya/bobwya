@@ -1,9 +1,11 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
 
-EAPI=7
+EAPI=8
+
+MULTILIB_COMPAT=( abi_x86_{32,64} )
 
 LTO_ENABLE_FLAGOMATIC="yes"
 
@@ -58,8 +60,8 @@ pkg_setup() {
 }
 
 src_prepare() {
-	PATCHES=()
-	use async && PATCHES+=( "${FILESDIR}/${PN}-1.8-async.patch" )
+	PATCHES=( "${FILESDIR}/${PN}-1.8_add-compiler-flags.patch" )
+	use async && PATCHES+=( "${FILESDIR}/${PN}-1.9.3-async.patch" )
 
 	filter-flags "-Wl,--hash-style*"
 	[[ "$(is-flag "-march=*")" == "true" ]] && append-flags "-mno-avx"

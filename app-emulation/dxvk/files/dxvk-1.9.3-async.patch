@@ -15,21 +15,19 @@ diff --git a/src/dxvk/dxvk_context.cpp b/src/dxvk/dxvk_context.cpp
 index 797c4e20..bda90275 100644
 --- a/src/dxvk/dxvk_context.cpp
 +++ b/src/dxvk/dxvk_context.cpp
-@@ -3837,7 +3837,9 @@ namespace dxvk {
-       : DxvkContextFlag::GpDirtyStencilRef);
+@@ -3837,7 +3837,7 @@ namespace dxvk {
      
      // Retrieve and bind actual Vulkan pipeline handle
--    m_gpActivePipeline = m_state.gp.pipeline->getPipelineHandle(m_state.gp.state, m_state.om.framebuffer->getRenderPass());
-+    m_gpActivePipeline = m_state.gp.pipeline->getPipelineHandle(m_state.gp.state,
-+                                                                m_state.om.framebuffer->getRenderPass(),
-+                                                                this->checkAsyncCompilationCompat());
+     m_gpActivePipeline = m_state.gp.pipeline->getPipelineHandle(
+-      m_state.gp.state, m_state.om.framebufferInfo.renderPass());
++      m_state.gp.state, m_state.om.framebufferInfo.renderPass(), this->checkAsyncCompilationCompat());
  
      if (unlikely(!m_gpActivePipeline))
        return false;
 @@ -4093,7 +4095,7 @@ namespace dxvk {
    }
-   
-   
+
+
 -  void DxvkContext::updateFramebuffer() {
 +  void DxvkContext::updateFramebuffer(bool isDraw) {
      if (m_flags.test(DxvkContextFlag::GpDirtyFramebuffer)) {
@@ -40,8 +38,8 @@ index 797c4e20..bda90275 100644
        }
  
 +      if (isDraw) {
-+        for (uint32_t i = 0; i < fb->numAttachments(); i++)
-+          fb->getAttachment(i).view->setRtBindingFrameId(m_device->getCurrentFrameId());
++        for (uint32_t i = 0; i < fbInfo.numAttachments(); i++)
++          fbInfo.getAttachment(i).view->setRtBindingFrameId(m_device->getCurrentFrameId());
 +      }
 +
        m_flags.set(DxvkContextFlag::GpDirtyPipelineState);
@@ -62,8 +60,8 @@ index 797c4e20..bda90275 100644
    
 +  bool DxvkContext::checkAsyncCompilationCompat() {
 +    bool fbCompat = true;
-+    for (uint32_t i = 0; fbCompat && i < m_state.om.framebuffer->numAttachments(); i++) {
-+      const auto& attachment = m_state.om.framebuffer->getAttachment(i);
++    for (uint32_t i = 0; fbCompat && i < m_state.om.framebufferInfo.numAttachments(); i++) {
++      const auto& attachment = m_state.om.framebufferInfo.getAttachment(i);
 +      fbCompat &= attachment.view->getRtBindingAsyncCompilationCompat();
 +    }
 +    return fbCompat;
@@ -492,32 +490,3 @@ index 1dc113c3..003fb1a7 100644
    'dxvk_pipelayout.cpp',
    'dxvk_pipemanager.cpp',
    'dxvk_queue.cpp',
-diff --git a/dxvk.conf b/dxvk.conf
-index 9ca21a5e..abf0f2bf 100644
---- a/dxvk.conf
-+++ b/dxvk.conf
-@@ -214,6 +214,24 @@
- # dxvk.hud = 
- 
- 
-+# Compile pipelines asynchronously if possible. This may reduce stuttering
-+# in some games, but may also introduce rendering issues that might become
-+# apparent over time. Do not report bugs with this option enabled.
-+#
-+# Supported values: True, False
-+
-+# dxvk.enableAsync = True
-+
-+
-+# Sets number of async compiler threads.
-+#
-+# Supported values:
-+# - 0 to automatically determine the number of threads to use
-+# - any positive number to enforce the thread count
-+
-+# dxvk.numAsyncThreads = 0
-+
-+
- # Reported shader model
- #
- # The shader model to state that we support in the device
