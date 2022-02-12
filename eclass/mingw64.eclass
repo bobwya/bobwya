@@ -1,10 +1,10 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: mingw64.eclass
 # @MAINTAINER:
 # Rob Walker <bob.mt.wya@gmail.com>
-# @SUPPORTED_EAPIS: 6 7
+# @SUPPORTED_EAPIS: 6 7 8
 # @AUTHOR:
 # Rob Walker <bob.mt.wya@gmail.com>
 # @BLURB: common app-emulation Wine and DXVK functionality
@@ -21,7 +21,7 @@ if [[ -z "${_MINGW_ECLASS}" ]]; then
 _MINGW_ECLASS=1
 
 case ${EAPI} in
-	6|7)  ;;
+	6|7|8)  ;;
 	*)  die "EAPI=${EAPI:-0} is not supported" ;;
 	esac
 
