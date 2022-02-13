@@ -1,10 +1,10 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: dxvk.eclass
 # @MAINTAINER:
 # Rob Walker <bob.mt.wya@gmail.com>
-# @SUPPORTED_EAPIS: 6 7
+# @SUPPORTED_EAPIS: 6 7 8
 # @AUTHOR:
 # Rob Walker <bob.mt.wya@gmail.com>
 # @BLURB: common app-emulation Wine and DXVK functionality
@@ -19,7 +19,7 @@ _DXVK_ECLASS=1
 inherit meson multilib-minimal virtualx
 
 case ${EAPI} in
-	6|7)  ;;
+	6|7|8)  ;;
 	*)  die "EAPI=${EAPI:-0} is not supported" ;;
 	esac
 
@@ -114,16 +114,12 @@ dxvk_set_setup_path() {
 # @DESCRIPTION:
 # Add *FLAGS to meson (cross-)build file.
 dxvk_set_meson_options() {
-	sed -i -e "\|^c[_[:alpha:]]*_args[[:blank:]]*=|d" \
-		-e "\|^\[properties\]|d" \
-		-e "\|^needs_exe_wrapper = true|i\
-[built-in options]\\n\
-c_args = $(_meson_env_array "${CFLAGS}")\\n\
-cpp_args = $(_meson_env_array "${CXXFLAGS}")\\n\
-c_link_args = $(_meson_env_array "${LDFLAGS}")\\n\
-cpp_link_args = $(_meson_env_array "${LDFLAGS}")" \
+		sed -i \
+			-e "s|@CFLAGS@|$(_meson_env_array "${CFLAGS}")|" \
+			-e "s|@CXXFLAGS@|$(_meson_env_array "${CXXFLAGS}")|" \
+			-e "s|@LDFLAGS@|$(_meson_env_array "${LDFLAGS}")|" \
 			"${S}/$(dxvk_get_abi_build_file)" \
-	|| die "sed failed"
+		|| die "sed failed"
 }
 
 # @FUNCTION: dxvk_tests
