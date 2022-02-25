@@ -22,7 +22,7 @@ HOMEPAGE="https://www.winehq.org/"
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 
-IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa pcap +perl pipelight +png prelink prefix pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl test themes +threads +tiff +truetype udev +udisks v4l vaapi +X +xcomposite xinerama +xml"
+IUSE="+abi_x86_32 +abi_x86_64 +alsa capi cups custom-cflags dos elibc_glibc +fontconfig +gecko gphoto2 gsm gstreamer +jpeg +lcms ldap +mono mp3 ncurses netapi nls odbc openal opencl +opengl osmesa pcap +perl pipelight +png prefix pulseaudio +realtime +run-exes s3tc samba scanner selinux +ssl test themes +threads +tiff +truetype udev +udisks v4l vaapi +X +xcomposite xinerama +xml"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )
 	X? ( truetype )
 	elibc_glibc? ( threads )
@@ -122,7 +122,6 @@ DEPEND="${COMMON_DEPEND}
 	virtual/pkgconfig
 	virtual/yacc
 	X? ( x11-base/xorg-proto )
-	prelink? ( sys-devel/prelink )
 	xinerama? ( x11-base/xorg-proto )"
 
 S="${WORKDIR}/${WINE_P}"
