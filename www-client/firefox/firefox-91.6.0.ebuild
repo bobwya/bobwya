@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-96-patches-01.tar.xz"
+FIREFOX_PATCHSET="firefox-91esr-patches-05j.tar.xz"
 
 LLVM_MAX_SLOT=13
 
@@ -15,7 +15,7 @@ WANT_AUTOCONF="2.1"
 
 VIRTUALX_REQUIRED="pgo"
 
-MOZ_ESR=
+MOZ_ESR=yes
 
 MOZ_PV=${PV}
 MOZ_PV_SUFFIX=
@@ -50,7 +50,7 @@ fi
 PATCH_URIS=( "https://dev.gentoo.org/"~{polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="400e9f66561125dbad1ae31f0707ccd71b3df06d"
+GIT_MOZ_REVISION="01f6fa0fc3651566a3d3618354aca18c2d7a4085"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 # shellcheck disable=SC2124
@@ -69,7 +69,7 @@ HOMEPAGE="https://www.mozilla.com/firefox
 
 KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
 
-SLOT="0/$(ver_cut 1)"
+SLOT="esr"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 
 IUSE="+clang cpu_flags_arm_neon dbus debug eme-free hardened hwaccel kde"
@@ -84,7 +84,6 @@ IUSE+=" screencast"
 
 REQUIRED_USE="debug? ( !system-av1 )
 	pgo? ( lto )
-	wayland? ( dbus )
 	wifi? ( dbus )"
 
 # Firefox-only REQUIRED_USE flags
@@ -96,7 +95,7 @@ BDEPEND="${PYTHON_DEPS}
 	>=dev-util/cbindgen-0.19.0
 	>=net-libs/nodejs-10.23.1
 	virtual/pkgconfig
-	>=virtual/rust-1.53.0
+	>=virtual/rust-1.51.0
 	|| (
 		(
 			sys-devel/clang:13
@@ -126,12 +125,11 @@ BDEPEND="${PYTHON_DEPS}
 	amd64? ( >=dev-lang/nasm-2.13 )
 	x86? ( >=dev-lang/nasm-2.13 )"
 
-CDEPEND="
-	>=dev-libs/nss-3.73
+COMMON_DEPEND="
+	>=dev-libs/nss-3.68
 	>=dev-libs/nspr-4.32
 	dev-libs/atk
 	dev-libs/expat
-	>=dev-libs/libffi-3.0.10:=
 	>=x11-libs/cairo-1.10[X]
 	>=x11-libs/gtk+-3.4.0:3[X]
 	x11-libs/gdk-pixbuf
@@ -144,30 +142,30 @@ CDEPEND="
 	>=x11-libs/pixman-0.19.2
 	>=dev-libs/glib-2.26:2
 	>=sys-libs/zlib-1.2.3
+	>=dev-libs/libffi-3.0.10:=
 	media-video/ffmpeg
 	x11-libs/libX11
+	x11-libs/libxcb
 	x11-libs/libXcomposite
 	x11-libs/libXdamage
 	x11-libs/libXext
 	x11-libs/libXfixes
-	x11-libs/libXrandr
 	x11-libs/libXrender
-	x11-libs/libXtst
-	x11-libs/libxcb
+	x11-libs/libXt
 	dbus? (
 		sys-apps/dbus
 		dev-libs/dbus-glib
 	)
 	screencast? ( media-video/pipewire:= )
 	system-av1? (
-		>=media-libs/dav1d-0.9.3:=
+		>=media-libs/dav1d-0.8.1:=
 		>=media-libs/libaom-1.0.0:=
 	)
 	system-harfbuzz? (
 		>=media-libs/harfbuzz-2.8.1:0=
 		>=media-gfx/graphite2-1.3.13
 	)
-	system-icu? ( >=dev-libs/icu-70.1:= )
+	system-icu? ( >=dev-libs/icu-69.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
 	system-libevent? ( >=dev-libs/libevent-2.0:0=[threads] )
 	system-libvpx? ( >=media-libs/libvpx-1.8.2:0=[postproc] )
@@ -184,7 +182,9 @@ CDEPEND="
 	selinux? ( sec-policy/selinux-mozilla )
 	sndio? ( media-sound/sndio )"
 
-RDEPEND="${CDEPEND}
+RDEPEND="${COMMON_DEPEND}
+	!www-client/firefox:0
+	!www-client/firefox:rapid
 	jack? ( virtual/jack )
 	kde? ( kde-misc/kmozillahelper )
 	openh264? ( media-libs/openh264:*[plugin] )
@@ -196,7 +196,7 @@ RDEPEND="${CDEPEND}
 	)
 	selinux? ( sec-policy/selinux-mozilla )"
 
-DEPEND="${CDEPEND}
+DEPEND="${COMMON_DEPEND}
 	x11-libs/libICE
 	x11-libs/libSM
 	pulseaudio? (
@@ -630,6 +630,10 @@ src_prepare() {
 	# Allow user to apply any additional patches without modifying ebuild
 	eapply_user
 
+	# Make cargo respect MAKEOPTS
+	export CARGO_BUILD_JOBS
+	CARGO_BUILD_JOBS="$(makeopts_jobs)"
+
 	# Make LTO respect MAKEOPTS
 	# shellcheck disable=SC2154
 	sed -i \
@@ -763,7 +767,6 @@ src_configure() {
 		--prefix="${EPREFIX}/usr" \
 		--target="${CHOST}" \
 		--without-ccache \
-		--without-wasm-sandboxed-libraries \
 		--with-intl-api \
 		--with-libclang-path="$(llvm-config --libdir)" \
 		--with-system-nspr \
@@ -1019,8 +1022,6 @@ src_configure() {
 	# Use system's Python environment
 	MACH_USE_SYSTEM_PYTHON=1
 	export MACH_USE_SYSTEM_PYTHON
-	MACH_SYSTEM_ASSERTED_COMPATIBLE_WITH_MACH_SITE=1
-	export MACH_SYSTEM_ASSERTED_COMPATIBLE_WITH_MACH_SITE
 	PIP_NO_CACHE_DIR=off
 	export PIP_NO_CACHE_DIR
 
