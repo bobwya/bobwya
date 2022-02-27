@@ -61,7 +61,7 @@ pkg_setup() {
 
 src_prepare() {
 	PATCHES=( "${FILESDIR}/${PN}-1.8_add-compiler-flags.patch" )
-	use async && PATCHES+=( "${FILESDIR}/${PN}-1.9.3-async.patch" )
+	use async && PATCHES+=( "${FILESDIR}/${PN}-1.9.4-async.patch" )
 
 	filter-flags "-Wl,--hash-style*"
 	[[ "$(is-flag "-march=*")" == "true" ]] && append-flags "-mno-avx"
