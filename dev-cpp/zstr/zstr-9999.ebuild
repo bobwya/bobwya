@@ -1,9 +1,9 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
 
-EAPI=7
+EAPI=8
 
 DESCRIPTION="C++ header-only library allowing iostream access ZLib-compressed streams"
 HOMEPAGE="https://github.com/mateidavid/zstr.git"
