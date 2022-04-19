@@ -4,9 +4,9 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-97-patches-03j.tar.xz"
+FIREFOX_PATCHSET="firefox-99-patches-03j.tar.xz"
 
-LLVM_MAX_SLOT=13
+LLVM_MAX_SLOT=14
 
 PYTHON_COMPAT=( python3_{8..10} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
@@ -50,7 +50,7 @@ fi
 PATCH_URIS=( "https://dev.gentoo.org/"~{polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="536158d6ee8110971fc9fc861432ae26c0d9c6a3"
+GIT_MOZ_REVISION="081e705dab36a3b67d60f8e4ba9ee426095d0227"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 # shellcheck disable=SC2124
@@ -99,6 +99,14 @@ BDEPEND="${PYTHON_DEPS}
 	>=virtual/rust-1.57.0
 	|| (
 		(
+			sys-devel/clang:14
+			sys-devel/llvm:14
+			clang? (
+				=sys-devel/lld-14*
+				pgo? ( =sys-libs/compiler-rt-sanitizers-14*[profile] )
+			)
+		)
+		(
 			sys-devel/clang:13
 			sys-devel/llvm:13
 			clang? (
@@ -127,24 +135,23 @@ BDEPEND="${PYTHON_DEPS}
 	x86? ( >=dev-lang/nasm-2.14 )"
 
 COMMON_DEPEND="
-	>=dev-libs/nss-3.74
+	>=dev-libs/nss-3.76
 	>=dev-libs/nspr-4.32
 	dev-libs/atk
 	dev-libs/expat
-	>=x11-libs/cairo-1.10[X]
-	>=x11-libs/gtk+-3.4.0:3[X]
-	x11-libs/gdk-pixbuf
-	>=x11-libs/pango-1.22.0
+	media-libs/alsa-lib
 	>=media-libs/mesa-10.2:*
 	media-libs/fontconfig
 	>=media-libs/freetype-2.9
-	kernel_linux? ( !pulseaudio? ( media-libs/alsa-lib ) )
 	virtual/freedesktop-icon-theme
 	>=x11-libs/pixman-0.19.2
 	>=dev-libs/glib-2.42:2
 	>=sys-libs/zlib-1.2.3
 	>=dev-libs/libffi-3.0.10:=
 	media-video/ffmpeg
+	>=x11-libs/cairo-1.10[X]
+	>=x11-libs/gtk+-3.4.0:3[X]
+	x11-libs/gdk-pixbuf
 	x11-libs/libX11
 	x11-libs/libXcomposite
 	x11-libs/libXdamage
@@ -153,7 +160,8 @@ COMMON_DEPEND="
 	x11-libs/libXrandr
 	x11-libs/libXrender
 	x11-libs/libXtst
-	x11-libs/libxcb
+	x11-libs/libxcb:=
+	>=x11-libs/pango-1.22.0
 	dbus? (
 		sys-apps/dbus
 		dev-libs/dbus-glib
@@ -483,7 +491,7 @@ pkg_setup() {
 			[[ -n "${version_lld}" ]] && version_lld="$(ver_cut 1 "${version_lld}")"
 			[[ -z "${version_lld}" ]] && die "Failed to read ld.lld version!"
 
-			version_llvm_rust="$( rustc -vV 2>/dev/null \
+		version_llvm_rust="$( rustc -vV 2>/dev/null \
 				| awk '{
 					if ($1 != "LLVM") next
 					match($3, "^[[:digit:]]+")
@@ -493,7 +501,7 @@ pkg_setup() {
 					}
 				}'
 			)"
-			[[ -z "${version_llvm_rust}" ]] && die "Failed to read used LLVM version from rustc!"
+		[[ -z "${version_llvm_rust}" ]] && die "Failed to read used LLVM version from rustc!"
 
 			if ver_test "${version_lld}" -ne "${version_llvm_rust}"; then
 				eerror "Rust is using LLVM version ${version_llvm_rust} but ld.lld version belongs to LLVM version ${version_lld}."
@@ -697,6 +705,7 @@ src_configure() {
 		einfo "Enforcing the use of clang due to USE=clang ..."
 		have_switched_compiler=yes
 		AR=llvm-ar
+		AS=llvm-as
 		CC="${CHOST}-clang"
 		CXX="${CHOST}-clang++"
 		NM=llvm-nm
@@ -1148,7 +1157,7 @@ src_install() {
 
 	# Force hwaccel prefs if USE=hwaccel is enabled
 	if use hwaccel; then
-		cat "${FILESDIR}/gentoo-hwaccel-prefs.js" \
+		cat "${FILESDIR}/gentoo-hwaccel-prefs.js-r1" \
 		>>"${GENTOO_PREFS}" \
 		|| die "failed to add prefs to force hardware-accelerated rendering to all-gentoo.js"
 	fi
@@ -1352,5 +1361,13 @@ pkg_postinst() {
 		elog "one generic Mozilla ${PN^} shortcut."
 		elog "If you still want to be able to select between running Mozilla ${PN^}"
 		elog "on X11 or Wayland, you have to re-create these shortcuts on your own."
+	fi
+
+	# bug 835078
+	if use hwaccel && has_version "x11-drivers/xf86-video-nouveau"; then
+		ewarn "You have nouveau drivers installed in your system and 'hwaccel' "
+		ewarn "enabled for Firefox. Nouveau / your GPU might not supported the "
+		ewarn "required EGL, so either disable 'hwaccel' or try the workaround "
+		ewarn "explained in https://bugs.gentoo.org/835078#c5 if Firefox crashes."
 	fi
 }

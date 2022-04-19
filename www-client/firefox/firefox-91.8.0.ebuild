@@ -4,9 +4,9 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-91esr-patches-05j.tar.xz"
+FIREFOX_PATCHSET="firefox-91esr-patches-06j.tar.xz"
 
-LLVM_MAX_SLOT=13
+LLVM_MAX_SLOT=14
 
 PYTHON_COMPAT=( python3_{8..10} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
@@ -50,7 +50,7 @@ fi
 PATCH_URIS=( "https://dev.gentoo.org/"~{polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="01f6fa0fc3651566a3d3618354aca18c2d7a4085"
+GIT_MOZ_REVISION="5c4325ea5b11b65fd2b30b50aafa06da95b5bfa7"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 # shellcheck disable=SC2124
@@ -97,6 +97,15 @@ BDEPEND="${PYTHON_DEPS}
 	virtual/pkgconfig
 	>=virtual/rust-1.51.0
 	|| (
+		(
+			sys-devel/clang:14
+			sys-devel/llvm:14
+			clang? (
+				=sys-devel/lld-14*
+				pgo? ( =sys-libs/compiler-rt-sanitizers-14*[profile] )
+			sys-devel/clang:14
+			)
+		)
 		(
 			sys-devel/clang:13
 			sys-devel/llvm:13
@@ -145,7 +154,7 @@ COMMON_DEPEND="
 	>=dev-libs/libffi-3.0.10:=
 	media-video/ffmpeg
 	x11-libs/libX11
-	x11-libs/libxcb
+	x11-libs/libxcb:=
 	x11-libs/libXcomposite
 	x11-libs/libXdamage
 	x11-libs/libXext
@@ -480,7 +489,7 @@ pkg_setup() {
 			[[ -n "${version_lld}" ]] && version_lld="$(ver_cut 1 "${version_lld}")"
 			[[ -z "${version_lld}" ]] && die "Failed to read ld.lld version!"
 
-			version_llvm_rust="$( rustc -vV 2>/dev/null \
+		version_llvm_rust="$( rustc -vV 2>/dev/null \
 				| awk '{
 					if ($1 != "LLVM") next
 					match($3, "^[[:digit:]]+")
@@ -490,7 +499,7 @@ pkg_setup() {
 					}
 				}'
 			)"
-			[[ -z "${version_llvm_rust}" ]] && die "Failed to read used LLVM version from rustc!"
+		[[ -z "${version_llvm_rust}" ]] && die "Failed to read used LLVM version from rustc!"
 
 			if ver_test "${version_lld}" -ne "${version_llvm_rust}"; then
 				eerror "Rust is using LLVM version ${version_llvm_rust} but ld.lld version belongs to LLVM version ${version_lld}."
@@ -607,8 +616,9 @@ src_unpack() {
 }
 
 src_prepare() {
-	use lto && rm -v "${WORKDIR}/firefox-patches/"*-LTO-Only-enable-LTO-*.patch
-	eapply "${WORKDIR}/firefox-patches"
+	if use lto; then
+		rm -v "${WORKDIR}/firefox-patches/"*-LTO-Only-enable-LTO-*.patch || die "rm failed"
+	fi
 	if use kde; then
 		sed -e 's:@BINPATH@/defaults/pref/kde.js:@RESPATH@/browser/@PREF_DIR@/kde.js:' \
 			"${DISTDIR}/${PN}-firefox-kde-${GIT_MOZ_REVISION}.patch" > \
@@ -626,6 +636,16 @@ src_prepare() {
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox/)
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
+
+	if use system-av1 && has_version "<media-libs/dav1d-1.0.0"; then
+		rm -v "${WORKDIR}/firefox-patches/0033-bgo-835788-dav1d-1.0.0-support.patch" || die "rm failed"
+		elog "<media-libs/dav1d-1.0.0 detected, removing 1.0.0 compat patch."
+	elif ! use system-av1; then
+		rm -v "${WORKDIR}/firefox-patches/0033-bgo-835788-dav1d-1.0.0-support.patch" || die "rm failed"
+		elog "-system-av1 USE flag detected, removing 1.0.0 compat patch."
+	fi
+
+	eapply "${WORKDIR}/firefox-patches"
 
 	# Allow user to apply any additional patches without modifying ebuild
 	eapply_user
