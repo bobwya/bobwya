@@ -39,7 +39,7 @@ MOZ_PV_DISTFILES="${MOZ_PV}${MOZ_PV_SUFFIX}"
 MOZ_P_DISTFILES="${MOZ_PN}-${MOZ_PV_DISTFILES}"
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_COMMIT="5c4325ea5b11b65fd2b30b50aafa06da95b5bfa7"
+GIT_MOZ_COMMIT="b589dde7c7b69ba3381cd06080c9fe050659fe6f"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 inherit autotools check-reqs desktop flag-o-matic gnome2-utils llvm multiprocessing \
@@ -427,6 +427,8 @@ pkg_setup() {
 				eerror " - Manually switch rust version using 'eselect rust' to match used LLVM version"
 				eerror " - Switch to dev-lang/rust[system-llvm] which will guarantee matching version"
 				eerror " - Build ${CATEGORY}/${PN} without USE=lto"
+				eerror " - Rebuild lld with llvm that was used to build rust (may need to rebuild the whole "
+				eerror " llvm/clang/lld/rust chain depending on your @world updates)"
 				die "LLVM version used by Rust (${version_llvm_rust}) does not match with ld.lld version (${version_lld})!"
 			fi
 		fi
@@ -706,8 +708,8 @@ src_configure() {
 		--with-system-zlib \
 		--with-toolchain-prefix="${CHOST}-" \
 		--with-unsigned-addon-scopes=app,system \
-		--x-includes="${SYSROOT}${EPREFIX}/usr/include" \
-		--x-libraries="${SYSROOT}${EPREFIX}/usr/$(get_libdir)"
+		--x-includes="${ESYSROOT}/usr/include" \
+		--x-libraries="${ESYSROOT}/usr/$(get_libdir)"
 
 	# Set update channel
 	local update_channel
@@ -763,7 +765,7 @@ src_configure() {
 	mozconfig_use_with system-harfbuzz system-graphite2
 	mozconfig_use_with system-icu
 	mozconfig_use_with system-jpeg
-	mozconfig_use_with system-libevent system-libevent "${SYSROOT}${EPREFIX}/usr"
+	mozconfig_use_with system-libevent system-libevent "${ESYSROOT}/usr"
 	mozconfig_use_with system-libvpx
 	mozconfig_use_with system-png
 	mozconfig_use_with system-webp
