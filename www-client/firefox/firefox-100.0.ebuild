@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-99-patches-03j.tar.xz"
+FIREFOX_PATCHSET="firefox-100-patches-02j.tar.xz"
 
 LLVM_MAX_SLOT=14
 
@@ -50,7 +50,7 @@ fi
 PATCH_URIS=( "https://dev.gentoo.org/"~{polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="081e705dab36a3b67d60f8e4ba9ee426095d0227"
+GIT_MOZ_REVISION="43327fa39d59e8b282c24c1a0e68459ba006fd1d"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 # shellcheck disable=SC2124
@@ -74,7 +74,7 @@ LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 
 IUSE="+clang cpu_flags_arm_neon dbus debug eme-free hardened hwaccel kde"
 IUSE+=" jack libproxy lto +openh264 pgo pulseaudio sndio selinux"
-IUSE+=" +system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent +system-libvpx system-png +system-webp"
+IUSE+=" +system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent +system-libvpx system-png system-python-libs +system-webp"
 IUSE+=" wayland wifi"
 
 # Firefox-only IUSE
@@ -442,7 +442,7 @@ pkg_pretend() {
 		if use pgo || use lto || use debug; then
 			CHECKREQS_DISK_BUILD="13500M"
 		else
-			CHECKREQS_DISK_BUILD="6500M"
+			CHECKREQS_DISK_BUILD="6600M"
 		fi
 
 		check-reqs_pkg_pretend
@@ -493,6 +493,8 @@ pkg_setup() {
 				eerror " - Manually switch rust version using 'eselect rust' to match used LLVM version"
 				eerror " - Switch to dev-lang/rust[system-llvm] which will guarantee matching version"
 				eerror " - Build ${CATEGORY}/${PN} without USE=lto"
+				eerror " - Rebuild lld with llvm that was used to build rust (may need to rebuild the whole "
+				eerror " llvm/clang/lld/rust chain depending on your @world updates)"
 				die "LLVM version used by Rust (${version_llvm_rust}) does not match with ld.lld version (${version_lld})!"
 			fi
 		fi
@@ -861,15 +863,14 @@ src_configure() {
 		append-ldflags "-Wl,-z,relro -Wl,-z,now"
 	fi
 
-	mozconfig_use_enable jack
+	local myaudiobackends
+	myaudiobackends=""
+	use jack && myaudiobackends+="jack,"
+	use sndio && myaudiobackends+="sndio,"
+	use pulseaudio && myaudiobackends+="pulseaudio,"
+	! use pulseaudio && myaudiobackends+="alsa,"
 
-	mozconfig_use_enable pulseaudio
-	# force the deprecated alsa sound code if pulseaudio is disabled
-	if use kernel_linux && ! use pulseaudio; then
-		mozconfig_add_options_ac '-pulseaudio' --enable-alsa
-	fi
-
-	mozconfig_use_enable sndio
+	mozconfig_add_options_ac '--enable-audio-backends' --enable-audio-backends="${myaudiobackends::-1}"
 
 	mozconfig_use_enable wifi necko-wifi
 
@@ -1028,14 +1029,15 @@ src_configure() {
 	export MOZ_MAKE_FLAGS
 
 	# Use system's Python environment
-	MACH_USE_SYSTEM_PYTHON=1
-	export MACH_USE_SYSTEM_PYTHON
-	MACH_SYSTEM_ASSERTED_COMPATIBLE_WITH_MACH_SITE=1
-	export MACH_SYSTEM_ASSERTED_COMPATIBLE_WITH_MACH_SITE
-	MACH_SYSTEM_ASSERTED_COMPATIBLE_WITH_BUILD_SITE=1
-	export MACH_SYSTEM_ASSERTED_COMPATIBLE_WITH_BUILD_SITE
-	PIP_NO_CACHE_DIR=off
-	export PIP_NO_CACHE_DIR
+	PIP_NETWORK_INSTALL_RESTRICTED_VIRTUALENVS=mach
+
+	if use system-python-libs; then
+		MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE="system"
+	export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE
+	else
+		MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE="none"
+	export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE
+	fi
 
 	# Disable notification when build system has finished
 	MOZ_NOSPAM=1
@@ -1354,4 +1356,12 @@ pkg_postinst() {
 		ewarn "required EGL, so either disable 'hwaccel' or try the workaround "
 		ewarn "explained in https://bugs.gentoo.org/835078#c5 if Firefox crashes."
 	fi
+
+	elog
+	elog "Unfortunately Firefox-100.0 breaks compatibility with some sites using "
+	elog "useragent checks. To temporarily fix this, enter about:config and modify "
+	elog "network.http.useragent.forceVersion preference to \"99\"."
+	elog "Or install an addon to change your useragent."
+	elog "See: https://support.mozilla.org/en-US/kb/difficulties-opening-or-using-website-firefox-100"
+	elog
 }
