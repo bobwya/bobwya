@@ -1,12 +1,12 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-EAPI=7
+EAPI=8
 
 inherit bash-completion-r1 xdg-utils
 
-if [ "${PV}" = "99999999" ]; then
+if [[ "${PV}" = "99999999" ]]; then
 	EGIT_REPO_URI="https://github.com/Winetricks/${PN}.git"
 	inherit git-r3
 	SRC_URI=""
@@ -97,7 +97,7 @@ src_unpack() {
 
 src_prepare() {
 	local PATCHES
-	if [[ "${PV}" = "99999999" ]] && [[ ! -z "${EGIT_VERSION}" ]]; then
+	if [[ "${PV}" = "99999999" ]] && [[ -n "${EGIT_VERSION}" ]]; then
 		sed -i -e '/WINETRICKS_VERSION=/{s/=/=\"/;s/$/ '"${EGIT_VERSION}"'\"/}' \
 			"${S}/src/winetricks" || die "sed failed"
 	fi
