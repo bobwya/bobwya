@@ -24,7 +24,7 @@ LICENSE="GPL-3"
 SLOT="0"
 IUSE="curl dedicated sdl2"
 
-DEPEND="virtual/jpeg:*
+DEPEND="media-libs/libjpeg-turbo:=
 	media-libs/libogg
 	!sdl2? ( >=media-libs/libsdl-1.2[opengl,video] )
 	sdl2? ( media-libs/libsdl2[opengl,video] )

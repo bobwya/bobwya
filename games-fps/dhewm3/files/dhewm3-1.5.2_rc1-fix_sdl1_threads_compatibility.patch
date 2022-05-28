@@ -1,0 +1,14 @@
+--- a/neo/sys/threads.cpp	2022-05-28 19:48:39.534035552 +0100
++++ b/neo/sys/threads.cpp	2022-05-28 19:52:42.599278454 +0100
+@@ -45,7 +45,11 @@ static xthreadInfo	*thread[MAX_THREADS]
+ static size_t		thread_count = 0;
+ 
+ static bool mainThreadIDset = false;
++#if SDL_VERSION_ATLEAST(2, 0, 0)
+ static SDL_threadID mainThreadID = -1;
++#else
++static Uint32 mainThreadID = -1;
++#endif
+ 
+ /*
+ ==============

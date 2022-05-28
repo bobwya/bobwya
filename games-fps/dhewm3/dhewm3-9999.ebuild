@@ -24,7 +24,7 @@ LICENSE="GPL-3"
 SLOT="0"
 IUSE="curl dedicated sdl2"
 
-DEPEND="virtual/jpeg:*
+DEPEND="media-libs/libjpeg-turbo:=
 	media-libs/libogg
 	!sdl2? ( >=media-libs/libsdl-1.2[opengl,video] )
 	sdl2? ( media-libs/libsdl2[opengl,video] )
@@ -37,6 +37,10 @@ RDEPEND="${DEPEND}"
 src_prepare() {
 	CMAKE_USE_DIR="${S}/neo"
 	default
+	if ! use sdl2; then
+		PATCHES=( "${FILESDIR}/${PN}-1.5.2_rc1-fix_sdl1_threads_compatibility.patch" )
+	fi
+	cmake_src_prepare
 }
 
 src_configure() {
