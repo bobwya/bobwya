@@ -2,9 +2,9 @@
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-EAPI="7"
+EAPI="8"
 
-FIREFOX_PATCHSET="firefox-91esr-patches-06j.tar.xz"
+FIREFOX_PATCHSET="firefox-91esr-patches-08j.tar.xz"
 
 LLVM_MAX_SLOT=14
 
@@ -84,7 +84,7 @@ REQUIRED_USE="debug? ( !system-av1 )
 BDEPEND="${PYTHON_DEPS}
 	app-arch/unzip
 	app-arch/zip
-	>=dev-util/cbindgen-0.19.0
+	>=dev-util/cbindgen-0.24.0
 	>=net-libs/nodejs-10.23.1
 	virtual/pkgconfig
 	>=virtual/rust-1.51.0
@@ -609,7 +609,7 @@ src_prepare() {
 	echo -n "${MOZ_API_KEY_LOCATION//gGaPi/}" > "${S}/api-location.key" || die "echo failed"
 	echo -n "${MOZ_API_KEY_MOZILLA//m0ap1/}" > "${S}/api-mozilla.key" || die "echo failed"
 
-	xdg_src_prepare
+	xdg_environment_reset
 }
 
 src_configure() {
