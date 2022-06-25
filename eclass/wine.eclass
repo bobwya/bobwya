@@ -1203,6 +1203,7 @@ _wine_gcc_specific_pretests() {
 		ebegin "(subshell): checking for =sys-devel/gcc-5.1.x , =sys-devel/gcc-5.2.0 MS X86_64 ABI compiler bug ..."
 		$(tc-getCC) -O2 "${WORKDIR}/${WINE_EBUILD_COMMON_P%/}/files/pr66838.c" -o "${T}/pr66838" \
 			|| die "cc compilation failed: pr66838 test"
+		eend
 		# Run in a subshell to prevent "Aborted" message
 		if ! ( "${T}"/pr66838 || false ) >/dev/null 2>&1; then
 			eerror "(subshell): =sys-devel/gcc-5.1.x , =sys-devel/gcc-5.2.0 MS X86_64 ABI compiler bug detected."
@@ -1222,6 +1223,7 @@ _wine_gcc_specific_pretests() {
 		ebegin "(subshell): checking for =sys-devel/gcc-5.3.0 X86_64 misaligned stack compiler bug ..."
 		# Compile in a subshell to prevent "Aborted" message
 		if ! ( $(tc-getCC) -O2 -mincoming-stack-boundary=3 "${WORKDIR}/${WINE_EBUILD_COMMON_P%/}/files/pr69140.c" -o "${T}/pr69140" ) >/dev/null 2>&1; then
+			eend
 			eerror "(subshell): =sys-devel/gcc-5.3.0 X86_64 misaligned stack compiler bug detected."
 			eerror "Please re-emerge the latest =sys-devel/gcc-5.3.0 ebuild,"
 			eerror "or use gcc-config to select a different compiler version."
@@ -1229,6 +1231,7 @@ _wine_gcc_specific_pretests() {
 			eerror
 			return 1
 		fi
+		eend
 	fi
 }
 
@@ -1247,12 +1250,14 @@ _wine_generic_compiler_pretests() {
 	ebegin "(subshell): checking compiler support for (64-bit) builtin_ms_va_list ..."
 	# Compile in a subshell to prevent "Aborted" message
 	if ! ( $(tc-getCC) -O2 "${WORKDIR}/${WINE_EBUILD_COMMON_P%/}/files/builtin_ms_va_list.c" -o "${T}/builtin_ms_va_list" >/dev/null 2>&1 ); then
+		eend
 		eerror "(subshell): $(tc-getCC) does not support builtin_ms_va_list."
 		eerror "Please re-emerge using a compiler (version) that supports building 64-bit Wine."
 		eerror "Use >=sys-devel/gcc-4.4 or >=sys-devel/clang-3.8 to build ${CATEGORY}/${PN}."
 		eerror
 		return 1
 	fi
+	eend
 }
 
 # @FUNCTION: wine_src_set_staging_versioning
@@ -1691,7 +1696,7 @@ wine_add_stock_gentoo_patches() {
 			local -a _dnsapi_drop_imported_domain_name_parsing_code=( "0d26dd2afbc3255a6871f636257f7be3d962aba8" )
 			_wine_prune_patches_from_array "${S}" "1" "_dnsapi_drop_imported_domain_name_parsing_code"
 			# shellcheck disable=SC2068
-			if ((${_dnsapi_drop_imported_domain_name_parsing_code[@]})); then
+			if ((!${#_dnsapi_drop_imported_domain_name_parsing_code[@]})); then
 				PATCHES+=( "${_patch_directory}/wine-6.16-configure_glibc_2.34_compatiblity.patch" )
 			fi
 			;;
