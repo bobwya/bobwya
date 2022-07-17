@@ -110,7 +110,7 @@ RDEPEND="${COMMON_DEPEND}
 	!app-emulation/wine:0
 	>=app-eselect/eselect-wine-1.5.5
 	dos? ( >=games-emulation/dosbox-0.74_p20160629 )
-	gecko? ( app-emulation/wine-gecko:2.47.2[abi_x86_32?,abi_x86_64?] )
+	gecko? ( app-emulation/wine-gecko:2.47.3[abi_x86_32?,abi_x86_64?] )
 	mono? ( app-emulation/wine-mono:7.3.0 )
 	perl? (
 		dev-lang/perl
