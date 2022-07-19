@@ -27,7 +27,7 @@ fi
 LICENSE="ZLIB"
 SLOT=0
 
-IUSE="+d3d9 +d3d10 +d3d11 debug +dxgi test video_cards_nvidia"
+IUSE="async +d3d9 +d3d10 +d3d11 debug +dxgi test video_cards_nvidia"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )"
 
 # FIXME: the test suite is unsuitable for us, as it requires full access to
@@ -61,6 +61,7 @@ pkg_setup() {
 
 src_prepare() {
 	PATCHES=( "${FILESDIR}/${PN}-1.8_add-compiler-flags.patch" )
+	use async && PATCHES+=( "${FILESDIR}/${PN}-1.10.2-async.patch" )
 
 	filter-flags "-Wl,--hash-style*"
 	[[ "$(is-flag "-march=*")" == "true" ]] && append-flags "-mno-avx"
