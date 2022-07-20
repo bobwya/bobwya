@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="8"
 
-FIREFOX_PATCHSET="firefox-101-patches-09j.tar.xz"
+FIREFOX_PATCHSET="firefox-102-patches-01j.tar.xz"
 
 LLVM_MAX_SLOT=14
 
@@ -50,7 +50,7 @@ fi
 PATCH_URIS=( "https://dev.gentoo.org/"~{polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="258c46cb700250b2f131d441e6470e5a23ee8a4b"
+GIT_MOZ_REVISION="3ff616f9a96918bda4ce45f4be556a99ade98f39"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 # shellcheck disable=SC2124
@@ -119,12 +119,12 @@ BDEPEND="${PYTHON_DEPS}
 	x86? ( >=dev-lang/nasm-2.14 )"
 
 COMMON_DEPEND="
-	dev-libs/glib:2
 	dev-libs/atk
 	dev-libs/expat
+	dev-libs/glib:2
 	dev-libs/libffi:=
-	>=dev-libs/nss-3.78
-	>=dev-libs/nspr-4.32
+	>=dev-libs/nss-3.79
+	>=dev-libs/nspr-4.34
 	media-libs/alsa-lib
 	media-libs/fontconfig
 	media-libs/freetype
@@ -621,6 +621,7 @@ src_prepare() {
 			"${T}/${PN}-firefox-kde-${GIT_MOZ_REVISION}.patch" || die "sed failed"
 		# Toolkit OpenSUSE KDE integration patchset
 		eapply "${DISTDIR}/${PN}-mozilla-kde-${GIT_MOZ_REVISION}.patch"
+		eapply "${FILESDIR}/${PN}-102.0-kde-mozilla-fix_build.patch"
 		eapply "${DISTDIR}/${PN}-mozilla-nongnome-proxies-${GIT_MOZ_REVISION}.patch"
 		# Firefox OpenSUSE KDE integration patchset
 		eapply "${DISTDIR}/${PN}-firefox-branded-icons-${GIT_MOZ_REVISION}.patch"
