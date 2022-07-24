@@ -152,6 +152,7 @@ src_prepare() {
 	wine_fix_gentoo_O3_compilation_support
 	wine_fix_gentoo_winegcc_support
 	wine_support_wine_mono_downgrade
+	use ldap && wine_rename_ldap_r_to_ldap
 
 	#617864 Generate wine64 man pages for 64-bit bit only installation
 	if use abi_x86_64 && ! use abi_x86_32; then
