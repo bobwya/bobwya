@@ -219,7 +219,7 @@ readonly _WINE_IS_STAGING
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-ebuild-common; tarball.
-WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20220122"
+WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20220723"
 readonly WINE_EBUILD_COMMON_P
 
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_PN
@@ -1674,6 +1674,15 @@ wine_add_stock_gentoo_patches() {
 			;;
 	esac
 
+	use ldap && case "${WINE_PV}" in
+		1.8*|1.9*|2.*|3.*|4.*|5.*|6.0.[1-6]|6.0.[1-6]_rc[1-9]|6.[0-6]|9999)
+			# See: https://bugs.winehq.org/show_bug.cgi?id=51129
+			PATCHES+=( "${_patch_directory}/wine-1.8-move_ldap_connect_to_wldap32_namespace.patch" )
+			;;
+		*)
+			;;
+	esac
+
 	# shellcheck disable=SC2086
 	has mingw ${IUSE} && use mingw && mingw64_gcc_version_geq "11" && case "${WINE_PV}" in
 		4.[6-9]|4.1[0-9]|4.12.1|4.2[0-1]|5.*|6.0|6.0-rc[1-9]|6.0.1|6.0.1-rc[1-9]|6.[1-8]|9999)
@@ -1843,7 +1852,7 @@ wine_fix_gentoo_winegcc_support() {
 wine_fix_block_scope_compound_literals() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
-	einfo "Fixing compound literals (violating block scoping) ..."
+	einfo "${FUNCNAME[0]}: fixing compound literals (violating block scoping) ..."
 local -r awk_fix_block_scope_literals="${_WINE_AWK_FUNCTION_PROCESS_LITERAL_LINE} \
 ${_WINE_AWK_FUNCTION_IS_BROKEN_LITERAL} \
 ${_WINE_AWK_FUNCTION_PROCESS_SOURCE_FILE} \
@@ -1861,6 +1870,8 @@ ${_WINE_AWK_FIX_BLOCK_SCOPE_LITERALS}"
 # Improve formatting of Wine version, displayed on about tab, of the builtin winecfg utility.
 wine_winecfg_about_enhancement() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
+
+	einfo "${FUNCNAME[0]}(): processing programs/winecfg/* ..."
 
 	local package_name
 
@@ -1888,7 +1899,6 @@ wine_winecfg_about_enhancement() {
 		-e '/^[ ]*IDC_ABT_LICENSE_TEXT,/{s/105,64,145,66$/100,64,145,66/}' \
 		"programs/winecfg/winecfg.rc" || die "sed failed"
 
-	einfo "Called ${FUNCNAME[0]}"
 }
 
 # @FUNCTION: wine_support_wine_mono_downgrade
@@ -1902,11 +1912,42 @@ wine_winecfg_about_enhancement() {
 wine_support_wine_mono_downgrade() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
+	einfo "${FUNCNAME[0]}(): processing dlls/mscoree/* ..."
+
 	sed -i \
 		-e '/else if (current_version\[i\] > wanted_version\[i\])/,+4d' \
 		-e 's/if (current_version\[i\] < wanted_version\[i\])/if (current_version[i] != wanted_version[i])/g' \
 		-e 's/if (compare_versions(WINE_MONO_VERSION, versionstringbuf) <= 0)/if (compare_versions(WINE_MONO_VERSION, versionstringbuf) == 0)/g' \
 		dlls/mscoree/mscoree_main.c || die "sed failed"
+}
+
+# @FUNCTION: wine_rename_ldap_r_to_ldap
+# @DESCRIPTION:
+# This function fixes support for openldap versions 2.5+.
+# Applied to Wine version 7.0-rc1 (and earlier), with USE +ldap.
+# See: #52140
+wine_rename_ldap_r_to_ldap() {
+	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
+
+	if [[ "${WINE_PV}" == "9999" ]]; then
+		local -a _check_for_libldap_vs_libldap_r=( "11b15054e74e3af62e4e851c272071dfd8c23775" )
+		_wine_prune_patches_from_array "${S}" "0" "_check_for_libldap_vs_libldap_r"
+		# shellcheck disable=SC2068
+		if ((${#_check_for_libldap_vs_libldap_r[@]})); then
+			return 0
+		fi
+	fi
+
+	einfo "${FUNCNAME[0]}(): processing configure{,.ac} ..."
+
+	sed -i \
+		-e 's/ac_cv_lib_ldap_r_ldap_initialize/ac_cv_lib_ldap_ldap_initialize/g' \
+		-e 's/[-]lldap_r/-lldap/g' \
+		"${S%/}/configure" || die "sed failed"
+	sed -i \
+		-e 's/AC_CHECK_LIB(ldap_r,/AC_CHECK_LIB(ldap,/g' \
+		-e 's/[-]lldap_r/-lldap/g' \
+		"${S%/}/configure.ac" || die "sed failed"
 }
 
 # @FUNCTION: wine_src_prepare_generate_64bit_manpages
@@ -1915,6 +1956,8 @@ wine_support_wine_mono_downgrade() {
 # This functions provides support for a pure 64-bit Wine / Wine Staging build.
 wine_src_prepare_generate_64bit_manpages() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
+
+	einfo "${FUNCNAME[0]}(): processing loader/* ..."
 
 	# Generate wine64 man pages for 64-bit bit only installation
 	# See: https://bugs.gentoo.org/617864
@@ -1932,6 +1975,8 @@ wine_src_prepare_generate_64bit_manpages() {
 	wine_src_disable_specfied_tools() {
 	(($# >= 1))  || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (1-)"
 
+	einfo "${FUNCNAME[0]}(): processing configure.ac (${*}) ..."
+
 	local _tool
 	for _tool; do
 		sed -i -e '\|WINE_CONFIG_TOOL(_tools/'"${_tool}"',[^[:blank:]]*)$|d' \
@@ -1946,6 +1991,8 @@ wine_src_prepare_generate_64bit_manpages() {
 wine_src_disable_unused_locale_man_files() {
 	(($# == 0))  || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
 
+	einfo "${FUNCNAME[0]}(): processing */Makefile.in ..."
+
 	local _makefile_in
 	while IFS= read -r -d '' _makefile_in; do
 		plocale_for_each_disabled_locale _wine_src_disable_man_file "${_makefile_in}" ""
@@ -1958,6 +2005,8 @@ wine_src_disable_unused_locale_man_files() {
 # This functions provides support for a pure 64-bit Wine / Wine Staging build.
 wine_symlink_64bit_manpages() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
+
+	einfo "${FUNCNAME[0]}(): processing wine manpages ..."
 
 	# Symlink wine manpage - for all active locales
 	local _manpage _manpage_target="wine64.1"
@@ -1972,6 +2021,8 @@ wine_symlink_64bit_manpages() {
 # This wrapper files support linking to the out-of-tree Wine variant executables and wrapper scripts.
 wine_make_variant_wrappers() {
 	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
+
+	einfo "${FUNCNAME[0]}(): processing wine variant wrappers ..."
 
 	local _binary_file _binary_file_base _binary_file_extension
 	while IFS= read -r -d '' _binary_file; do
