@@ -166,6 +166,7 @@ src_prepare() {
 	wine_fix_gentoo_O3_compilation_support
 	wine_fix_gentoo_winegcc_support
 	wine_support_wine_mono_downgrade
+	use ldap && wine_rename_ldap_r_to_ldap
 
 	wine_eapply_staging_patchset
 	wine_src_set_staging_versioning
