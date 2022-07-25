@@ -56,35 +56,6 @@ RDEPEND="
 # https://bugs.gentoo.org/451552
 QA_DESKTOP_FILE="usr/share/applications/winetricks.desktop"
 
-winetricks_disable_gui_component() {
-	(($# == 2)) || die "Invalid parameter count: ${#} (2)"
-	[[ -f "${1}" ]] || die "winetricks script file not valid: \"${1}\""
-
-	local awk_file
-
-	mv "${1}" "${1}.bak" || die "mv failed"
-	if [[ "${2}" == true ]]; then
-		awk_file="disable_gui"
-	else
-		awk_file="disable_gui_component"
-	fi
-	awk -vgtk_use="$(use gtk && echo 1)" \
-		-vkde_use="$(use kde && echo 1)" \
-		-f "${FILESDIR}/${PN}-${awk_file}.awk" \
-		"${1}.bak" > "${1}" || die "awk failed"
-}
-
-winetricks_disable_version_check() {
-	(($# == 1)) || die "Invalid parameter count: ${#} (1)"
-	[[ -f "${1}" ]] || die "winetricks script file not valid: \"${1}\""
-
-	local awk_file="disable_version_check"
-
-	mv "${1}" "${1}.bak" || die "mv failed"
-	awk -f "${FILESDIR}/${PN}-${awk_file}.awk" \
-		"${1}.bak" > "${1}" || die "awk failed"
-}
-
 src_unpack() {
 	if [[ "${PV}" = "99999999" ]]; then
 		git-r3_src_unpack
@@ -95,27 +66,19 @@ src_unpack() {
 	fi
 }
 
-src_prepare() {
-	local PATCHES
-	if [[ "${PV}" = "99999999" ]] && [[ -n "${EGIT_VERSION}" ]]; then
-		sed -i -e '/WINETRICKS_VERSION=/{s/=/=\"/;s/$/ '"${EGIT_VERSION}"'\"/}' \
-			"${S}/src/winetricks" || die "sed failed"
-	fi
-	if use gtk || use kde; then
-		winetricks_disable_gui_component "${S}/src/winetricks" false
-	else
-		winetricks_disable_gui_component "${S}/src/winetricks" true
-	fi
-	winetricks_disable_version_check "${S}/src/winetricks"
-	default
-}
-
-src_test() {
-	./tests/shell-checks || die "test(s) failed"
-}
-
 src_install() {
 	default
+	local _gui
+
+	! use gtk && ! use kde && _gui="none"
+	! use gtk &&   use kde && _gui="kdialog"
+	! use kde &&   use gtk && _gui="zenity"
+	if [[ -n "${_gui}" ]]; then
+		newenvd - "90${PN}" <<-_EOF_
+		WINETRICKS_GUI="${_gui}"
+		_EOF_
+	fi
+
 	newbashcomp "src/${PN}.bash-completion" "${PN}"
 	if use gtk || use kde; then
 		cd "${WORKDIR}/${winetricks_gentoo}" || die "cd failed"
