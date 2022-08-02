@@ -1,10 +1,12 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-EAPI=7
+EAPI=8
 
+CMAKE_ECLASS=cmake
 CMAKE_MAKEFILE_GENERATOR="ninja"
+MULTILIB_COMPAT=( abi_x86_{32,64} )
 
 inherit cmake-multilib virtualx
 
@@ -26,16 +28,12 @@ HOMEPAGE="https://fna-xna.github.io/"
 LICENSE="ZLIB"
 SLOT="0"
 
-IUSE="+abi_x86_32 +abi_x86_64 debug dumpvoices gstreamer xnasong test utils"
+IUSE="+abi_x86_32 +abi_x86_64 debug dumpvoices xnasong test utils"
 RESTRICT="!test? ( test )"
 REQUIRED_USE="|| ( abi_x86_32 abi_x86_64 )"
 
 COMMON_DEPEND="
 	>=media-libs/libsdl2-2.0.9[sound,${MULTILIB_USEDEP}]
-	gstreamer? (
-		media-libs/gstreamer:1.0[${MULTILIB_USEDEP}]
-		media-libs/gst-plugins-base:1.0[${MULTILIB_USEDEP}]
-	)
 "
 RDEPEND="${COMMON_DEPEND}
 "
@@ -55,43 +53,31 @@ multilib_src_configure() {
 		"-DBUILD_TESTS=$(usex test ON OFF)"
 		"-DBUILD_UTILS=$(usex utils ON OFF)"
 		"-DDUMP_VOICES=$(usex dumpvoices ON OFF)"
-		"-DGSTREAMER=$(usex gstreamer ON OFF)"
 		"-DXNASONG=$(usex xnasong ON OFF)"
 	)
-	cmake-utils_src_configure
+	cmake_src_configure
 }
 
 src_configure() {
 	cmake-multilib_src_configure
 }
 
-multilib_src_test() {
-	# FIXME: tests require hacky workarounds!
-	[[ "${EUID}" == 0 ]] || die "tests must be run with root privileges"
+multilib_src_compile() {
+	cmake_build
+}
 
-	local faudio_tests pulseaudio test_ok=0 user_owner
+multilib_src_test() {
+	# FIXME: tests don't detect any audio devices
+
+	local faudio_tests test_ok=0
 
 	faudio_tests="faudio_tests"
-	pulseaudio="$(which pulseaudio)"
-	user_owner="$(stat -c '%u' "${HOME}")"
-
-	[[ -O "${HOME}" ]] || chown -R "${EUID}" "${HOME}"
-	mkdir -p "${HOME}/.config/pulse"
-	[[ -n "${pulseaudio}" ]] && "${pulseaudio}" --start
 	"./${faudio_tests}" && tests_ok=1
-	[[ -n "${pulseaudio}" ]] && "${pulseaudio}" --kill
-	chown -R "${user_owner}" "${HOME}"
 
 	((tests_ok)) || die "${PN} tests failed"
 }
 
 multilib_src_install() {
 	# FIXME: do we want to install the FAudio tools?
-	cmake-utils_src_install
-
-	sed -e "s@%LIB%@$(get_libdir)@g" -e "s@%PREFIX%@${EPREFIX}/usr@g" \
-		"${FILESDIR}/faudio.pc" > "${T}/faudio.pc" \
-		|| die "sed failed"
-	insinto "/usr/$(get_libdir)/pkgconfig"
-	doins "${T}/faudio.pc"
+	cmake_src_install
 }
