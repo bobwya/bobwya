@@ -481,6 +481,16 @@ if [[ "${WINE_PV}" != "9999" ]]; then
 			https://github.com/wine-staging/wine-staging/archive/v${WINE_STAGING_PV}${_WINE_STAGING_SUFFIX}.tar.gz -> ${WINE_STAGING_P}.tar.gz"
 fi
 
+QA_TEXTRELS="
+	usr/lib/${P}/wine/i386-unix/openal32.dll.so
+	usr/lib/${P}/wine/i386-unix/opengl32.dll.so
+"
+((_WINE_IS_STAGING)) && QA_TEXTRELS+="
+	usr/lib/${P}/wine/i386-unix/nvcuda.dll.so
+	usr/lib/${P}/wine/i386-unix/nvcuvid.dll.so
+	usr/lib/${P}/wine/i386-unix/nvencodeapi.dll.so
+"
+
 # INTERNAL HELPER wine.eclass Git support function definitions
 
 # @FUNCTION: _wine_get_date_offset
@@ -1076,7 +1086,7 @@ wine_staging_git_src_unpack() {
 			EGIT_OVERRIDE_COMMIT_WINE="${wine_commit}" git-r3_src_unpack
 			einfo "Building Wine commit '${wine_commit}' referenced by Wine Staging commit '${wine_staging_target_commit}' ..."
 		)
-		eend
+		eend 0
 	else
 		# References are relative to Wine git tree (Wine Git tree -> Wine Staging Git tree)
 		# Use env variables "EGIT_OVERRIDE_COMMIT_WINE" or "EGIT_OVERRIDE_BRANCH_WINE" to reference Wine git tree
@@ -1100,7 +1110,7 @@ wine_staging_git_src_unpack() {
 			EGIT_CHECKOUT_DIR="${_WINE_STAGING_DIR}" EGIT_REPO_URI="${EGIT_REPO_WINE_STAGING}" git-r3_src_unpack
 			einfo "Building Wine Staging commit '${wine_staging_commit}' corresponding to Wine commit '${wine_target_commit}' ..."
 		)
-		eend
+		eend 0
 	fi
 }
 
@@ -1178,86 +1188,6 @@ _wine_build_environment_prechecks() {
 		eerror
 		return 1
 	fi
-}
-
-# @FUNCTION: _wine_gcc_specific_pretests
-# @INTERNAL
-# @DESCRIPTION:
-# This function tests for an invalid gcc version, for the packages:
-#  app-emulation/wine-staging app-emulation/wine-vanilla
-# shellcheck disable=SC2120
-_wine_gcc_specific_pretests() {
-	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
-
-	tc-is-gcc 		|| return 0
-	[[ "${MERGE_TYPE}" = "binary" ]] && return 0
-
-	local _using_abi_x86_64 _gcc_major_version _gcc_minor_version
-	_using_abi_x86_64=$(use abi_x86_64)
-	_gcc_major_version=$(gcc-major-version)
-	_gcc_minor_version=$(gcc-minor-version)
-
-	# sys-devel/gcc-5 miscompiles ms_abi functions (breaks app-emulation/wine)
-	# See: https://bugs.gentoo.org/549768
-	if (( _using_abi_x86_64 && (_gcc_major_version == 5 && _gcc_minor_version <= 2) )); then
-		ebegin "(subshell): checking for =sys-devel/gcc-5.1.x , =sys-devel/gcc-5.2.0 MS X86_64 ABI compiler bug ..."
-		$(tc-getCC) -O2 "${WORKDIR}/${WINE_EBUILD_COMMON_P%/}/files/pr66838.c" -o "${T}/pr66838" \
-			|| die "cc compilation failed: pr66838 test"
-		eend
-		# Run in a subshell to prevent "Aborted" message
-		if ! ( "${T}"/pr66838 || false ) >/dev/null 2>&1; then
-			eerror "(subshell): =sys-devel/gcc-5.1.x , =sys-devel/gcc-5.2.0 MS X86_64 ABI compiler bug detected."
-			eerror "64-bit wine cannot be built with =sys-devel/gcc-5.1 or initial patchset of =sys-devel/gcc-5.2.0."
-			eerror "Please re-emerge wine using an unaffected version of gcc or apply"
-			eerror "Re-emerge the latest =sys-devel/gcc-5.2.0 ebuild,"
-			eerror "or use gcc-config to select a different compiler version."
-			eerror "See: https://bugs.gentoo.org/549768"
-			eerror
-			return 1
-		fi
-	fi
-
-	# sys-devel/gcc-5.3.0 miscompiles app-emulation/wine
-	# See: https://bugs.gentoo.org/574044
-	if (( _using_abi_x86_64 && (_gcc_major_version == 5) && (_gcc_minor_version == 3) )); then
-		ebegin "(subshell): checking for =sys-devel/gcc-5.3.0 X86_64 misaligned stack compiler bug ..."
-		# Compile in a subshell to prevent "Aborted" message
-		if ! ( $(tc-getCC) -O2 -mincoming-stack-boundary=3 "${WORKDIR}/${WINE_EBUILD_COMMON_P%/}/files/pr69140.c" -o "${T}/pr69140" ) >/dev/null 2>&1; then
-			eend
-			eerror "(subshell): =sys-devel/gcc-5.3.0 X86_64 misaligned stack compiler bug detected."
-			eerror "Please re-emerge the latest =sys-devel/gcc-5.3.0 ebuild,"
-			eerror "or use gcc-config to select a different compiler version."
-			eerror "See: https://bugs.gentoo.org/574044"
-			eerror
-			return 1
-		fi
-		eend
-	fi
-}
-
-# @FUNCTION: _wine_generic_compiler_pretests
-# @INTERNAL
-# @DESCRIPTION:
-# This function tests generic compiler support for critical functionality, for the packages:
-#  app-emulation/wine-staging app-emulation/wine-vanilla
-# shellcheck disable=SC2120
-_wine_generic_compiler_pretests() {
-	(($# == 0)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (0)"
-
-	use abi_x86_64 		|| return 0
-	[[ "${MERGE_TYPE}" = "binary" ]] && return 0
-
-	ebegin "(subshell): checking compiler support for (64-bit) builtin_ms_va_list ..."
-	# Compile in a subshell to prevent "Aborted" message
-	if ! ( $(tc-getCC) -O2 "${WORKDIR}/${WINE_EBUILD_COMMON_P%/}/files/builtin_ms_va_list.c" -o "${T}/builtin_ms_va_list" >/dev/null 2>&1 ); then
-		eend
-		eerror "(subshell): $(tc-getCC) does not support builtin_ms_va_list."
-		eerror "Please re-emerge using a compiler (version) that supports building 64-bit Wine."
-		eerror "Use >=sys-devel/gcc-4.4 or >=sys-devel/clang-3.8 to build ${CATEGORY}/${PN}."
-		eerror
-		return 1
-	fi
-	eend
 }
 
 # @FUNCTION: wine_src_set_staging_versioning
@@ -1571,7 +1501,7 @@ wine_eapply_staging_patchset() {
 		# shellcheck source=/dev/null
 		source "${_staging_patches_dir}/patchinstall.sh"
 	)
-	eend
+	eend $? die "Failed to apply all Wine-Staging patches"
 }
 
 # @FUNCTION: wine_add_stock_gentoo_patches
@@ -2063,11 +1993,6 @@ wine_pkg_setup() {
 # 'CROSSLDFLAGS': cross-compiler cflags (fallback to 'LDFLAGS' - if 'CROSSLDFLAGS' is unspecified)
 # This function then calls the multilib-minimal_src_configure phase.
 wine_src_configure() {
-	# shellcheck disable=SC2119
-	_wine_gcc_specific_pretests || die "_wine_gcc_specific_pretests() failed"
-	# shellcheck disable=SC2119
-	_wine_generic_compiler_pretests || die "_wine_generic_compiler_pretests() failed"
-
 	local -r _gcc_10_fcommon_fix_commit="c13d58780f78393571dfdeb5b4952e3dcd7ded90"
 	export LDCONFIG="/bin/true"
 	# shellcheck disable=SC2086
