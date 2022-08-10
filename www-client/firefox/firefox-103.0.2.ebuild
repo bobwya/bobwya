@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="8"
 
-FIREFOX_PATCHSET="firefox-102-patches-02j.tar.xz"
+FIREFOX_PATCHSET="firefox-103-patches-03j.tar.xz"
 
 LLVM_MAX_SLOT=14
 
@@ -50,7 +50,7 @@ fi
 PATCH_URIS=( "https://dev.gentoo.org/"~{polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
 
 # Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="3ff616f9a96918bda4ce45f4be556a99ade98f39"
+GIT_MOZ_REVISION="dbadad1a42ce3431c7ee3826b241a2ff06937282"
 GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
 
 # shellcheck disable=SC2124
@@ -82,7 +82,6 @@ IUSE+=" geckodriver +gmp-autoupdate screencast +X"
 
 REQUIRED_USE="debug? ( !system-av1 )
 	pgo? ( lto )
-	wayland? ( dbus )
 	wifi? ( dbus )"
 
 # Firefox-only REQUIRED_USE flags
@@ -93,10 +92,10 @@ REQUIRED_USE+=" screencast? ( wayland )"
 BDEPEND="${PYTHON_DEPS}
 	app-arch/unzip
 	app-arch/zip
-	>=dev-util/cbindgen-0.24.0
-	>=net-libs/nodejs-10.23.1
+	>=dev-util/cbindgen-0.24.3
+	net-libs/nodejs
 	virtual/pkgconfig
-	>=virtual/rust-1.59.0
+	virtual/rust
 	|| (
 		(
 			sys-devel/clang:14
@@ -123,7 +122,7 @@ COMMON_DEPEND="
 	dev-libs/expat
 	dev-libs/glib:2
 	dev-libs/libffi:=
-	>=dev-libs/nss-3.79
+	>=dev-libs/nss-3.80
 	>=dev-libs/nspr-4.34
 	media-libs/alsa-lib
 	media-libs/fontconfig
@@ -621,7 +620,6 @@ src_prepare() {
 			"${T}/${PN}-firefox-kde-${GIT_MOZ_REVISION}.patch" || die "sed failed"
 		# Toolkit OpenSUSE KDE integration patchset
 		eapply "${DISTDIR}/${PN}-mozilla-kde-${GIT_MOZ_REVISION}.patch"
-		eapply "${FILESDIR}/${PN}-102.0-kde-mozilla-fix_build.patch"
 		eapply "${DISTDIR}/${PN}-mozilla-nongnome-proxies-${GIT_MOZ_REVISION}.patch"
 		# Firefox OpenSUSE KDE integration patchset
 		eapply "${DISTDIR}/${PN}-firefox-branded-icons-${GIT_MOZ_REVISION}.patch"
@@ -672,7 +670,9 @@ src_prepare() {
 	find "${S}/third_party" -type f \( -name '*.so' -o -name '*.o' \) -print -delete || die
 
 	# Clearing checksums where we have applied patches
-	moz_clear_vendor_checksums target-lexicon-0.9.0
+	moz_clear_vendor_checksums audioipc
+	moz_clear_vendor_checksums audioipc-client
+	moz_clear_vendor_checksums audioipc-server
 
 	# Create build dir
 	BUILD_DIR="${WORKDIR}/${PN}_build"
