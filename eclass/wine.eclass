@@ -219,7 +219,7 @@ readonly _WINE_IS_STAGING
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_P
 # @DESCRIPTION:
 # Full name and version for current: gentoo-wine-ebuild-common; tarball.
-WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20220723"
+WINE_EBUILD_COMMON_P="gentoo-wine-ebuild-common-20220815"
 readonly WINE_EBUILD_COMMON_P
 
 # @ECLASS-VARIABLE: WINE_EBUILD_COMMON_PN
@@ -1605,7 +1605,7 @@ wine_add_stock_gentoo_patches() {
 	esac
 
 	use ldap && case "${WINE_PV}" in
-		1.8*|1.9*|2.*|3.*|4.*|5.*|6.0.[1-6]|6.0.[1-6]_rc[1-9]|6.[0-6]|9999)
+		1.8*|1.9*|2.*|3.*|4.*|5.*|6.0.[1-2]|6.0.[1-2]_rc[1-9]|6.[0-6]|9999)
 			# See: https://bugs.winehq.org/show_bug.cgi?id=51129
 			PATCHES+=( "${_patch_directory}/wine-1.8-move_ldap_connect_to_wldap32_namespace.patch" )
 			;;
