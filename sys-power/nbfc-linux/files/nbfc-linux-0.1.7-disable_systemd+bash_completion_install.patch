@@ -1,0 +1,21 @@
+--- a/Makefile	2022-08-14 19:54:35.415492502 +0100
++++ b/Makefile	2022-08-15 15:07:49.362415313 +0100
+@@ -47,7 +47,6 @@ nbfc_service.service: etc/systemd/system
+ 
+ install-systemd:    nbfc_service.service
+ 	# /usr/local/lib/systemd/system
+-	install -Dm 644 nbfc_service.service     $(DESTDIR)$(sysddir)/nbfc_service.service
+ 
+ install-docs:
+ 	install -Dm 644 doc/ec_probe.1           $(DESTDIR)$(sharedir)/man/man1/ec_probe.1
+@@ -60,10 +59,6 @@ install-completion:
+ 	cp completion/zsh/_nbfc               $(DESTDIR)$(sharedir)/zsh/site-functions/
+ 	cp completion/zsh/_nbfc_service       $(DESTDIR)$(sharedir)/zsh/site-functions/
+ 	cp completion/zsh/_ec_probe           $(DESTDIR)$(sharedir)/zsh/site-functions/
+-	mkdir -p $(DESTDIR)$(sharedir)/bash-completion/completions
+-	cp completion/bash/nbfc               $(DESTDIR)$(sharedir)/bash-completion/completions/
+-	cp completion/bash/nbfc_service       $(DESTDIR)$(sharedir)/bash-completion/completions/
+-	cp completion/bash/ec_probe           $(DESTDIR)$(sharedir)/bash-completion/completions/
+ 	mkdir -p $(DESTDIR)$(sharedir)/fish/completions
+ 	cp completion/fish/nbfc.fish          $(DESTDIR)$(sharedir)/fish/completions/
+ 	cp completion/fish/nbfc_service.fish  $(DESTDIR)$(sharedir)/fish/completions/

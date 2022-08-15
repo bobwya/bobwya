@@ -3,7 +3,7 @@
 
 EAPI=8
 
-inherit linux-info systemd toolchain-funcs
+inherit bash-completion-r1 linux-info systemd toolchain-funcs
 
 DESCRIPTION="Lightweight C port of NoteBook FanControl (no Mono required)"
 HOMEPAGE="https://github.com/nbfc-linux/nbfc-linux"
@@ -29,20 +29,30 @@ BDEPEND="virtual/pkgconfig"
 
 CONFIG_CHECK="ACPI_EC_DEBUGFS HWMON X86_MSR"
 
+PATCHES=( "${FILESDIR}/${PN}-0.1.7-disable_systemd+bash_completion_install.patch" )
+
 src_compile() {
 	tc-export CC
 
-	local myemakeargs=(
+	myemakeargs=(
 		CC="${CC}"
 		CFLAGS="${CFLAGS}"
+		PREFIX="${EPREFIX}/usr"
+		confdir="${EPREFIX}/etc"
 	)
 
 	emake -j1 "${myemakeargs[@]}"
 }
 
 src_install() {
-	emake -j1 "${myemakeargs[@]}" DESTDIR="${D}" install
+	emake -j1 "${myemakeargs[@]}" DESTDIR="${ED}" install-c
+
+	for completion in "ec_probe" "nbfc" "nbfc_service"; do
+		dobashcomp "${S}/completion/bash/${completion}"
+	done
+
 	einstalldocs
 
 	newinitd "${FILESDIR}/nbfc.initd" nbfc
+	systemd_dounit "nbfc_service.service"
 }
