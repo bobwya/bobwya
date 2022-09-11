@@ -2,11 +2,11 @@
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-EAPI="8"
+EAPI=8
 
-FIREFOX_PATCHSET="firefox-103-patches-03j.tar.xz"
+FIREFOX_PATCHSET="firefox-104-patches-02j.tar.xz"
 
-LLVM_MAX_SLOT=14
+LLVM_MAX_SLOT=15
 
 PYTHON_COMPAT=( python3_{8..11} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
@@ -48,20 +48,9 @@ if [[ ${PV} == *_rc* ]]; then
 fi
 
 PATCH_URIS=( "https://dev.gentoo.org/"~{polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
-
-# Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_REVISION="dbadad1a42ce3431c7ee3826b241a2ff06937282"
-GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
-
 # shellcheck disable=SC2124
 SRC_URI="${MOZ_SRC_BASE_URI}/source/${MOZ_P}.source.tar.xz -> ${MOZ_P_DISTFILES}.source.tar.xz
-	${PATCH_URIS[@]}
-	kde? (
-		${GIT_MOZ_URI}/${GIT_MOZ_REVISION}/mozilla-kde.patch -> ${PN}-mozilla-kde-${GIT_MOZ_REVISION}.patch
-		${GIT_MOZ_URI}/${GIT_MOZ_REVISION}/mozilla-nongnome-proxies.patch -> ${PN}-mozilla-nongnome-proxies-${GIT_MOZ_REVISION}.patch
-		${GIT_MOZ_URI}/${GIT_MOZ_REVISION}/firefox/firefox-branded-icons.patch -> ${PN}-firefox-branded-icons-${GIT_MOZ_REVISION}.patch
-		${GIT_MOZ_URI}/${GIT_MOZ_REVISION}/firefox/firefox-kde.patch -> ${PN}-firefox-kde-${GIT_MOZ_REVISION}.patch
-	)"
+	${PATCH_URIS[@]}"
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.com/firefox
@@ -89,6 +78,10 @@ REQUIRED_USE+=" || ( X wayland )"
 REQUIRED_USE+=" pgo? ( X )"
 REQUIRED_USE+=" screencast? ( wayland )"
 
+FF_ONLY_DEPEND="!www-client/firefox:0
+	!www-client/firefox:esr
+	screencast? ( media-video/pipewire:= )
+	selinux? ( sec-policy/selinux-mozilla )"
 BDEPEND="${PYTHON_DEPS}
 	app-arch/unzip
 	app-arch/zip
@@ -97,6 +90,14 @@ BDEPEND="${PYTHON_DEPS}
 	virtual/pkgconfig
 	virtual/rust
 	|| (
+		(
+			sys-devel/clang:15
+			sys-devel/llvm:15
+			clang? (
+				=sys-devel/lld-15*
+				pgo? ( =sys-libs/compiler-rt-sanitizers-15*[profile] )
+			)
+		)
 		(
 			sys-devel/clang:14
 			sys-devel/llvm:14
@@ -116,14 +117,13 @@ BDEPEND="${PYTHON_DEPS}
 	)
 	amd64? ( >=dev-lang/nasm-2.14 )
 	x86? ( >=dev-lang/nasm-2.14 )"
-
-COMMON_DEPEND="
+COMMON_DEPEND="${FF_ONLY_DEPEND}
 	dev-libs/atk
 	dev-libs/expat
 	dev-libs/glib:2
 	dev-libs/libffi:=
-	>=dev-libs/nss-3.80
-	>=dev-libs/nspr-4.34
+	>=dev-libs/nss-3.81
+	>=dev-libs/nspr-4.34.1
 	media-libs/alsa-lib
 	media-libs/fontconfig
 	media-libs/freetype
@@ -145,7 +145,7 @@ COMMON_DEPEND="
 	sndio? ( >=media-sound/sndio-1.8.0-r1 )
 	screencast? ( media-video/pipewire:= )
 	system-av1? (
-		>=media-libs/dav1d-0.9.3:=
+		>=media-libs/dav1d-1.0.0:=
 		>=media-libs/libaom-1.0.0:=
 	)
 	system-harfbuzz? (
@@ -185,10 +185,7 @@ COMMON_DEPEND="
 		x11-libs/libXtst
 		x11-libs/libxcb:=
 	)"
-
 RDEPEND="${COMMON_DEPEND}
-	!www-client/firefox:0
-	!www-client/firefox:esr
 	jack? ( virtual/jack )
 	kde? ( kde-misc/kmozillahelper )
 	openh264? ( media-libs/openh264:*[plugin] )
@@ -197,9 +194,7 @@ RDEPEND="${COMMON_DEPEND}
 			media-sound/pulseaudio
 			>=media-sound/apulse-0.1.12-r4
 		)
-	)
-	selinux? ( sec-policy/selinux-mozilla )"
-
+	)"
 DEPEND="${COMMON_DEPEND}
 	pulseaudio? (
 		|| (
@@ -386,7 +381,6 @@ mozconfig_add_options_ac() {
 
 	local option
 	# shellcheck disable=SC2068
-	# shellcheck disable=SC2068
 	for option in ${@} ; do
 		echo "ac_add_options ${option} # ${reason}" >>"${MOZCONFIG}"
 	done
@@ -404,7 +398,6 @@ mozconfig_add_options_mk() {
 	shift
 
 	local option
-	# shellcheck disable=SC2068
 	# shellcheck disable=SC2068
 	for option in ${@} ; do
 		echo "mk_add_options ${option} # ${reason}" >>"${MOZCONFIG}"
@@ -507,13 +500,6 @@ pkg_setup() {
 			fi
 		fi
 
-		if ! use clang && [[ "$(gcc-major-version)" -eq 11 ]] \
-			&& ! has_version -b ">sys-devel/gcc-11.1.0:11" ; then
-			# bug 792705
-			eerror "Using GCC 11 to compile firefox is currently known to be broken (see bug #792705)."
-			die "Set USE=clang or select <gcc-11 to build ${CATEGORY}/${P}."
-		fi
-
 		python-any-r1_pkg_setup
 
 		# Avoid PGO profiling problems due to enviroment leakage
@@ -613,17 +599,14 @@ src_unpack() {
 
 src_prepare() {
 	use lto && rm -v "${WORKDIR}/firefox-patches/"*-LTO-Only-enable-LTO-*.patch
-	eapply "${WORKDIR}/firefox-patches"
+	! use ppc64 && rm -v "${WORKDIR}/firefox-patches/"*bmo-1775202-ppc64*.patch
 	if use kde; then
-		sed -e 's:@BINPATH@/defaults/pref/kde.js:@RESPATH@/browser/@PREF_DIR@/kde.js:' \
-			"${DISTDIR}/${PN}-firefox-kde-${GIT_MOZ_REVISION}.patch" > \
-			"${T}/${PN}-firefox-kde-${GIT_MOZ_REVISION}.patch" || die "sed failed"
 		# Toolkit OpenSUSE KDE integration patchset
-		eapply "${DISTDIR}/${PN}-mozilla-kde-${GIT_MOZ_REVISION}.patch"
-		eapply "${DISTDIR}/${PN}-mozilla-nongnome-proxies-${GIT_MOZ_REVISION}.patch"
+		eapply "${FILESDIR}/${P}-mozilla-kde.patch"
+		eapply "${FILESDIR}/${P}-mozilla-nongnome-proxies.patch"
 		# Firefox OpenSUSE KDE integration patchset
-		eapply "${DISTDIR}/${PN}-firefox-branded-icons-${GIT_MOZ_REVISION}.patch"
-		eapply "${DISTDIR}/${PN}-firefox-kde-${GIT_MOZ_REVISION}.patch"
+		eapply "${FILESDIR}/${P}-firefox-branded-icons.patch"
+		eapply "${FILESDIR}/${P}-firefox-kde.patch"
 		# Uncomment the next line to enable KDE support debugging (additional console output)...
 		#eapply "${FILESDIR}/${PN}-kde-debug.patch"
 		# Uncomment the following patch line to force Plasma/Qt file dialog for Firefox...
@@ -631,6 +614,7 @@ src_prepare() {
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox/)
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
 	fi
+	eapply "${WORKDIR}/firefox-patches"
 
 	# Allow user to apply any additional patches without modifying ebuild
 	eapply_user
@@ -1380,7 +1364,7 @@ pkg_postinst() {
 	# bug 835078
 	if use hwaccel && has_version "x11-drivers/xf86-video-nouveau"; then
 		ewarn "You have nouveau drivers installed in your system and 'hwaccel' "
-		ewarn "enabled for Firefox. Nouveau / your GPU might not supported the "
+		ewarn "enabled for Firefox. Nouveau / your GPU might not support the "
 		ewarn "required EGL, so either disable 'hwaccel' or try the workaround "
 		ewarn "explained in https://bugs.gentoo.org/835078#c5 if Firefox crashes."
 	fi
