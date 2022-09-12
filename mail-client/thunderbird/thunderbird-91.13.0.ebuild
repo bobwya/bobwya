@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI="8"
 
-FIREFOX_PATCHSET="firefox-91esr-patches-08j.tar.xz"
+FIREFOX_PATCHSET="firefox-91esr-patches-10j.tar.xz"
 
 LLVM_MAX_SLOT=14
 
@@ -38,10 +38,6 @@ MOZ_P="${MOZ_PN}-${MOZ_PV}"
 MOZ_PV_DISTFILES="${MOZ_PV}${MOZ_PV_SUFFIX}"
 MOZ_P_DISTFILES="${MOZ_PN}-${MOZ_PV_DISTFILES}"
 
-# Mercurial repository for Mozilla Firefox patches to provide better KDE Integration (developed by Wolfgang Rosenauer for OpenSUSE)
-GIT_MOZ_COMMIT="b589dde7c7b69ba3381cd06080c9fe050659fe6f"
-GIT_MOZ_URI="https://raw.githubusercontent.com/openSUSE/firefox-maintenance"
-
 inherit autotools check-reqs desktop flag-o-matic gnome2-utils llvm multiprocessing \
 	optfeature pax-utils python-any-r1 toolchain-funcs virtualx xdg
 
@@ -57,11 +53,7 @@ PATCH_URIS=(
 
 # shellcheck disable=SC2124
 SRC_URI="${MOZ_SRC_BASE_URI}/source/${MOZ_P}.source.tar.xz -> ${MOZ_P_DISTFILES}.source.tar.xz
-	${PATCH_URIS[@]}
-	kde? (
-		${GIT_MOZ_URI}/${GIT_MOZ_COMMIT}/mozilla-kde.patch -> ${PN}-mozilla-kde-${GIT_MOZ_COMMIT}.patch
-		${GIT_MOZ_URI}/${GIT_MOZ_COMMIT}/mozilla-nongnome-proxies.patch -> ${PN}-mozilla-nongnome-proxies-${GIT_MOZ_COMMIT}.patch
-	)"
+	${PATCH_URIS[@]}"
 
 DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.thunderbird.net/
@@ -551,9 +543,8 @@ src_prepare() {
 
 	if use kde; then
 		# Gecko/toolkit OpenSUSE KDE integration patchset
-
-		eapply "${DISTDIR}/${PN}-mozilla-kde-${GIT_MOZ_COMMIT}.patch"
-		eapply "${DISTDIR}/${PN}-mozilla-nongnome-proxies-${GIT_MOZ_COMMIT}.patch"
+		eapply "${FILESDIR}/${P}-mozilla-kde.patch"
+		eapply "${FILESDIR}/${P}-mozilla-nongnome-proxies.patch"
 		# Uncomment the next line to enable KDE support debugging (additional console output)...
 		#eapply "${FILESDIR}/${PN}-kde-debug.patch"
 		# Uncomment the following patch line to force Plasma/Qt file dialog for Thunderbird...
@@ -1181,7 +1172,7 @@ pkg_postinst() {
 		show_shortcut_information=no
 	else
 		local replacing_version
-		for replacing_version in "${REPLACING_VERSIONS}" ; do
+		for replacing_version in ${REPLACING_VERSIONS} ; do
 			if ver_test "${replacing_version}" -lt 91.0; then
 				# Tell user that we no longer install a shortcut
 				# per supported display protocol
