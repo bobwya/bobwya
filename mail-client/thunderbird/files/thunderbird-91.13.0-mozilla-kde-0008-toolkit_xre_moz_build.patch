@@ -1,0 +1,29 @@
+Description: Add KDE integration to Firefox (toolkit parts)
+Author: Wolfgang Rosenauer <wolfgang@rosenauer.org>
+Author: Lubos Lunak <lunak@suse.com>
+Bug: https://bugzilla.mozilla.org/show_bug.cgi?id=140751
+     https://bugzilla.novell.com/show_bug.cgi?id=170055
+
+diff --git a/toolkit/xre/moz.build b/toolkit/xre/moz.build
+--- a/toolkit/xre/moz.build
++++ b/toolkit/xre/moz.build
+@@ -93,17 +93,19 @@ elif CONFIG["MOZ_WIDGET_TOOLKIT"] == "co
+         "../components/printingui",
+     ]
+ elif CONFIG["MOZ_WIDGET_TOOLKIT"] == "uikit":
+     UNIFIED_SOURCES += [
+         "nsNativeAppSupportDefault.cpp",
+         "UIKitDirProvider.mm",
+     ]
+ elif CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
++    EXPORTS += ['nsKDEUtils.h']
+     UNIFIED_SOURCES += [
++        "nsKDEUtils.cpp",
+         "nsNativeAppSupportUnix.cpp",
+     ]
+ else:
+     UNIFIED_SOURCES += [
+         "nsNativeAppSupportDefault.cpp",
+     ]
+ 
+ if CONFIG["MOZ_HAS_REMOTE"]:

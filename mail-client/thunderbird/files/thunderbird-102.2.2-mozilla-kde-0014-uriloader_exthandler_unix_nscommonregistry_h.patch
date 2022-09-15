@@ -1,0 +1,39 @@
+Description: Add KDE integration to Firefox (toolkit parts)
+Author: Wolfgang Rosenauer <wolfgang@rosenauer.org>
+Author: Lubos Lunak <lunak@suse.com>
+Bug: https://bugzilla.mozilla.org/show_bug.cgi?id=140751
+     https://bugzilla.novell.com/show_bug.cgi?id=170055
+
+diff --git a/uriloader/exthandler/unix/nsCommonRegistry.h b/uriloader/exthandler/unix/nsCommonRegistry.h
+new file mode 100644
+--- /dev/null
++++ b/uriloader/exthandler/unix/nsCommonRegistry.h
+@@ -0,0 +1,28 @@
++/* This Source Code Form is subject to the terms of the Mozilla Public
++ * License, v. 2.0. If a copy of the MPL was not distributed with this
++ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
++
++#ifndef nsCommonRegistry_h__
++#define nsCommonRegistry_h__
++
++#include "nsIURI.h"
++#include "nsCOMPtr.h"
++
++class nsMIMEInfoBase;
++
++class nsCommonRegistry
++{
++ public:
++  static bool HandlerExists(const char *aProtocolScheme);
++
++  static nsresult LoadURL(nsIURI *aURL);
++
++  static void GetAppDescForScheme(const nsACString& aScheme,
++                                  nsAString& aDesc);
++
++  static already_AddRefed<nsMIMEInfoBase> GetFromExtension(const nsACString& aFileExt);
++
++  static already_AddRefed<nsMIMEInfoBase> GetFromType(const nsACString& aMIMEType);
++};
++
++#endif
