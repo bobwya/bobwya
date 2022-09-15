@@ -594,7 +594,7 @@ src_prepare() {
 	fi
 	if use kde; then
 		# Toolkit OpenSUSE KDE integration patchset
-		eapply "${FILESDIR}/${P}-mozilla-kde.patch"
+		eapply "${FILESDIR}/${P}-mozilla-kde-"*".patch"
 		eapply "${FILESDIR}/${P}-mozilla-nongnome-proxies.patch"
 		# Firefox OpenSUSE KDE integration patchset
 		eapply "${FILESDIR}/${P}-firefox-branded-icons.patch"

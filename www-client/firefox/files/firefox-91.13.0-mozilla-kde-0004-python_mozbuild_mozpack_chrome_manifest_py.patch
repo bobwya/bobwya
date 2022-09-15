@@ -1,0 +1,27 @@
+Description: Add KDE integration to Firefox (toolkit parts)
+Author: Wolfgang Rosenauer <wolfgang@rosenauer.org>
+Author: Lubos Lunak <lunak@suse.com>
+Bug: https://bugzilla.mozilla.org/show_bug.cgi?id=140751
+     https://bugzilla.novell.com/show_bug.cgi?id=170055
+
+diff --git a/python/mozbuild/mozpack/chrome/manifest.py b/python/mozbuild/mozpack/chrome/manifest.py
+--- a/python/mozbuild/mozpack/chrome/manifest.py
++++ b/python/mozbuild/mozpack/chrome/manifest.py
+@@ -39,16 +39,17 @@ class ManifestEntry(object):
+         "os",
+         "osversion",
+         "abi",
+         "xpcnativewrappers",
+         "tablet",
+         "process",
+         "contentaccessible",
+         "backgroundtask",
++        "desktop",
+     ]
+ 
+     def __init__(self, base, *flags):
+         """
+         Initialize a manifest entry with the given base path and flags.
+         """
+         self.base = base
+         self.flags = Flags(*flags)
