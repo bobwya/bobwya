@@ -17,4 +17,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - uses: bobwya/action-repoman@master
+    - uses: bobwya/action-pkgcheck-ci@master
