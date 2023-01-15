@@ -1,14 +1,15 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
 EAPI=8
 
-FIREFOX_PATCHSET="firefox-102esr-patches-02j.tar.xz"
+FIREFOX_PATCHSET="firefox-102esr-patches-07j.tar.xz"
+MOZ_KDE_PATCHSET="mozilla-kde-opensuse-patchset-${P}"
 
-LLVM_MAX_SLOT=14
+LLVM_MAX_SLOT=15
 
-PYTHON_COMPAT=( python3_{8..11} )
+PYTHON_COMPAT=( python3_{9..11} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
 
 WANT_AUTOCONF="2.1"
@@ -19,14 +20,6 @@ MOZ_ESR=
 
 MOZ_PV=${PV}
 MOZ_PV_SUFFIX=
-if [[ ${PV} =~ (_(alpha|beta|rc).*)$ ]]; then
-	MOZ_PV_SUFFIX=${BASH_REMATCH[1]}
-
-	# Convert the ebuild version to the upstream Mozilla version
-	MOZ_PV="${MOZ_PV/_alpha/a}" # Handle alpha for SRC_URI
-	MOZ_PV="${MOZ_PV/_beta/b}"  # Handle beta for SRC_URI
-	MOZ_PV="${MOZ_PV%%_rc*}"	# Handle rc for SRC_URI
-fi
 
 if [[ -n ${MOZ_ESR} ]]; then
 	# ESR releases have slightly different version numbers
@@ -42,18 +35,16 @@ inherit autotools check-reqs desktop flag-o-matic gnome2-utils llvm multiprocess
 	optfeature pax-utils python-any-r1 toolchain-funcs virtualx xdg
 
 MOZ_SRC_BASE_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases/${MOZ_PV}"
-
-if [[ ${PV} == *_rc* ]]; then
-	MOZ_SRC_BASE_URI="https://archive.mozilla.org/pub/${MOZ_PN}/candidates/${MOZ_PV}-candidates/build${PV##*_rc}"
-fi
+MOZ_KDE_OPENSUSE_BASE_URI="https://github.com/bobwya/mozilla-kde-opensuse-patchset"
 
 PATCH_URIS=(
 	https://dev.gentoo.org/~{juippis,whissi,slashbeast}/mozilla/patchsets/"${FIREFOX_PATCHSET}"
 )
 
 # shellcheck disable=SC2124
-SRC_URI="${MOZ_SRC_BASE_URI}/source/${MOZ_P}.source.tar.xz -> ${MOZ_P_DISTFILES}.source.tar.xz
-	${PATCH_URIS[@]}"
+SRC_URI="${MOZ_SRC_BASE_URI}/source/${MOZ_P}.source.tar.xz
+	${PATCH_URIS[@]}
+	kde? ( ${MOZ_KDE_OPENSUSE_BASE_URI}/raw/main/${MOZ_KDE_PATCHSET}.tar.xz )"
 
 DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.thunderbird.net/
@@ -74,47 +65,41 @@ IUSE+=" +system-librnp"
 
 REQUIRED_USE="debug? ( !system-av1 )
 	pgo? ( lto )
+	wayland? ( dbus )
 	wifi? ( dbus )"
 
 # Thunderbird-only dependencies.
-TB_ONLY_DEPEND="!<x11-plugins/enigmail-2.2
+TB_ONLY_DEPEND="
 	selinux? ( sec-policy/selinux-thunderbird )
 	!system-librnp? ( dev-libs/jsoncpp )
 	system-librnp? ( dev-util/librnp )"
 BDEPEND="${PYTHON_DEPS}
+	|| (
+		(
+			sys-devel/clang:15
+			sys-devel/llvm:15
+			clang? (
+				sys-devel/lld:15
+				virtual/rust:0/llvm-15
+				pgo? ( =sys-libs/compiler-rt-sanitizers-15*[profile] )
+			)
+		)
+	)
+	!clang? ( virtual/rust )
 	app-arch/unzip
 	app-arch/zip
 	>=dev-util/cbindgen-0.24.3
 	net-libs/nodejs
 	virtual/pkgconfig
-	virtual/rust
-	|| (
-		(
-			sys-devel/clang:14
-			sys-devel/llvm:14
-			clang? (
-				=sys-devel/lld-14*
-				pgo? ( =sys-libs/compiler-rt-sanitizers-14*[profile] )
-			)
-		)
-		(
-			sys-devel/clang:13
-			sys-devel/llvm:13
-			clang? (
-				=sys-devel/lld-13*
-				pgo? ( =sys-libs/compiler-rt-sanitizers-13*[profile] )
-			)
-		)
-	)
 	amd64? ( >=dev-lang/nasm-2.14 )
 	x86? ( >=dev-lang/nasm-2.14 )"
 
 COMMON_DEPEND="${TB_ONLY_DEPEND}
-	dev-libs/atk
+	>=app-accessibility/at-spi2-core-2.46.0:2
 	dev-libs/expat
 	dev-libs/glib:2
 	dev-libs/libffi:=
-	>=dev-libs/nss-3.79
+	>=dev-libs/nss-3.79.2
 	>=dev-libs/nspr-4.34
 	media-libs/alsa-lib
 	media-libs/fontconfig
@@ -196,20 +181,26 @@ DEPEND="${COMMON_DEPEND}
 S="${WORKDIR}/${PN}-${PV%_*}"
 
 llvm_check_deps() {
+	local -r llvm_message="Cannot use LLVM slot ${LLVM_SLOT} ..."
 	if ! has_version -b "sys-devel/clang:${LLVM_SLOT}"; then
-		einfo "sys-devel/clang:${LLVM_SLOT} is missing! Cannot use LLVM slot ${LLVM_SLOT} ..." >&2
+		einfo "sys-devel/clang:${LLVM_SLOT} is missing! ${llvm_message}" >&2
 		return 1
 	fi
 
 	if use clang; then
-		if ! has_version -b "=sys-devel/lld-${LLVM_SLOT}*"; then
-			einfo "=sys-devel/lld-${LLVM_SLOT}* is missing! Cannot use LLVM slot ${LLVM_SLOT} ..." >&2
+		if ! has_version -b "sys-devel/lld:${LLVM_SLOT}"; then
+			einfo "sys-devel/lld:${LLVM_SLOT} is missing! ${llvm_message}" >&2
+			return 1
+		fi
+
+		if ! has_version -b "virtual/rust:0/llvm-${LLVM_SLOT}"; then
+			einfo "virtual/rust:0/llvm-${LLVM_SLOT} is missing! ${llvm_message}" >&2
 			return 1
 		fi
 
 		if use pgo; then
-			if ! has_version -b "=sys-libs/compiler-rt-sanitizers-${LLVM_SLOT}*"; then
-				einfo "=sys-libs/compiler-rt-sanitizers-${LLVM_SLOT}* is missing! Cannot use LLVM slot ${LLVM_SLOT} ..." >&2
+			if ! has_version -b "=sys-libs/compiler-rt-sanitizers-${LLVM_SLOT}*[profile]"; then
+				einfo "=sys-libs/compiler-rt-sanitizers-${LLVM_SLOT}*[profile] is missing! ${llvm_message}" >&2
 				return 1
 			fi
 		fi
@@ -219,12 +210,12 @@ llvm_check_deps() {
 }
 
 MOZ_LANGS=(
-	"af" "ar" "ast" "be" "bg" "br" "ca" "cak" "cs" "cy" "da" "de" "dsb"
-	"el" "en-CA" "en-GB" "en-US" "es-AR" "es-ES" "es-MX" "et" "eu"
-	"fi" "fr" "fy-NL" "ga-IE" "gd" "gl" "he" "hr" "hsb" "hu"
-	"id" "is" "it" "ja" "ka" "kab" "kk" "ko" "lt" "lv" "ms" "nb-NO" "nl" "nn-NO"
-	"pa-IN" "pl" "pt-BR" "pt-PT" "rm" "ro" "ru"
-	"sk" "sl" "sq" "sr" "sv-SE" "th" "tr" "uk" "uz" "vi" "zh-CN" "zh-TW"
+	af ar ast be bg br ca cak cs cy da de dsb
+	el en-CA en-GB en-US es-AR es-ES es-MX et eu
+	fi fr fy-NL ga-IE gd gl he hr hsb hu
+	id is it ja ka kab kk ko lt lv ms nb-NO nl nn-NO
+	pa-IN pl pt-BR pt-PT rm ro ru
+	sk sl sq sr sv-SE th tr uk uz vi zh-CN zh-TW
 )
 
 mozilla_set_globals() {
@@ -298,7 +289,11 @@ moz_install_xpi() {
 
 		# Determine extension ID
 		if [[ -f "${xpi_tmp_dir}/install.rdf" ]]; then
-			emid="$(sed -n -e '/install-manifest/,$ { /em:id/!d; s/.*[\">]\([^\"<>]*\)[\"<].*/\1/; p; q }' "${xpi_tmp_dir}/install.rdf")"
+			emid="$(
+				sed -n \
+					-e '/install-manifest/,$ { /em:id/!d; s/.*[\">]\([^\"<>]*\)[\"<].*/\1/; p; q }' \
+					"${xpi_tmp_dir}/install.rdf" \
+			)"
 			[[ -z "${emid}" ]] && die "failed to determine extension id from install.rdf"
 		elif [[ -f "${xpi_tmp_dir}/manifest.json" ]] ; then
 			emid="$(sed -n -e 's/.*"id": "\([^"]*\)".*/\1/p' "${xpi_tmp_dir}/manifest.json")"
@@ -395,6 +390,7 @@ pkg_pretend() {
 pkg_setup() {
 	if [[ "${MERGE_TYPE}" != binary ]]; then
 		if use pgo; then
+			# shellcheck disable=SC2086
 			# shellcheck disable=SC2086
 			if ! has userpriv ${FEATURES}; then
 				eerror "Building ${PN} with USE=pgo and FEATURES=-userpriv is not supported!"
@@ -538,9 +534,8 @@ src_prepare() {
 	eapply "${WORKDIR}/firefox-patches"
 
 	if use kde; then
-		# Gecko/toolkit OpenSUSE KDE integration patchset
-		eapply "${FILESDIR}/${P}-mozilla-kde-"*".patch"
-		eapply "${FILESDIR}/${P}-mozilla-nongnome-proxies.patch"
+		# OpenSUSE KDE integration patchset
+		eapply "${WORKDIR}/${MOZ_KDE_PATCHSET}"
 		# Uncomment the next line to enable KDE support debugging (additional console output)...
 		#eapply "${FILESDIR}/${PN}-kde-debug.patch"
 		# Uncomment the following patch line to force Plasma/Qt file dialog for Thunderbird...
@@ -585,10 +580,8 @@ src_prepare() {
 	einfo "Removing pre-built binaries ..."
 	find "${S}/third_party" -type f \( -name '*.so' -o -name '*.o' \) -print -delete || die
 
-	# Clearing checksums where we have applied patches
-	moz_clear_vendor_checksums audioipc
-	moz_clear_vendor_checksums audioipc-client
-	moz_clear_vendor_checksums audioipc-server
+	# Clearing crate checksums where we have applied patches
+	moz_clear_vendor_checksums bindgen
 
 	# Create build dir
 	BUILD_DIR="${WORKDIR}/${PN}_build"
@@ -612,12 +605,13 @@ src_configure() {
 
 	local have_switched_compiler
 	have_switched_compiler=
-	if use clang && ! tc-is-clang; then
+	if use clang; then
 		# Force clang
 		einfo "Enforcing the use of clang due to USE=clang ..."
-		have_switched_compiler=yes
+		if tc-is-gcc; then
+			have_switched_compiler=yes
+		fi
 		AR=llvm-ar
-		AS=llvm-as
 		CC="${CHOST}-clang"
 		CXX="${CHOST}-clang++"
 		NM=llvm-nm
@@ -644,7 +638,9 @@ src_configure() {
 	HOST_CC="$(tc-getBUILD_CC)"
 	export HOST_CXX
 	HOST_CXX="$(tc-getBUILD_CXX)"
-	tc-export CC CXX LD AR NM OBJDUMP RANLIB PKG_CONFIG
+	export AS
+	AS="$(tc-getCC) -c"
+	tc-export CC CXX LD AR AS NM OBJDUMP RANLIB PKG_CONFIG
 
 	# Pass the correct toolchain paths through cbindgen
 	if tc-is-cross-compiler; then
@@ -956,6 +952,7 @@ src_configure() {
 	MOZ_MAKE_FLAGS="${MAKEOPTS}"
 
 	# Use system's Python environment
+	export PIP_NETWORK_INSTALL_RESTRICTED_VIRTUALENVS
 	PIP_NETWORK_INSTALL_RESTRICTED_VIRTUALENVS=mach
 
 	if use system-python-libs; then
