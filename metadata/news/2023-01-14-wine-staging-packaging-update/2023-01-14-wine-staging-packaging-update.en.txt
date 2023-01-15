@@ -1,0 +1,13 @@
+Title: app-emulation/wine-staging
+Author: Rob Walker <bob.mt.wya@gmail.com>
+Content-Type: text/plain
+Posted: 2023-01-14
+Revision: 1
+News-Item-Format: 1.0
+
+This package is currently disabled, temporarily removed
+from the ::bobwya Overlay, as it requires a
+major re-write (to avoid Portage CI/QA check violations).
+You are recommended to use ::gentoo or ::wine Overlay:
+app-emulation/wine-staging package(s) in the meantime.
+
