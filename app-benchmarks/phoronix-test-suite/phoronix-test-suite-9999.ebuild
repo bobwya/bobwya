@@ -1,11 +1,11 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
 
 EAPI=8
 
-inherit bash-completion-r1 xdg-utils
+inherit bash-completion-r1 optfeature
 
 DESCRIPTION="Phoronix's comprehensive, cross-platform testing and benchmark suite"
 HOMEPAGE="http://www.phoronix-test-suite.com"
@@ -17,14 +17,12 @@ if [[ ${PV} == "9999" ]] ; then
 	EGIT_REPO_URI="https://github.com/${PN}/${PN}.git"
 	EGIT3_STORE_DIR="${T}"
 	inherit git-r3
-	SRC_URI=""
-	KEYWORDS=""
 else
 	major_version="$(ver_cut 1-3)"
 	minor_version="$(ver_cut 4-5)"
 	MY_PV="${major_version}"
 	MY_P="${PN}-${MY_PV}"
-	KEYWORDS="~amd64 ~x86"
+	KEYWORDS="-* ~amd64 ~x86"
 	if [ -n "${minor_version}" ]; then
 		MY_PV="${MY_PV}${minor_version/pre/m}"
 		MY_P="${MY_P}${minor_version/pre/m}"
@@ -40,10 +38,9 @@ DEPEND=""
 RDEPEND="${DEPEND}
 		app-arch/p7zip
 		media-libs/libpng
-		>=dev-lang/php-5.3[cli,curl,gd,json,posix,pcntl,sockets,ssl,truetype,xml,zip,zlib]
+		>=dev-lang/php-5.3[cli,curl,gd,posix,pcntl,sockets,ssl,truetype,xml,zip,zlib]
 		dev-php/fpdf
 		www-servers/apache
-		x11-base/xorg-server
 		sdl? (
 			media-libs/libsdl
 			media-libs/sdl-net
@@ -55,17 +52,16 @@ RDEPEND="${DEPEND}
 
 		)"
 
-check_php_config()
-{
+check_php_config() {
 	local slot
 	for slot in $(eselect --brief php list cli); do
 		local php_dir="/etc/php/cli-${slot}"
 
-		if [[ -f "${EROOT%/}${php_dir}/php.ini" ]]; then
+		if [[ -f "${EROOT}${php_dir}/php.ini" ]]; then
 			dodir "${php_dir}"
-			cp -f "${EROOT%/}${php_dir}/php.ini" "${ED%/}${php_dir}/php.ini" \
+			cp -f "${EROOT}${php_dir}/php.ini" "${ED}${php_dir}/php.ini" \
 					|| die "cp failed: copy php.ini file"
-			sed -i -e 's|^allow_url_fopen .*|allow_url_fopen = On|g' "${ED%/}${php_dir}/php.ini" \
+			sed -i -e 's|^allow_url_fopen .*|allow_url_fopen = On|g' "${ED}${php_dir}/php.ini" \
 					|| die "sed failed: modify php.ini file"
 		elif [[ "$(eselect php show cli)" == "${slot}" ]]; then
 			ewarn "${slot} does not have a php.ini file."
@@ -81,40 +77,6 @@ check_php_config()
 	done
 }
 
-get_optional_dependencies()
-{
-	(($# == 1)) || die "${FUNCNAME[0]}(): invalid number of arguments: ${#} (1)"
-
-	local -a array_package_names
-	local field_value ifield package_generic_name optional_packages_xmlline package_names installable_packages=""
-	local package_close_regexp="</Package>" \
-		  package_generic_name_regexp="^.*<GenericName>|</GenericName>.*$" \
-		  package_names_regexp="^.*<PackageName>|</PackageName>.*$"
-
-	line=0
-	while IFS=$'\n' read -r optional_packages_xmlline; do
-		if [[ "${optional_packages_xmlline}" =~ ${package_generic_name_regexp} ]]; then
-			package_generic_name="$(echo "${optional_packages_xmlline}" | sed -r "s@${package_generic_name_regexp}@@g")"
-		elif [[ "${optional_packages_xmlline}" =~ ${package_names_regexp} ]]; then
-			package_names="$(echo "${optional_packages_xmlline}" | sed -r -e "s@${package_names_regexp}@@g" -e 's@(^[[:blank:]]+|[[:blank:]]+$)$@@g' )"
-			ifield=0
-			# shellcheck disable=SC2206
-			array_package_names=( ${package_names} )
-			for (( ifield=0 ; ifield < ${#array_package_names[@]} ; ++ifield )); do
-				field_value="${array_package_names[ifield]}"
-				[[ ${field_value} =~ ^.+/.+$ ]]	|| continue	# skip invalid package atoms
-
-				if ! has_version "${field_value}"; then
-					installable_packages="${installable_packages}${installable_packages:+ }${field_value}"
-				fi
-			done
-		elif [[ "${optional_packages_xmlline}" =~ ${package_close_regexp} && -n "${installable_packages}" ]]; then
-			ewarn "  ${package_generic_name}: ${installable_packages}"
-			installable_packages=""
-		fi
-	done <<< "${1}"
-}
-
 src_prepare() {
 	# BASH completion helper function "have" test is depreciated
 	sed -i -e '/^have phoronix-test-suite &&$/d' "${S}/pts-core/static/bash_completion" \
@@ -128,17 +90,41 @@ src_install() {
 	# Store the contents of this file - since it will be installed / deleted before we need it.
 	GENTOO_OPTIONAL_PKGS_XML="$(cat "${S}/pts-core/external-test-dependencies/xml/gentoo-packages.xml")"
 	newbashcomp pts-core/static/bash_completion "${PN}"
-	DESTDIR="${D}" "${S}/install-sh" "${EPREFIX%/}/usr"
+	DESTDIR="${D}" "${S}/install-sh" "${EPREFIX}/usr"
 
 	# Fix the cli-php config for downloading to work.
 	check_php_config
 }
 
 pkg_postinst() {
-	xdg_icon_cache_update
-	xdg_mimeinfo_database_update
-
-	ewarn "${PN} has the following optional package dependencies:"
-	get_optional_dependencies "${GENTOO_OPTIONAL_PKGS_XML}"
-	unset -v GENTOO_OPTIONAL_PKGS_XML
+	optfeature_header "Tthe following are optional package dependencies:"
+	optfeature "csh" app-shells/tcsh
+	optfeature "mongodb" dev-db/mongodb
+	optfeature "redis-server" dev-db/redis
+	optfeature "maven" dev-java/maven-bin
+	optfeature "erlang" dev-lang/erlang
+	optfeature "rust" dev-lang/rust
+	optfeature "V8" dev-lang/R[java]
+	optfeature "libconfigpp" dev-libs/libconfig
+	optfeature "glibc-development" dev-libs/libpthread-stubs
+	optfeature "tinyxml" dev-libs/tinyxml
+	optfeature "perl-digest-md5" dev-perl/Digest-Perl-MD5
+	optfeature "qt5-development" dev-qt/qtcore
+	optfeature "jam" dev-util/ftjam
+	optfeature "freeimage" media-libs/freeimage
+	optfeature "glut" media-libs/freeglut
+	optfeature "lib3ds" media-libs/lib3ds
+	optfeature "portaudio-development" media-libs/portaudio
+	optfeature "vaapi" media-video/libva-utils
+	optfeature "atlas-development" sci-libs/atlas
+	optfeature "python-sklearn" sci-libs/scikit-learn
+	optfeature "python-scipy" dev-python/scipy
+	optfeature "suitesparse" sci-libs/suitesparse
+	optfeature "superlu" sci-libs/superlu
+	optfeature "openmpi-development" sys-cluster/openmpi
+	optfeature "uuid" sys-libs/libuuid
+	optfeature "libstdcpp" sys-libs/libstdc++-v3
+	optfeature "jpeg-development" virtual/jpeg
+	optfeature "wine" virtual/wine
+	optfeature "xorg-video" x11-libs/libXvMC
 }
