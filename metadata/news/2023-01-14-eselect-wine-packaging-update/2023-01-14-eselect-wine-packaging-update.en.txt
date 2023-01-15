@@ -1,0 +1,16 @@
+Title: app-eselect/eselect-wine
+Author: Rob Walker <bob.mt.wya@gmail.com>
+Content-Type: text/plain
+Posted: 2023-01-14
+Revision: 1
+News-Item-Format: 1.0
+
+This package is currently disabled, temporarily removed
+from the ::bobwya Overlay, as it requires a
+major re-write to fix: https://bugs.gentoo.org/632576
+
+You are recommended to use ::gentoo:
+app-eselect/eselect-wine package in the meantime.
+As this package implements a full, working solution
+to the bug.
+
