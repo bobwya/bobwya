@@ -1,9 +1,0 @@
---- a/external/sentry-native/external/breakpad/src/client/linux/handler/exception_handler.cc	2021-12-15 21:39:35.832175158 +0000
-+++ b/external/sentry-native/external/breakpad/src/client/linux/handler/exception_handler.cc	2021-12-15 21:48:17.172824167 +0000
-@@ -139,5 +139,5 @@
-   // the alternative stack. Ensure that the size of the alternative stack is
-   // large enough.
--  static const unsigned kSigStackSize = std::max(16384, SIGSTKSZ);
-+  static const unsigned kSigStackSize = std::max((long int) 16384, SIGSTKSZ);
- 
-   // Only set an alternative stack if there isn't already one, or if the current

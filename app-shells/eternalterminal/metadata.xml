@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
-	<maintainer type="person">
-		<email>bob.mt.wya@gmail.com</email>
-		<name>Robert Walker</name>
-	</maintainer>
-	<use>
-		<flag name="utempter">Enable support for <pkg>sys-libs/libutempter</pkg></flag>
-	</use>
+  <maintainer type="person">
+    <email>bob.mt.wya@gmail.com</email>
+    <name>Robert Walker</name>
+  </maintainer>
+  <use>
+    <flag name="client">Install network client</flag>
+    <flag name="utempter">Enable support for <pkg>sys-libs/libutempter</pkg></flag>
+    <flag name="server">Install network server</flag>
+  </use>
+  <upstream>
+    <remote-id type="github">MisterTea/EternalTerminal</remote-id>
+  </upstream>
 </pkgmetadata>
