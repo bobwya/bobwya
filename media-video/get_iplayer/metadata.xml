@@ -5,8 +5,6 @@
 	<email>bob.mt.wya@gmail.com</email>
 	<name>Robert Walker</name>
 </maintainer>
-<use>
-</use>
 <upstream>
 	<remote-id type="github">get-iplayer/get_iplayer</remote-id>
 </upstream>
