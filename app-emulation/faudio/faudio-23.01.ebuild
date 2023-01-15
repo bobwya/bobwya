@@ -1,14 +1,13 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
 EAPI=8
 
-CMAKE_ECLASS=cmake
 CMAKE_MAKEFILE_GENERATOR="ninja"
 MULTILIB_COMPAT=( abi_x86_{32,64} )
 
-inherit cmake-multilib virtualx
+inherit cmake-multilib
 
 FAUDIO_PN="FAudio"
 FAUDIO_PV="${PV}"
