@@ -1,7 +1,7 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
 inherit cmake
 
@@ -11,8 +11,6 @@ HOMEPAGE="https://github.com/twogood/unshield"
 if [[ "${PV}" == "9999" ]]; then
 	EGIT_REPO_URI="https://github.com/twogood/${PN}.git"
 	inherit git-r3
-	SRC_URI=""
-	#KEYWORDS=""
 else
 	SRC_URI="https://github.com/twogood/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 	KEYWORDS="~amd64 ~hppa ~ppc ~x86"
