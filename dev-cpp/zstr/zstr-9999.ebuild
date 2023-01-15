@@ -1,9 +1,10 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-
 EAPI=8
+
+inherit toolchain-funcs
 
 DESCRIPTION="C++ header-only library allowing iostream access ZLib-compressed streams"
 HOMEPAGE="https://github.com/mateidavid/zstr.git"
