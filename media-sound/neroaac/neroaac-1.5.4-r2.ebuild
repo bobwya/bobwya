@@ -1,7 +1,9 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
+
+inherit edos2unix
 
 MY_PN="NeroAACCodec"
 MP_P="${MY_PN}-${PV}"
@@ -38,13 +40,13 @@ src_prepare() {
 src_install() {
 	exeinto "/opt/${PN}/${PV}"
 	doexe "linux"/*
-	dodir "/opt/bin"
-	dosym ../"${PN}/${PV}/neroAacDec" "/opt/bin/neroAacDec"
-	dosym ../"${PN}/${PV}/neroAacEnc" "/opt/bin/neroAacEnc"
-	dosym ../"${PN}/${PV}/neroAacTag" "/opt/bin/neroAacTag"
+
+	dosym ../"${PN}/${PV}/neroAacDec" "/usr/bin/neroAacDec"
+	dosym ../"${PN}/${PV}/neroAacEnc" "/usr/bin/neroAacEnc"
+	dosym ../"${PN}/${PV}/neroAacTag" "/usr/bin/neroAacTag"
 	newdoc "readme.txt" "README"
-	newdoc "license.txt" "LICENSE"
 	newdoc "changelog.txt" "ChangeLog"
+
 	if use doc; then
 		insinto "/usr/share/doc/${PF}"
 		doins "NeroAAC_tut.pdf"

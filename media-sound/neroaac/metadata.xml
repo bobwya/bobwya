@@ -3,6 +3,9 @@
 <pkgmetadata>
 	<!-- maintainer-needed -->
 	<longdescription lang="en">
-		Nero AAC reference quality MPEG-4 and 3GPP audio codec.
+		Nero AAC Codec is a set of software tools for encoding and decoding Advanced Audio Coding (AAC) format audio,
+		and editing MPEG-4 metadata. It was developed and distributed by Nero AG, and is available at no cost for
+		Windows and Linux for non-commercial use. The codec was originally part of Nero Digital, but was later
+		released as a stand-alone package. 
 	</longdescription>
 </pkgmetadata>
