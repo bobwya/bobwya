@@ -1,7 +1,8 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+# shellcheck disable=SC2034
+EAPI=8
 
 inherit cmake
 
@@ -61,7 +62,7 @@ src_install() {
 }
 
 pkg_postinst() {
-	einfo "Install game data files to \"${ROOT%/}/usr/share/${PN}\" ."
+	einfo "Install game data files to \"${ROOT}/usr/share/${PN}\" ."
 	ewarn "${PN} is only compatible with Doom 3 (/mod) data files."
 	ewarn
 }

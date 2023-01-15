@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
-	<longdescription>
+  <longdescription>
 dhewm 3 is an enhanced version of the original Doom 3 GPL source dump by ID Software.
 You will need to supply your own game assets from Doom 3 and/or compatible mod(s).
-	</longdescription>
-	<use>
-		<flag name='dedicated'>Install only as a dedicated game server.</flag>
-		<flag name="sdl2">Enable support for SDL2 - enable SDL1 support if this flag is disabled.</flag>
-	</use>
+  </longdescription>
+  <use>
+    <flag name="dedicated">Install only as a dedicated game server.</flag>
+    <flag name="sdl2">Support SDL2, if disabled enable SDL1 support.</flag>
+  </use>
+  <upstream>
+    <remote-id type="github">dhewm/dhewm3</remote-id>
+  </upstream>
 </pkgmetadata>
