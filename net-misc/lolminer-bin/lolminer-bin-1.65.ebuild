@@ -10,10 +10,10 @@ MY_PN="lolMiner"
 MY_PV="${PV/_beta/b}"
 MY_PV="${PV/_alpha/a}"
 
+BASE_URI="https://github.com/Lolliedieb/lolMiner-releases"
 DESCRIPTION="A multi algorithm crypto miner client supporting AMD & Nvidia GPUs"
 HOMEPAGE="https://github.com/Lolliedieb/lolMiner-releases"
-SRC_URI="
-	https://github.com/Lolliedieb/lolMiner-releases/releases/download/${MY_PV}/${MY_PN}_v${MY_PV}_Lin64.tar.gz -> ${P}.tar.gz"
+SRC_URI="${BASE_URI}/releases/download/${MY_PV}/${MY_PN}_v${MY_PV}_Lin64.tar.gz -> ${P}.tar.gz"
 
 KEYWORDS="-* ~amd64"
 LICENSE="Boost-1.0 BSD lolMiner MIT"
