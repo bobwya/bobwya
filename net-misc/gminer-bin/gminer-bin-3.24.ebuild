@@ -8,9 +8,8 @@ DESCRIPTION="Gminer supports most popular crypto hashing algorithms on AMD+Nvidi
 HOMEPAGE="https://gminer.info/"
 
 MY_PN="${PN%-bin}"
-SRC_URI="
-	https://github.com/develsoftware/GMinerRelease/releases/download/${PV}/${MY_PN}_$(ver_rs 1 '_')_linux64.tar.xz -> ${P}.tar.xz
-"
+BASE_URI="https://github.com/develsoftware/GMinerRelease"
+SRC_URI="${BASE_URI}/releases/download/${PV}/${MY_PN}_$(ver_rs 1 '_')_linux64.tar.xz -> ${P}.tar.xz"
 
 LICENSE="all-rights-reserved"
 SLOT="0"
