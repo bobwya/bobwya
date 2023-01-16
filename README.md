@@ -11,22 +11,17 @@ Testing and updating of these ebuild package build scripts is irregular. So YMMV
 -------------------------
 	app-arch/cabextract : Tool to extract files from Microsoft cabinet archive files.
 	app-arch/unshield : Tool and library to extract CAB files from InstallShield installers.
-	app-benchmarks/glxosd : GLXOSD is an extensible on-screen display (OSD)/overlay for OpenGL applications running on Linux with X11 which aims to provide similar functionality to MSI Afterburner/RivaTuner OSD.
-	app-benchmarks/i7z : A better Intel i7 (and now i3, i5) CPU reporting tool for Linux.
 	app-benchmarks/phoronix-test-suite : Phoronix's comprehensive, cross-platform testing and benchmark suite.
 	app-forensics/pev : PE file analysis toolkit - for examining Windows PE binary files.
 	dev-cpp/pion : C++ framework for building lightweight HTTP interfaces.
 	games-fps/dhewm3 : Doom 3 GPL source modification (with updates including SDL2 support).
-	games-util/lutris : Lutris is an open gaming platform for Linux. It helps you install and manage your games in a unified interface.
 	kde-misc/kmozillahelper : helper application that allows Mozilla Firefox to use Plasma file dialogs, file associations, protocol handlers and other desktop integration features.
 	mail-client/thunderbird : Thunderbird mail client, with optional OpenSUSE Patchset for better Plasma Desktop integration.
 	media-sound/neroaac : Nero AAC reference quality MPEG-4 and 3GPP audio codec.
 	media-video/ffx264 : Script to encode video files to H.264/AVC video using the FFmpeg encoder.
-	media-video/filebot : Java-based tools to rename TV shows, download subtitles, and validate checksums.
 	media-video/h264enc : h264enc is an advanced and powerful interactive menu-driven shell script written for the GNU/Linux operating system to encode video files
 	net-dialup/dterm : dterm is a simple terminal emulator for serial connections.
 	net-dns/ndjbdns : Fork of djbdns, a collection of DNS client/server software.
-	sys-apps/cpuid : Utility to get detailed information about CPU(s) using the CPUID instruction.
 	sys-apps/hw-probe : A tool to probe system hardware, check operability and upload results.
 	sys-fs/exfat-nofuse : Non-fuse kernel driver for exFat and VFat file systems.
 	sys-fs/exfat-utils-nofuse : exFAT filesystem utilities (without fuse).
