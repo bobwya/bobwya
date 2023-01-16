@@ -1,11 +1,9 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-# shellcheck disable=SC2034
+EAPI=8
 
-EAPI=7
-
-inherit readme.gentoo-r1
+inherit optfeature readme.gentoo-r1
 
 DESCRIPTION="A tool to probe for hardware, check it's operability and find drivers"
 HOMEPAGE="https://github.com/linuxhw/hw-probe/"
@@ -15,17 +13,14 @@ MY_P="${PN}-${MY_PV}"
 
 if [[ "${PV}" == "9999" ]]; then
 	EGIT_REPO_URI="https://github.com/linuxhw/${PN}.git"
-	SRC_URI=""
-	KEYWORDS=""
 	inherit git-r3
 else
-	SRC_URI="https://github.com/linuxhw/hw-probe/archive/${MY_PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="-* ~amd64 ~ppc ~x86 ~arm-linux ~x86-linux"
+	SRC_URI="https://github.com/linuxhw/hw-probe/archive/ref/tags/${MY_PV}.tar.gz -> ${P}.tar.gz"
+	KEYWORDS="-* ~amd64 ~arm64 ~x86"
 fi
 
 LICENSE="LGPL-2.1+"
 SLOT="0"
-KEYWORDS="~amd64 ~x86"
 
 RDEPEND="
 	dev-lang/perl
@@ -39,8 +34,6 @@ RDEPEND="
 	sys-apps/usbutils
 	virtual/perl-Data-Dumper
 "
-
-S="${WORKDIR}/${MY_P}"
 
 src_compile() {
 	:;
@@ -57,6 +50,7 @@ pkg_postinst() {
 
 	optfeature "showing Machine Check Exceptions." app-admin/mcelog
 	optfeature "showing additional I/O statistics." app-admin/sysstat
+	optfeature "showing display data channel (ddc) information." app-misc/ddcutil
 	optfeature "showing smart card (reader) information." dev-libs/opensc
 	optfeature "showing Vulkan GPU hardware information." dev-util/vulkan-tools
 	optfeature "showing information of attached scanners." media-gfx/sane-backends
