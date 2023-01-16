@@ -1,14 +1,15 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright  Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-EAPI="8"
+EAPI=8
 
-FIREFOX_PATCHSET="firefox-91esr-patches-10j.tar.xz"
+FIREFOX_PATCHSET="firefox-102esr-patches-07j.tar.xz"
+MOZ_KDE_PATCHSET="mozilla-kde-opensuse-patchset-${P}"
 
-LLVM_MAX_SLOT=14
+LLVM_MAX_SLOT=15
 
-PYTHON_COMPAT=( python3_{8..10} )
+PYTHON_COMPAT=( python3_{9..11} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
 
 WANT_AUTOCONF="2.1"
@@ -19,14 +20,6 @@ MOZ_ESR=yes
 
 MOZ_PV=${PV}
 MOZ_PV_SUFFIX=
-if [[ ${PV} =~ (_(alpha|beta|rc).*)$ ]]; then
-	MOZ_PV_SUFFIX=${BASH_REMATCH[1]}
-
-	# Convert the ebuild version to the upstream Mozilla version
-	MOZ_PV="${MOZ_PV/_alpha/a}" # Handle alpha for SRC_URI
-	MOZ_PV="${MOZ_PV/_beta/b}"  # Handle beta for SRC_URI
-	MOZ_PV="${MOZ_PV%%_rc*}"    # Handle rc for SRC_URI
-fi
 
 if [[ -n ${MOZ_ESR} ]]; then
 	# ESR releases have slightly different version numbers
@@ -42,15 +35,13 @@ inherit autotools check-reqs desktop flag-o-matic gnome2-utils linux-info llvm m
 	pax-utils python-any-r1 toolchain-funcs virtualx xdg
 
 MOZ_SRC_BASE_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases/${MOZ_PV}"
-
-if [[ ${PV} == *_rc* ]]; then
-	MOZ_SRC_BASE_URI="https://archive.mozilla.org/pub/${MOZ_PN}/candidates/${MOZ_PV}-candidates/build${PV##*_rc}"
-fi
+MOZ_KDE_OPENSUSE_BASE_URI="https://github.com/bobwya/mozilla-kde-opensuse-patchset"
 
 PATCH_URIS=( "https://dev.gentoo.org/"~{polynomial-c,whissi}"/mozilla/patchsets/${FIREFOX_PATCHSET}" )
 # shellcheck disable=SC2124
-SRC_URI="${MOZ_SRC_BASE_URI}/source/${MOZ_P}.source.tar.xz -> ${MOZ_P_DISTFILES}.source.tar.xz
-	${PATCH_URIS[@]}"
+SRC_URI="${MOZ_SRC_BASE_URI}/source/${MOZ_P}.source.tar.xz
+	${PATCH_URIS[@]}
+	kde? ( ${MOZ_KDE_OPENSUSE_BASE_URI}/raw/main/${MOZ_KDE_PATCHSET}.tar.xz )"
 
 DESCRIPTION="Firefox Web Browser, with SUSE patchset, to provide better KDE integration"
 HOMEPAGE="https://www.mozilla.com/firefox
@@ -62,111 +53,110 @@ SLOT="esr"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 
 IUSE="+clang cpu_flags_arm_neon dbus debug eme-free hardened hwaccel kde"
-IUSE+=" jack lto +openh264 pgo pulseaudio sndio selinux"
-IUSE+=" +system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent +system-libvpx system-png +system-webp"
+IUSE+=" jack libproxy lto +openh264 pgo pulseaudio sndio selinux"
+IUSE+=" +system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent +system-libvpx system-png system-python-libs +system-webp"
 IUSE+=" wayland wifi"
 
 # Firefox-only IUSE
-IUSE+=" geckodriver"
-IUSE+=" +gmp-autoupdate"
-IUSE+=" screencast"
+IUSE+=" geckodriver +gmp-autoupdate screencast"
 
 REQUIRED_USE="debug? ( !system-av1 )
 	pgo? ( lto )
+	wayland? ( dbus )
 	wifi? ( dbus )"
 
 # Firefox-only REQUIRED_USE flags
 REQUIRED_USE+=" screencast? ( wayland )"
 
+FF_ONLY_DEPEND="!www-client/firefox:0
+	!www-client/firefox:rapid
+	screencast? ( media-video/pipewire:= )
+	selinux? ( sec-policy/selinux-mozilla )"
 BDEPEND="${PYTHON_DEPS}
-	app-arch/unzip
-	app-arch/zip
-	>=dev-util/cbindgen-0.24.0
-	>=net-libs/nodejs-10.23.1
-	virtual/pkgconfig
-	>=virtual/rust-1.51.0
 	|| (
 		(
-			sys-devel/clang:14
-			sys-devel/llvm:14
+			sys-devel/clang:15
+			sys-devel/llvm:15
 			clang? (
-				=sys-devel/lld-14*
-				pgo? ( =sys-libs/compiler-rt-sanitizers-14*[profile] )
-			sys-devel/clang:14
-			)
-		)
-		(
-			sys-devel/clang:13
-			sys-devel/llvm:13
-			clang? (
-				=sys-devel/lld-13*
-				pgo? ( =sys-libs/compiler-rt-sanitizers-13*[profile] )
+				sys-devel/lld:15
+				virtual/rust:0/llvm-15
+				pgo? ( =sys-libs/compiler-rt-sanitizers-15*[profile] )
 			)
 		)
 	)
-	amd64? ( >=dev-lang/nasm-2.13 )
-	x86? ( >=dev-lang/nasm-2.13 )"
+	!clang? ( virtual/rust )
+	app-arch/unzip
+	app-arch/zip
+	>=dev-util/cbindgen-0.24.3
+	net-libs/nodejs
+	virtual/pkgconfig
+	amd64? ( >=dev-lang/nasm-2.14 )
+	x86? ( >=dev-lang/nasm-2.14 )"
 
-COMMON_DEPEND="
-	>=dev-libs/nss-3.68
-	>=dev-libs/nspr-4.32
-	dev-libs/atk
+COMMON_DEPEND="${FF_ONLY_DEPEND}
+	>=app-accessibility/at-spi2-core-2.46.0:2
 	dev-libs/expat
-	>=x11-libs/cairo-1.10[X]
-	>=x11-libs/gtk+-3.4.0:3[X]
-	x11-libs/gdk-pixbuf
-	>=x11-libs/pango-1.22.0
-	>=media-libs/mesa-10.2:*
+	dev-libs/glib:2
+	dev-libs/libffi:=
+	>=dev-libs/nss-3.79.2
+	>=dev-libs/nspr-4.34
+	media-libs/alsa-lib
 	media-libs/fontconfig
-	>=media-libs/freetype-2.4.10
-	kernel_linux? ( !pulseaudio? ( media-libs/alsa-lib ) )
-	virtual/freedesktop-icon-theme
-	>=x11-libs/pixman-0.19.2
-	>=dev-libs/glib-2.26:2
-	>=sys-libs/zlib-1.2.3
-	>=dev-libs/libffi-3.0.10:=
+	media-libs/freetype
+	media-libs/mesa
 	media-video/ffmpeg
+	sys-libs/zlib
+	virtual/freedesktop-icon-theme
+	virtual/opengl
+	x11-libs/cairo[X]
+	x11-libs/gdk-pixbuf
+	x11-libs/gtk+:3[X]
 	x11-libs/libX11
-	x11-libs/libxcb:=
 	x11-libs/libXcomposite
 	x11-libs/libXdamage
 	x11-libs/libXext
 	x11-libs/libXfixes
-	x11-libs/libXrender
-	x11-libs/libXt
+	x11-libs/libXrandr
+	x11-libs/libXtst
+	x11-libs/libxcb:=
+	x11-libs/libxkbcommon[X]
+	x11-libs/pango
+	x11-libs/pixman
 	dbus? (
-		sys-apps/dbus
 		dev-libs/dbus-glib
+		sys-apps/dbus
 	)
-	screencast? ( media-video/pipewire:= )
+	jack? ( virtual/jack )
+	libproxy? ( net-libs/libproxy )
+	sndio? ( >=media-sound/sndio-1.8.0-r1 )
 	system-av1? (
-		>=media-libs/dav1d-0.8.1:=
+		>=media-libs/dav1d-1.0.0:=
 		>=media-libs/libaom-1.0.0:=
 	)
 	system-harfbuzz? (
-		>=media-libs/harfbuzz-2.8.1:0=
 		>=media-gfx/graphite2-1.3.13
+		>=media-libs/harfbuzz-2.8.1:0=
 	)
-	system-icu? ( >=dev-libs/icu-69.1:= )
+	system-icu? ( >=dev-libs/icu-71.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
-	system-libevent? ( >=dev-libs/libevent-2.0:0=[threads] )
+	system-libevent? ( >=dev-libs/libevent-2.1.12:0=[threads] )
 	system-libvpx? ( >=media-libs/libvpx-1.8.2:0=[postproc] )
 	system-png? ( >=media-libs/libpng-1.6.35:0=[apng] )
 	system-webp? ( >=media-libs/libwebp-1.1.0:0= )
+	wayland? (
+		x11-libs/gtk+:3[wayland]
+		x11-libs/libdrm
+		x11-libs/libxkbcommon[wayland]
+	)
 	wifi? (
 		kernel_linux? (
-			sys-apps/dbus
 			dev-libs/dbus-glib
 			net-misc/networkmanager
+			sys-apps/dbus
 		)
-	)
-	jack? ( virtual/jack )
-	selinux? ( sec-policy/selinux-mozilla )
-	sndio? ( media-sound/sndio )"
+	)"
 
 RDEPEND="${COMMON_DEPEND}
-	!www-client/firefox:0
-	!www-client/firefox:rapid
 	jack? ( virtual/jack )
 	kde? ( kde-misc/kmozillahelper )
 	openh264? ( media-libs/openh264:*[plugin] )
@@ -175,8 +165,7 @@ RDEPEND="${COMMON_DEPEND}
 			media-sound/pulseaudio
 			>=media-sound/apulse-0.1.12-r4
 		)
-	)
-	selinux? ( sec-policy/selinux-mozilla )"
+	)"
 
 DEPEND="${COMMON_DEPEND}
 	x11-libs/libICE
@@ -186,10 +175,7 @@ DEPEND="${COMMON_DEPEND}
 			media-sound/pulseaudio
 			>=media-sound/apulse-0.1.12-r4[sdk]
 		)
-	)
-	wayland? ( >=x11-libs/gtk+-3.11:3[wayland] )
-	amd64? ( virtual/opengl )
-	x86? ( virtual/opengl )"
+	)"
 
 S="${WORKDIR}/${PN}-${PV%_*}"
 
@@ -200,20 +186,26 @@ if [[ -z "${MOZ_GMP_PLUGIN_LIST+set}" ]]; then
 fi
 
 llvm_check_deps() {
+	local -r llvm_message="Cannot use LLVM slot ${LLVM_SLOT} ..."
 	if ! has_version -b "sys-devel/clang:${LLVM_SLOT}"; then
-		einfo "sys-devel/clang:${LLVM_SLOT} is missing! Cannot use LLVM slot ${LLVM_SLOT} ..." >&2
+		einfo "sys-devel/clang:${LLVM_SLOT} is missing! ${llvm_message}" >&2
 		return 1
 	fi
 
 	if use clang; then
-		if ! has_version -b "=sys-devel/lld-${LLVM_SLOT}*"; then
-			einfo "=sys-devel/lld-${LLVM_SLOT}* is missing! Cannot use LLVM slot ${LLVM_SLOT} ..." >&2
+		if ! has_version -b "sys-devel/lld:${LLVM_SLOT}"; then
+			einfo "sys-devel/lld:${LLVM_SLOT} is missing! ${llvm_message}" >&2
+			return 1
+		fi
+
+		if ! has_version -b "virtual/rust:0/llvm-${LLVM_SLOT}"; then
+			einfo "virtual/rust:0/llvm-${LLVM_SLOT} is missing! ${llvm_message}" >&2
 			return 1
 		fi
 
 		if use pgo; then
-			if ! has_version -b "=sys-libs/compiler-rt-sanitizers-${LLVM_SLOT}*"; then
-				einfo "=sys-libs/compiler-rt-sanitizers-${LLVM_SLOT}* is missing! Cannot use LLVM slot ${LLVM_SLOT} ..." >&2
+			if ! has_version -b "=sys-libs/compiler-rt-sanitizers-${LLVM_SLOT}*[profile]"; then
+				einfo "=sys-libs/compiler-rt-sanitizers-${LLVM_SLOT}*[profile] is missing! ${llvm_message}" >&2
 				return 1
 			fi
 		fi
@@ -223,12 +215,12 @@ llvm_check_deps() {
 }
 
 MOZ_LANGS=(
-	"af" "ar" "ast" "be" "bg" "br" "ca" "cak" "cs" "cy" "da" "de" "dsb"
-	"el" "en-CA" "en-GB" "en-US" "es-AR" "es-ES" "et" "eu"
-	"fi" "fr" "fy-NL" "ga-IE" "gd" "gl" "he" "hr" "hsb" "hu"
-	"id" "is" "it" "ja" "ka" "kab" "kk" "ko" "lt" "lv" "ms" "nb-NO" "nl" "nn-NO"
-	"pa-IN" "pl" "pt-BR" "pt-PT" "rm" "ro" "ru"
-	"sk" "sl" "sq" "sr" "sv-SE" "th" "tr" "uk" "uz" "vi" "zh-CN" "zh-TW"
+	af ar ast be bg br ca cak cs cy da de dsb
+	el en-CA en-GB en-US es-AR es-ES et eu
+	fi fr fy-NL ga-IE gd gl he hr hsb hu
+	id is it ja ka kab kk ko lt lv ms nb-NO nl nn-NO
+	pa-IN pl pt-BR pt-PT rm ro ru
+	sk sl sq sr sv-SE th tr uk uz vi zh-CN zh-TW
 )
 
 # Firefox-only LANGS
@@ -338,7 +330,11 @@ moz_install_xpi() {
 
 		# Determine extension ID
 		if [[ -f "${xpi_tmp_dir}/install.rdf" ]]; then
-			emid="$(sed -n -e '/install-manifest/,$ { /em:id/!d; s/.*[\">]\([^\"<>]*\)[\"<].*/\1/; p; q }' "${xpi_tmp_dir}/install.rdf")"
+			emid="$(
+				sed -n \
+					-e '/install-manifest/,$ { /em:id/!d; s/.*[\">]\([^\"<>]*\)[\"<].*/\1/; p; q }' \
+					"${xpi_tmp_dir}/install.rdf" \
+			)"
 			[[ -z "${emid}" ]] && die "failed to determine extension id from install.rdf"
 		elif [[ -f "${xpi_tmp_dir}/manifest.json" ]] ; then
 			emid="$(sed -n -e 's/.*"id": "\([^"]*\)".*/\1/p' "${xpi_tmp_dir}/manifest.json")"
@@ -427,7 +423,7 @@ pkg_pretend() {
 		if use pgo || use lto || use debug; then
 			CHECKREQS_DISK_BUILD="13500M"
 		else
-			CHECKREQS_DISK_BUILD="6400M"
+			CHECKREQS_DISK_BUILD="6600M"
 		fi
 
 		check-reqs_pkg_pretend
@@ -482,13 +478,6 @@ pkg_setup() {
 				eerror " llvm/clang/lld/rust chain depending on your @world updates)"
 				die "LLVM version used by Rust (${version_llvm_rust}) does not match with ld.lld version (${version_lld})!"
 			fi
-		fi
-
-		if ! use clang && [[ "$(gcc-major-version)" -eq 11 ]] \
-			&& ! has_version -b ">sys-devel/gcc-11.1.0:11" ; then
-			# bug 792705
-			eerror "Using GCC 11 to compile firefox is currently known to be broken (see bug #792705)."
-			die "Set USE=clang or select <gcc-11 to build ${CATEGORY}/${P}."
 		fi
 
 		python-any-r1_pkg_setup
@@ -593,26 +582,14 @@ src_prepare() {
 		rm -v "${WORKDIR}/firefox-patches/"*-LTO-Only-enable-LTO-*.patch || die "rm failed"
 	fi
 	if use kde; then
-		# Toolkit OpenSUSE KDE integration patchset
-		eapply "${FILESDIR}/${P}-mozilla-kde-"*".patch"
-		eapply "${FILESDIR}/${P}-mozilla-nongnome-proxies.patch"
-		# Firefox OpenSUSE KDE integration patchset
-		eapply "${FILESDIR}/${P}-firefox-branded-icons.patch"
-		eapply "${FILESDIR}/${P}-firefox-kde.patch"
+		# OpenSUSE KDE integration patchset
+		eapply "${WORKDIR}/${MOZ_KDE_PATCHSET}"
 		# Uncomment the next line to enable KDE support debugging (additional console output)...
 		#eapply "${FILESDIR}/${PN}-kde-debug.patch"
 		# Uncomment the following patch line to force Plasma/Qt file dialog for Firefox...
 		#eapply "${FILESDIR}/${PN}-force-qt-dialog.patch"
 		# ... _OR_ install the patch file as a User patch (/etc/portage/patches/www-client/firefox/)
 		# ... _OR_ add to your user .xinitrc: "xprop -root -f KDE_FULL_SESSION 8s -set KDE_FULL_SESSION true"
-	fi
-
-	if use system-av1 && has_version "<media-libs/dav1d-1.0.0"; then
-		rm -v "${WORKDIR}/firefox-patches/0033-bgo-835788-dav1d-1.0.0-support.patch" || die "rm failed"
-		elog "<media-libs/dav1d-1.0.0 detected, removing 1.0.0 compat patch."
-	elif ! use system-av1; then
-		rm -v "${WORKDIR}/firefox-patches/0033-bgo-835788-dav1d-1.0.0-support.patch" || die "rm failed"
-		elog "-system-av1 USE flag detected, removing 1.0.0 compat patch."
 	fi
 
 	eapply "${WORKDIR}/firefox-patches"
@@ -654,8 +631,8 @@ src_prepare() {
 	einfo "Removing pre-built binaries ..."
 	find "${S}/third_party" -type f \( -name '*.so' -o -name '*.o' \) -print -delete || die
 
-	# Clearing checksums where we have applied patches
-	moz_clear_vendor_checksums target-lexicon-0.9.0
+	# Clearing crate checksums where we have applied patches
+	moz_clear_vendor_checksums bindgen
 
 	# Create build dir
 	BUILD_DIR="${WORKDIR}/${PN}_build"
@@ -679,10 +656,12 @@ src_configure() {
 
 	local have_switched_compiler
 	have_switched_compiler=
-	if use clang && ! tc-is-clang; then
+	if use clang; then
 		# Force clang
 		einfo "Enforcing the use of clang due to USE=clang ..."
-		have_switched_compiler=yes
+		if tc-is-gcc; then
+			have_switched_compiler=yes
+		fi
 		AR=llvm-ar
 		CC="${CHOST}-clang"
 		CXX="${CHOST}-clang++"
@@ -710,7 +689,9 @@ src_configure() {
 	export HOST_CC
 	HOST_CXX="$(tc-getBUILD_CXX)"
 	export HOST_CXX
-	tc-export CC CXX LD AR NM OBJDUMP RANLIB PKG_CONFIG
+	AS="$(tc-getCC) -c"
+	export AS
+	tc-export CC CXX LD AR AS NM OBJDUMP RANLIB PKG_CONFIG
 
 	# Pass the correct toolchain paths through cbindgen
 	if tc-is-cross-compiler; then
@@ -745,9 +726,13 @@ src_configure() {
 		--allow-addon-sideload \
 		--disable-cargo-incremental \
 		--disable-crashreporter \
+		--disable-gpsd \
 		--disable-install-strip \
+		--disable-parental-controls \
 		--disable-strip \
 		--disable-updater \
+		--enable-negotiateauth \
+		--enable-new-pass-manager \
 		--enable-official-branding \
 		--enable-release \
 		--enable-system-ffi \
@@ -757,6 +742,7 @@ src_configure() {
 		--prefix="${EPREFIX}/usr" \
 		--target="${CHOST}" \
 		--without-ccache \
+		--without-wasm-sandboxed-libraries \
 		--with-intl-api \
 		--with-libclang-path="$(llvm-config --libdir)" \
 		--with-system-nspr \
@@ -779,6 +765,15 @@ src_configure() {
 
 	if (( is_arch_simd_arch && is_rust_simd_supported )); then
 		mozconfig_add_options_ac '' --enable-rust-simd
+	fi
+
+	# For future keywording: This is currently (97.0) only supported on:
+	# amd64, arm, arm64 & x86.
+	# Might want to flip the logic around if Firefox is to support more arches.
+	if use ppc64; then
+		mozconfig_add_options_ac '' --disable-sandbox
+	else
+		mozconfig_add_options_ac '' --enable-sandbox
 	fi
 
 	if [[ -s "${S}/api-google.key" ]]; then
@@ -825,12 +820,13 @@ src_configure() {
 	mozconfig_use_with system-harfbuzz system-graphite2
 	mozconfig_use_with system-icu
 	mozconfig_use_with system-jpeg
-	mozconfig_use_with system-libevent system-libevent "${ESYSROOT}/usr"
+	mozconfig_use_with system-libevent
 	mozconfig_use_with system-libvpx
 	mozconfig_use_with system-png
 	mozconfig_use_with system-webp
 
 	mozconfig_use_enable dbus
+	mozconfig_use_enable libproxy
 
 	use eme-free && mozconfig_add_options_ac '+eme-free' --disable-eme
 
@@ -841,22 +837,21 @@ src_configure() {
 		append-ldflags "-Wl,-z,relro -Wl,-z,now"
 	fi
 
-	mozconfig_use_enable jack
+	local myaudiobackends
+	myaudiobackends=""
+	use jack && myaudiobackends+="jack,"
+	use sndio && myaudiobackends+="sndio,"
+	use pulseaudio && myaudiobackends+="pulseaudio,"
+	! use pulseaudio && myaudiobackends+="alsa,"
 
-	mozconfig_use_enable pulseaudio
-	# force the deprecated alsa sound code if pulseaudio is disabled
-	if use kernel_linux && ! use pulseaudio; then
-		mozconfig_add_options_ac '-pulseaudio' --enable-alsa
-	fi
-
-	mozconfig_use_enable sndio
+	mozconfig_add_options_ac '--enable-audio-backends' --enable-audio-backends="${myaudiobackends::-1}"
 
 	mozconfig_use_enable wifi necko-wifi
 
 	if use wayland; then
-		mozconfig_add_options_ac '+wayland' --enable-default-toolkit=cairo-gtk3-wayland
+		mozconfig_add_options_ac '+x11+wayland' --enable-default-toolkit=cairo-gtk3-x11-wayland
 	else
-		mozconfig_add_options_ac '' --enable-default-toolkit=cairo-gtk3
+		mozconfig_add_options_ac '+x11' --enable-default-toolkit=cairo-gtk3
 	fi
 
 	if use lto; then
@@ -865,10 +860,8 @@ src_configure() {
 			mozconfig_add_options_ac "forcing ld=lld due to USE=clang and USE=lto" --enable-linker=lld
 
 			mozconfig_add_options_ac '+lto' --enable-lto=cross
-		else
-			# ld.gold is known to fail:
-			# /usr/lib/gcc/x86_64-pc-linux-gnu/11.2.1/../../../../x86_64-pc-linux-gnu/bin/ld.gold: internal error in set_xindex, at /var/tmp/portage/sys-devel/binutils-2.37_p1-r1/work/binutils-2.37/gold/object.h:1050
 
+		else
 			# ThinLTO is currently broken, see bmo#1644409
 			mozconfig_add_options_ac '+lto' --enable-lto=full
 			mozconfig_add_options_ac "linker is set to bfd" --enable-linker=bfd
@@ -986,7 +979,7 @@ src_configure() {
 			if use clang; then
 				# Nothing to do
 				:;
-			elif tc-ld-is-gold || use lto ; then
+			elif use lto ; then
 				append-ldflags -Wl,--no-keep-memory
 			else
 				append-ldflags -Wl,--no-keep-memory -Wl,--reduce-memory-overheads
@@ -1010,10 +1003,16 @@ src_configure() {
 	export MOZ_MAKE_FLAGS
 
 	# Use system's Python environment
-	MACH_USE_SYSTEM_PYTHON=1
-	export MACH_USE_SYSTEM_PYTHON
-	PIP_NO_CACHE_DIR=off
-	export PIP_NO_CACHE_DIR
+	PIP_NETWORK_INSTALL_RESTRICTED_VIRTUALENVS=mach
+	export PIP_NETWORK_INSTALL_RESTRICTED_VIRTUALENVS
+
+	if use system-python-libs; then
+		MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE="system"
+	export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE
+	else
+		MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE="none"
+	export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE
+	fi
 
 	# Disable notification when build system has finished
 	MOZ_NOSPAM=1
@@ -1119,9 +1118,19 @@ src_install() {
 
 	# Force hwaccel prefs if USE=hwaccel is enabled
 	if use hwaccel; then
-		cat "${FILESDIR}/gentoo-hwaccel-prefs.js" \
+		cat "${FILESDIR}/gentoo-hwaccel-prefs.js-r2" \
 		>>"${GENTOO_PREFS}" \
 		|| die "failed to add prefs to force hardware-accelerated rendering to all-gentoo.js"
+
+		if use wayland; then
+			cat >>"${GENTOO_PREFS}" <<-EOF || die "failed to set hwaccel wayland prefs"
+			pref("gfx.x11-egl.force-enabled", false);
+			EOF
+		else
+			cat >>"${GENTOO_PREFS}" <<-EOF || die "failed to set hwaccel x11 prefs"
+			pref("gfx.x11-egl.force-enabled", true);
+			EOF
+		fi
 	fi
 
 	if ! use gmp-autoupdate; then
@@ -1187,7 +1196,7 @@ src_install() {
 	local desktop_file
 	desktop_file="${FILESDIR}/icon/${PN}-r3.desktop"
 	local desktop_filename
-	desktop_filename="${PN}.desktop"
+	desktop_filename="${PN}-esr.desktop"
 	local exec_command
 	exec_command="${PN}"
 	local icon
@@ -1324,4 +1333,20 @@ pkg_postinst() {
 		elog "If you still want to be able to select between running Mozilla ${PN^}"
 		elog "on X11 or Wayland, you have to re-create these shortcuts on your own."
 	fi
+
+	# bug 835078
+	if use hwaccel && has_version "x11-drivers/xf86-video-nouveau"; then
+		ewarn "You have nouveau drivers installed in your system and 'hwaccel' "
+		ewarn "enabled for Firefox. Nouveau / your GPU might not support the "
+		ewarn "required EGL, so either disable 'hwaccel' or try the workaround "
+		ewarn "explained in https://bugs.gentoo.org/835078#c5 if Firefox crashes."
+	fi
+
+	elog
+	elog "Unfortunately Firefox-100.0 breaks compatibility with some sites using "
+	elog "useragent checks. To temporarily fix this, enter about:config and modify "
+	elog "network.http.useragent.forceVersion preference to \"99\"."
+	elog "Or install an addon to change your useragent."
+	elog "See: https://support.mozilla.org/en-US/kb/difficulties-opening-or-using-website-firefox-100"
+	elog
 }
