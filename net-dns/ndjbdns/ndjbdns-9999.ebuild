@@ -1,9 +1,8 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
-
-EAPI=6
+EAPI=8
 
 inherit autotools
 
@@ -13,7 +12,6 @@ HOMEPAGE="http://pjp.dgplug.org/djbdns/index.html"
 if [ "${PV}" == "9999" ]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://github.com/pjps/${PN}.git"
-	SRC_URI=""
 else
 	COMMIT_ID="64d371b6f887621de7bf8bd495be10442b2accd0"
 	SRC_URI="https://github.com/pjps/${PN}/archive/${COMMIT_ID}.tar.gz -> ${P}.tar.gz"
@@ -45,6 +43,6 @@ src_prepare() {
 
 src_configure() {
 	# Fix installation directory for systemd units
-	local -a econf_args=( "--prefix=${EPREFIX%/}" )
+	local -a econf_args=( "--prefix=${EPREFIX}" )
 	econf "${econf_args[@]}"
 }
