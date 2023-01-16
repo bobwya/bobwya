@@ -1,21 +1,19 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
-inherit desktop gnome2-utils qmake-utils
+inherit desktop qmake-utils xdg-utils
 
 DESCRIPTION="Qt5-based GPU overclocking tool"
 HOMEPAGE="https://github.com/Lurkki14/tuxclocker"
 
-if [[ ${PV} == "9999" ]] ; then
+if [[ "${PV}" == "9999" ]] ; then
 	EGIT_REPO_URI="https://github.com/Lurkki14/${PN}.git"
 	inherit git-r3
-	SRC_URI=""
-	#KEYWORDS=""
 else
 	SRC_URI="https://github.com/Lurkki14/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~amd64 ~x86"
+	KEYWORDS="-* ~amd64"
 fi
 
 LICENSE="GPL-3"
@@ -26,7 +24,7 @@ COMMON_DEPEND="
 	dev-qt/qtcore:5
 	dev-qt/qtgui:5
 	dev-qt/qtwidgets:5
-	x11-drivers/nvidia-drivers[driver,static-libs,tools]
+	x11-drivers/nvidia-drivers:*[driver,static-libs,tools]
 "
 DEPEND="${COMMON_DEPEND}"
 RDEPEND="${COMMON_DEPEND}"
@@ -45,9 +43,6 @@ src_install() {
 }
 
 pkg_postinst() {
-	gnome2_icon_cache_update
-}
-
-pkg_postrm() {
-	gnome2_icon_cache_update
+	xdg_icon_cache_update
+	xdg_mimeinfo_database_update
 }
