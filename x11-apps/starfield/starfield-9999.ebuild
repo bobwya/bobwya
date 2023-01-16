@@ -1,18 +1,16 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
+EAPI=8
 
 inherit toolchain-funcs
 
 DESCRIPTION="Reminiscence to the screensaver that shipped until WinXP..."
 HOMEPAGE="https://github.com/luebking/starfield"
 
-if [[ ${PV} == 9999 ]]; then
+if [[ "${PV}" == "9999" ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://github.com/luebking/${PN}.git"
-	SRC_URI=""
-	KEYWORDS=""
 else
 	# Yes Lübking we are waiting for RC1!!
 	SRC_URI="https://github.com/luebking/${PN}/releases/download/${PV}/${P}.tar.gz"
