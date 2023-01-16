@@ -1,7 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
-	<longdescription>inxi is a perl script to print system information. It was originally forked from infobash.</longdescription>
+	<longdescription>
+inxi is a perl-based command line system information tool.
+It was forked from infobash, by locsmif. 
+
+inxi is lower case, except when I create a text header here in a file like this, 
+but it's always lower case. Sometimes to follow convention I will use upper case 
+inxi to start a sentence, but i find it a bad idea since invariably, someone 
+will repeat that and type it in as the command name, then someone will copy 
+that, and complain that the command: Inxi doesn't exist...
+
+The primary purpose of inxi is for support, and sys admin use. inxi is used 
+widely for forum and IRC support, which is I believe it's most common function.
+
+If you are piping output to paste or post (or writing to file), inxi now 
+automatically turns off color codes, so the inxi 2.3.xx and older suggestion to 
+use -c 0 to turn off colors is no longer required.
+
+inxi strives to be as accurate as possible, but some things, like memory/ram 
+data, depend on radically unreliable system self reporting based on OEM filling 
+out data correctly, which doesn't often happen, so in those cases, you want to 
+confirm things like ram capacity with a reputable hardware source, like 
+crucial.com, which has the best ram hardware tool I know of.
+	</longdescription>
 	<upstream>
 		<remote-id type="github">smxi/inxi</remote-id>
 	</upstream>
