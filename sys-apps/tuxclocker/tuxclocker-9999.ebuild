@@ -20,6 +20,8 @@ LICENSE="GPL-3"
 SLOT="0"
 IUSE=""
 
+REQUIRED_USE="elibc_glibc"
+
 COMMON_DEPEND="
 	dev-qt/qtcore:5
 	dev-qt/qtgui:5
