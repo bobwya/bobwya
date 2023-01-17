@@ -13,7 +13,7 @@ SRC_URI="${MP_P}.zip"
 
 LICENSE="Nero-AAC-EULA"
 SLOT="0"
-KEYWORDS="amd64 ~ppc x86"
+KEYWORDS="amd64 ppc x86"
 IUSE="doc"
 
 RDEPEND=""
