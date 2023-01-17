@@ -1,0 +1,11 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=1.0
+Type=Application
+Name=RenameMyTVSeries
+GenericName=Rename My TV Series
+Comment=Utility to rename TV Series, using TheTVDB
+Categories=Utility;
+Terminal=false
+Icon=renamemytvseries
+Exec=renamemytvseries
