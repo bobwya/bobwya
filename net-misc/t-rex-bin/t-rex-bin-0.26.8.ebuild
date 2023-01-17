@@ -15,10 +15,10 @@ SRC_URI="https://trex-miner.com/download/${MY_P}-linux.tar.gz -> ${P}.tar.gz"
 LICENSE="all-rights-reserved"
 SLOT="0"
 KEYWORDS="-* ~amd64"
-IUSE=""
+IUSE="+video_cards_nvidia"
 
 DEPEND=""
-RDEPEND="x11-drivers/nvidia-drivers"
+RDEPEND="video_cards_nvidia? ( x11-drivers/nvidia-drivers )"
 
 EXE_DIR="/opt/${MY_PN}"
 EXE_PATH="${EXE_DIR}/${MY_PN}"
