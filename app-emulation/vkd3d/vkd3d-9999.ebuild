@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=8
 
-inherit autotools multilib-minimal
+inherit autotools multibuild multilib-minimal
 
 if [[ "${PV}" == "9999" ]]; then
 	EGIT_REPO_URI="https://source.winehq.org/git/vkd3d.git"
