@@ -1,4 +1,4 @@
-# Copyright  Gentoo Authors
+# Copyright 2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -691,7 +691,7 @@ src_configure() {
 	# Pass the correct toolchain paths through cbindgen
 	if tc-is-cross-compiler; then
 		BINDGEN_CFLAGS="${SYSROOT:+--sysroot=${ESYSROOT}} --target=${CHOST} ${BINDGEN_CFLAGS-}"
-	export BINDGEN_CFLAGS
+		export BINDGEN_CFLAGS
 	fi
 
 	# Set MOZILLA_FIVE_HOME
@@ -868,7 +868,7 @@ src_configure() {
 			if use clang; then
 				# Used in build/pgo/profileserver.py
 				LLVM_PROFDATA="llvm-profdata"
-	export LLVM_PROFDATA
+				export LLVM_PROFDATA
 			fi
 		fi
 	else
@@ -1003,10 +1003,10 @@ src_configure() {
 
 	if use system-python-libs; then
 		MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE="system"
-	export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE
+		export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE
 	else
 		MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE="none"
-	export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE
+		export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE
 	fi
 
 	# Disable notification when build system has finished
