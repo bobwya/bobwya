@@ -12,7 +12,7 @@ else
 fi
 
 DESCRIPTION="A utility for downloading programmes from BBC iPlayer and BBC Sounds"
-HOMEPAGE="http://linuxcentre.net/get_iplayer/"
+HOMEPAGE="https://github.com/get-iplayer/get_iplayer"
 
 LICENSE="GPL-3"
 SLOT="0"
