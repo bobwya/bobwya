@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=8
 
-FIREFOX_PATCHSET="firefox-102esr-patches-08j.tar.xz"
+FIREFOX_PATCHSET="firefox-102esr-patches-09jtb.tar.xz"
 MOZ_KDE_PATCHSET="mozilla-kde-opensuse-patchset-${P}"
 
 LLVM_MAX_SLOT=15
@@ -769,6 +769,10 @@ src_configure() {
 	if use system-librnp; then
 		mozconfig_add_options_ac "+system-librnp" --enable-compile-environment
 		mozconfig_use_with system-librnp
+	else
+		# This controls the backend of the bundled librnp. Choices are "botan" and "openssl".
+		# RNP Upstream recommends to use botan. In Gentoo it's preferred to use system-librnp.
+		mozconfig_add_options_ac "+bundled librnp backend = botan" --with-librnp-backend="botan"
 	fi
 
 	mozconfig_use_enable dbus
@@ -1234,6 +1238,8 @@ pkg_postinst() {
 		ewarn "explained in https://bugs.gentoo.org/835078#c5 if Firefox crashes."
 	fi
 
-	optfeature_header "Optional runtime features:"
+	optfeature_header "Optional programs for extra features:"
+	optfeature "desktop notifications" x11-libs/libnotify
 	optfeature "encrypted chat support" net-libs/libotr
+	optfeature "fallback mouse cursor theme e.g. on WMs" gnome-base/gsettings-desktop-schemas
 }
