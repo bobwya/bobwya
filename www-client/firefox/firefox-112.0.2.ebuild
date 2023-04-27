@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=8
 
-FIREFOX_PATCHSET="firefox-111-patches-01j.tar.xz"
+FIREFOX_PATCHSET="firefox-112-patches-06.tar.xz"
 MOZ_KDE_PATCHSET="mozilla-kde-opensuse-patchset-${P}"
 
 LLVM_MAX_SLOT=15
@@ -55,7 +55,7 @@ LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="+clang cpu_flags_arm_neon dbus debug eme-free hardened hwaccel kde"
 IUSE+=" jack libproxy lto +openh264 pgo pulseaudio sndio selinux"
 IUSE+=" +system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent +system-libvpx system-png system-python-libs +system-webp"
-IUSE+=" wayland wifi +X"
+IUSE+=" +telemetry wayland wifi +X"
 
 # Firefox-only IUSE
 IUSE+=" geckodriver +gmp-autoupdate screencast"
@@ -105,7 +105,7 @@ COMMON_DEPEND="${FF_ONLY_DEPEND}
 	dev-libs/expat
 	dev-libs/glib:2
 	dev-libs/libffi:=
-	>=dev-libs/nss-3.88
+	>=dev-libs/nss-3.89
 	>=dev-libs/nspr-4.35
 	media-libs/alsa-lib
 	media-libs/fontconfig
@@ -475,10 +475,13 @@ virtwl() {
 	# shellcheck disable=SC2145
 	debug-print "${FUNCNAME[0]}: $@"
 	"$@"
+	local r
+	r=$?
 
 	[[ -n $VIRTWL_PID ]] || die "tinywl exited unexpectedly"
 	# shellcheck disable=SC1083
 	exec {VIRTWL[0]}<&- {VIRTWL[1]}>&-
+	return $r
 }
 
 pkg_pretend() {
@@ -796,8 +799,10 @@ src_configure() {
 	mozconfig_add_options_ac '' --enable-project=browser
 
 	# Set Gentoo defaults
-	MOZILLA_OFFICIAL=1
-	export MOZILLA_OFFICIAL
+	if use telemetry; then
+		MOZILLA_OFFICIAL=1
+		export MOZILLA_OFFICIAL
+	fi
 
 	mozconfig_add_options_ac 'Gentoo default' \
 		--allow-addon-sideload \
@@ -809,7 +814,7 @@ src_configure() {
 		--disable-strip \
 		--disable-tests \
 		--disable-updater \
-		--disable-wmf-cdm \
+		--disable-wmf \
 		--enable-negotiateauth \
 		--enable-new-pass-manager \
 		--enable-official-branding \
@@ -850,11 +855,16 @@ src_configure() {
 	# For future keywording: This is currently (97.0) only supported on:
 	# amd64, arm, arm64 & x86.
 	# Might want to flip the logic around if Firefox is to support more arches.
-	if use ppc64; then
+	# bug 833001, bug 903411#c8
+	if use ppc64 || use riscv; then
 		mozconfig_add_options_ac '' --disable-sandbox
 	else
 		mozconfig_add_options_ac '' --enable-sandbox
 	fi
+
+	# Enable JIT on riscv64 explicitly
+	# Can be removed once upstream enable it by default in the future.
+	use riscv && mozconfig_add_options_ac 'Enable JIT for RISC-V 64' --enable-jit
 
 	if [[ -s "${S}/api-google.key" ]]; then
 		local key_origin
@@ -1074,6 +1084,10 @@ src_configure() {
 		fi
 	fi
 
+	if use elibc_musl && use arm64; then
+		mozconfig_add_options_ac 'elf-hack is broken when using musl/arm64' --disable-elf-hack
+	fi
+
 	# Additional ARCH support
 	case "${ARCH}" in
 		arm)
@@ -1114,6 +1128,13 @@ src_configure() {
 	else
 		MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE="none"
 		export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE
+	fi
+
+	if ! use telemetry; then
+		mozconfig_add_options_mk '-telemetry setting' "MOZ_CRASHREPORTER=0"
+		mozconfig_add_options_mk '-telemetry setting' "MOZ_DATA_REPORTING=0"
+		mozconfig_add_options_mk '-telemetry setting' "MOZ_SERVICES_HEALTHREPORT=0"
+		mozconfig_add_options_mk '-telemetry setting' "MOZ_TELEMETRY_REPORTING=0"
 	fi
 
 	# Disable notification when build system has finished
