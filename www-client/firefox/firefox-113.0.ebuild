@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=8
 
-FIREFOX_PATCHSET="firefox-112-patches-06.tar.xz"
+FIREFOX_PATCHSET="firefox-113-patches-01.tar.xz"
 MOZ_KDE_PATCHSET="mozilla-kde-opensuse-patchset-${P}"
 
 LLVM_MAX_SLOT=15
