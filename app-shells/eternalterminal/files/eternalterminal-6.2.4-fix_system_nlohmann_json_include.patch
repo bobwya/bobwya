@@ -1,0 +1,7 @@
+--- a/src/base/JsonLib.hpp	2023-05-21 11:51:05.047574350 +0100
++++ b/src/base/JsonLib.hpp	2023-05-21 11:51:37.688039304 +0100
+@@ -2,3 +2,3 @@
+ 
+-#include "json.hpp"
++#include "nlohmann/json.hpp"
+ 

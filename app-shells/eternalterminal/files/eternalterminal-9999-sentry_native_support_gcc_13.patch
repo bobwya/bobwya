@@ -1,0 +1,8 @@
+--- a/external/sentry-native/external/breakpad/src/client/linux/handler/minidump_descriptor.h	2023-05-17 21:55:49.640610809 +0100
++++ b/external/sentry-native/external/breakpad/src/client/linux/handler/minidump_descriptor.h	2023-05-17 21:56:21.611074502 +0100
+@@ -34,4 +34,5 @@
+ #include <sys/types.h>
+ 
++#include <cstdint>
+ #include <string>
+ 

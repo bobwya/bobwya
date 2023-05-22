@@ -22,14 +22,18 @@ fi
 
 LICENSE="Apache-2.0"
 SLOT="0"
-IUSE="+client selinux +server systemd utempter"
+IUSE="+client +sentry selinux +server systemd utempter"
 REQUIRED_USE="
 	|| ( client server )
 	systemd? ( server )"
 
 DEPEND="
+	dev-cpp/catch
+	dev-cpp/cpp-httplib
+	dev-cpp/nlohmann_json
+	dev-libs/cxxopts
+	dev-libs/jsoncpp
 	dev-libs/libsodium
-	dev-cpp/gflags
 	dev-libs/protobuf
 	app-arch/unzip
 	net-misc/wget
@@ -40,13 +44,14 @@ DEPEND="
 RDEPEND="${DEPEND}"
 
 PATCHES=(
-	"${FILESDIR}/${PN}-6.1.9-fix_cmake_optional_packages.patch"
+	"${FILESDIR}/${P}-fix_cmake_package_detection.patch"
+	"${FILESDIR}/${P}-sentry_native_support_gcc_13.patch"
 )
 
 src_configure() {
 	local mycmakeargs=(
-		"-DDISABLE_VCPKG=ON"
 		"-DWITH_SELINUX=$(usex selinux)"
+		"-DWITH_SENTRY=$(usex sentry)"
 		"-DWITH_UTEMPTER=$(usex utempter)"
 	)
 

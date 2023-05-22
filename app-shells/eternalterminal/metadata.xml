@@ -8,6 +8,7 @@
   <use>
     <flag name="client">Install network client</flag>
     <flag name="utempter">Enable support for <pkg>sys-libs/libutempter</pkg></flag>
+    <flag name="sentry">Enable Sentry SDK crash reporting client</flag>
     <flag name="server">Install network server</flag>
   </use>
   <upstream>
