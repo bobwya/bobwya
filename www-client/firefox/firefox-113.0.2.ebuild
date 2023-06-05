@@ -4,10 +4,10 @@
 # shellcheck disable=SC2034
 EAPI=8
 
-FIREFOX_PATCHSET="firefox-112-patches-06.tar.xz"
+FIREFOX_PATCHSET="firefox-113-patches-02.tar.xz"
 MOZ_KDE_PATCHSET="mozilla-kde-opensuse-patchset-${P}"
 
-LLVM_MAX_SLOT=15
+LLVM_MAX_SLOT=16
 
 PYTHON_COMPAT=( python3_{9..11} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
@@ -70,15 +70,31 @@ FF_ONLY_DEPEND="!www-client/firefox:0
 	screencast? ( media-video/pipewire:= )
 	selinux? ( sec-policy/selinux-mozilla )"
 BDEPEND="${PYTHON_DEPS}
-	sys-devel/clang:15
-	sys-devel/llvm:15
-	clang? (
-		|| (
-			sys-devel/lld:15
-			sys-devel/mold
+	|| (
+		(
+			sys-devel/clang:16
+			sys-devel/llvm:16
+			clang? (
+				|| (
+					sys-devel/lld:16
+					sys-devel/mold
+				)
+				virtual/rust:0/llvm-16
+				pgo? ( =sys-libs/compiler-rt-sanitizers-16*[profile] )
+			)
 		)
-		virtual/rust:0/llvm-15
-		pgo? ( =sys-libs/compiler-rt-sanitizers-15*[profile] )
+		(
+			sys-devel/clang:15
+			sys-devel/llvm:15
+			clang? (
+				|| (
+					sys-devel/lld:15
+					sys-devel/mold
+				)
+				virtual/rust:0/llvm-15
+				pgo? ( =sys-libs/compiler-rt-sanitizers-15*[profile] )
+			)
+		)
 	)
 	app-alternatives/awk
 	app-arch/unzip
@@ -200,7 +216,7 @@ llvm_check_deps() {
 		return 1
 	fi
 
-	if use clang && tc-ld-is-lld; then
+	if use clang && ! tc-ld-is-mold; then
 		if ! has_version -b "sys-devel/lld:${LLVM_SLOT}"; then
 			einfo "sys-devel/lld:${LLVM_SLOT} is missing! ${llvm_message}" >&2
 			return 1
