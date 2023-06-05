@@ -26,7 +26,7 @@ COMMON_DEPEND="
 	dev-qt/qtcore:5
 	dev-qt/qtgui:5
 	dev-qt/qtwidgets:5
-	x11-drivers/nvidia-drivers:*[driver,static-libs,tools]
+	x11-drivers/nvidia-drivers:*[static-libs,tools]
 "
 DEPEND="${COMMON_DEPEND}"
 RDEPEND="${COMMON_DEPEND}"
