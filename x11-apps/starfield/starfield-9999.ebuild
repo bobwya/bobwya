@@ -25,7 +25,8 @@ DEPEND="media-libs/freeglut
 		media-libs/libsdl
 		media-libs/sdl-image
 		virtual/glu
-		virtual/opengl"
+		virtual/opengl
+		x11-libs/libX11"
 RDEPEND="${DEPEND}"
 
 src_configure() {
@@ -36,7 +37,7 @@ src_configure() {
 }
 
 src_compile() {
-	( $(tc-getCC) -o starfield starfield.c -O2 -lglut -lGL -lGLU -lSDL -lSDL_image || false ) \
+	( $(tc-getCC) -o starfield starfield.c -O2 -lglut -lGL -lGLU -lSDL -lSDL_image -lX11 || false ) \
 		|| die "gcc: unable to compile ${PN}"
 }
 
