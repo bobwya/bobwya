@@ -10,7 +10,7 @@ MY_PN="SRBMiner-Multi"
 MY_EXE="SRBMiner-MULTI"
 MY_P="${MY_PN}-$(ver_rs 1- -)"
 
-DESCRIPTION="A cryptocurrency miner that can mine different algorithms on AMD/Nvidia GPUs"
+DESCRIPTION="A cryptocurrency miner for CPU and GPU (AMD, NVIDIA, INTEL) devices"
 HOMEPAGE="https://www.srbminer.com/"
 SRC_URI="https://github.com/doktor83/${MY_PN}/releases/download/${PV}/${MY_P}-Linux.tar.xz"
 
