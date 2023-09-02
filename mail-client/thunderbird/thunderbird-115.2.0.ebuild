@@ -4,12 +4,12 @@
 # shellcheck disable=SC2034
 EAPI=8
 
-FIREFOX_PATCHSET="firefox-115esr-patches-04.tar.xz"
+FIREFOX_PATCHSET="firefox-115esr-patches-05.tar.xz"
 MOZ_KDE_PATCHSET="mozilla-kde-opensuse-patchset-${P}"
 
 LLVM_MAX_SLOT=16
 
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{10..11} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
 
 WANT_AUTOCONF="2.1"
@@ -50,7 +50,7 @@ DESCRIPTION="Thunderbird Mail Client, with SUSE patchset, to provide better KDE 
 HOMEPAGE="https://www.thunderbird.net/
 	https://www.rosenauer.org/hg/mozilla"
 
-KEYWORDS="~amd64"
+KEYWORDS="~amd64 ~x86"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
@@ -78,10 +78,7 @@ BDEPEND="${PYTHON_DEPS}
 			sys-devel/clang:16
 			sys-devel/llvm:16
 			clang? (
-				|| (
-					sys-devel/lld:16
-					sys-devel/mold
-				)
+				sys-devel/lld:16
 				virtual/rust:0/llvm-16
 				pgo? ( =sys-libs/compiler-rt-sanitizers-16*[profile] )
 			)
@@ -90,10 +87,7 @@ BDEPEND="${PYTHON_DEPS}
 			sys-devel/clang:15
 			sys-devel/llvm:15
 			clang? (
-				|| (
-					sys-devel/lld:15
-					sys-devel/mold
-				)
+				sys-devel/lld:15
 				virtual/rust:0/llvm-15
 				pgo? ( =sys-libs/compiler-rt-sanitizers-15*[profile] )
 			)
