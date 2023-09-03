@@ -1,13 +1,14 @@
---- a/CMakeLists.txt	2023-05-19 12:05:06.773118873 +0100
-+++ b/CMakeLists.txt	2023-05-20 14:56:40.180108896 +0100
-@@ -4,70 +4,2 @@
+--- a/CMakeLists.txt	2023-05-18 09:24:29.033150214 +0100
++++ b/CMakeLists.txt	2023-05-18 12:18:35.645895500 +0100
+@@ -3,77 +3,4 @@
+ set(EXTERNAL_DIR "${CMAKE_SOURCE_DIR}/external")
  
 -if(DISABLE_VCPKG)
 -else()
 -  # Enable vcpkg
 -  set(CMAKE_TOOLCHAIN_FILE
--      "${EXTERNAL_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake")
--
+-    "${EXTERNAL_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake")
+-    
 -  # Set the triplet
 -  if(WIN32)
 -    set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "VCPKG Triplet")
@@ -17,6 +18,7 @@
 -      COMMAND tr -d '\n'
 -      OUTPUT_VARIABLE VCPKG_ARCHITECTURE)
 -    message(STATUS "Architecture: ${VCPKG_ARCHITECTURE}")
+-
 -    if(${VCPKG_ARCHITECTURE} STREQUAL "arm64") # Apple Silicon
 -      set(VCPKG_TARGET_TRIPLET "arm64-osx" CACHE STRING "VCPKG Triplet")
 -    else()
@@ -28,6 +30,7 @@
 -      COMMAND tr -d '\n'
 -      OUTPUT_VARIABLE VCPKG_ARCHITECTURE)
 -    message(STATUS "Architecture: ${VCPKG_ARCHITECTURE}")
+-
 -    if(${VCPKG_ARCHITECTURE} STREQUAL "x86_64")
 -      set(VCPKG_TARGET_TRIPLET "x64-linux" CACHE STRING "VCPKG Triplet")
 -    elseif(${VCPKG_ARCHITECTURE} STREQUAL "x86_86")
@@ -46,103 +49,134 @@
 -  # Some hacks to fix vcpkg
 -  if(WIN32)
 -    set(Protobuf_PROTOC_EXECUTABLE
--        "${EXTERNAL_DIR}/vcpkg/packages/protobuf_${VCPKG_TARGET_TRIPLET}/tools/protobuf/protoc.exe"
+-      "${EXTERNAL_DIR}/vcpkg/packages/protobuf_${VCPKG_TARGET_TRIPLET}/tools/protobuf/protoc.exe"
 -    )
 -    set(ZLIB_LIBRARY_RELEASE
--        "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/zlib.lib"
+-      "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/zlib.lib"
 -    )
 -    set(ZLIB_LIBRARY_DEBUG
--        "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/debug/lib/zlibd.lib"
+-      "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/debug/lib/zlibd.lib"
 -    )
 -  else()
 -    # Make BoostConfig.cmake able to check its inputs
 -    cmake_policy(SET CMP0057 NEW)
+-
 -    # Honor the visibility properties for all target types, including
 -    # object libraries and static libraries.
 -    cmake_policy(SET CMP0063 NEW)
+-
 -    # Don't ignore <PackageName>_ROOT variables
 -    cmake_policy(SET CMP0074 NEW)
 -    set(Protobuf_PROTOC_EXECUTABLE
--        "${EXTERNAL_DIR}/vcpkg/packages/protobuf_${VCPKG_TARGET_TRIPLET}/tools/protobuf/protoc"
+-      "${EXTERNAL_DIR}/vcpkg/packages/protobuf_${VCPKG_TARGET_TRIPLET}/tools/protobuf/protoc"
 -    )
 -  endif()
+-
 -  set(Protobuf_USE_STATIC_LIBS ON)
 -  set(protobuf_MSVC_STATIC_RUNTIME ON)
 -endif()
 -
  message(STATUS "VCPKG TRIPLET: ${VCPKG_TARGET_TRIPLET}")
-@@ -102,7 +34,16 @@
  
+@@ -107,30 +34,23 @@
+ find_package(Unwind)
+ 
+-if(DISABLE_VCPKG)
+-add_subdirectory(${EXTERNAL_DIR}/Catch2)
+-add_subdirectory(${EXTERNAL_DIR}/cxxopts)
+-add_subdirectory(${EXTERNAL_DIR}/cpp-httplib)
+-add_subdirectory(${EXTERNAL_DIR}/json)
+-include_directories(
+-  ${EXTERNAL_DIR}/cpp-httplib
+-  ${EXTERNAL_DIR}/simpleini
+-  ${EXTERNAL_DIR}/json/include
+-  ${EXTERNAL_DIR}/cxxopts/include
+-)
+-else()
+-find_package(Catch2 CONFIG REQUIRED)
+-find_package(httplib CONFIG REQUIRED)
+-find_package(cxxopts CONFIG REQUIRED)
+-find_package(nlohmann_json CONFIG REQUIRED)
+-find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
+-endif()
++include_directories(${EXTERNAL_DIR}/simpleini)
++find_package(Catch2 REQUIRED)
++find_package(httplib REQUIRED)
++find_package(cxxopts REQUIRED)
 +find_package(nlohmann_json REQUIRED)
-+
+
  # Optional packages
 -find_package(UTempter)
+-
 +option(WITH_UTEMPTER "Enable support for utempter" OFF)
 +if (WITH_UTEMPTER)
 +  find_package(UTempter REQUIRED)
 +endif(WITH_UTEMPTER)
-+
++ 
  if(LINUX)
 -  find_package(SELinux)
 -endif()
+-
 +  option(WITH_SELINUX "Enable support for selinux" OFF)
 +  if (WITH_SELINUX)
 +    find_package(SELinux REQUIRED)
 +  endif(WITH_SELINUX)
 +endif(LINUX)
- 
-@@ -136,5 +80,13 @@
++ 
+ if(MSVC)
+   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+@@ -161,15 +80,8 @@
+ # Sentry doesn't work on BSD
  else()
 -  # Enable sentry
 -  set(USE_SENTRY TRUE)
 -  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_SENTRY")
+-endif()
+-
+-if(DISABLE_TELEMETRY)
+-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNO_TELEMETRY")
+-endif()
+-
+-if(USE_SENTRY)
+-  if(DISABLE_VCPKG)
 +  # Optionally enable sentry
 +  option(WITH_SENTRY "Enable Sentry crash logging" ON)
 +  if (WITH_SENTRY)
 +    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWITH_SENTRY")
-+    set(SENTRY_BUILD_RUNTIMESTATIC ON)
-+    set(BUILD_SHARED_LIBS OFF)
-+    add_subdirectory("${EXTERNAL_DIR}/sentry-native")
-+    include_directories(
-+      ${EXTERNAL_DIR}/sentry-native/include
-+    )
-+  endif()
+     set(SENTRY_BUILD_RUNTIMESTATIC ON)
+     set(BUILD_SHARED_LIBS OFF)
+@@ -178,9 +90,11 @@
+       ${EXTERNAL_DIR}/sentry-native/include
+     )
+-  else()
+-    find_package(sentry CONFIG REQUIRED)
+   endif()
  endif()
-@@ -142,16 +94,3 @@
- if(DISABLE_TELEMETRY)
--set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNO_TELEMETRY")
--endif()
--
--if(USE_SENTRY)
--if(DISABLE_VCPKG)
--set(SENTRY_BUILD_RUNTIMESTATIC ON)
--set(BUILD_SHARED_LIBS OFF)
--add_subdirectory("${EXTERNAL_DIR}/sentry-native")
--include_directories(
--  ${EXTERNAL_DIR}/sentry-native/include
--)
--else()
--find_package(sentry CONFIG REQUIRED)
--endif()
+ 
++if(DISABLE_TELEMETRY)
 +  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNO_TELEMETRY")
++endif()
++
+ set(CMAKE_MODULE_PATH "${EXTERNAL_DIR}/cotire/CMake"
+   ${CMAKE_MODULE_PATH})
+@@ -254,5 +168,5 @@
  endif()
-@@ -224,3 +163,3 @@
  
 -if(SELINUX_FOUND)
 +if(WITH_SELINUX)
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWITH_SELINUX")
-@@ -231,3 +170,3 @@
+ else()
+@@ -261,5 +175,5 @@
+ endif()
  
 -if(UTEMPTER_FOUND)
 +if(WITH_UTEMPTER)
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWITH_UTEMPTER")
-@@ -283,3 +222,3 @@
+ else()
+@@ -318,5 +232,5 @@
+ ENDIF()
  
 -IF(USE_SENTRY)
 +IF(WITH_SENTRY)
    list(INSERT CORE_LIBRARIES 0 sentry::sentry)
-@@ -324,4 +263,3 @@
-   ${EXTERNAL_DIR}/cxxopts/include
-   ${EXTERNAL_DIR}/msgpack-c/include
--  ${EXTERNAL_DIR}/json/single_include/nlohmann
-   ${EXTERNAL_DIR}/sole
+ ENDIF()

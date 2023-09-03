@@ -28,7 +28,10 @@ REQUIRED_USE="
 	systemd? ( server )"
 
 DEPEND="
+	dev-cpp/catch
+	dev-cpp/cpp-httplib
 	dev-cpp/nlohmann_json
+	dev-libs/cxxopts
 	dev-libs/jsoncpp
 	dev-libs/libsodium
 	dev-libs/protobuf
@@ -43,7 +46,6 @@ RDEPEND="${DEPEND}"
 PATCHES=(
 	"${FILESDIR}/${P}-fix_cmake_package_detection.patch"
 	"${FILESDIR}/${P}-sentry_native_support_gcc_13.patch"
-	"${FILESDIR}/${P}-fix_system_nlohmann_json_include.patch"
 )
 
 src_configure() {
@@ -51,6 +53,8 @@ src_configure() {
 		"-DWITH_SELINUX=$(usex selinux)"
 		"-DWITH_SENTRY=$(usex sentry)"
 		"-DWITH_UTEMPTER=$(usex utempter)"
+		"-DCMAKE_EXE_LINKER_FLAGS=-Wl,--copy-dt-needed-entries"
+		"-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--copy-dt-needed-entries"
 	)
 
 	cmake_src_configure
