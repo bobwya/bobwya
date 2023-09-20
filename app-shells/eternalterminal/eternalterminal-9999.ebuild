@@ -44,8 +44,7 @@ DEPEND="
 RDEPEND="${DEPEND}"
 
 PATCHES=(
-	"${FILESDIR}/${PN}-6.2.8-fix_cmake_package_detection.patch"
-	"${FILESDIR}/${P}-sentry_native_support_gcc_13.patch"
+	"${FILESDIR}/${P}-fix_cmake_package_detection.patch"
 )
 
 src_configure() {
