@@ -26,6 +26,12 @@ QA_PREBUILT="${PKG_DIR}/*"
 
 S="${WORKDIR}/${MY_P}"
 
+src_prepare() {
+	sed -i -e "s|[.]/${MY_EXE}|${EPREFIX}${PKG_DIR}/${MY_EXE}|g" *.sh \
+		|| die "sed failed"
+	eapply_user
+}
+
 src_install() {
 	exeopts -m755
 	exeinto "${PKG_DIR}"
