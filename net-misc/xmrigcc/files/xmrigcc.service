@@ -1,0 +1,35 @@
+[Unit]
+Description=XMRigCC Crypto Miner
+After=network-online.target
+AssertFileNotEmpty=/etc/xmrigcc/config.json
+
+[Service]
+ExecStartPre=+/usr/bin/xmrigcc_randomx_boost.sh
+ExecStartPre=+/usr/bin/xmrigcc_enable_1gb_pages.sh
+ExecStartPre=/usr/bin/xmrigDaemon --config=/etc/xmrigcc/config.json --dry-run
+ExecStart=/usr/bin/xmrigDaemon --config=/etc/xmrigcc/config.json
+StandardOutput=journal
+StandardError=journal
+DynamicUser=true
+Nice=19
+CPUSchedulingPolicy=idle
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+NoNewPrivileges=true
+# PrivateDevices=true # https://github.com/systemd/systemd/issues/13857
+CapabilityBoundingSet=
+#ProtectClock=true # https://github.com/systemd/systemd/issues/20835
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+PrivateUsers=true
+ConfigurationDirectory=xmrigcc
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+  <longdescription lang="en">
+    XMRigCC is a high performance, open source, cross platform RandomX, GhostRider, KawPow, CryptoNight
+    unified CPU/GPU miner. Official binaries are available for Windows, Linux, freebsd, macOS and Android.
+    
+    XMRigCC is a XMRig fork which adds remote control and monitoring functions to XMRigCC miners. It lets you control your miners via a Dashboard or the REST api.
+    XMRigCC has a "Command and Control" (CC) server part, a daemon to keep the XMRigCC miner alive and modifications to send the current status to the CC Server.
+    The modified version can handle commands like "update config", "start/stop mining" or "restart/shutdown/reboot" which can be send from the CC-Server Dashboard.
+    Assign config templates to multiple miners with a single click and let them switch configs without connecting to each of them.
+    Watch your miners logs with the simple remote Log viewer and monitor you miners. When the hashrate drops or one of your miners went offline you can get a notification via
+    PushOver or Telegram automatically so that you dont need to watch your miners all day. 
+</longdescription>
+  <use>
+    <flag name="cuda">
+      Build cuda plugin
+    </flag>
+    <flag name="ccclient">
+      Enable "Command and Control" (CC) Client features
+    </flag>
+    <flag name="ccclientexec">
+      Enable "Command and Control" (CC) Client shell execution (shell execution might be a security risk)
+    </flag>
+    <flag name="ccserver">
+      Enable "Command and Control" (CC) Server features
+    </flag>
+    <flag name="donate">
+      Set the default donation level to 5% instead of 0%
+    </flag>
+    <flag name="http">
+      Enable built in HTTP support, this feature is used for HTTP API and daemon (solo mining) support
+    </flag>
+    <flag name="hwloc">
+      Use <pkg>sys-apps/hwloc</pkg> for CPU affinity support
+    </flag>
+    <flag name="opencl">
+      Enable OpenCL support
+    </flag>
+  </use>
+  <upstream>
+    <remote-id type="github">Bendr0id/xmrigCC</remote-id>
+  </upstream>
+</pkgmetadata>

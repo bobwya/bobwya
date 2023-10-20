@@ -1,0 +1,11 @@
+--- a/src/core/Miner.cpp	2023-10-19 11:32:52.499195955 +0100
++++ b/src/core/Miner.cpp	2023-10-19 12:20:05.774756194 +0100
+@@ -806,7 +806,7 @@
+                 }
+ #    endif
+             } else if (backend->type() == "cuda") {
+-#   ifdef XMRIG_FEATURE_OPENCL
++#   ifdef XMRIG_FEATURE_CUDA
+                 const auto cudaBackend = static_cast<CudaBackend *>(backend);
+                 auto launchData = cudaBackend->getLaunchData();
+ 
