@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+  <longdescription lang="en">
+    This repository is NVIDIA CUDA plugin for XMRig miner v4.5+ and it adds support for NVIDIA GPUs in XMRig miner.
+
+    The main reasons why this plugin is in a separate project are:
+
+    1. CUDA support is optional, not all users need it, but it is very heavy.
+    2. CUDA has very strict compiler version requirements and it may conflict with CPU mining code.
+  </longdescription>
+  <upstream>
+    <remote-id type="github">xmrig/xmrig-cuda</remote-id>
+  </upstream>
+</pkgmetadata>
