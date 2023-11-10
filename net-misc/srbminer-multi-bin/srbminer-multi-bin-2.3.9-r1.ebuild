@@ -12,14 +12,18 @@ MY_P="${MY_PN}-$(ver_rs 1- -)"
 
 DESCRIPTION="A cryptocurrency miner for CPU and GPU (AMD, NVIDIA, INTEL) devices"
 HOMEPAGE="https://www.srbminer.com/"
-SRC_URI="https://github.com/doktor83/${MY_PN}/releases/download/${PV}/${MY_P}-Linux.tar.xz"
+SRC_URI="https://github.com/doktor83/SRBMiner-Multi/releases/download/${PV}/${MY_P}-Linux.tar.xz"
 
 KEYWORDS="-* ~amd64"
 LICENSE="no-source-code"
 SLOT="0"
 
-DEPEND=""
-RDEPEND=""
+IUSE="cuda opencl"
+
+RDEPEND="
+	cuda? ( dev-util/nvidia-cuda-toolkit )
+	opencl? ( virtual/opencl )
+"
 
 PKG_DIR="/opt/${MY_SPN}"
 QA_PREBUILT="${PKG_DIR}/*"
