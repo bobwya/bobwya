@@ -34,7 +34,6 @@ fi
 
 IUSE="sdl"
 
-DEPEND=""
 RDEPEND="${DEPEND}
 		app-arch/p7zip
 		media-libs/libpng
