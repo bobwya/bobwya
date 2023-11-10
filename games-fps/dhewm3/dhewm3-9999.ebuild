@@ -9,7 +9,6 @@ inherit cmake
 if [[ "${PV}" == 9999 ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://github.com/dhewm/${PN}.git"
-	SRC_URI=""
 else
 	MY_PV="${PV/_rc/_RC}"
 	MY_P="${PN}-${MY_PV}"
