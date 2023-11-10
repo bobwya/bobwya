@@ -13,13 +13,14 @@ else
 fi
 
 DESCRIPTION="The PE file analysis toolkit"
-HOMEPAGE="https://pev.sourceforge.net/"
+HOMEPAGE="
+	https://pev.sourceforge.net/
+	https://github.com/mentebinaria/readpe"
 LICENSE="GPL-2+"
 SLOT="0"
 
 DEPEND="dev-libs/openssl:0"
-RDEPEND="!app-forensics/pev
-		${DEPEND}"
+RDEPEND="${DEPEND}"
 
 src_compile() {
 	emake prefix="${EPREFIX}/usr" libdir="${EPREFIX}/usr/$(get_libdir)" all
