@@ -16,8 +16,7 @@ KEYWORDS="-* ~amd64"
 LICENSE="all-rights-reserved"
 SLOT="0"
 
-RDEPEND="
-	dev-util/nvidia-cuda-toolkit"
+RDEPEND="!elibc_musl? ( dev-util/nvidia-cuda-toolkit )"
 
 PKG_DIR="/opt/${MY_PN}"
 QA_PREBUILT="${PKG_DIR}"
