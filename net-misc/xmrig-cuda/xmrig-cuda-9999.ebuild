@@ -21,11 +21,10 @@ fi
 
 LICENSE="GPL-3+"
 SLOT="0"
-IUSE=""
 
 DEPEND="
 	dev-libs/libuv:=
-	dev-util/nvidia-cuda-toolkit:=
+	!elibc_musl? ( dev-util/nvidia-cuda-toolkit:= )
 "
 RDEPEND="
 	${DEPEND}
