@@ -3,7 +3,7 @@
 
 EAPI=8
 
-inherit linux-mod git-r3
+inherit linux-mod-r1 git-r3
 
 DESCRIPTION="Non-fuse kernel driver for exFat and VFat file systems"
 HOMEPAGE="https://github.com/barrybingo/exfat-nofuse"
@@ -12,8 +12,6 @@ EGIT_REPO_URI="https://github.com/barrybingo/exfat-nofuse"
 
 LICENSE="GPL-2+"
 SLOT="0"
-KEYWORDS=""
-IUSE=""
 
 RDEPEND="!sys-fs/fuse-exfat"
 DEPEND="${RDEPEND}"
@@ -28,5 +26,5 @@ src_prepare(){
 
 src_compile(){
 	BUILD_PARAMS="KDIR=${KV_OUT_DIR} M=${S}"
-	linux-mod_src_compile
+	linux-mod_src_compile-r1
 }
