@@ -15,10 +15,8 @@ SRC_URI="https://trex-miner.com/download/${MY_P}-linux.tar.gz -> ${P}.tar.gz"
 LICENSE="all-rights-reserved"
 SLOT="0"
 KEYWORDS="-* ~amd64"
-IUSE="+video_cards_nvidia"
 
-DEPEND=""
-RDEPEND="video_cards_nvidia? ( x11-drivers/nvidia-drivers )"
+RDEPEND="elibc_glibc? ( dev-util/nvidia-cuda-toolkit )"
 
 EXE_DIR="/opt/${MY_PN}"
 EXE_PATH="${EXE_DIR}/${MY_PN}"
