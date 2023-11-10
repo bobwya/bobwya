@@ -5,6 +5,10 @@
 		<email>bob.mt.wya@gmail.com</email>
 		<name>Robert Walker</name>
 	</maintainer>
+	<use>
+		<flag name="cuda">Support Nvidia graphics cards</flag>
+		<flag name="opencl">Support AMD/Intel graphics cards</flag>
+	</use>
 	<upstream>
 		<remote-id type="github">Lolliedieb/lolMiner-releases</remote-id>
 	</upstream>

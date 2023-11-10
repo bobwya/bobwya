@@ -8,7 +8,7 @@ inherit unpacker
 MY_SPN="${PN%-bin}"
 MY_PN="lolMiner"
 MY_PV="${PV/_beta/b}"
-MY_PV="${PV/_alpha/a}"
+MY_PV="${MY_PV/_alpha/a}"
 
 BASE_URI="https://github.com/Lolliedieb/lolMiner-releases"
 DESCRIPTION="A multi algorithm crypto miner client supporting AMD & Nvidia GPUs"
@@ -19,8 +19,12 @@ KEYWORDS="-* ~amd64"
 LICENSE="Boost-1.0 BSD lolMiner MIT"
 SLOT="0"
 
-DEPEND=""
-RDEPEND=""
+IUSE="cuda opencl"
+
+RDEPEND="
+	cuda? ( dev-util/nvidia-cuda-toolkit )
+	opencl? ( virtual/opencl )
+"
 
 PKG_DIR="/opt/${MY_SPN}"
 QA_PREBUILT="${PKG_DIR}/*"
