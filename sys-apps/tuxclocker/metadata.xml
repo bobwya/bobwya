@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
+  <use>
+    <flag name="daemon">Build the system daemon</flag>
+    <flag name="plugins">Enable support for plugins</flag>
+    <flag name="hwdata">Enable (optional) support for more accurate AMD GPU descriptions</flag>
+  </use>
   <upstream>
     <remote-id type="github">Lurkki14/tuxclocker</remote-id>
   </upstream>
