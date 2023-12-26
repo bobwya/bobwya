@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=8
 
-FIREFOX_PATCHSET="firefox-115esr-patches-07.tar.xz"
+FIREFOX_PATCHSET="firefox-115esr-patches-08.tar.xz"
 MOZ_KDE_PATCHSET="mozilla-kde-opensuse-patchset-${P}"
 
 LLVM_MAX_SLOT=17
@@ -162,7 +162,7 @@ COMMON_DEPEND="${TB_ONLY_DEPEND}
 		>=media-gfx/graphite2-1.3.13
 		>=media-libs/harfbuzz-2.8.1:0=
 	)
-	system-icu? ( >=dev-libs/icu-73.1:= )
+	system-icu? ( >=dev-libs/icu-74.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1 )
 	system-libevent? ( >=dev-libs/libevent-2.1.12:0=[threads(+)] )
 	system-libvpx? ( >=media-libs/libvpx-1.8.2:0=[postproc] )
@@ -633,7 +633,13 @@ src_prepare() {
 		rm -v "${WORKDIR}/firefox-patches/"*-musl-non-lfs64-api-on-audio_thread_priority-crate.patch || die "rm failed"
 	fi
 
+	# Workaround for bgo#917599
+	if has_version ">=dev-libs/icu-74.1" && use system-icu; then
 	local -a PATCHES
+		eapply "${WORKDIR}/firefox-patches/0029-bmo-1862601-system-icu-74.patch"
+	fi
+	rm -v "${WORKDIR}/firefox-patches/0029-bmo-1862601-system-icu-74.patch" || die "rm failed"
+
 	eapply "${WORKDIR}/firefox-patches"
 
 	if use kde; then
