@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
-  <upstream>	
-    <remote-id type="github">develsoftware/GMinerRelease</remote-id>
-  </upstream>
+	<maintainer type="person">
+		<email>bob.mt.wya@gmail.com</email>
+		<name>Robert Walker</name>
+	</maintainer>
+	<use>
+		<flag name="cuda">Support Nvidia graphics cards</flag>
+		<flag name="opencl">Support AMD/Intel graphics cards</flag>
+	</use>
+	<upstream>
+		<remote-id type="github">develsoftware/GMinerRelease</remote-id>
+	</upstream>
 </pkgmetadata>

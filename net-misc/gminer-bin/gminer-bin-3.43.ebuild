@@ -14,10 +14,13 @@ SRC_URI="${BASE_URI}/releases/download/${PV}/${MY_PN}_$(ver_rs 1 '_')_linux64.ta
 LICENSE="all-rights-reserved"
 SLOT="0"
 KEYWORDS="-* ~amd64"
-IUSE=""
 
-DEPEND=""
-RDEPEND=""
+IUSE="cuda opencl"
+
+RDEPEND="
+	cuda? ( dev-util/nvidia-cuda-toolkit )
+	opencl? ( virtual/opencl )
+"
 
 EXE_DIR="/opt/${MY_PN}"
 EXE_PATH="${EXE_DIR}/${MY_PN}"
