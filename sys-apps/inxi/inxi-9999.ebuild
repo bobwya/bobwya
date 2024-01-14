@@ -22,9 +22,7 @@ fi
 
 LICENSE="GPL-3"
 SLOT="0"
-IUSE=""
 
-DEPEND=""
 RDEPEND="
 	app-text/tree
 	dev-lang/perl:0=
