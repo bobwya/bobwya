@@ -1,4 +1,4 @@
-# Copyright 2023 Gentoo Authors
+# Copyright 2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
@@ -12,7 +12,6 @@ HOMEPAGE="https://github.com/bobwya/wine-desktop-common"
 if [ "${PV}" = "99999999" ]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://github.com/bobwya/${PN}.git"
-	SRC_URI=""
 else
 	KEYWORDS="-* amd64 x86"
 	SRC_URI="https://github.com/bobwya/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
@@ -20,9 +19,6 @@ fi
 
 LICENSE="LGPL-2.1"
 SLOT="0"
-IUSE=""
-
-RDEPEND=""
 
 # These desktop files use a non-standard "Wine" category,
 # which is provided by: /etc/xdg/applications-merged/wine.menu
