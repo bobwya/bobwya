@@ -1,4 +1,4 @@
-# Copyright 2023 Gentoo Authors
+# Copyright 2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -16,7 +16,6 @@ HOMEPAGE="https://github.com/get-iplayer/get_iplayer"
 
 LICENSE="GPL-3"
 SLOT="0"
-IUSE=""
 
 RDEPEND="
 		dev-perl/CGI
@@ -29,7 +28,6 @@ RDEPEND="
 		media-video/ffmpeg
 		virtual/perl-JSON-PP
 "
-DEPEND=""
 
 src_prepare() {
 	sed -i \
