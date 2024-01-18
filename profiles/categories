@@ -1,7 +1,11 @@
+acct-group
+acct-user
 app-arch
 app-benchmarks
 app-emulation
+app-eselect
 app-forensics
+app-misc
 app-shells
 dev-cpp
 dev-libs
@@ -12,9 +16,9 @@ mail-client
 media-libs
 media-sound
 media-video
-net-dialup
 net-dns
 net-misc
+net-print
 sys-apps
 sys-fs
 sys-power
