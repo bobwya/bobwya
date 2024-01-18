@@ -1,4 +1,4 @@
-# Copyright 2023 Gentoo Authors
+# Copyright 2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -12,10 +12,9 @@ SRC_URI="https://people.freedesktop.org/~cbrill/${PN}/${P}.tar.bz2"
 LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~x86"
-IUSE=""
 
 DEPEND="media-libs/mesa"
-RDEPEND=""
+RDEPEND="${DEPEND}"
 
 multilib_src_configure() {
 	ECONF_SOURCE="${S}" econf
