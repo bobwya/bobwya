@@ -10,7 +10,7 @@ if [[ "${PV}" == "9999" ]]; then
 	EGIT_REPO_URI="https://source.winehq.org/git/vkd3d.git"
 	inherit git-r3
 else
-	KEYWORDS="-* amd64 x86"
+	KEYWORDS="-* ~amd64 ~x86"
 	SRC_URI="https://dl.winehq.org/vkd3d/source/${P}.tar.xz"
 fi
 
@@ -30,13 +30,10 @@ DEPEND="${RDEPEND}
 		>=dev-util/vulkan-headers-1.3.228
 		opengl?  ( media-libs/mesa[X(+),${MULTILIB_USEDEP}] )"
 BDEPEND="
-		doc? (
-			app-doc/doxygen
-			app-text/texlive
-		)
 		sys-devel/flex
 		sys-devel/bison
-		virtual/pkgconfig"
+		virtual/pkgconfig
+		doc? ( app-text/doxygen[doc] )"
 
 DESCRIPTION="D3D12 to Vulkan translation library"
 HOMEPAGE="https://source.winehq.org/git/vkd3d.git/"
