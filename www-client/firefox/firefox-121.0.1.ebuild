@@ -1,10 +1,10 @@
-# Copyright 2023 Gentoo Authors
+# Copyright 2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2034
 EAPI=8
 
-FIREFOX_PATCHSET="firefox-120-patches-01.tar.xz"
+FIREFOX_PATCHSET="firefox-121-patches-03.tar.xz"
 MOZ_KDE_PATCHSET="mozilla-kde-opensuse-patchset-${P}"
 
 LLVM_MAX_SLOT=17
@@ -92,15 +92,6 @@ BDEPEND="${PYTHON_DEPS}
 				pgo? ( =sys-libs/compiler-rt-sanitizers-16*[profile] )
 			)
 		)
-		(
-			sys-devel/clang:15
-			sys-devel/llvm:15
-			clang? (
-				sys-devel/lld:15
-				virtual/rust:0/llvm-15
-				pgo? ( =sys-libs/compiler-rt-sanitizers-15*[profile] )
-			)
-		)
 	)
 	app-alternatives/awk
 	app-arch/unzip
@@ -109,6 +100,12 @@ BDEPEND="${PYTHON_DEPS}
 	net-libs/nodejs
 	virtual/pkgconfig
 	!clang? ( >=virtual/rust-1.70 )
+	!elibc_glibc? (
+		|| (
+			dev-lang/rust
+			<dev-lang/rust-bin-1.73
+		)
+	)
 	amd64? ( >=dev-lang/nasm-2.14 )
 	x86? ( >=dev-lang/nasm-2.14 )
 	pgo? (
@@ -127,7 +124,7 @@ COMMON_DEPEND="${FF_ONLY_DEPEND}
 	dev-libs/expat
 	dev-libs/glib:2
 	dev-libs/libffi:=
-	>=dev-libs/nss-3.94
+	>=dev-libs/nss-3.95
 	>=dev-libs/nspr-4.35
 	media-libs/alsa-lib
 	media-libs/fontconfig
@@ -168,7 +165,7 @@ COMMON_DEPEND="${FF_ONLY_DEPEND}
 	system-libvpx? ( >=media-libs/libvpx-1.8.2:0=[postproc] )
 	system-png? ( >=media-libs/libpng-1.6.35:0=[apng] )
 	system-webp? ( >=media-libs/libwebp-1.1.0:0= )
-	valgrind? ( dev-util/valgrind )
+	valgrind? ( dev-debug/valgrind )
 	wayland? (
 		>=media-libs/libepoxy-1.5.10-r1
 		x11-libs/gtk+:3[wayland]
@@ -709,6 +706,11 @@ src_prepare() {
 	fi
 	rm -v "${WORKDIR}/firefox-patches/0028-bmo-1862601-system-icu-74.patch" || die "rm failed"
 
+	# Workaround for bgo#915651 on musl
+	if use elibc_glibc; then
+		rm -v "${WORKDIR}/firefox-patches/"*bgo-748849-RUST_TARGET_override.patch || die "rm failed"
+	fi
+
 	eapply "${WORKDIR}/firefox-patches"
 
 	# Allow user to apply any additional patches without modifying ebuild
@@ -717,6 +719,19 @@ src_prepare() {
 	# Make cargo respect MAKEOPTS
 	export CARGO_BUILD_JOBS
 	CARGO_BUILD_JOBS="$(makeopts_jobs)"
+
+	# Workaround for bgo#915651
+	if ! use elibc_glibc; then
+		if use amd64; then
+			export RUST_TARGET
+			RUST_TARGET="x86_64-unknown-linux-musl"
+		elif use x86 ; then
+			export RUST_TARGET
+			RUST_TARGET="i686-unknown-linux-musl"
+		else
+			die "Unknown musl chost, please post your rustc -vV along with emerge --info on Gentoo's bug #915651"
+		fi
+	fi
 
 	# Make LTO respect MAKEOPTS
 	# shellcheck disable=SC2154
@@ -1023,10 +1038,13 @@ src_configure() {
 
 	if use X && use wayland; then
 		mozconfig_add_options_ac '+x11+wayland' --enable-default-toolkit=cairo-gtk3-x11-wayland
+		mozconfig_add_options_ac '+enable-wayland-proxy' --enable-wayland-proxy
 	elif ! use X && use wayland ; then
 		mozconfig_add_options_ac '+wayland' --enable-default-toolkit=cairo-gtk3-wayland-only
+		mozconfig_add_options_ac '+enable-wayland-proxy' --enable-wayland-proxy
 	else
 		mozconfig_add_options_ac '+x11' --enable-default-toolkit=cairo-gtk3-x11-only
+		mozconfig_add_options_ac 'disabling-wayland-proxy' --disable-wayland-proxy
 	fi
 
 	if use lto; then
