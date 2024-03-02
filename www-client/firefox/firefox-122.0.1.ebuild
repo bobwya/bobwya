@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034
 EAPI=8
 
-FIREFOX_PATCHSET="firefox-121-patches-03.tar.xz"
+FIREFOX_PATCHSET="firefox-122-patches-02.tar.xz"
 MOZ_KDE_PATCHSET="mozilla-kde-opensuse-patchset-${P}"
 
 LLVM_MAX_SLOT=17
@@ -58,7 +58,7 @@ IUSE+=" +system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent +
 IUSE+=" +telemetry valgrind wayland wifi +X"
 
 # Firefox-only IUSE
-IUSE+=" geckodriver +gmp-autoupdate screencast"
+IUSE+=" geckodriver +gmp-autoupdate"
 
 # "-jumbo-build +system-icu": build failure on firefox-120:
 #   firefox-120.0/intl/components/src/TimeZone.cpp:345:3: error: use of undeclared identifier 'MOZ_TRY'
@@ -70,7 +70,6 @@ REQUIRED_USE="|| ( X wayland )
 
 FF_ONLY_DEPEND="!www-client/firefox:0
 	!www-client/firefox:esr
-	screencast? ( media-video/pipewire:= )
 	selinux? ( sec-policy/selinux-mozilla )"
 BDEPEND="${PYTHON_DEPS}
 	|| (
@@ -150,7 +149,6 @@ COMMON_DEPEND="${FF_ONLY_DEPEND}
 	libproxy? ( net-libs/libproxy )
 	selinux? ( sec-policy/selinux-mozilla )
 	sndio? ( >=media-sound/sndio-1.8.0-r1 )
-	screencast? ( media-video/pipewire:= )
 	system-av1? (
 		>=media-libs/dav1d-1.0.0:=
 		>=media-libs/libaom-1.0.0:=
@@ -193,7 +191,6 @@ COMMON_DEPEND="${FF_ONLY_DEPEND}
 	)"
 RDEPEND="${COMMON_DEPEND}
 	hwaccel? (
-	kde? ( kde-misc/kmozillahelper )
 		media-video/libva-utils
 		sys-apps/pciutils
 	)
@@ -702,9 +699,9 @@ src_prepare() {
 
 	# Workaround for bgo#917599
 	if has_version ">=dev-libs/icu-74.1" && use system-icu; then
-		eapply "${WORKDIR}/firefox-patches/0028-bmo-1862601-system-icu-74.patch"
+		eapply "${WORKDIR}/firefox-patches/"*-bmo-1862601-system-icu-74.patch
 	fi
-	rm -v "${WORKDIR}/firefox-patches/0028-bmo-1862601-system-icu-74.patch" || die "rm failed"
+	rm -v "${WORKDIR}/firefox-patches/"*-bmo-1862601-system-icu-74.patch || die "rm failed"
 
 	# Workaround for bgo#915651 on musl
 	if use elibc_glibc; then
@@ -734,18 +731,28 @@ src_prepare() {
 	fi
 
 	# Make LTO respect MAKEOPTS
-	# shellcheck disable=SC2154
-	sed -i \
-		-e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
-		"${S}/build/moz.configure/lto-pgo.configure" \
-		|| die "sed failed to set num_cores"
+	sed -i -e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
+		"${S}/build/moz.configure/lto-pgo.configure" || die "Failed sedding multiprocessing.cpu_count"
 
 	# Make ICU respect MAKEOPTS
-	# shellcheck disable=SC2154
-	sed -i \
-		-e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
-		"${S}/intl/icu_sources_data.py" \
-		|| die "sed failed to set num_cores"
+	sed -i -e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
+		"${S}/intl/icu_sources_data.py" || die "Failed sedding multiprocessing.cpu_count"
+
+	# Respect MAKEOPTS all around (maybe some find+sed is better)
+	sed -i -e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
+		"${S}/python/mozbuild/mozbuild/base.py" || die "Failed sedding multiprocessing.cpu_count"
+
+	sed -i -e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
+		"${S}/third_party/libwebrtc/build/toolchain/get_cpu_count.py" || die "Failed sedding multiprocessing.cpu_count"
+
+	sed -i -e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
+		"${S}/third_party/libwebrtc/build/toolchain/get_concurrent_links.py" || die "Failed sedding multiprocessing.cpu_count"
+
+	sed -i -e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
+		"${S}/third_party/python/gyp/pylib/gyp/input.py" || die "Failed sedding multiprocessing.cpu_count"
+
+	sed -i -e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
+		"${S}/python/mozbuild/mozbuild/code_analysis/mach_commands.py" || die "Failed sedding multiprocessing.cpu_count"
 
 	# sed-in toolchain prefix
 	# shellcheck disable=SC2154
@@ -902,8 +909,6 @@ src_configure() {
 		--disable-strip \
 		--disable-tests \
 		--disable-updater \
-		--disable-wasm-function-references \
-		--disable-wasm-gc \
 		--disable-wmf \
 		--enable-negotiateauth \
 		--enable-new-pass-manager \
@@ -1038,20 +1043,22 @@ src_configure() {
 
 	if use X && use wayland; then
 		mozconfig_add_options_ac '+x11+wayland' --enable-default-toolkit=cairo-gtk3-x11-wayland
-		mozconfig_add_options_ac '+enable-wayland-proxy' --enable-wayland-proxy
 	elif ! use X && use wayland ; then
 		mozconfig_add_options_ac '+wayland' --enable-default-toolkit=cairo-gtk3-wayland-only
-		mozconfig_add_options_ac '+enable-wayland-proxy' --enable-wayland-proxy
 	else
 		mozconfig_add_options_ac '+x11' --enable-default-toolkit=cairo-gtk3-x11-only
-		mozconfig_add_options_ac 'disabling-wayland-proxy' --disable-wayland-proxy
 	fi
+
+	# LTO is handled via configure
+	filter-lto
 
 	if use lto; then
 		if use clang; then
 			# Upstream only supports lld or mold when using clang.
 			# shellcheck disable=SC2119
 			if tc-ld-is-mold; then
+				# mold expects the -flto line from *FLAGS configuration, bgo#923119
+				append-ldflags "-flto=thin"
 				mozconfig_add_options_ac "using ld=mold due to system selection" --enable-linker=mold
 			else
 				mozconfig_add_options_ac "forcing ld=lld due to USE=clang and USE=lto" --enable-linker=lld
@@ -1095,9 +1102,6 @@ src_configure() {
 			fi
 		fi
 	fi
-
-	# LTO flag was handled via configure
-	filter-lto
 
 	mozconfig_use_enable debug
 	if use debug; then
@@ -1374,11 +1378,9 @@ src_install() {
 			EOF
 		fi
 
-		# Install the vaapitest binary on supported arches (+arm when keyworded)
-		if use amd64 || use arm64 || use x86; then
-			exeinto "${MOZILLA_FIVE_HOME}"
-			doexe "${BUILD_DIR}/dist/bin/vaapitest"
-		fi
+		# Install the vaapitest binary on supported arches (122.0 supports all platforms, bmo#1865969)
+		exeinto "${MOZILLA_FIVE_HOME}"
+		doexe "${BUILD_DIR}/dist/bin/vaapitest"
 
 		# Install the v4l2test on supported arches (+ arm, + riscv64 when keyworded)
 		if use arm64; then
@@ -1547,6 +1549,7 @@ pkg_postinst() {
 	optfeature_header "Optional programs for extra features:"
 	optfeature "desktop notifications" x11-libs/libnotify
 	optfeature "fallback mouse cursor theme e.g. on WMs" gnome-base/gsettings-desktop-schemas
+	optfeature "screencasting with pipewire" sys-apps/xdg-desktop-portal
 	if use hwaccel && has_version "x11-drivers/nvidia-drivers"; then
 		optfeature "hardware acceleration with NVIDIA cards" media-libs/nvidia-vaapi-driver
 	fi
