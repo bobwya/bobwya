@@ -4,12 +4,12 @@
 # shellcheck disable=SC2034
 EAPI=8
 
-FIREFOX_PATCHSET="firefox-123-patches-03.tar.xz"
+FIREFOX_PATCHSET="firefox-123-patches-07.tar.xz"
 MOZ_KDE_PATCHSET="mozilla-kde-opensuse-patchset-${P}"
 
 LLVM_COMPAT=( 16 17 )
 
-PYTHON_COMPAT=( python3_{10..11} )
+PYTHON_COMPAT=( python3_{10..12} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
 
 WANT_AUTOCONF="2.1"
@@ -519,9 +519,6 @@ pkg_setup() {
 			# shellcheck disable=SC2086
 			if ! has userpriv "${FEATURES}"; then
 				eerror "Building ${PN} with USE=pgo and FEATURES=-userpriv is not supported!"
-			fi
-			if use clang; then
-				die "Building ${PN} with USE=pgo and USE=clang is currently broken!"
 			fi
 		fi
 
@@ -1200,6 +1197,9 @@ src_configure() {
 	if use valgrind; then
 		mozconfig_add_options_ac 'valgrind requirement' --disable-jemalloc
 	fi
+
+	# System-av1 fix
+	use system-av1 && append-ldflags "-Wl,--undefined-version"
 
 	# Allow elfhack to work in combination with unstripped binaries
 	# when they would normally be larger than 2GiB.
