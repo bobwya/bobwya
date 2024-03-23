@@ -12,9 +12,9 @@ MY_P="${MY_PN}-$(ver_rs 1- -)"
 
 DESCRIPTION="A cryptocurrency miner for CPU and GPU (AMD, NVIDIA, INTEL) devices"
 HOMEPAGE="https://www.srbminer.com/"
-SRC_URI="https://github.com/doktor83/SRBMiner-Multi/releases/download/${PV}/${MY_P}-Linux.tar.xz"
+SRC_URI="https://github.com/doktor83/SRBMiner-Multi/releases/download/${PV}/${MY_P}-Linux.tar.gz"
 
-KEYWORDS="-* amd64"
+KEYWORDS="-* ~amd64"
 LICENSE="no-source-code"
 SLOT="0/$(ver_rs 0- '')"
 
